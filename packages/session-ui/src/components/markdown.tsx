@@ -620,6 +620,13 @@ function pendingProjection(text: string): Projection {
   return { text, blocks: text ? [{ raw: text, src: text, mode: "live" }] : [] }
 }
 
+export function hasMarkdownSyntax(text: string) {
+  return (
+    /(?:^|\n)\s*(?:`{3,}|~{3,}|#{1,6}\s|>\s|[-+*]\s|\d+\.\s)/.test(text) ||
+    /`[^`\n]+`|\*\*[^*\n]+\*\*|__[^_\n]+__|~~[^~\n]+~~|\[[^\]\n]+\]\([^)\n]+\)/.test(text)
+  )
+}
+
 export function Markdown(
   props: ComponentProps<"div"> & {
     text: string

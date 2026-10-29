@@ -17,7 +17,7 @@ import { createMediaQuery } from "@solid-primitives/media"
 import { useData } from "../context"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { useI18n } from "@opencode/ui/context/i18n"
-import { Markdown } from "../components/markdown"
+import { hasMarkdownSyntax, Markdown } from "../components/markdown"
 import { linkSegments } from "../components/link-segments"
 import { sessionReferenceText, setupSessionLinks } from "../components/markdown-session-links"
 import { useMarkdown } from "../context/markdown"
@@ -358,7 +358,6 @@ export function CurrentUserMessageDisplay(props: {
     return i18n.t(RELATIVE_TIME_KEYS[relative.unit], { count: numfmt().format(relative.count) })
   })
 
-
   // In a run, only the last message keeps the meta line; the others offer their actions beside the bubble.
   // Bubble corners tighten where two bubbles meet, as in the iOS app's grouped corners.
   const folded = createMemo(() => !!props.run?.below && !!props.text)
@@ -641,7 +640,12 @@ export function CurrentUserMessageDisplay(props: {
             </div>
           </Show>
           <div data-slot="user-message-text" dir="auto" data-comments={comments().length > 0 ? "true" : undefined}>
-            <CurrentHighlightedText text={props.text} files={inlineFiles()} agents={agents()} />
+            <Show
+              when={hasMarkdownSyntax(props.text)}
+              fallback={<CurrentHighlightedText text={props.text} files={inlineFiles()} agents={agents()} />}
+            >
+              <Markdown text={props.text} cacheKey={`${props.message.id}:user`} />
+            </Show>
             <Show when={comments().length > 0}>
               <UserMessageComments comments={comments()} bounded />
             </Show>

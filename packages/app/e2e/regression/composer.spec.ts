@@ -5,6 +5,34 @@ import { mockPluginsActivating, type MockServerConfig } from "../utils/mock-serv
 
 test.use({ permissions: ["clipboard-read", "clipboard-write"] })
 
+test("renders sent Markdown with the shared component", async ({ page }) => {
+  const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
+  const view = await openSession(page, {
+    name: "MarkdownComposer",
+    sessions: [{ id: "ses_markdown_composer", title: "Markdown composer" }],
+    seed: { tabs: ["ses_markdown_composer"] },
+    onPrompt: (input) => void prompts.push(input.body),
+  })
+
+  await view.editor.pressSequentially("Run `npm test`")
+  await view.editor.press("Shift+Enter")
+  await view.editor.pressSequentially("```")
+  await view.editor.press("Shift+Enter")
+  await view.editor.pressSequentially("const value = 1")
+  await view.editor.press("Shift+Enter")
+  await view.editor.pressSequentially("```")
+
+  await view.editor.press("Enter")
+
+  await expect.poll(() => prompts.length).toBe(1)
+  expect(prompts[0]?.text).toBe("Run `npm test`\n```\nconst value = 1\n```")
+
+  const message = page.locator('[data-timeline-row="UserMessage"]')
+  await expect(message.locator('[data-component="markdown"] :not(pre) > code')).toHaveText("npm test")
+  await expect(message.locator('[data-component="markdown-code"]')).toBeVisible()
+  await expect(message.locator("pre code")).toHaveText("const value = 1")
+})
+
 test("mention a session by title, send its stable token, and open its own tab", async ({ page }) => {
   const target = "ses_0123456789abcdefghijklmnop"
   const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
@@ -107,7 +135,7 @@ test("the free usage limit opens the Go dialog once, leaves a readable notice, a
           id: "opencode",
           name: "OpenCode",
           models: {
-            "big-pickle": { id: "big-pickle", name: "Big Pickle", cost: { input: 0, output: 0 }, limit: { context: 200_000 } },
+          "big-pickle": { id: "big-pickle", name: "Big Pickle", cost: { input: 0, output: 0 }, limit: { context: 200_000 } },
           },
         },
         ...(state.authorized
