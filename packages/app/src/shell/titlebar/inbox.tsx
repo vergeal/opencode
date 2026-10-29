@@ -237,6 +237,8 @@ function InboxRow(props: {
   const language = useLanguage()
   const servers = useServers()
   const project = createMemo(() => props.entry.ctx.projects.forSession(props.entry.session))
+  const projectName = () => displayName(project() ?? { worktree: props.entry.session.location.directory })
+  const title = () => sessionTabTitle(props.entry.session.title, language.t("session.tab.session"))
   const status = () => props.entry.status
   const unread = () => status() !== "ready" && status() !== "working"
 
@@ -275,7 +277,7 @@ function InboxRow(props: {
         data-slot="sidebar-inbox-item"
         data-status={status()}
         data-state={props.selected ? "active" : undefined}
-        class="group flex w-full shrink-0 flex-col gap-0.5 rounded-[6px] px-1.5 py-1.5 text-start hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover data-[state=active]:bg-v2-background-bg-layer-02"
+        class="group flex w-full shrink-0 flex-col gap-1 rounded-[8px] px-2 py-1.5 text-start hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover data-[state=active]:bg-v2-background-bg-layer-02"
         classList={{
           "transition-opacity hover:opacity-100 focus-visible:opacity-100": !props.selected,
           "opacity-70": status() === "working" && !props.selected,
@@ -283,7 +285,7 @@ function InboxRow(props: {
         }}
         onClick={props.onOpen}
       >
-        <span class="flex h-4 w-full min-w-0 items-center gap-1.5 text-[13px] leading-4 text-v2-text-text-faint">
+        <span class="flex h-5 w-full min-w-0 items-center gap-1.5">
           <span class="flex size-4 shrink-0 items-center justify-center">
             <SessionTabAvatarView
               project={project()}
@@ -291,10 +293,22 @@ function InboxRow(props: {
               unread={false}
             />
           </span>
-          <span class="min-w-0 truncate">
-            {displayName(project() ?? { worktree: props.entry.session.location.directory })}
+          <span
+            dir="auto"
+            title={title()}
+            class="min-w-0 flex-1 truncate text-[13px] leading-5"
+            // Rows recede once read so unread results stand out.
+            classList={{
+              "font-medium text-v2-text-text-base": unread(),
+              "text-v2-text-text-muted": !unread(),
+            }}
+          >
+            {title()}
           </span>
-          <span class="ms-auto shrink-0 tabular-nums" role={status() === "ready" ? undefined : "status"}>
+          <span
+            class="shrink-0 text-[12px] leading-4 tabular-nums text-v2-text-text-faint"
+            role={status() === "ready" ? undefined : "status"}
+          >
             <Show when={status() !== "ready"} fallback={age()}>
               <span
                 classList={{
@@ -322,47 +336,40 @@ function InboxRow(props: {
             </Show>
           </span>
         </span>
-        <span
-          dir="auto"
-          class="w-full min-w-0 truncate text-[15px] leading-4"
-          // Rows recede once read so unread results stand out.
-          classList={{
-            "font-medium text-v2-text-text-base": unread(),
-            "text-v2-text-text-muted": !unread(),
-          }}
-        >
-          {sessionTabTitle(props.entry.session.title, language.t("session.tab.session"))}
-        </span>
-        <Show when={props.branchLoading || props.branch || props.worktree || tag()}>
-          <span class="flex h-4 w-full min-w-0 items-center gap-1 text-[13px] leading-4 text-v2-text-text-faint">
-            <Show when={props.branchLoading}>
-              <span
-                aria-hidden="true"
-                class="h-2.5 w-24 max-w-full animate-pulse rounded-full bg-v2-background-bg-layer-03"
-              />
-            </Show>
-            <Show when={!props.branchLoading && (props.branch || props.worktree)}>
-              <span class="flex min-w-0 items-center gap-1">
-                {/* The worktree icon stands in for the branch icon to mark sessions outside the project checkout. */}
-                <Icon name={props.worktree ? "outline-worktree" : "branch"} size="small" class="shrink-0" />
-                <Show when={props.branch}>
-                  {(name) => (
-                    <span dir="ltr" class="min-w-0 truncate">
-                      {name()}
-                    </span>
-                  )}
-                </Show>
-              </span>
-            </Show>
-            <Show when={tag()}>
-              {(name) => (
-                <Tooltip placement="right" value={name()} class="ms-auto flex shrink-0">
-                  <Icon name="server" size="small" aria-label={name()} />
-                </Tooltip>
-              )}
-            </Show>
+        <span class="flex h-4 w-full min-w-0 items-center gap-1.5 text-[12px] leading-4 text-v2-text-text-faint">
+          <span class="min-w-0 max-w-[46%] truncate" title={projectName()}>
+            {projectName()}
           </span>
-        </Show>
+          <Show when={props.branchLoading}>
+            <span
+              aria-hidden="true"
+              class="h-2 w-16 max-w-full animate-pulse rounded-full bg-v2-background-bg-layer-03"
+            />
+          </Show>
+          <Show when={!props.branchLoading && (props.branch || props.worktree)}>
+            <span aria-hidden="true" class="shrink-0">
+              ·
+            </span>
+            <span class="flex min-w-0 items-center gap-1">
+              {/* The worktree icon stands in for the branch icon to mark sessions outside the project checkout. */}
+              <Icon name={props.worktree ? "outline-worktree" : "branch"} size="small" class="shrink-0" />
+              <Show when={props.branch}>
+                {(name) => (
+                  <span dir="ltr" class="min-w-0 truncate">
+                    {name()}
+                  </span>
+                )}
+              </Show>
+            </span>
+          </Show>
+          <Show when={tag()}>
+            {(name) => (
+              <Tooltip placement="right" value={name()} class="ms-auto flex shrink-0">
+                <Icon name="server" size="small" aria-label={name()} />
+              </Tooltip>
+            )}
+          </Show>
+        </span>
       </Menu.Context.Trigger>
       <Menu.Context.Portal>
         <Menu.Context.Content>
