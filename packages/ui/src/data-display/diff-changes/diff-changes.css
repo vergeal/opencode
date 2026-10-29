@@ -8,7 +8,7 @@
 
   [data-slot="diff-changes-additions"],
   [data-slot="diff-changes-deletions"] {
-    font-size: 11px;
+    font-size: 12px;
     font-style: normal;
     font-weight: 440;
     line-height: 1;
@@ -30,7 +30,7 @@
   [data-slot="diff-changes-deletions"] {
     font-family: var(--font-family-mono);
     font-feature-settings: var(--font-family-mono--font-feature-settings);
-    font-size: 14px;
+    font-size: 16px;
     font-style: normal;
     font-weight: var(--font-weight-regular);
     line-height: var(--line-height-large);

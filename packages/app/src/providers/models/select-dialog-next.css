@@ -91,7 +91,7 @@
     padding-inline: 34px 6px;
     background: var(--v2-background-bg-base);
     color: var(--v2-text-text-faint);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 18px;
 
     /* The home page's sticky header fade, faded in by how far rows have scrolled beneath the stuck header. */
@@ -143,7 +143,7 @@
     height: 28px;
     padding-inline: 6px 3px;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 440;
     line-height: var(--line-height-base);
     letter-spacing: -0.04px;
@@ -196,8 +196,8 @@
 
   /* The model stats that close the flyout. */
   > :last-child {
-    font-size: 11px;
-    line-height: 16px;
+    font-size: 12px;
+    line-height: 18px;
     cursor: default;
     user-select: none;
   }

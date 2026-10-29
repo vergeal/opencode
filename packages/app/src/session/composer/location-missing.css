@@ -30,7 +30,7 @@
   }
 
   [data-slot="location-title"] {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 530;
     line-height: var(--line-height-base);
     color: var(--v2-text-text-base);
@@ -38,7 +38,7 @@
 
   [data-slot="location-path"] {
     font-family: var(--v2-font-family-code);
-    font-size: 12px;
+    font-size: 13px;
     line-height: var(--line-height-base);
     color: var(--v2-text-text-faint);
     overflow-wrap: anywhere;
@@ -47,7 +47,7 @@
   }
 
   [data-slot="location-description"] {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 440;
     line-height: var(--line-height-base);
     color: var(--v2-text-text-muted);

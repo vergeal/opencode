@@ -63,7 +63,7 @@ export function ClosedTabsSection(props: { entries: readonly ClosedSideTab[]; on
   return (
     <Show when={props.entries.length > 0}>
       <section data-slot="side-recently-closed" class="flex flex-col gap-1 pt-6" aria-labelledby={heading}>
-        <h2 id={heading} class="px-2 pb-1 text-[13px] font-[440] text-v2-text-text-muted">
+        <h2 id={heading} class="px-2 pb-1 text-[15px] font-[440] text-v2-text-text-muted">
           {language.t("home.recentlyClosed")}
         </h2>
         <For each={shown()}>
@@ -71,7 +71,7 @@ export function ClosedTabsSection(props: { entries: readonly ClosedSideTab[]; on
             <button
               type="button"
               data-slot="side-recently-closed-row"
-              class="flex h-8 w-full shrink-0 items-center justify-between gap-4 rounded-[6px] px-2 text-start text-[13px] font-[440] hover:bg-v2-background-bg-layer-02"
+              class="flex h-8 w-full shrink-0 items-center justify-between gap-4 rounded-[6px] px-2 text-start text-[15px] font-[440] hover:bg-v2-background-bg-layer-02"
               onClick={() => props.onReopen(entry.key)}
             >
               <ClosedTabVisual entry={entry} />
@@ -85,7 +85,7 @@ export function ClosedTabsSection(props: { entries: readonly ClosedSideTab[]; on
           <button
             type="button"
             data-slot="side-recently-closed-more"
-            class="flex h-8 w-fit items-center gap-1 rounded-[6px] px-2 text-[13px] font-[440] text-v2-text-text-muted hover:bg-v2-background-bg-layer-02 hover:text-v2-text-text-base"
+            class="flex h-8 w-fit items-center gap-1 rounded-[6px] px-2 text-[15px] font-[440] text-v2-text-text-muted hover:bg-v2-background-bg-layer-02 hover:text-v2-text-text-base"
             aria-expanded={state.expanded}
             onClick={() => setState("expanded", (expanded) => !expanded)}
           >
@@ -107,7 +107,7 @@ function ClosedTabsItems(props: { entries: readonly ClosedSideTab[]; onReopen: (
       <Menu.GroupLabel>{language.t("home.recentlyClosed")}</Menu.GroupLabel>
       <Show
         when={props.entries.length > 0}
-        fallback={<div class="px-2 py-1.5 text-[13px] text-v2-text-text-muted">{language.t("palette.empty")}</div>}
+        fallback={<div class="px-2 py-1.5 text-[15px] text-v2-text-text-muted">{language.t("palette.empty")}</div>}
       >
         <For each={props.entries.slice(0, MENU_LIMIT)}>
           {(entry, index) => (

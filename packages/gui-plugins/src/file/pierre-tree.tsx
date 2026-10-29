@@ -21,7 +21,7 @@ import {
 const TREE_UNSAFE_CSS = `
   :host {
     color-scheme: inherit;
-    --trees-font-family: var(--font-family-sans); --trees-font-size: 12px;
+    --trees-font-family: var(--font-family-sans); --trees-font-size: 13px;
     --trees-fg: var(--v2-text-text-muted); --trees-fg-muted: var(--v2-text-text-muted);
     --trees-bg: var(--v2-background-bg-base); --trees-bg-muted: var(--v2-overlay-simple-overlay-hover);
     --trees-border-color: color-mix(in srgb, var(--v2-border-border-muted) 50%, transparent);
@@ -79,9 +79,9 @@ const TREE_UNSAFE_CSS = `
   [data-type="item"]:not([data-item-selected="true"]) > [data-item-section="icon"] > * { color: var(--v2-icon-icon-muted) !important; }
   [data-item-git-status]:not([data-item-git-status="ignored"]) > [data-item-section="content"] { color: inherit; }
   [data-item-section="content"] { flex: 1 0 auto; max-width: none; overflow: visible; white-space: nowrap; }
-  [data-item-section="decoration"] { flex: 0 0 auto; color: var(--v2-text-text-weak, var(--v2-text-text-muted)); font-size: 12px; font-weight: 400; }
+  [data-item-section="decoration"] { flex: 0 0 auto; color: var(--v2-text-text-weak, var(--v2-text-text-muted)); font-size: 13px; font-weight: 400; }
   [data-item-section="git"] {
-    font-size: 11px; font-weight: 530; line-height: 1; letter-spacing: -0.04px;
+    font-size: 12px; font-weight: 530; line-height: 1; letter-spacing: -0.04px;
     font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" on, "lnum" on;
   }
   /* Every row ends in its change letter or an empty lane that sticks inside the pane while long rows scroll. It fades

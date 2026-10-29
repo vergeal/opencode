@@ -59,7 +59,7 @@
   }
 
   [data-component="search-list"] [data-slot="search-list-row"] {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 440;
     line-height: var(--line-height-base);
     letter-spacing: -0.04px;
@@ -82,7 +82,7 @@
     padding: 0 12px;
     border-top: 0.5px solid var(--v2-border-border-base);
     color: var(--v2-text-text-faint);
-    font-size: 11px;
+    font-size: 12px;
 
     > span {
       display: flex;

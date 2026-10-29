@@ -140,7 +140,7 @@ export function SidebarInbox() {
                 sections().needs.length === 0 && sections().working.length === 0 && sections().archived.length === 0
               }
             >
-              <div class="px-1.5 py-2 text-[13px] leading-4 text-v2-text-text-faint">
+              <div class="px-1.5 py-2 text-[15px] leading-4 text-v2-text-text-faint">
                 {language.t("sidebar.inbox.empty")}
               </div>
             </Show>
@@ -202,7 +202,7 @@ function SectionHeader(props: { label: string; count?: number; expanded?: boolea
     <Show
       when={props.onToggle}
       fallback={
-        <div class="flex h-6 shrink-0 items-center gap-1.5 px-1.5 text-[12px] leading-4 font-medium text-v2-text-text-muted">
+        <div class="flex h-6 shrink-0 items-center gap-1.5 px-1.5 text-[13px] leading-4 font-medium text-v2-text-text-muted">
           {content()}
         </div>
       }
@@ -211,7 +211,7 @@ function SectionHeader(props: { label: string; count?: number; expanded?: boolea
         <button
           type="button"
           aria-expanded={props.expanded}
-          class="flex h-6 w-full shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-start text-[12px] leading-4 font-medium text-v2-text-text-muted hover:text-v2-text-text-base focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover"
+          class="flex h-6 w-full shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-start text-[13px] leading-4 font-medium text-v2-text-text-muted hover:text-v2-text-text-base focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover"
           onClick={toggle()}
         >
           {content()}
@@ -283,7 +283,7 @@ function InboxRow(props: {
         }}
         onClick={props.onOpen}
       >
-        <span class="flex h-4 w-full min-w-0 items-center gap-1.5 text-[12px] leading-4 text-v2-text-text-faint">
+        <span class="flex h-4 w-full min-w-0 items-center gap-1.5 text-[13px] leading-4 text-v2-text-text-faint">
           <span class="flex size-4 shrink-0 items-center justify-center">
             <SessionTabAvatarView
               project={project()}
@@ -324,7 +324,7 @@ function InboxRow(props: {
         </span>
         <span
           dir="auto"
-          class="w-full min-w-0 truncate text-[13px] leading-4"
+          class="w-full min-w-0 truncate text-[15px] leading-4"
           // Rows recede once read so unread results stand out.
           classList={{
             "font-medium text-v2-text-text-base": unread(),
@@ -334,7 +334,7 @@ function InboxRow(props: {
           {sessionTabTitle(props.entry.session.title, language.t("session.tab.session"))}
         </span>
         <Show when={props.branchLoading || props.branch || props.worktree || tag()}>
-          <span class="flex h-4 w-full min-w-0 items-center gap-1 text-[12px] leading-4 text-v2-text-text-faint">
+          <span class="flex h-4 w-full min-w-0 items-center gap-1 text-[13px] leading-4 text-v2-text-text-faint">
             <Show when={props.branchLoading}>
               <span
                 aria-hidden="true"

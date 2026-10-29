@@ -240,7 +240,7 @@ export default function ComponentsLab() {
         when={selected()}
         keyed
         fallback={
-          <div class="flex size-full items-center justify-center bg-v2-background-bg-base text-[13px] leading-4 text-v2-text-text-faint">
+          <div class="flex size-full items-center justify-center bg-v2-background-bg-base text-[15px] leading-4 text-v2-text-text-faint">
             {language.t("lab.pick")}
           </div>
         }
@@ -494,7 +494,7 @@ function Stage(props: { entry: LabEntry; inspector: HTMLElement; scheme: "dark" 
                     createEffect(on(() => ({ ...args }), reset, { defer: true }))
 
                     return (
-                      <pre class="max-w-full whitespace-pre-wrap font-mono text-[12px] leading-4 text-v2-state-fg-danger">
+                      <pre class="max-w-full whitespace-pre-wrap font-mono text-[13px] leading-4 text-v2-state-fg-danger">
                         {String(error)}
                       </pre>
                     )
@@ -675,7 +675,7 @@ function Tile(props: { entry: LabEntry }) {
           <div class="pointer-events-none contents">
             <DialogProvider container={container()}>
               <ErrorBoundary
-                fallback={(error) => <pre class="font-mono text-[11px] text-v2-state-fg-danger">{String(error)}</pre>}
+                fallback={(error) => <pre class="font-mono text-[12px] text-v2-state-fg-danger">{String(error)}</pre>}
               >
                 {render
                   ? untrack(() => render(stateArgs(props.entry, 0)))

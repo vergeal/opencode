@@ -48,7 +48,7 @@
   padding: 4px 12px;
   border-radius: 4px;
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-base);
   text-align: start;
@@ -194,7 +194,7 @@ button.session-service-row:focus-visible,
   border-radius: 6px;
   background: var(--v2-background-bg-layer-01);
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   clip-path: inset(0 0 calc(100% - var(--flyout-height)) 0 round 6px);
@@ -243,7 +243,7 @@ button.session-service-row:focus-visible,
 .session-service-count {
   flex-shrink: 0;
   color: var(--v2-text-text-faint);
-  font-size: 12px;
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -271,7 +271,7 @@ button.session-service-row:focus-visible,
 
 .session-service-drawer {
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   line-height: var(--line-height-compact);
 }
 
@@ -414,9 +414,9 @@ button.session-service-dot {
   height: 20px;
   margin-inline-end: -5px;
   padding-inline: 5px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 440;
-  line-height: 16px;
+  line-height: 18px;
   letter-spacing: 0.05px;
 }
 

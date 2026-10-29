@@ -125,7 +125,7 @@
     padding-inline: 18px;
     background: var(--search-list-surface);
     color: var(--v2-text-text-muted);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 440;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
@@ -174,7 +174,7 @@
     min-height: 120px;
     place-items: center;
     color: var(--v2-text-text-muted);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 440;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
@@ -185,7 +185,7 @@
     flex-shrink: 0;
     padding: 4px 18px 12px;
     color: var(--v2-text-text-muted);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 440;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;

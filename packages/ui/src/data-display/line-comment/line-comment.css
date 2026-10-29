@@ -56,7 +56,7 @@
 [data-component="line-comment-v2"][data-variant="display"] [data-slot="line-comment-v2-text"] {
   margin: 0;
   width: 100%;
-  font-size: 13px;
+  font-size: 15px;
   font-style: normal;
   font-weight: 440;
   line-height: var(--line-height-compact);
@@ -68,7 +68,7 @@
 }
 
 [data-component="line-comment-v2"][data-variant="display"] [data-slot="line-comment-v2-meta"] {
-  font-size: 11px;
+  font-size: 12px;
   font-style: normal;
   font-weight: 530;
   line-height: var(--line-height-tight);
@@ -151,7 +151,7 @@
   resize: none;
   border: none;
   background: transparent;
-  font-size: 13px;
+  font-size: 15px;
   font-style: normal;
   font-weight: 440;
   line-height: var(--line-height-compact);
@@ -178,7 +178,7 @@
 [data-component="line-comment-v2"][data-variant="editor"] [data-slot="line-comment-v2-footer-meta"] {
   flex: 1 1 auto;
   min-width: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-style: normal;
   font-weight: 530;
   line-height: 1;
@@ -232,8 +232,8 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 13px;
+  line-height: 18px;
 }
 
 [data-component="line-comment-v2"][data-variant="editor"] [data-slot="line-comment-v2-mention-dir"] {

@@ -125,7 +125,7 @@ function Section(props: { title: string; notes: readonly BetaNote[]; open: (href
             {(note) => (
               <li class="flex min-w-0 items-center gap-4">
                 <div class="flex min-w-0 flex-1 flex-col gap-1 [overflow-wrap:anywhere]">
-                  <p class="m-0 text-[13px] leading-5 font-[500] tracking-[-0.04px] text-v2-text-text-base">
+                  <p class="m-0 text-[15px] leading-5 font-[500] tracking-[-0.04px] text-v2-text-text-base">
                     {note.summary}
                   </p>
                   <Meta note={note} open={props.open} />
@@ -178,7 +178,7 @@ export function Meta(props: { note: BetaNote; open: (href: string) => void; clas
   return (
     <Show when={props.note.author || props.note.pr}>
       <div
-        class={`flex min-w-0 flex-wrap items-center gap-x-1.5 ${props.class ?? "text-[12px] leading-4 font-[400] text-v2-text-text-faint"}`}
+        class={`flex min-w-0 flex-wrap items-center gap-x-1.5 ${props.class ?? "text-[13px] leading-4 font-[400] text-v2-text-text-faint"}`}
       >
         <Show when={props.note.author}>
           {(author) => (

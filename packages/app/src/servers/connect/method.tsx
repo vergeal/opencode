@@ -15,7 +15,7 @@ export function ConnectMethodSwitch(props: {
   return (
     <div
       data-component="server-connect-method"
-      class="flex min-h-7 flex-wrap items-center justify-center gap-1 text-[13px]"
+      class="flex min-h-7 flex-wrap items-center justify-center gap-1 text-[15px]"
     >
       <span class="text-v2-text-text-faint">
         {language.t(props.method === "link" ? "server.connect.password.prompt" : "server.connect.link.prompt")}

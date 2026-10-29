@@ -15,7 +15,7 @@
   outline-offset: 0;
   transition: outline-color 85ms ease-out;
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -123,7 +123,7 @@
     border-radius: 2px;
     background: var(--v2-background-bg-layer-02);
     color: var(--v2-text-text-muted);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 530;
     line-height: var(--line-height-tight);
     letter-spacing: 0.05px;
@@ -185,7 +185,7 @@
   padding-inline: 8px;
   border-radius: 6px;
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -249,7 +249,7 @@
   box-shadow: var(--v2-elevation-floating);
   outline: none;
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-base);
   letter-spacing: -0.04px;
@@ -299,7 +299,7 @@
   }
 
   [data-slot="browser-site-detail"] {
-    font-size: 11px;
+    font-size: 12px;
     line-height: var(--line-height-compact);
     letter-spacing: 0.05px;
     color: var(--v2-text-text-muted);

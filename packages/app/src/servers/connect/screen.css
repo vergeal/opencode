@@ -29,14 +29,14 @@
   }
 
   h1 {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 28px;
     font-weight: 530;
     margin-block-end: 8px;
   }
 
   p {
-    font-size: 13px;
+    font-size: 15px;
     line-height: var(--line-height-base);
     color: var(--v2-text-text-muted);
   }
@@ -54,7 +54,7 @@
   }
 
   label {
-    font-size: 13px;
+    font-size: 15px;
     line-height: var(--line-height-compact);
     font-weight: 530;
   }
@@ -65,7 +65,7 @@
   }
 
   [data-slot="text-input-v2-input"] {
-    font-size: 16px;
+    font-size: 18px;
     line-height: 24px;
   }
 
@@ -81,7 +81,7 @@
   }
 
   .server-connect-hint {
-    font-size: 12px;
+    font-size: 13px;
     line-height: var(--line-height-compact);
   }
 
@@ -100,7 +100,7 @@
     border: 1px solid var(--v2-border-border-base);
     border-radius: 6px;
     padding: 8px 16px;
-    font-size: 13px;
+    font-size: 15px;
     line-height: var(--line-height-base);
     background: var(--v2-background-bg-layer-01);
     user-select: all;

@@ -21,8 +21,8 @@
 
   font-style: normal;
   font-weight: 530;
-  font-size: 11px;
-  line-height: 12px;
+  font-size: 12px;
+  line-height: 14px;
   letter-spacing: 0.05px;
   color: var(--v2-text-text-base);
   font-variant-numeric: tabular-nums;
@@ -67,7 +67,7 @@
 
 [data-component="tooltip-v2"][data-appearance="large"] {
   padding: 12px;
-  font-size: 13px;
+  font-size: 15px;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
 }

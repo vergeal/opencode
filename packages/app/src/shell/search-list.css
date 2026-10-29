@@ -63,7 +63,7 @@
   flex: 1;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 15px;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
 }
@@ -98,7 +98,7 @@
   flex-shrink: 0;
   align-items: center;
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -109,7 +109,7 @@
   min-height: 120px;
   place-items: center;
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -133,7 +133,7 @@
 
 .mcp-dialog-name {
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 530;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -193,9 +193,9 @@
 .mcp-status-action[data-component="button-v2"][data-size="small"] {
   height: 20px;
   padding-inline: 5px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 440;
-  line-height: 16px;
+  line-height: 18px;
   letter-spacing: 0.05px;
 }
 

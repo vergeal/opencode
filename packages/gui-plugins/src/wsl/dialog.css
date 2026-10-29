@@ -99,7 +99,7 @@
   margin: 0;
   font-style: normal;
   font-weight: 530;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 20px;
   letter-spacing: -0.13px;
   font-variant-numeric: tabular-nums;
@@ -117,7 +117,7 @@
   margin: 0;
   font-style: normal;
   font-weight: 440;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 20px;
   text-align: center;
   letter-spacing: -0.04px;
@@ -132,7 +132,7 @@
   margin: 4px 0 0;
   font-style: normal;
   font-weight: 440;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 18px;
   text-align: center;
   letter-spacing: -0.04px;
@@ -159,8 +159,8 @@
   user-select: none;
   font-style: normal;
   font-weight: 440;
-  font-size: 13px;
-  line-height: 16px;
+  font-size: 15px;
+  line-height: 18px;
   letter-spacing: -0.04px;
   font-variation-settings: "slnt" 0;
   color: var(--v2-text-text-base);
@@ -226,8 +226,8 @@
 .settings-wsl-distro-label {
   font-style: normal;
   font-weight: 440;
-  font-size: 13px;
-  line-height: 16px;
+  font-size: 15px;
+  line-height: 18px;
   letter-spacing: -0.04px;
   font-variant-numeric: tabular-nums;
   font-variation-settings: "slnt" 0;
@@ -238,8 +238,8 @@
   flex: none;
   font-style: normal;
   font-weight: 440;
-  font-size: 12px;
-  line-height: 12px;
+  font-size: 13px;
+  line-height: 14px;
   letter-spacing: 0.05px;
   font-variant-numeric: tabular-nums;
   font-variation-settings: "slnt" 0;
@@ -263,7 +263,7 @@
 
 .settings-wsl-distro-empty {
   padding: 16px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: 1.4;
   color: var(--v2-text-text-muted);
@@ -322,8 +322,8 @@
   user-select: none;
   font-style: normal;
   font-weight: 440;
-  font-size: 13px;
-  line-height: 16px;
+  font-size: 15px;
+  line-height: 18px;
   letter-spacing: -0.04px;
   font-variation-settings: "slnt" 0;
   color: var(--v2-text-text-base);
@@ -333,8 +333,8 @@
   user-select: none;
   font-style: normal;
   font-weight: 440;
-  font-size: 12px;
-  line-height: 12px;
+  font-size: 13px;
+  line-height: 14px;
   letter-spacing: 0.05px;
   font-variation-settings: "slnt" 0;
   color: var(--v2-text-text-muted);
@@ -384,7 +384,7 @@
   align-items: center;
   justify-content: center;
   padding: 48px 24px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);

@@ -142,7 +142,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 13px;
+    font-size: 15px;
     font-style: normal;
     font-weight: 530;
     line-height: 20px;
@@ -157,7 +157,7 @@
     text-wrap-style: pretty;
     overflow-wrap: anywhere;
     word-break: break-word;
-    font-size: 13px;
+    font-size: 15px;
     font-style: normal;
     font-weight: 440;
     line-height: 20px;
@@ -180,7 +180,7 @@
 
   [data-slot="toast-v2-actions"] [data-component="button-v2"] {
     min-height: 24px;
-    font-size: 13px;
+    font-size: 15px;
     font-style: normal;
     font-weight: 530;
     line-height: 20px;

@@ -20,7 +20,7 @@
   [data-project-name="true"] [data-slot="home-session-labels"] > * {
     max-width: 100%;
     flex: none;
-    font-size: 13px;
+    font-size: 15px;
     line-height: var(--line-height-compact);
   }
 }

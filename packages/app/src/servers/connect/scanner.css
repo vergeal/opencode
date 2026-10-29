@@ -4,7 +4,7 @@
   gap: 20px;
 
   p {
-    font-size: 13px;
+    font-size: 15px;
     line-height: var(--line-height-base);
     color: var(--v2-text-text-muted);
   }

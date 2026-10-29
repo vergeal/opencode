@@ -2,7 +2,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   font-family: var(--font-family-mono);
-  font-size: 12px;
+  font-size: 13px;
   line-height: var(--line-height-compact);
   max-height: 200px;
   overflow: auto;
@@ -41,14 +41,14 @@
 }
 
 .settings-server-dialog-label {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 530;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
 
 .settings-server-dialog-error {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 440;
   line-height: 1;
   color: var(--v2-state-fg-danger);

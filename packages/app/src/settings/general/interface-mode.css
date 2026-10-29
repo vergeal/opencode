@@ -53,7 +53,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 530;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
@@ -77,7 +77,7 @@
   [data-slot="interface-mode-badge"] {
     padding: 0 5px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 500;
     line-height: var(--line-height-compact);
     color: var(--v2-text-text-muted);
@@ -86,7 +86,7 @@
 
   [data-slot="interface-mode-description"] {
     padding-inline-start: 22px;
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 440;
     line-height: var(--line-height-base);
     color: var(--v2-text-text-muted);

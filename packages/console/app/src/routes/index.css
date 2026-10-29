@@ -106,7 +106,7 @@ body {
   }
 
   @media (max-width: 60rem) {
-    font-size: 15px;
+    font-size: 17px;
   }
 
   [data-component="growth-stats"] {
@@ -140,7 +140,7 @@ body {
         justify-content: left;
         width: 100%;
         gap: 10px;
-        font-size: 14px;
+        font-size: 16px;
 
         strong {
           color: var(--color-text-strong);
@@ -148,7 +148,7 @@ body {
         }
 
         figure {
-          font-size: 14px;
+          font-size: 16px;
           color: var(--color-text-weak);
           padding: 0;
           margin: 0;
@@ -379,7 +379,7 @@ body {
   }
 
   [data-slot="installation-options"] {
-    font-size: 13px;
+    font-size: 15px;
     margin-top: 12px;
   }
 
@@ -436,7 +436,7 @@ body {
       overflow: auto;
       white-space: pre-wrap;
       transition: opacity 0.18s ease;
-      font-size: 16px;
+      font-size: 18px;
       font-family: var(--font-mono);
       width: 100%;
 
@@ -621,7 +621,7 @@ body {
     }
 
     h3 {
-      font-size: 16px;
+      font-size: 18px;
       font-weight: 700;
       color: var(--color-text-strong);
       margin-bottom: 12px;
@@ -707,7 +707,7 @@ body {
 
     figure {
       margin-top: 16px;
-      font-size: 13px;
+      font-size: 15px;
       margin-left: 40px;
 
       span {
@@ -726,7 +726,7 @@ body {
 
     [data-slot="privacy-title"] {
       h3 {
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 700;
         color: var(--color-text-strong);
         margin-bottom: 12px;

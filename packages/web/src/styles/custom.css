@@ -58,7 +58,7 @@ html {
 
 body {
   color: var(--color-text) !important;
-  font-size: 14px !important;
+  font-size: 16px !important;
 
   @media (prefers-color-scheme: dark) {
     --sl-color-bg: hsl(0, 9%, 7%);
@@ -116,11 +116,11 @@ body > .page > header button[data-open-modal] > kbd {
 }
 body > .page > header button[data-open-modal] > kbd > kbd {
   color: var(--color-icon) !important;
-  font-size: 15px;
+  font-size: 17px;
 }
 /* Make the Cmd (⌘) keystroke bigger */
 body > .page > header button[data-open-modal][aria-keyshortcuts="Meta+K"] > kbd > kbd:first-child {
-  font-size: 20px;
+  font-size: 22px;
   line-height: 0.73;
 }
 
@@ -249,7 +249,7 @@ site-search > button span {
 }
 
 site-search > button > kbd {
-  font-size: 14px !important;
+  font-size: 16px !important;
 }
 
 h1 a,
@@ -283,7 +283,7 @@ h3 {
 }
 
 h4 {
-  font-size: 16px !important;
+  font-size: 18px !important;
   text-transform: none !important;
   font-weight: 500 !important;
   color: var(--color-text-strong) !important;
@@ -374,7 +374,7 @@ div.right-sidebar .sl-container ul li a[aria-current="true"] {
 }
 
 h2#starlight__on-this-page {
-  font-size: 14px !important;
+  font-size: 16px !important;
   color: var(--color-text-strong) !important;
   margin: 0 !important;
   font-weight: 400 !important;
@@ -383,14 +383,14 @@ h2#starlight__on-this-page {
 
 #starlight__on-this-page ul {
   color: var(--color-text-strong) !important;
-  font-size: 16px !important;
+  font-size: 18px !important;
 }
 
 .middle-group .links {
   color: var(--color-icon);
   text-decoration: none;
   text-transform: none;
-  font-size: 16px;
+  font-size: 18px;
   display: none !important;
 }
 

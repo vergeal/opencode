@@ -91,7 +91,7 @@ export function SessionActivityChips(props: {
       <span
         data-slot="session-activity-elapsed"
         dir="auto"
-        class="text-[11px] tabular-nums whitespace-nowrap text-v2-text-text-muted"
+        class="text-[12px] tabular-nums whitespace-nowrap text-v2-text-text-muted"
       >
         {formatElapsed(now() - item.started, language.t)}
       </span>
@@ -143,7 +143,7 @@ export function SessionActivityChips(props: {
             type="button"
             data-slot="session-activity-chip"
             aria-label={label()}
-            class="pointer-events-auto flex h-7 min-w-0 max-w-full items-center gap-2 rounded-[12px] border-[0.5px] border-v2-border-border-muted bg-v2-background-bg-base ps-2.5 pe-2.5 text-[13px] font-[440] leading-text-compact tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none duration-150 ease-out motion-reduce:animate-none"
+            class="pointer-events-auto flex h-7 min-w-0 max-w-full items-center gap-2 rounded-[12px] border-[0.5px] border-v2-border-border-muted bg-v2-background-bg-base ps-2.5 pe-2.5 text-[15px] font-[440] leading-text-compact tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none duration-150 ease-out motion-reduce:animate-none"
             classList={{ "animate-in fade-in": enter() }}
           >
             <SessionProgressIndicatorV2 class="shrink-0" />
@@ -195,7 +195,7 @@ export function SessionActivityChips(props: {
                     <Icon name="console" class="shrink-0 text-v2-icon-icon-muted" />
                     <span
                       dir="ltr"
-                      class="min-w-0 flex-1 truncate font-mono text-[13px] tracking-[-0.04px] text-v2-text-text-base"
+                      class="min-w-0 flex-1 truncate font-mono text-[15px] tracking-[-0.04px] text-v2-text-text-base"
                     >
                       {item.label}
                     </span>

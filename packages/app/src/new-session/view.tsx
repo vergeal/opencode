@@ -220,7 +220,7 @@ function NewSessionTips(props: { selection: ComposerModel["model"]["selection"];
         >
           <button
             type="button"
-            class="flex h-6 min-w-0 items-center rounded-[4px] pl-1.5 text-[13px] leading-text-compact tracking-[-0.04px] text-v2-text-text-faint transition-[background-color,color] duration-150 ease-in-out hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-muted focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-muted focus-visible:outline-none"
+            class="flex h-6 min-w-0 items-center rounded-[4px] pl-1.5 text-[15px] leading-text-compact tracking-[-0.04px] text-v2-text-text-faint transition-[background-color,color] duration-150 ease-in-out hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-muted focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-muted focus-visible:outline-none"
             onClick={open}
           >
             <span class="truncate">{language.t("home.providerTip")}</span>
@@ -303,7 +303,7 @@ function NewSessionLocation(props: {
   const fitted = createMemo(() => fitPath(path() ?? "", layout.width, layout.font))
 
   return (
-    <div class="relative flex min-h-9 min-w-0 items-center gap-3 ps-2 pe-1.5 text-[13px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px]">
+    <div class="relative flex min-h-9 min-w-0 items-center gap-3 ps-2 pe-1.5 text-[15px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px]">
       <div class="flex min-w-0 max-w-full flex-wrap items-center gap-1 py-1.5">
         <Tooltip
           appearance={props.onboarding ? "large" : undefined}

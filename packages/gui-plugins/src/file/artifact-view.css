@@ -23,7 +23,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-compact);
 }
@@ -51,7 +51,7 @@
   gap: 6px;
   min-width: 0;
   color: var(--v2-text-text-faint);
-  font-size: 13px;
+  font-size: 15px;
   line-height: var(--line-height-compact);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

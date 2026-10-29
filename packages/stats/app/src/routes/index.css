@@ -215,7 +215,7 @@ body {
   height: 32px;
   padding: 0 15px;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -246,7 +246,7 @@ body {
   border-radius: 0;
   appearance: none;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.1;
   cursor: pointer;
 }
@@ -354,8 +354,8 @@ body {
   padding: 24px;
   color: var(--stats-text);
   border-bottom: 1px solid var(--stats-line);
-  font-size: 13px;
-  line-height: 16px;
+  font-size: 15px;
+  line-height: 18px;
   white-space: nowrap;
 }
 
@@ -387,7 +387,7 @@ body {
   font-family:
     "IBM Plex Mono",
     var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 [data-page="stats"] [data-slot="footer-grid"] {
@@ -418,7 +418,7 @@ body {
 
 [data-page="stats"] [data-slot="footer-column"] h2 {
   color: var(--stats-text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1;
   letter-spacing: 0;
@@ -432,7 +432,7 @@ body {
 [data-page="stats"] [data-slot="footer-column"] a,
 [data-page="stats"] [data-slot="footer-column"] p {
   color: var(--stats-text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
   text-decoration: none;
@@ -463,7 +463,7 @@ body {
   background: var(--stats-bg);
   color: var(--stats-text) !important;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1;
   text-decoration: none;
@@ -570,7 +570,7 @@ body {
 
 [data-page="stats"] [data-slot="modal-intro"] h2 {
   color: #161616;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   line-height: 24px;
   letter-spacing: 0;
@@ -578,7 +578,7 @@ body {
 
 [data-page="stats"] [data-slot="modal-intro"] p {
   color: #5c5c5c;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 24px;
 }
@@ -597,7 +597,7 @@ body {
   border-radius: 0;
   appearance: none;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1;
 }
 
@@ -659,9 +659,9 @@ body {
 
 [data-page="stats"] [data-slot="subscribe-feedback"] p {
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 18px;
 }
 
 [data-page="stats"] [data-slot="subscribe-feedback"] p[data-state="success"] {
@@ -695,7 +695,7 @@ body {
 [data-page="stats"] [data-slot="footer-bottom"] {
   justify-content: space-between;
   gap: 24px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -717,7 +717,7 @@ body {
   gap: 8px;
   min-width: 0;
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -731,7 +731,7 @@ body {
   background: var(--stats-bg);
   color: var(--stats-text);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
 }
 
@@ -757,7 +757,7 @@ body {
   background: transparent;
   color: var(--stats-faint);
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   cursor: pointer;
 }
@@ -851,7 +851,7 @@ body {
 
 [data-page="stats"] [data-slot="section-header"] p {
   color: var(--stats-muted);
-  font-size: 16px;
+  font-size: 18px;
   line-height: 1.5;
 }
 
@@ -875,7 +875,7 @@ body {
 [data-page="stats"] [data-slot="hero-copy"] {
   order: 3;
   color: var(--stats-hero-muted);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 1.5;
 }
@@ -914,7 +914,7 @@ body {
   padding: 0 8px 0 4px;
   background: var(--stats-layer-2);
   color: var(--stats-hero-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   overflow: hidden;
@@ -1122,7 +1122,7 @@ body {
   flex: 1 1 0;
   min-width: 0;
   color: var(--stats-faint);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.5;
 }
@@ -1300,7 +1300,7 @@ body {
     0 0 0 0 #00000024,
     0 0 0 0.5px #00000024,
     0 1px 1.5px 0 #0000001a;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.1;
 }
@@ -1339,7 +1339,7 @@ body {
   border: 0;
   border-radius: 0;
   border-bottom: 1px solid var(--stats-line);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.1;
   text-align: left;
@@ -1456,7 +1456,7 @@ body {
 [data-page="stats"] [data-component="empty-state"] p {
   max-width: 34rem;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.5;
 }
 
@@ -1472,12 +1472,12 @@ body {
 
 [data-page="stats"] .chart-total,
 [data-page="stats"] .chart-date {
-  font-size: 14px;
+  font-size: 16px;
   fill: var(--stats-faint);
 }
 
 [data-page="stats"] .chart-date {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 [data-page="stats"] [data-component="usage-chart"] g[role="button"] {
@@ -1527,7 +1527,7 @@ body {
   border: 0;
   border-radius: 0;
   padding: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 17px;
 }
@@ -1572,7 +1572,7 @@ body {
   gap: 12px;
   margin-top: 24px;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
 }
 
 [data-page="stats"] [data-slot="leaderboard-period"] [data-component="usage-filter"] button {
@@ -1609,7 +1609,7 @@ body {
   margin: 0 -4px;
   padding: 2px 4px;
   color: var(--stats-muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 17px;
 }
 
@@ -1692,8 +1692,8 @@ body {
   [data-component="chart-tooltip"]
   > span {
   display: block;
-  font-size: 11px;
-  line-height: 12px;
+  font-size: 12px;
+  line-height: 14px;
   white-space: nowrap;
 }
 
@@ -1727,9 +1727,9 @@ body {
   height: 16px;
   margin: 4px 0 0;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 12px;
+  line-height: 14px;
 }
 
 [data-page="stats"]
@@ -1853,10 +1853,10 @@ body {
   min-height: 28px;
   padding: 0 12px;
   color: var(--stats-faint);
-  font-size: 11px;
+  font-size: 12px;
   font-style: normal;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
   text-transform: uppercase;
 }
 
@@ -1898,20 +1898,20 @@ body {
 
 [data-page="stats"] [data-slot="retention-row"] > [data-column="rank"] {
   color: var(--stats-faint);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
 }
 
 [data-page="stats"] [data-slot="retention-row"] > [data-column="model"] {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 18px;
 }
 
 [data-page="stats"] [data-slot="retention-row"] > :is([data-column="rate"], [data-column="eligible"]) {
-  font-size: 13px;
+  font-size: 15px;
   font-style: normal;
   font-weight: 500;
   text-align: right;
@@ -1940,7 +1940,7 @@ body {
   padding: 14px 12px;
   border: 1px solid var(--stats-line);
   background: var(--stats-layer);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 20px;
 }
 
@@ -2104,7 +2104,7 @@ body {
   padding: 16px;
   border: 1px solid var(--stats-line);
   background: linear-gradient(180deg, #ffffff0a 0%, #ffffff00 100%), var(--stats-layer);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.1;
   outline: none;
   transition:
@@ -2314,7 +2314,7 @@ body {
   color: var(--stats-faint);
   font-size: 10px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-slot="market-labels"] button[data-active="true"] {
@@ -2386,7 +2386,7 @@ body {
   background: var(--stats-layer);
   color: inherit;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   text-align: left;
   cursor: pointer;
@@ -2480,8 +2480,8 @@ body {
 [data-page="stats"] [data-component="market-share"] > [data-component="chart-tooltip"] strong,
 [data-page="stats"] [data-component="market-share"] > [data-component="chart-tooltip"] > span {
   display: block;
-  font-size: 11px;
-  line-height: 12px;
+  font-size: 12px;
+  line-height: 14px;
   white-space: nowrap;
 }
 
@@ -2506,9 +2506,9 @@ body {
   height: 16px;
   margin: 4px 0 0;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 12px;
+  line-height: 14px;
 }
 
 [data-page="stats"] [data-component="market-share"] > [data-component="chart-tooltip"] p[data-muted="true"] {
@@ -2563,7 +2563,7 @@ body {
   gap: 8px;
   width: 240px;
   color: var(--stats-text);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.1;
   white-space: nowrap;
@@ -2603,7 +2603,7 @@ body {
   border-radius: 0;
   background: var(--stats-layer);
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.25;
   text-align: left;
   transition:
@@ -2677,8 +2677,8 @@ body {
   border-radius: 0;
   background: transparent;
   color: var(--stats-text);
-  font-size: 11px;
-  line-height: 16px;
+  font-size: 12px;
+  line-height: 18px;
   text-align: left;
 }
 
@@ -2703,7 +2703,7 @@ body {
   overflow: hidden;
   color: var(--stats-muted);
   font-weight: 400;
-  line-height: 16px;
+  line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2835,7 +2835,7 @@ body {
   background: transparent;
   color: var(--stats-text);
   font-size: 10px;
-  line-height: 14px;
+  line-height: 16px;
   text-align: left;
 }
 
@@ -2927,7 +2927,7 @@ body {
   gap: 6px;
   padding: 0;
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.1;
 }
@@ -2986,7 +2986,7 @@ body {
 [data-page="stats"] [data-slot="model-back-link"] {
   width: fit-content;
   color: var(--stats-faint);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1;
   text-decoration: none;
@@ -3044,7 +3044,7 @@ body {
   overflow: hidden;
   color: var(--stats-hero-muted);
   background: var(--stats-layer-2);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   text-overflow: ellipsis;
@@ -3078,7 +3078,7 @@ body {
 [data-page="stats"] [data-slot="model-hero-copy"] p:not([data-slot="hero-meta"]) {
   max-width: 720px;
   color: var(--stats-muted);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 1.5;
 }
@@ -3110,7 +3110,7 @@ body {
   overflow: hidden;
   background: var(--stats-layer-2);
   color: var(--stats-hero-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   text-decoration: none;
@@ -3153,7 +3153,7 @@ body {
   width: 8px;
   height: 24px;
   color: var(--stats-faint);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
 }
@@ -3220,7 +3220,7 @@ body {
 [data-page="stats"] [data-slot="lab-hero-state"] {
   max-width: 480px;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.5;
 }
@@ -3260,7 +3260,7 @@ body {
   overflow: hidden;
   background: var(--stats-layer-2);
   color: var(--stats-hero-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   text-decoration: none;
@@ -3302,7 +3302,7 @@ body {
   background: var(--stats-layer-2);
   color: var(--stats-hero-muted);
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   text-align: center;
@@ -3391,7 +3391,7 @@ body {
   padding: 0 8px;
   overflow: hidden;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.2;
   text-overflow: ellipsis;
@@ -3433,7 +3433,7 @@ body {
   width: 8px;
   height: 24px;
   color: var(--stats-faint);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
 }
@@ -3494,7 +3494,7 @@ body {
   padding: 0 12px;
   background: var(--stats-bg);
   color: var(--stats-text);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1;
   box-shadow:
@@ -3537,7 +3537,7 @@ body {
   min-height: 24px;
   margin: 0;
   color: var(--stats-muted);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 24px;
 }
@@ -3552,7 +3552,7 @@ body {
   padding: 0 8px;
   background: var(--stats-layer-2);
   color: var(--stats-hero-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1.1;
 }
@@ -3605,7 +3605,7 @@ body {
 
 [data-page="stats"] [data-component="model-spec"] span {
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
 }
@@ -3728,9 +3728,9 @@ body {
   padding: 0 8px;
   background: #198b4324;
   color: #198b43;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 14px;
+  line-height: 16px;
   white-space: nowrap;
 }
 
@@ -3747,9 +3747,9 @@ body {
   min-width: 0;
   margin: 0;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
   white-space: nowrap;
 }
 
@@ -3811,9 +3811,9 @@ body {
   position: relative;
   height: 14px;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-slot="model-momentum-months"] span {
@@ -3855,9 +3855,9 @@ body {
   position: relative;
   z-index: 1;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-component="model-momentum-metric"] strong {
@@ -3935,7 +3935,7 @@ body {
   z-index: 1;
   max-width: 640px;
   color: var(--stats-muted);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 24px;
 }
@@ -3976,7 +3976,7 @@ body {
   min-width: 0;
   overflow: hidden;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 24px;
   text-overflow: ellipsis;
@@ -3998,7 +3998,7 @@ body {
 [data-page="stats"] [data-slot="model-weight-link"] {
   width: fit-content;
   color: var(--stats-muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.3;
   text-decoration: none;
@@ -4033,7 +4033,7 @@ body {
 [data-page="stats"] [data-component="model-rank-panel"] span,
 [data-page="stats"] [data-component="model-rank-panel"] p {
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
 }
@@ -4052,7 +4052,7 @@ body {
 
 [data-page="stats"] [data-component="model-catalog-datum"] span {
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.3;
 }
@@ -4083,7 +4083,7 @@ body {
 [data-page="stats"] [data-component="model-catalog-datum"] strong {
   min-width: 0;
   color: var(--stats-text);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 500;
   line-height: 1;
   overflow-wrap: anywhere;
@@ -4116,7 +4116,7 @@ body {
 [data-page="stats"] [data-component="model-metric"] span,
 [data-page="stats"] [data-component="model-metric"] p {
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.3;
 }
@@ -4174,7 +4174,7 @@ body {
 }
 
 [data-page="stats"] [data-component="model-efficiency-grid"] [data-component="model-metric"] span {
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-component="model-efficiency-grid"] [data-component="model-metric"] strong {
@@ -4218,9 +4218,9 @@ body {
     0 0 0 0.5px var(--stats-line-strong),
     0 1px 1.5px #0000001a;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -4342,7 +4342,7 @@ body {
   height: 20px;
   margin-bottom: 20px;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 20px;
   text-transform: uppercase;
@@ -4396,7 +4396,7 @@ body {
   align-items: center;
   height: 24px;
   color: var(--stats-text);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 24px;
   font-variant-numeric: tabular-nums;
@@ -4514,7 +4514,7 @@ body {
   min-width: 0;
   overflow: hidden;
   color: var(--stats-text);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 17px;
   text-overflow: ellipsis;
@@ -4528,7 +4528,7 @@ body {
   -webkit-line-clamp: 3;
   margin: 0;
   color: var(--stats-muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 17px;
 }
@@ -4553,7 +4553,7 @@ body {
   margin: 0;
   padding: 0;
   color: var(--stats-muted);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
   line-height: 17px;
 }
@@ -4675,7 +4675,7 @@ body {
   overflow: hidden;
   margin: 0;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 20px;
 }
@@ -4718,9 +4718,9 @@ body {
   padding: 0 8px;
   color: var(--stats-text);
   background: var(--stats-layer-2);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-slot="lab-related-usage"] i {
@@ -4787,7 +4787,7 @@ body {
   flex: 1 1 0;
   min-width: 0;
   color: var(--stats-faint);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
 }
@@ -4928,8 +4928,8 @@ body {
 [data-page="stats"] [data-component="model-usage-chart"] [data-component="chart-tooltip"] strong,
 [data-page="stats"] [data-component="model-usage-chart"] [data-component="chart-tooltip"] > span {
   display: block;
-  font-size: 11px;
-  line-height: 12px;
+  font-size: 12px;
+  line-height: 14px;
   white-space: nowrap;
 }
 
@@ -4957,9 +4957,9 @@ body {
   height: 20px;
   margin: 8px 0;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 12px;
+  line-height: 14px;
 }
 
 [data-page="stats"] [data-component="model-usage-chart"] [data-component="chart-tooltip"] [data-slot="tooltip-label"] {
@@ -5107,9 +5107,9 @@ body {
   position: relative;
   height: 14px;
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-slot="lab-usage-months"] span {
@@ -5346,9 +5346,9 @@ body {
   position: relative;
   height: 14px;
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-slot="model-trend-months"] span {
@@ -5450,10 +5450,10 @@ body {
 [data-page="stats"] [data-component="model-peer-list"] em,
 [data-page="stats"] [data-component="model-peer-list"] b {
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-style: normal;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 18px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -5497,9 +5497,9 @@ body {
   min-width: 0;
   overflow: hidden;
   color: var(--stats-text);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 16px;
+  line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -5545,7 +5545,7 @@ body {
 [data-page="stats"] [data-component="comparison-card"] p,
 [data-page="stats"] [data-component="comparison-card"] small {
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
 }
@@ -5553,7 +5553,7 @@ body {
 [data-page="stats"] [data-component="comparison-card"] strong {
   min-width: 0;
   color: var(--stats-text);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 500;
   line-height: 1.08;
   overflow-wrap: anywhere;
@@ -5600,7 +5600,7 @@ body {
 
 [data-page="stats"] [data-component="comparison-selector"] label span {
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.2;
 }
@@ -5614,7 +5614,7 @@ body {
   border-radius: 0;
   appearance: none;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1;
 }
@@ -5663,7 +5663,7 @@ body {
   min-width: 720px;
   border-collapse: collapse;
   color: var(--stats-text);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.35;
 }
 
@@ -5692,7 +5692,7 @@ body {
 
 [data-page="stats"] [data-component="comparison-table"] thead th {
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   text-transform: uppercase;
@@ -5712,7 +5712,7 @@ body {
 [data-page="stats"] [data-component="comparison-table"] td strong {
   display: block;
   color: var(--stats-text);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.25;
   overflow-wrap: anywhere;
@@ -5723,7 +5723,7 @@ body {
   display: block;
   margin-top: 5px;
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
 }
@@ -5776,7 +5776,7 @@ body {
   padding: 0 8px;
   color: var(--stats-hero-muted);
   background: var(--stats-layer-2);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   text-decoration: none;
@@ -5800,7 +5800,7 @@ body {
 
 [data-page="stats"] [data-slot="compare-home-separator"] {
   color: var(--stats-faint);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1;
 }
@@ -5901,7 +5901,7 @@ body {
   max-width: 520px;
   margin: 0;
   color: var(--stats-muted);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 24px;
 }
@@ -6016,9 +6016,9 @@ body {
 [data-page="stats"] [data-slot="compare-home-select-name"] {
   min-width: 0;
   color: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-slot="compare-home-select-name"] {
@@ -6092,7 +6092,7 @@ body {
 [data-page="stats"] [data-slot="compare-home-card-models"] {
   min-width: 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 20px;
   text-overflow: ellipsis;
 }
@@ -6222,7 +6222,7 @@ body {
     0 1px 1.5px color-mix(in srgb, #000000 10%, transparent);
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   text-decoration: none;
@@ -6313,8 +6313,8 @@ body {
   place-items: center;
   width: 16px;
   height: 16px;
-  font-size: 16px;
-  line-height: 16px;
+  font-size: 18px;
+  line-height: 18px;
 }
 
 [data-page="stats"] [data-section="compare-radar"] {
@@ -6364,7 +6364,7 @@ body {
 
 [data-page="stats"] [data-slot="compare-radar-legend"] strong,
 [data-page="stats"] [data-slot="compare-radar-legend"] small {
-  font-size: 13px;
+  font-size: 15px;
   line-height: 18px;
   overflow-wrap: break-word;
   word-break: normal;
@@ -6440,7 +6440,7 @@ body {
   left: var(--compare-radar-axis-x);
   max-width: 160px;
   color: var(--stats-text);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 20px;
   text-align: center;
@@ -6495,20 +6495,20 @@ body {
 [data-page="stats"] [data-slot="compare-radar-tooltip"] strong,
 [data-page="stats"] [data-slot="compare-radar-tooltip"] p {
   margin: 0;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0;
 }
 
 [data-page="stats"] [data-slot="compare-radar-tooltip"] strong {
   color: var(--stats-text);
   font-weight: 500;
-  line-height: 12px;
+  line-height: 14px;
 }
 
 [data-page="stats"] [data-slot="compare-radar-tooltip"] p {
   color: var(--stats-muted);
   font-weight: 400;
-  line-height: 16px;
+  line-height: 18px;
 }
 
 [data-page="stats"] [data-slot="compare-radar-data"] {
@@ -6677,7 +6677,7 @@ body {
 [data-page="stats"] [data-slot="compare-detail-select-name"] {
   min-width: 0;
   color: var(--stats-text);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 18px;
   overflow-wrap: anywhere;
@@ -6715,7 +6715,7 @@ body {
   min-height: 56px;
   box-sizing: border-box;
   padding: 0 40px;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 24px;
 }
 
@@ -6762,7 +6762,7 @@ body {
   padding: 0 8px;
   color: var(--stats-muted);
   background: var(--stats-layer-2);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
@@ -6806,7 +6806,7 @@ body {
   padding: 0 5px;
   color: var(--stats-muted);
   background: var(--stats-layer-2);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   line-height: 1;
 }
@@ -6826,7 +6826,7 @@ body {
   align-items: center;
   height: 24px;
   padding: 0 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1;
 }
@@ -6868,15 +6868,15 @@ body {
   justify-content: space-between;
   gap: 16px;
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 14px;
+  line-height: 16px;
 }
 
 [data-page="stats"] [data-slot="compare-detail-no-chart"] {
   justify-self: end;
   color: var(--stats-muted);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 @media (max-width: 80rem) {
@@ -6989,8 +6989,8 @@ body {
   [data-page="stats"] [data-slot="compare-radar-axis"] {
     left: var(--compare-radar-axis-mobile-x);
     max-width: 104px;
-    font-size: 13px;
-    line-height: 16px;
+    font-size: 15px;
+    line-height: 18px;
     white-space: normal;
   }
 
@@ -7168,7 +7168,7 @@ body {
   color: var(--stats-text);
   background: transparent;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.1;
 }
@@ -7225,7 +7225,7 @@ body {
 [data-page="stats"] [data-slot="compare-model-modal-row-main"] > span:last-child {
   min-width: 0;
   color: var(--stats-text);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   overflow-wrap: anywhere;
@@ -7240,7 +7240,7 @@ body {
   padding: 0 6px;
   color: var(--stats-muted);
   background: var(--stats-layer-2);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.1;
 }
@@ -7250,7 +7250,7 @@ body {
   gap: 8px;
   padding: 24px 16px;
   color: var(--stats-muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.4;
 }
 
@@ -7286,7 +7286,7 @@ body {
 [data-page="stats"] [data-slot="compare-model-modal-detail-header"] strong {
   min-width: 0;
   color: var(--stats-text);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.1;
   overflow-wrap: anywhere;
@@ -7304,7 +7304,7 @@ body {
 [data-page="stats"] [data-slot="compare-model-modal-description"] p {
   margin: 0;
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -7339,7 +7339,7 @@ body {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--stats-line);
   color: var(--stats-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.5;
 }
@@ -8190,7 +8190,7 @@ body {
   [data-page="stats"] [data-slot="top-models-title"],
   [data-page="stats"] [data-slot="section-title"] {
     margin-bottom: 32px;
-    font-size: 16px;
+    font-size: 18px;
   }
 
   [data-page="stats"] [data-slot="cache-ratio-heading"],
@@ -8259,7 +8259,7 @@ body {
   }
 
   [data-page="stats"] [data-slot="lab-overview-copy"] p {
-    font-size: 15px;
+    font-size: 17px;
     line-height: 23px;
   }
 
@@ -8346,7 +8346,7 @@ body {
   [data-page="stats"] [data-slot="model-hero-rankline"],
   [data-page="stats"] [data-slot="model-hero-state"] {
     gap: 6px;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 22px;
   }
 
@@ -8386,7 +8386,7 @@ body {
   }
 
   [data-page="stats"] [data-slot="model-momentum-title"] {
-    font-size: 20px;
+    font-size: 22px;
     line-height: 30px;
   }
 
@@ -8451,7 +8451,7 @@ body {
   }
 
   [data-page="stats"] [data-slot="model-hero-copy"] p:not([data-slot="hero-meta"]) {
-    font-size: 13px;
+    font-size: 15px;
   }
 
   [data-page="stats"] [data-slot="lab-model-heading"] {
@@ -8901,7 +8901,7 @@ body {
   }
 
   [data-page="stats"] [data-slot="compare-home-hero-grid"] > p {
-    font-size: 14px;
+    font-size: 16px;
     line-height: 22px;
   }
 

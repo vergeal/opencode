@@ -70,7 +70,7 @@
   inline-size: max-content;
   padding-inline: 4px;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 530;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -96,6 +96,6 @@
   margin-inline: calc(var(--separator-gap) - var(--separator-before) - 0.5px)
     calc(var(--separator-gap) - var(--separator-after) - 0.5px);
   /* The header's segments are 13px text, and the slash takes their size. */
-  font-size: 13px;
+  font-size: 15px;
   line-height: var(--line-height-compact);
 }

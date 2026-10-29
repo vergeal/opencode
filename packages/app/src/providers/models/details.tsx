@@ -148,7 +148,7 @@ export function ModelDetails(props: {
       }
     >
       <div
-        class="px-3 py-2 text-[12px] font-[440] leading-5 text-v2-text-text-muted"
+        class="px-3 py-2 text-[13px] font-[440] leading-5 text-v2-text-text-muted"
         classList={{ "border-t border-v2-border-border-muted": !props.standalone }}
       >
         <bdi class="block">

@@ -65,7 +65,7 @@ export function DialogUsage(props: {
               </Match>
               <Match when={state.failed}>
                 <div class="flex flex-col items-center gap-3">
-                  <span class="text-[13px] leading-text-compact font-[440] tracking-[-0.04px] text-v2-text-text-muted">
+                  <span class="text-[15px] leading-text-compact font-[440] tracking-[-0.04px] text-v2-text-text-muted">
                     {language.t("usage.error")}
                   </span>
                   <Button variant="neutral" onClick={load}>
@@ -233,7 +233,7 @@ export function UsageDialogContent(props: {
             <div class="w-0.5 shrink-0 bg-v2-state-fg-danger" />
             <div class="flex flex-1 flex-col gap-1.5 rounded-r-md bg-v2-state-bg-danger p-3">
               <Line class="font-[530] text-[var(--usage-reached)]">{callout(value()).title}</Line>
-              <p class="m-0 text-[13px] leading-text-base font-[440] tracking-[-0.04px] text-[var(--usage-reached)]">
+              <p class="m-0 text-[15px] leading-text-base font-[440] tracking-[-0.04px] text-[var(--usage-reached)]">
                 {callout(value()).body}
               </p>
             </div>
@@ -285,7 +285,7 @@ export function UsageDialogContent(props: {
                     <div class="flex items-start justify-between self-stretch">
                       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
                         <Line class="font-[530] text-v2-text-text-base">{label(row.label)}</Line>
-                        <p class="m-0 text-[13px] leading-text-compact font-[440] tracking-[-0.04px] text-v2-text-text-muted">
+                        <p class="m-0 text-[15px] leading-text-compact font-[440] tracking-[-0.04px] text-v2-text-text-muted">
                           {scope(row)}
                         </p>
                       </div>
@@ -315,7 +315,7 @@ export function UsageDialogContent(props: {
                 <div class="flex items-center gap-4 self-stretch px-4">
                   <div class="flex min-w-0 flex-1 flex-col gap-1">
                     <Line class="font-[530] text-v2-text-text-base">{action(value()).title}</Line>
-                    <p class="m-0 text-[13px] leading-text-base font-[440] tracking-[-0.04px] text-v2-text-text-muted">
+                    <p class="m-0 text-[15px] leading-text-base font-[440] tracking-[-0.04px] text-v2-text-text-muted">
                       {action(value()).body}
                     </p>
                   </div>
@@ -358,7 +358,7 @@ function Section(props: { label: string; badge?: string; dimmed?: boolean; child
         <Line class="text-v2-text-text-muted">{props.label}</Line>
         <Show when={props.badge}>
           {(badge) => (
-            <span class="flex h-4 items-center rounded-[2px] bg-v2-background-bg-layer-03 px-1 text-[11px] leading-text-tight font-[530] tracking-[0.05px] text-v2-text-text-muted">
+            <span class="flex h-4 items-center rounded-[2px] bg-v2-background-bg-layer-03 px-1 text-[12px] leading-text-tight font-[530] tracking-[0.05px] text-v2-text-text-muted">
               {badge()}
             </span>
           )}
@@ -392,7 +392,7 @@ function Divider() {
 function Line(props: { class?: string; children: JSX.Element }) {
   return (
     <span
-      class={`min-w-0 truncate text-[13px] leading-text-compact font-[440] tracking-[-0.04px] ${props.class ?? ""}`}
+      class={`min-w-0 truncate text-[15px] leading-text-compact font-[440] tracking-[-0.04px] ${props.class ?? ""}`}
     >
       {props.children}
     </span>

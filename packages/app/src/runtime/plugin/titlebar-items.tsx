@@ -38,7 +38,7 @@ function TitlebarItemButton(props: { item: TitlebarItem; vertical?: boolean }) {
   const label = () => (
     <span
       data-slot="titlebar-update-label"
-      class="shrink-0 whitespace-nowrap text-[11px] leading-4 text-v2-text-text-accent [font-weight:530] opacity-0 motion-safe:transition-all duration-150 ease-out group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:opacity-100 group-focus-within:translate-x-0 motion-reduce:translate-x-0"
+      class="shrink-0 whitespace-nowrap text-[12px] leading-4 text-v2-text-text-accent [font-weight:530] opacity-0 motion-safe:transition-all duration-150 ease-out group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:opacity-100 group-focus-within:translate-x-0 motion-reduce:translate-x-0"
       classList={{
         "ms-px me-4 -translate-x-2 rtl:translate-x-2": props.vertical,
         "ms-2 me-px translate-x-2 rtl:-translate-x-2": !props.vertical,

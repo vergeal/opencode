@@ -946,7 +946,7 @@ function QuietCompaction(props: { id: string; created: number; running: boolean;
           </span>
           <span
             data-slot="session-compaction-label"
-            class="relative flex shrink-0 whitespace-nowrap text-[13px] font-[440] leading-text-compact tracking-[-0.04px]"
+            class="relative flex shrink-0 whitespace-nowrap text-[15px] font-[440] leading-text-compact tracking-[-0.04px]"
           >
             <span>{label().stem}</span>
             <span data-slot="session-compaction-ending" class="grid justify-items-start">
@@ -971,7 +971,7 @@ function QuietCompaction(props: { id: string; created: number; running: boolean;
             </div>
           </div>
           <Show when={props.usage}>
-            <div class="mt-2 text-[13px] leading-text-compact text-v2-text-text-faint tabular-nums">{props.usage}</div>
+            <div class="mt-2 text-[15px] leading-text-compact text-v2-text-text-faint tabular-nums">{props.usage}</div>
           </Show>
         </div>
       </Show>

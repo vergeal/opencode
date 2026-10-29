@@ -42,7 +42,7 @@ export function SubagentBar(props: {
     // The timeline scrolls on underneath, so the line keeps its surface and fades the text passing into it.
     <div
       data-component="subagent-bar"
-      class="relative flex h-8 w-full min-w-0 items-center gap-2 bg-v2-background-bg-base ps-3 pe-1.5 text-[12px] font-[440] leading-4 tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-faint before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-[linear-gradient(to_top,var(--v2-background-bg-base),transparent)]"
+      class="relative flex h-8 w-full min-w-0 items-center gap-2 bg-v2-background-bg-base ps-3 pe-1.5 text-[13px] font-[440] leading-4 tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-faint before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-4 before:bg-[linear-gradient(to_top,var(--v2-background-bg-base),transparent)]"
     >
       <Show when={props.status}>
         <span class="flex size-4 shrink-0 items-center justify-center text-v2-icon-icon-faint">

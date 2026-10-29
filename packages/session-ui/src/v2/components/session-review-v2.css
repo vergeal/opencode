@@ -89,7 +89,7 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text-strong, var(--v2-text-text-base));
 }
@@ -273,7 +273,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text-strong, var(--v2-text-text-base));
 }
@@ -290,7 +290,7 @@
   font-family: var(--v2-font-family-sans);
   font-style: normal;
   font-weight: 440;
-  font-size: 11px;
+  font-size: 12px;
   line-height: var(--line-height-tight);
   letter-spacing: 0.05px;
   text-transform: uppercase;
@@ -408,7 +408,7 @@
   width: 16px;
   height: 16px;
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 530;
   line-height: 1;
   letter-spacing: -0.04px;
@@ -430,7 +430,7 @@
 
 [data-component="session-review-v2"] [data-slot="session-review-v2-file-name"] {
   flex: none;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 530;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -441,7 +441,7 @@
 
 [data-component="session-review-v2"] [data-slot="session-review-v2-file-path"] {
   flex: none;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -503,7 +503,7 @@
 
 [data-slot="session-review-v2-empty-no-git-title"] {
   flex: none;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 530;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -514,7 +514,7 @@
   flex: none;
   margin: 0 0 4px;
   max-width: 360px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: 20px;
   text-align: center;
@@ -542,9 +542,9 @@
 
 [data-slot="session-review-v2-empty-changes-title"] {
   flex: none;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 530;
-  line-height: 13px;
+  line-height: 15px;
   letter-spacing: -0.04px;
   color: var(--v2-text-text-base);
 }
@@ -553,7 +553,7 @@
   flex: none;
   height: 20px;
   max-width: 282px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-base);
   text-align: center;

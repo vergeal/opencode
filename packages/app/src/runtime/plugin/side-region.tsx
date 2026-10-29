@@ -548,7 +548,7 @@ function LauncherRow(props: { item: SessionPanelMenuItem; onChoose: () => void }
         props.item.run()
       }}
     >
-      <span class="flex min-w-0 items-center gap-2 text-[13px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px]">
+      <span class="flex min-w-0 items-center gap-2 text-[15px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px]">
         <Show when={props.item.icon}>
           {(icon) => <Icon name={icon()} size="small" class="text-v2-icon-icon-muted" />}
         </Show>

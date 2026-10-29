@@ -566,7 +566,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
           background: transparent !important;
           box-shadow: none !important;
           color: var(--v2-text-text-muted) !important;
-          font-size: 13px !important;
+          font-size: 15px !important;
           font-weight: 440 !important;
           letter-spacing: -0.04px !important;
         }
@@ -635,9 +635,9 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
           border-radius: 2px;
           background: var(--v2-background-bg-layer-03);
           color: var(--v2-text-text-muted);
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 530;
-          line-height: 12px;
+          line-height: 14px;
           letter-spacing: 0.05px;
         }
         [data-file-tree-virtualized-scroll] {

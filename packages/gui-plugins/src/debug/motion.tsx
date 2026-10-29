@@ -198,7 +198,7 @@ export default function Motion(props: { title: string; onClose: () => void }) {
       <Index each={areas()}>
         {(area) => (
           <section>
-            <h3 class="px-4 pb-1.5 pt-4 text-[11px] font-semibold uppercase leading-4 tracking-[0.06em] text-v2-text-text-faint">
+            <h3 class="px-4 pb-1.5 pt-4 text-[12px] font-semibold uppercase leading-4 tracking-[0.06em] text-v2-text-text-faint">
               {area().area}
             </h3>
             <Index each={area().features}>
@@ -216,18 +216,18 @@ export default function Motion(props: { title: string; onClose: () => void }) {
                   onClick={() => open(item())}
                 >
                   <span class="min-w-0">
-                    <span class="flex items-baseline gap-2 text-[14px] font-medium leading-5 text-v2-text-text-base">
+                    <span class="flex items-baseline gap-2 text-[16px] font-medium leading-5 text-v2-text-text-base">
                       <span class="truncate">{item().name}</span>
                       <Show when={item().switch?.value === false}>
-                        <span class="text-[11px] font-medium text-v2-text-text-faint">{ctx.t("motion.off")}</span>
+                        <span class="text-[12px] font-medium text-v2-text-text-faint">{ctx.t("motion.off")}</span>
                       </Show>
                       <Show when={item().modes.find((mode) => mode.value)}>
-                        {(mode) => <span class="text-[11px] font-medium text-v2-text-text-faint">{mode().label}</span>}
+                        {(mode) => <span class="text-[12px] font-medium text-v2-text-text-faint">{mode().label}</span>}
                       </Show>
                     </span>
                     <Show when={item().description}>
                       {(description) => (
-                        <span class="block truncate text-[12px] leading-[18px] text-v2-text-text-faint">
+                        <span class="block truncate text-[13px] leading-[18px] text-v2-text-text-faint">
                           {description()}
                         </span>
                       )}
@@ -273,7 +273,7 @@ export default function Motion(props: { title: string; onClose: () => void }) {
           class="flex h-10 shrink-0 cursor-grab touch-none items-center justify-between gap-2 border-b border-v2-border-border-muted ps-4 pe-1.5"
           onPointerDown={grab}
         >
-          <h2 class="text-[13px] font-semibold leading-5">{props.title}</h2>
+          <h2 class="text-[15px] font-semibold leading-5">{props.title}</h2>
           <IconButton
             size="small"
             variant="ghost-muted"
@@ -357,7 +357,7 @@ function FeaturePage(props: {
         {(back) => (
           <button
             type="button"
-            class="flex h-9 items-center gap-0.5 ps-2.5 pe-3 text-[13px] font-medium text-v2-text-text-muted hover:text-v2-text-text-base"
+            class="flex h-9 items-center gap-0.5 ps-2.5 pe-3 text-[15px] font-medium text-v2-text-text-muted hover:text-v2-text-text-base"
             onClick={() => back()()}
           >
             <Icon name="outline-chevron-right" size="small" class="-scale-x-100 rtl:scale-x-100" />
@@ -365,11 +365,11 @@ function FeaturePage(props: {
           </button>
         )}
       </Show>
-      <h3 classList={{ "px-4 text-[15px] font-semibold leading-5": true, "pt-3": !props.back }}>
+      <h3 classList={{ "px-4 text-[17px] font-semibold leading-5": true, "pt-3": !props.back }}>
         {props.feature.name}
       </h3>
       <Show when={props.feature.description}>
-        {(description) => <p class="px-4 text-[12px] leading-[18px] text-v2-text-text-muted">{description()}</p>}
+        {(description) => <p class="px-4 text-[13px] leading-[18px] text-v2-text-text-muted">{description()}</p>}
       </Show>
       <Show when={rows()} keyed>
         {(shown) => (

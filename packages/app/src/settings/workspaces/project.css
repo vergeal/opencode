@@ -24,7 +24,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 530;
   line-height: var(--line-height-compact);
 }
@@ -39,13 +39,13 @@
 
 .project-settings-extension-section-header > :last-child {
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
 }
 
 .project-settings-extension-empty-description {
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-base);
 }
@@ -71,7 +71,7 @@
 
 .project-settings-extension-row-description {
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-base);
   overflow-wrap: anywhere;
@@ -83,7 +83,7 @@
   gap: 6px;
   flex-shrink: 0;
   color: var(--v2-text-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: var(--line-height-compact);
 }
 
@@ -103,7 +103,7 @@
   background-color: var(--v2-background-bg-layer-01);
   box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-base);
 }
@@ -127,7 +127,7 @@
 
 .project-settings-folder-missing-path {
   font-family: var(--font-family-mono);
-  font-size: 12px;
+  font-size: 13px;
   overflow-wrap: anywhere;
 }
 
@@ -177,7 +177,7 @@
   border-radius: 3px;
   background: var(--v2-background-bg-layer-02);
   color: var(--v2-text-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 530;
   line-height: var(--line-height-compact);
 }
@@ -192,7 +192,7 @@
   border: 0;
   background: transparent;
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   text-align: start;
@@ -304,7 +304,7 @@
 
 .project-settings-startup-title {
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 530;
   line-height: var(--line-height-compact);
 }
@@ -312,7 +312,7 @@
 .project-settings-startup-description,
 .project-settings-startup-hint {
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-base);
 }
@@ -323,7 +323,7 @@
   background: var(--v2-background-bg-layer-02);
   color: var(--v2-text-text-base);
   font-family: var(--font-family-mono);
-  font-size: 12px;
+  font-size: 13px;
   unicode-bidi: isolate;
 }
 

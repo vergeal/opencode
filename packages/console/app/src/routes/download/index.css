@@ -502,7 +502,7 @@
   @media (max-width: 40rem) {
     [data-component="download-section"] {
       [data-component="section-label"] {
-        font-size: 14px;
+        font-size: 16px;
       }
     }
 
@@ -513,7 +513,7 @@
       overflow: hidden;
 
       code {
-        font-size: 14px;
+        font-size: 16px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -532,11 +532,11 @@
       padding: 0.75rem 0;
 
       [data-component="download-info"] span {
-        font-size: 14px;
+        font-size: 16px;
       }
 
       [data-component="action-button"] {
-        font-size: 14px;
+        font-size: 16px;
         padding-left: 8px;
         padding-right: 8px;
       }
@@ -564,7 +564,7 @@
       margin-bottom: 24px;
 
       h3 {
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 700;
         color: var(--color-text-strong);
         margin-bottom: 12px;

@@ -84,7 +84,7 @@
   border-radius: 2px;
   background: transparent;
   font: inherit;
-  font-size: 13px;
+  font-size: 15px;
   text-align: start;
   cursor: pointer;
 }
@@ -112,7 +112,7 @@
 }
 
 .new-session-location .new-session-location-workspace .command-palette-description {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.05px;
 }
 
@@ -135,7 +135,7 @@
 
 .new-session-location-count {
   color: var(--v2-text-text-faint);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   font-variant-numeric: tabular-nums;

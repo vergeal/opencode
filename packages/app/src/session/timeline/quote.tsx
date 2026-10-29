@@ -367,7 +367,7 @@ export function TimelineQuote(props: { controller: TimelineQuoteController }) {
             onMouseDown={(event) => event.preventDefault()}
           >
             <Show when={quote.state.truncated}>
-              <span class="px-2 text-[12px] leading-[var(--line-height-compact)] text-v2-text-text-muted [font-weight:440]">
+              <span class="px-2 text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted [font-weight:440]">
                 {language.t("session.quote.tooLong")}
               </span>
             </Show>

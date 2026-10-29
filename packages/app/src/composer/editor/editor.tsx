@@ -298,7 +298,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               spellcheck={state.mode === "normal"}
               // @ts-expect-error
               autocomplete="off"
-              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-4 pe-[var(--composer-scroll-end)] pt-4 pb-2 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-4 pe-[var(--composer-scroll-end)] pt-4 pb-2 text-[15px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
               classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell", "opacity-50": props.disabled }}
               style={{
                 "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -370,7 +370,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             <Show when={!props.controller.value()}>
               <div
                 dir={state.mode === "normal" ? "auto" : "ltr"}
-                class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[var(--composer-scroll-end)] pt-4 text-[13px] font-[440] leading-5 text-v2-text-text-faint"
+                class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[var(--composer-scroll-end)] pt-4 text-[15px] font-[440] leading-5 text-v2-text-text-faint"
                 classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell" }}
                 style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
               >
@@ -1232,7 +1232,7 @@ function ComposerEditorPopover(props: {
                 placeholder={search().placeholder}
                 autocomplete="off"
                 spellcheck={false}
-                class="w-full bg-transparent text-[13px] leading-5 text-v2-text-text-base outline-none placeholder:text-v2-text-text-faint"
+                class="w-full bg-transparent text-[15px] leading-5 text-v2-text-text-base outline-none placeholder:text-v2-text-text-faint"
                 role="combobox"
                 aria-expanded="true"
                 aria-autocomplete="list"
@@ -1297,7 +1297,7 @@ function ComposerEditorPopover(props: {
                 value={search().value}
                 aria-label={search().label}
                 placeholder={search().placeholder}
-                class="w-full bg-transparent text-[13px] leading-5 text-v2-text-text-base outline-none placeholder:text-v2-text-text-faint"
+                class="w-full bg-transparent text-[15px] leading-5 text-v2-text-text-base outline-none placeholder:text-v2-text-text-faint"
                 onInput={(event) => search().onValueChange(event.currentTarget.value)}
                 onKeyDown={(event) => search().onKeyDown(event)}
                 onMouseDown={(event) => event.stopPropagation()}

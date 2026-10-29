@@ -51,7 +51,7 @@ export function NewSessionBrickBreaker(props: {
         <span ref={(el) => (walls[1] = el)} class="absolute inset-y-0 left-0 w-px bg-v2-border-border-base" />
         <span
           ref={score}
-          class="absolute right-4 top-3 font-mono text-[11px] leading-[16px] tabular-nums text-v2-text-text-faint"
+          class="absolute right-4 top-3 font-mono text-[12px] leading-[16px] tabular-nums text-v2-text-text-faint"
         />
         <div class="absolute bottom-4 left-4 flex gap-1.5">
           <For each={Array.from({ length: LIVES - 1 })}>

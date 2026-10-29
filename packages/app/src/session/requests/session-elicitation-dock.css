@@ -20,13 +20,13 @@
   }
 
   [data-slot="elicitation-title"] {
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 500;
     color: var(--v2-text-text-base);
   }
 
   [data-slot="elicitation-description"] {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--v2-text-text-muted);
   }
 
@@ -41,7 +41,7 @@
     flex: 1;
     min-inline-size: 0;
     font-family: var(--v2-font-family-mono);
-    font-size: 12px;
+    font-size: 13px;
     overflow-wrap: anywhere;
     user-select: text;
     color: var(--v2-text-text-base);

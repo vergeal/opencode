@@ -90,7 +90,7 @@
   align-content: center;
   column-gap: 6px;
   row-gap: 0;
-  font-size: 13px;
+  font-size: 15px;
   line-height: var(--line-height-compact);
 }
 
@@ -110,7 +110,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--v2-text-text-muted);
-  font-size: 13px;
+  font-size: 15px;
   line-height: var(--line-height-compact);
   white-space: nowrap;
 }

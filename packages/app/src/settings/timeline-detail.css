@@ -7,7 +7,7 @@
   flex-direction: column;
   gap: 8px;
   color: var(--v2-text-text-base);
-  font-size: 13px;
+  font-size: 15px;
   line-height: var(--line-height-base);
   letter-spacing: -0.04px;
   container: timeline-detail / inline-size;
@@ -307,7 +307,7 @@
   [data-component="timeline-detail-control"] [data-slot="timeline-detail-field-label"] {
     display: block;
     margin-bottom: 2px;
-    font-size: 12px;
+    font-size: 13px;
     line-height: var(--line-height-compact);
     color: var(--v2-text-text-muted);
   }

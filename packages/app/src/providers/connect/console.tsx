@@ -17,7 +17,7 @@ export function ConsoleAuthorization(props: {
   return (
     <div
       data-component="console-authorization"
-      class="flex flex-col gap-5 text-[13px] leading-5 text-v2-text-text-muted"
+      class="flex flex-col gap-5 text-[15px] leading-5 text-v2-text-text-muted"
     >
       <p>
         {language.t(

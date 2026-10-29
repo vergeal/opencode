@@ -84,7 +84,7 @@ export function SessionQueuePanel(props: { queue: SessionQueueView; hidden?: boo
         classList={{ "pb-3": count() > 4, "pb-[18px]": count() <= 4 }}
       >
         <Grow when={count() > 3} fade>
-          <div class="px-1.5 pt-1 pb-px text-[11px] font-[530] uppercase leading-[var(--line-height-tight)] tracking-[0.05px] text-v2-text-text-muted [font-variant-numeric:tabular-nums]">
+          <div class="px-1.5 pt-1 pb-px text-[12px] font-[530] uppercase leading-[var(--line-height-tight)] tracking-[0.05px] text-v2-text-text-muted [font-variant-numeric:tabular-nums]">
             {language.plural("session.queue.count", count())}
           </div>
         </Grow>
@@ -210,7 +210,7 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
                 data-action="session-queue-edit"
                 dir="auto"
                 aria-disabled={entry.pending}
-                class="max-w-full min-w-0 self-start truncate rounded-sm text-start text-[13px] font-[440] leading-[var(--line-height-compact)]"
+                class="max-w-full min-w-0 self-start truncate rounded-sm text-start text-[15px] font-[440] leading-[var(--line-height-compact)]"
                 classList={{
                   "text-v2-text-text-faint": editing() || entry.pending,
                   "cursor-progress": entry.pending,
@@ -223,7 +223,7 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
                   (entry.attachments ? language.plural("session.queue.attachments", entry.attachments) : "")}
               </button>
               <Show when={entry.attachments && entry.text}>
-                <span class="shrink-0 whitespace-nowrap text-[13px] font-[440] leading-[var(--line-height-compact)] text-v2-text-text-muted">
+                <span class="shrink-0 whitespace-nowrap text-[15px] font-[440] leading-[var(--line-height-compact)] text-v2-text-text-muted">
                   {language.plural("session.queue.attachments", entry.attachments)}
                 </span>
               </Show>

@@ -85,7 +85,7 @@ export function TerminalTabLabel(props: {
             onPointerDown={isolate}
             onMouseDown={isolate}
             onClick={isolate}
-            class="absolute inset-y-0 start-5 end-0 min-w-0 bg-v2-background-bg-layer-01 rounded-[4px] border-none outline-none px-1 text-[13px] leading-4 text-v2-text-text-base"
+            class="absolute inset-y-0 start-5 end-0 min-w-0 bg-v2-background-bg-layer-01 rounded-[4px] border-none outline-none px-1 text-[15px] leading-4 text-v2-text-text-base"
           />
         </Show>
       </Menu.Context.Trigger>

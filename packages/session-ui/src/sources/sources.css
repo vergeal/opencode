@@ -50,7 +50,7 @@
   background-color: var(--v2-overlay-simple-overlay-hover);
   color: var(--v2-text-text-muted);
   font-family: var(--v2-font-family-sans);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 440;
   line-height: var(--line-height-compact);
   letter-spacing: 0.05px;
@@ -152,7 +152,7 @@
   }
 
   [data-slot="sources-step-label"] {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 440;
     line-height: var(--line-height-compact);
     letter-spacing: 0.05px;
@@ -169,7 +169,7 @@
 
   [data-slot="sources-step-detail"] {
     font-family: var(--font-family-mono);
-    font-size: 13px;
+    font-size: 15px;
     font-weight: 440;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
@@ -181,7 +181,7 @@
   }
 
   [data-slot="sources-step-error"] {
-    font-size: 12px;
+    font-size: 13px;
     line-height: var(--line-height-compact);
     color: var(--v2-state-fg-danger);
   }
@@ -189,7 +189,7 @@
   [data-slot="sources-step-count"] {
     align-self: start;
     height: 16px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 440;
     line-height: var(--line-height-compact);
     font-variant-numeric: tabular-nums;
@@ -245,13 +245,13 @@
   }
 
   [data-slot="sources-result-title"] {
-    font-size: 13px;
+    font-size: 15px;
     line-height: var(--line-height-compact);
     color: var(--v2-text-text-base);
   }
 
   [data-slot="sources-result-site"] {
-    font-size: 12px;
+    font-size: 13px;
     line-height: var(--line-height-compact);
     letter-spacing: 0.05px;
     color: var(--v2-text-text-faint);

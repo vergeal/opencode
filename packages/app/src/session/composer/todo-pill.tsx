@@ -34,7 +34,7 @@ export function SessionTodoPill(props: { todos: readonly Todo[]; defaultOpen?: b
           type="button"
           data-slot="session-todo-pill"
           aria-label={label()}
-          class="pointer-events-auto flex h-7 min-w-0 max-w-full items-center gap-2 rounded-[12px] border-[0.5px] border-v2-border-border-muted bg-v2-background-bg-base ps-2.5 pe-2.5 text-[13px] font-[440] leading-text-compact tracking-[-0.04px] whitespace-nowrap text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none"
+          class="pointer-events-auto flex h-7 min-w-0 max-w-full items-center gap-2 rounded-[12px] border-[0.5px] border-v2-border-border-muted bg-v2-background-bg-base ps-2.5 pe-2.5 text-[15px] font-[440] leading-text-compact tracking-[-0.04px] whitespace-nowrap text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none"
         >
           <ProgressCircle
             percentage={props.todos.length ? (finished() / props.todos.length) * 100 : 0}
@@ -59,10 +59,10 @@ export function SessionTodoPill(props: { todos: readonly Todo[]; defaultOpen?: b
         <Popover.Portal>
           <Popover.Content data-slot="session-todo-panel" aria-label={label()} class="outline-none">
             <div class="flex items-center gap-2 px-2 pt-1 pb-1.5">
-              <span class="flex-1 text-[11px] font-[530] uppercase leading-[var(--line-height-tight)] tracking-[0.05px] text-v2-text-text-muted">
+              <span class="flex-1 text-[12px] font-[530] uppercase leading-[var(--line-height-tight)] tracking-[0.05px] text-v2-text-text-muted">
                 {language.t("session.todo.title")}
               </span>
-              <span class="text-[11px] tabular-nums leading-[var(--line-height-tight)] text-v2-text-text-faint">
+              <span class="text-[12px] tabular-nums leading-[var(--line-height-tight)] text-v2-text-text-faint">
                 {language.t("session.todo.progress", { done: String(done()), total: String(props.todos.length) })}
               </span>
             </div>
@@ -106,7 +106,7 @@ function TodoList(props: { todos: readonly Todo[] }) {
             <span
               dir="auto"
               data-slot="session-todo-text"
-              class="min-w-0 flex-1 text-[13px] leading-[var(--line-height-compact)]"
+              class="min-w-0 flex-1 text-[15px] leading-[var(--line-height-compact)]"
             >
               {todo.content}
             </span>
