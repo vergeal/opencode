@@ -39,7 +39,7 @@ test("Home keeps the session list in every interface mode", async ({ page }) => 
   }
 })
 
-test("the session context menu renames, exports, and deletes a Home session", async ({ page }) => {
+test("the session context menu pins, renames, exports, and deletes a Home session", async ({ page }) => {
   await openHome(page)
   const target = row(page, fixture.expected.targetTitle)
   await expect(target).toBeVisible()
@@ -54,10 +54,29 @@ test("the session context menu renames, exports, and deletes a Home session", as
   const box = await target.boundingBox()
   await target.click({ button: "right", position: { x: 48, y: 12 } })
   await expect(page).toHaveURL("/")
-  await expect(page.getByRole("menuitem")).toHaveText(["Rename", "Export…", "Delete…"])
+  await expect(page.getByRole("menuitem")).toHaveText(["Pin", "Rename", "Export…", "Delete…"])
   const menu = await page.locator('[data-component="menu-v2-content"]').boundingBox()
   expect(Math.abs((menu?.x ?? 0) - (box?.x ?? 0) - 48)).toBeLessThan(4)
 
+  // A pinned session moves into its own group above the date groups, and the menu offers to unpin it.
+  const source = row(page, fixture.expected.sourceTitle)
+  await source.click({ button: "right" })
+  await page.getByRole("menuitem", { name: "Pin", exact: true }).click()
+  const rows = page.locator('[data-component="home-session-row"]')
+  await expect(page.getByText("Pinned", { exact: true })).toBeVisible()
+  await expect(rows.first()).toContainText(fixture.expected.sourceTitle)
+  await expect
+    .poll(() =>
+      page.evaluate(() => JSON.parse(localStorage.getItem("opencode.global.dat:home.pinned-sessions") ?? "{}")),
+    )
+    .toMatchObject({ pinned: [fixture.sourceID] })
+
+  await rows.first().click({ button: "right" })
+  await page.getByRole("menuitem", { name: "Unpin", exact: true }).click()
+  await expect(page.getByText("Pinned", { exact: true })).toBeHidden()
+  await expect(rows.first()).toContainText(fixture.expected.targetTitle)
+
+  await target.click({ button: "right" })
   await page.getByRole("menuitem", { name: "Rename" }).click()
   const title = page.locator('[data-component="home-session-rename"]')
   await expect(title).toBeFocused()

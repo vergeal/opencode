@@ -11,6 +11,7 @@ import { Tooltip } from "@opencode/ui/tooltip"
 import { displayName } from "@opencode/ui/project-avatar"
 import { useServers } from "@/runtime/server/registry"
 import { useLanguage } from "@/runtime/i18n/language"
+import { usePinnedSessions } from "@/session/pins"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import { sessionTabTitle } from "./tab-title"
@@ -28,6 +29,7 @@ export function SidebarInbox() {
   const language = useLanguage()
   const dialog = useDialog()
   const inbox = createSessionInbox({ archived: true })
+  const pins = usePinnedSessions()
 
   const [state, setState, , ready] = persisted(Persist.global("sidebar.inbox"), InboxState, {
     workingExpanded: true,
@@ -35,8 +37,15 @@ export function SidebarInbox() {
 
   const sections = createMemo(() => {
     const list = inbox.entries()
+    const pinnedIDs = new Set(pins.ids())
+    const pinned = pins.ids().flatMap((id) => {
+      const entry = list.find((item) => item.session.id === id)
+
+      return entry ? [entry] : []
+    })
+    const rest = list.filter((entry) => !pinnedIDs.has(entry.session.id))
     // The most recently finished session comes first.
-    const finished = list
+    const finished = rest
       .filter((entry) => {
         const since = state.since
 
@@ -45,19 +54,22 @@ export function SidebarInbox() {
       .toSorted((a, b) => (b.session.time.idle ?? 0) - (a.session.time.idle ?? 0))
 
     return {
-      needs: list.filter((entry) => entry.status === "approval" || entry.status === "input"),
+      pinned,
+      needs: rest.filter((entry) => entry.status === "approval" || entry.status === "input"),
       inbox: finished.filter((entry) => !inboxArchived(entry)),
       archived: finished.filter(inboxArchived),
-      working: list.filter((entry) => entry.status === "working"),
+      working: rest.filter((entry) => entry.status === "working"),
     }
   })
 
   // The client only refreshes `time.idle` for loaded sessions when a run ends, so load every working one.
   createEffect(() => {
-    sections().working.forEach((entry) => {
-      if (entry.ctx.data.session.get(entry.session.id)) return
-      void entry.ctx.data.session.sync(entry.session.id).catch(() => undefined)
-    })
+    ;[...sections().pinned, ...sections().working]
+      .filter((entry) => entry.status === "working")
+      .forEach((entry) => {
+        if (entry.ctx.data.session.get(entry.session.id)) return
+        void entry.ctx.data.session.sync(entry.session.id).catch(() => undefined)
+      })
   })
 
   // The inbox starts empty and fills as sessions finish runs.
@@ -69,12 +81,19 @@ export function SidebarInbox() {
   createEffect(() => {
     const visible = sections()
 
-    inbox.loadBranches([...visible.needs, ...visible.working, ...visible.inbox, ...visible.archived])
+    inbox.loadBranches([
+      ...visible.pinned,
+      ...visible.needs,
+      ...visible.working,
+      ...visible.inbox,
+      ...visible.archived,
+    ])
   })
 
   function DeleteDialog(props: { entry: InboxEntry }) {
     const confirm = async () => {
       await inbox.remove(props.entry)
+      pins.remove([props.entry.session.id])
       dialog.close()
     }
     return (
@@ -112,6 +131,8 @@ export function SidebarInbox() {
               branch={inbox.branch(entry())}
               worktree={inbox.inWorktree(entry())}
               archived={inboxArchived(entry())}
+              pinned={pins.isPinned(entry().session.id)}
+              onTogglePin={() => pins.toggle(entry().session.id)}
               onOpen={() => inbox.open(entry())}
               onArchive={() => void inbox.archive(entry())}
               onUnarchive={() => void inbox.unarchive(entry())}
@@ -126,6 +147,12 @@ export function SidebarInbox() {
   return (
     <div data-slot="sidebar-inbox" class="flex min-h-0 flex-1 flex-col">
       <div data-slot="sidebar-inbox-scroll" class="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-1">
+        <Show when={sections().pinned.length > 0}>
+          <div class="flex shrink-0 flex-col gap-px pb-3">
+            <SectionHeader label={language.t("home.sessions.group.pinned")} />
+            {rows(sections().pinned)}
+          </div>
+        </Show>
         <Show when={sections().needs.length > 0}>
           <div class="flex shrink-0 flex-col gap-px pb-3">
             <SectionHeader label={language.t("sidebar.inbox.section.needsAttention")} count={sections().needs.length} />
@@ -229,7 +256,9 @@ function InboxRow(props: {
   branch: string | undefined
   worktree: boolean
   archived: boolean
+  pinned: boolean
   onOpen: () => void
+  onTogglePin: () => void
   onArchive: () => void
   onUnarchive: () => void
   onDelete: () => void
@@ -373,6 +402,9 @@ function InboxRow(props: {
       </Menu.Context.Trigger>
       <Menu.Context.Portal>
         <Menu.Context.Content>
+          <Menu.Item onSelect={props.onTogglePin}>
+            {props.pinned ? language.t("common.unpin") : language.t("common.pin")}
+          </Menu.Item>
           <Show
             when={props.archived}
             fallback={<Menu.Item onSelect={props.onArchive}>{language.t("common.archive")}</Menu.Item>}

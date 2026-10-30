@@ -9,6 +9,7 @@ import { Icon } from "@opencode/ui/icon"
 import { Menu } from "@opencode/ui/menu"
 import { useServerCtx } from "@/runtime/server/runtime"
 import { useLanguage } from "@/runtime/i18n/language"
+import { usePinnedSessions } from "@/session/pins"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { displayName } from "@opencode/ui/project-avatar"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
@@ -43,6 +44,7 @@ export function TabNavItem(props: {
   orientation?: "horizontal" | "vertical"
 }) {
   const language = useLanguage()
+  const pins = usePinnedSessions()
   const [menu, setMenu] = createStore({ open: false, rename: false })
   const [editing, setEditing] = createSignal(false)
   const [titleOverflowing, setTitleOverflowing] = createSignal(false)
@@ -414,6 +416,9 @@ export function TabNavItem(props: {
             openRename()
           }}
         >
+          <Menu.Item disabled={!props.session} onSelect={() => props.session && pins.toggle(props.session.id)}>
+            {props.session && pins.isPinned(props.session.id) ? language.t("common.unpin") : language.t("common.pin")}
+          </Menu.Item>
           <Menu.Item disabled={!props.session} onSelect={() => setMenu("rename", true)}>
             {language.t("common.rename")}
           </Menu.Item>

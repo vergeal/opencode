@@ -13,6 +13,7 @@ import { useGlobal, useServerCtx, type ServerCtx } from "@/runtime/server/runtim
 import { useLanguage } from "@/runtime/i18n/language"
 import { useCommand } from "@/shell/commands/command"
 import { useTabs } from "@/shell/tabs/tabs"
+import { usePinnedSessions } from "@/session/pins"
 import { useSessionTabAvatarState } from "@/shell/layout/project-avatar-state"
 import { createTabComposerState } from "@/composer/persistence"
 import { base64Encode } from "@opencode/util/encode"
@@ -394,7 +395,18 @@ export function TitlebarTabStrip(props: {
   let listRef!: HTMLDivElement
   const [visibility, setVisibility] = createStore<Record<string, boolean>>({})
   const [unread, setUnread] = createStore<Record<string, boolean>>({})
-  const visibleTabs = createMemo(() => props.tabs.filter((tab) => tab.type === "draft" || visibility[tabKey(tab)]))
+  const pins = usePinnedSessions()
+  const visibleTabs = createMemo(() => {
+    const items = props.tabs.filter((tab) => tab.type === "draft" || visibility[tabKey(tab)])
+
+    if (!vertical()) return items
+    const pinned = new Set(pins.ids())
+
+    if (pinned.size === 0) return items
+    const isPinned = (tab: Tab) => tab.type === "session" && pinned.has(tab.sessionId)
+
+    return [...items.filter(isPinned), ...items.filter((tab) => !isPinned(tab))]
+  })
   const visibleTabIds = () => visibleTabs().map(tabKey)
 
   // Tells the closed sidebar's toggle whether any row here shows its unread dot, which the current tab never does.
