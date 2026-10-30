@@ -14,6 +14,8 @@ ${hasMoreTools ? `The catalog is partial. Inside \`execute\`, use \`search(...)\
 
 - ${searchSignature}` : "The catalog is complete. Do not guess tool names."}
 
+Every other tool you can call, such as \`shell\`, \`grep\`, \`glob\` or \`read\`, is a native tool. Call it directly in the response; it is not reachable as \`tools.<name>\` inside \`execute\`.
+
 ## Available tools`
 
 export function render(catalog: CodeModeCatalog.Summary) {

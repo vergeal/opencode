@@ -48,6 +48,7 @@ describe("CodeModeInstructions", () => {
       const initialized = yield* readInitial(CodeModeInstructions.make({ tools: [echo] }))
       expect(initialized.text).toContain("Use the `execute` tool to call the tools listed below.")
       expect(initialized.text).toContain("The catalog is complete.")
+      expect(initialized.text).toContain("is a native tool. Call it directly in the response")
       expect(initialized.text).toContain("## Available tools")
       expect(initialized.text).toContain(`  - ${echo.signature} // Echo text`)
 

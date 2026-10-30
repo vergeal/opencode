@@ -72,6 +72,7 @@ const description = [
   "Run JavaScript in a confined Code Mode runtime to script tool calls and HTTP requests and compose their results.",
   "`fetch` is available for HTTP requests. Imports, direct filesystem access, and timers are unavailable: there is no `setTimeout` or sleep. All other external access goes through `tools`.",
   "Within `{ code }`, the only callable tools are those explicitly listed in the Code Mode catalog instructions or returned by the `search` function. Inside `{ code }`, ignore tools shown outside the Code Mode catalog. They are not available in the Code Mode runtime.",
+  "Tools outside the Code Mode catalog are native tools. Call them directly in the same response, not through `tools` inside `{ code }`: `tools.shell(...)` and similar native names always fail with `Unknown tool`.",
   'Call tools through `tools` using only exact paths and signatures from the catalog. Do not infer or normalize tool names; preserve bracket notation such as `tools.<namespace>["tool-name"](input)`.',
   "Prefer an explicit `return`; if omitted, the final top-level expression becomes the result.",
   "Await every call whose completion matters; pending calls are interrupted when execution ends. Run independent calls concurrently with `Promise.allSettled`.",
@@ -80,6 +81,9 @@ const description = [
 export const create = (
   inventory: Inventory,
   executeTool: (name: string, tool: Info, input: unknown, context: ToolContext) => Effect.Effect<Result, Error>,
+  // Native tools stay outside this inventory, so a program that reaches them by name gets a
+  // diagnostic that says how to call them instead of a dead-end "Unknown tool".
+  nativeTools: ReadonlySet<string> = new Set(),
 ) => {
   return {
     name: "execute",
@@ -122,7 +126,7 @@ export const create = (
         const collected = (yield* Ref.get(files))
           .toSorted((left, right) => left.index - right.index)
           .flatMap((item) => item.files)
-        const output = formatResult(result)
+        const output = formatResult(explainNativeTool(result, nativeTools))
         const value: typeof ExecuteOutput.Type = {
           output,
           toolCalls,
@@ -328,6 +332,38 @@ function displayInput(input: unknown): Record<string, typeof Schema.Json.Type> |
   if (typeof input !== "object" || Array.isArray(input)) return { input: input as typeof Schema.Json.Type }
   if (Object.keys(input).length === 0) return
   return input as Record<string, typeof Schema.Json.Type>
+}
+
+// The model often reaches for a tool it sees in the native list, such as `shell` or `grep`, or for a
+// shell command like `find`. Those names are never in this inventory, so name the fix instead of
+// only saying the tool is unknown.
+const SHELL_COMMANDS = new Set(["find", "ls", "cat", "pwd", "cd", "head", "tail", "sed", "awk", "mkdir", "rm"])
+
+function explainNativeTool(result: CodeMode.Result, nativeTools: ReadonlySet<string>): CodeMode.Result {
+  if (result.ok || result.error.kind !== "UnknownTool") return result
+  const name = /^Unknown tool '([^']+)'/.exec(result.error.message)?.[1]
+  if (name === undefined) return result
+  if (nativeTools.has(name)) {
+    return {
+      ...result,
+      error: {
+        ...result.error,
+        message: `\`${name}\` is a native tool, not a Code Mode tool.`,
+        suggestions: [`Call the ${name} tool directly instead of through \`tools\` inside execute.`],
+      },
+    }
+  }
+  if (!SHELL_COMMANDS.has(name)) return result
+  return {
+    ...result,
+    error: {
+      ...result.error,
+      message: `There is no \`${name}\` tool.`,
+      suggestions: [
+        "Use `glob` to find paths, `grep` to search contents, `read` to open a file, or the `shell` tool to run a command.",
+      ],
+    },
+  }
 }
 
 function formatResult(result: CodeMode.Result) {

@@ -16,8 +16,8 @@ const context = {
   progress: () => Effect.void,
 }
 
-const createCodeMode = (tools: ReadonlyMap<string, Info>) =>
-  CodeModeTool.create({ tools }, (_, tool, input, context) => execute(tool, input, context))
+const createCodeMode = (tools: ReadonlyMap<string, Info>, nativeTools?: ReadonlySet<string>) =>
+  CodeModeTool.create({ tools }, (_, tool, input, context) => execute(tool, input, context), nativeTools)
 
 test("execute describes invariant Code Mode behavior", () => {
   expect(createCodeMode(new Map()).description).toBe(
@@ -25,6 +25,7 @@ test("execute describes invariant Code Mode behavior", () => {
       "Run JavaScript in a confined Code Mode runtime to script tool calls and HTTP requests and compose their results.",
       "`fetch` is available for HTTP requests. Imports, direct filesystem access, and timers are unavailable: there is no `setTimeout` or sleep. All other external access goes through `tools`.",
       "Within `{ code }`, the only callable tools are those explicitly listed in the Code Mode catalog instructions or returned by the `search` function. Inside `{ code }`, ignore tools shown outside the Code Mode catalog. They are not available in the Code Mode runtime.",
+      "Tools outside the Code Mode catalog are native tools. Call them directly in the same response, not through `tools` inside `{ code }`: `tools.shell(...)` and similar native names always fail with `Unknown tool`.",
       'Call tools through `tools` using only exact paths and signatures from the catalog. Do not infer or normalize tool names; preserve bracket notation such as `tools.<namespace>["tool-name"](input)`.',
       "Prefer an explicit `return`; if omitted, the final top-level expression becomes the result.",
       "Await every call whose completion matters; pending calls are interrupted when execution ends. Run independent calls concurrently with `Promise.allSettled`.",
@@ -39,6 +40,29 @@ test("execute rejects filesystem fetches", async () => {
 
   expect(result.output.error).toBe(true)
   expect(result.output.output).toContain("fetch cannot be used for filesystem access.")
+})
+
+test("a program that calls a native tool is told to call it directly", async () => {
+  const result = await Effect.runPromise(
+    createCodeMode(new Map(), new Set(["shell"])).execute(
+      { code: 'return await tools.shell({ command: "ls" })' },
+      context,
+    ),
+  )
+
+  expect(result.output.error).toBe(true)
+  expect(result.output.output).toContain("`shell` is a native tool, not a Code Mode tool.")
+  expect(result.output.output).toContain("Call the shell tool directly instead of through `tools` inside execute.")
+})
+
+test("a program that calls a shell command name is pointed at the real tools", async () => {
+  const result = await Effect.runPromise(
+    createCodeMode(new Map()).execute({ code: 'return await tools.find({ pattern: "*.ts" })' }, context),
+  )
+
+  expect(result.output.error).toBe(true)
+  expect(result.output.output).toContain("There is no `find` tool.")
+  expect(result.output.output).toContain("Use `glob` to find paths")
 })
 
 test("canonical execution distinguishes declared, model-only, and raw schema outputs", async () => {
