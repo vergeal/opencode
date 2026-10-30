@@ -24,8 +24,6 @@ export const dict = {
   "session.location.choose": "Choose directory",
   "session.location.worktree": "Choose worktree",
   "session.location.worktreesFailed": "Failed to load worktrees",
-  "session.rewind.toast.title": "Rewound",
-  "session.rewind.toast.undo": "Undo",
   "session.location.moving": "Moving session…",
   "session.location.moveFailed": "Failed to move session",
   "server.action.authenticate": "Authenticate",
