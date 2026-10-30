@@ -390,6 +390,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 case "settings":
                 case "connect":
                 case "components":
+                case "knowledge":
                 case "home": {
                   const selection = layout.home.selection()
 
@@ -855,6 +856,19 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 onNewTab={openNewTab}
                                 keybind={command.keybind("tab.new")}
                               />
+                              <div class="my-1 h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
+                              <button
+                                type="button"
+                                data-titlebar-tab-action
+                                data-action="vertical-tabs-knowledge"
+                                data-state={layout.route().type === "knowledge" ? "pressed" : undefined}
+                                aria-pressed={layout.route().type === "knowledge"}
+                                class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                onClick={() => navigate("/knowledge")}
+                              >
+                                <Icon name="folder" class="shrink-0" />
+                                <span class="min-w-0 truncate">{language.t("knowledge.title")}</span>
+                              </button>
                             </div>
                             <div class="h-4 w-full shrink-0" aria-hidden="true" />
                             <div class="flex min-h-0 flex-1 flex-col gap-1">

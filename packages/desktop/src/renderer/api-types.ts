@@ -20,6 +20,14 @@ export type ContextMenuItem = {
   enabled?: boolean
 }
 
+/** One file the main process found while scanning a knowledge library directory. */
+export type KnowledgeFileEntry = {
+  path: string
+  name: string
+  size: number
+  kind: "document" | "spreadsheet" | "text"
+}
+
 export type ElectronAPI = {
   awaitInitialization(): Promise<ServerReadyData>
   reconnectService(): Promise<ServerReadyData>
@@ -77,6 +85,8 @@ export type ElectronAPI = {
   setTrafficLightsPosition(position: { x: number; y: number }): Promise<void>
   runDesktopMenuAction(action: DesktopMenuAction): Promise<void>
   showContextMenu(items: ContextMenuItem[], position?: { x: number; y: number }): Promise<string | undefined>
+  scanKnowledgeDirectory(path: string): Promise<{ files: ReadonlyArray<KnowledgeFileEntry> }>
+  readKnowledgeFile(root: string, path: string): Promise<{ text: string }>
   setBackgroundColor(color: string): Promise<void>
   exportDebugLogs(): Promise<string>
   setForceFocus(enabled: boolean): Promise<void>

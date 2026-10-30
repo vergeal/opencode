@@ -50,6 +50,8 @@ export function createDesktopPlatform(api: ElectronAPI, windowState: DesktopWind
     },
     runDesktopMenuAction: createDesktopMenuAction(api),
     showContextMenu: (items, position) => api.showContextMenu(items, position),
+    scanKnowledgeDirectory: (path) => api.scanKnowledgeDirectory(path),
+    readKnowledgeFile: (root, path) => api.readKnowledgeFile(root, path),
     checkAppExists: async (appName) => {
       return api.checkAppExists(appName)
     },

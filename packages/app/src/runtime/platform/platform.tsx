@@ -29,6 +29,14 @@ export type ContextMenuItem = {
   enabled?: boolean
 }
 
+/** One file found while scanning a local knowledge library directory. */
+export type KnowledgeFileEntry = {
+  path: string
+  name: string
+  size: number
+  kind: "document" | "spreadsheet" | "text"
+}
+
 type PlatformName = "web" | "desktop"
 
 type DesktopOS = "macos" | "windows" | "linux"
@@ -121,6 +129,8 @@ type PlatformBase = {
 
   /** Show a native context menu at the pointer and resolve the chosen entry's id (desktop only) */
   showContextMenu?(items: ContextMenuItem[], position?: { x: number; y: number }): Promise<string | undefined>
+  scanKnowledgeDirectory?(path: string): Promise<{ files: ReadonlyArray<KnowledgeFileEntry> }>
+  readKnowledgeFile?(root: string, path: string): Promise<{ text: string }>
 
   /** Check if an editor app exists (desktop only) */
   checkAppExists?(appName: string): Promise<boolean>

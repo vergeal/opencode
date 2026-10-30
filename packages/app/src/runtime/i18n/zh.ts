@@ -111,7 +111,6 @@ export const dict = {
 
   "command.input.focus": "聚焦输入框",
 
-
   "command.review.toggle": "切换审查",
 
   "command.message.previous": "上一条消息",
@@ -201,7 +200,6 @@ export const dict = {
   "provider.connect.toast.connected.title": "{{provider}} 已连接",
   "provider.connect.toast.connected.description": "现在可以使用 {{provider}} 模型了。",
 
-
   "provider.disconnect.toast.disconnected.title": "{{provider}} 已断开连接",
   "provider.disconnect.toast.disconnected.description": "{{provider}} 模型已不再可用。",
   "provider.disconnect.toast.noCredentials.description": "未找到 {{provider}} 的可移除凭据。",
@@ -265,7 +263,6 @@ export const dict = {
 
   "dialog.mcp.title": "MCP 服务器",
   "dialog.mcp.empty": "未配置 MCP 服务器",
-
 
   "dialog.fork.empty": "没有可用于创建新会话的消息",
 
@@ -903,6 +900,31 @@ export const dict = {
   "workspace.delete.confirm": "删除“{{name}}”吗？",
   "workspace.delete.location": "位置",
   "settings.search.empty.query": "“{{query}}”",
+
+  "knowledge.title": "知识库",
+  "knowledge.description": "可浏览、检索并自动生成简介的本地文档库。",
+  "knowledge.new": "新建知识库",
+  "knowledge.create": "创建",
+  "knowledge.back": "全部知识库",
+  "knowledge.delete": "删除知识库",
+  "knowledge.name.placeholder": "为知识库命名",
+  "knowledge.import": "导入文件夹",
+  "knowledge.reimport": "更换文件夹",
+  "knowledge.import.title": "选择要导入的文件夹",
+  "knowledge.import.desktopOnly": "导入文件夹需要桌面版应用。",
+  "knowledge.empty": "还没有知识库",
+  "knowledge.empty.hint": "先新建一个知识库，再导入文件夹扫描其中的文档。",
+  "knowledge.summary.empty": "导入文件夹后可生成知识库简介。",
+  "knowledge.summary.fallback.one": "{{count}} 个索引文件",
+  "knowledge.summary.fallback.other": "{{count}} 个索引文件",
+  "knowledge.files.one": "{{count}} 个文件",
+  "knowledge.files.other": "{{count}} 个文件",
+  "knowledge.files.search": "搜索文件",
+  "knowledge.files.empty": "尚未导入文件",
+  "knowledge.files.empty.hint": "导入文件夹即可扫描其中的文档、表格和文本文件。",
+  "knowledge.files.noResults": "没有匹配的文件",
+  "knowledge.preview.empty": "选择文件查看内容",
+  "knowledge.preview.unreadable": "该文件无法以文本方式读取。",
 } satisfies Partial<Record<Keys, string>>
 
 export default dict

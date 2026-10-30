@@ -1,0 +1,124 @@
+[data-slot="knowledge-panel"] {
+  /* Tones are picked per card so a flat grid still reads as a set of distinct collections. */
+  --knowledge-tone: #5b8cff;
+}
+
+.knowledge-scroll {
+  scrollbar-width: none;
+}
+
+.knowledge-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+}
+
+.knowledge-card[data-tone="0"] {
+  --knowledge-tone: #5b8cff;
+}
+
+.knowledge-card[data-tone="1"] {
+  --knowledge-tone: #a86bff;
+}
+
+.knowledge-card[data-tone="2"] {
+  --knowledge-tone: #ff8a5c;
+}
+
+.knowledge-card[data-tone="3"] {
+  --knowledge-tone: #34c98c;
+}
+
+.knowledge-card[data-tone="4"] {
+  --knowledge-tone: #ff6b9a;
+}
+
+.knowledge-card[data-tone="5"] {
+  --knowledge-tone: #2fc4d6;
+}
+
+.knowledge-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 132px;
+  padding: 14px;
+  overflow: hidden;
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 12px;
+  text-align: start;
+  background:
+    radial-gradient(120% 100% at 0% 0%, color-mix(in oklab, var(--knowledge-tone) 26%, transparent), transparent 62%),
+    var(--v2-background-bg-layer-01);
+}
+
+.knowledge-card::after {
+  position: absolute;
+  inset: auto -20% -70% auto;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--knowledge-tone) 22%, transparent);
+  filter: blur(12px);
+  content: "";
+  pointer-events: none;
+}
+
+.knowledge-card:hover {
+  border-color: color-mix(in oklab, var(--knowledge-tone) 55%, var(--v2-border-border-muted));
+}
+
+.knowledge-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: var(--knowledge-tone);
+  background: color-mix(in oklab, var(--knowledge-tone) 18%, transparent);
+}
+
+.knowledge-card-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 132px;
+  padding: 14px;
+  border: 1px dashed var(--v2-border-border-muted);
+  border-radius: 12px;
+  color: var(--v2-text-text-faint);
+}
+
+.knowledge-card-add:hover {
+  border-color: var(--v2-border-border-strong);
+  color: var(--v2-text-text-base);
+}
+
+.knowledge-file-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: var(--v2-text-text-muted);
+  text-align: start;
+}
+
+.knowledge-file-row:hover {
+  color: var(--v2-text-text-base);
+  background: var(--v2-background-bg-layer-02);
+}
+
+.knowledge-file-row[data-selected] {
+  color: var(--v2-text-text-base);
+  background: var(--v2-background-bg-layer-02);
+}
+
+.knowledge-file-preview {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

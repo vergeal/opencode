@@ -7,10 +7,12 @@ import { DesktopRpcs } from "../shared/ipc-rpc"
 import { DragCancelEvent, IpcTransportPort } from "../shared/ipc-transport"
 import { Plugins } from "./plugin"
 import { DesktopFiles, openExternalURL } from "./files"
+import { DesktopKnowledge } from "./knowledge"
 import { appHandlers } from "./ipc-handlers/app"
 import { eventHandlers } from "./ipc-handlers/events"
 import { pluginHandlers } from "./ipc-handlers/plugins"
 import { fileHandlers } from "./ipc-handlers/files"
+import { knowledgeHandlers } from "./ipc-handlers/knowledge"
 import { menuHandlers } from "./ipc-handlers/menu"
 import { storageHandlers } from "./ipc-handlers/storage"
 import { windowHandlers } from "./ipc-handlers/window"
@@ -21,12 +23,13 @@ import { createMenu, sendMenuCommand } from "./native/menu"
 import { DesktopCli } from "./service/desktop-cli"
 import { getLastFocusedWindow } from "./windows"
 
-const services = Layer.mergeAll(DesktopFiles.layer, Plugins.layer)
+const services = Layer.mergeAll(DesktopFiles.layer, DesktopKnowledge.layer, Plugins.layer)
 
 const handlers = Layer.mergeAll(
   appHandlers,
   storageHandlers,
   fileHandlers,
+  knowledgeHandlers,
   windowHandlers,
   menuHandlers,
   eventHandlers,
