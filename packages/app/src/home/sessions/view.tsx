@@ -11,6 +11,7 @@ import { Menu } from "@opencode/ui/menu"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { prefersReducedMotion } from "@opencode/ui/motion"
 import { useLanguage } from "@/runtime/i18n/language"
+import { usePlatform } from "@/runtime/platform/platform"
 import { ServerConnection } from "@/runtime/server/registry"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import { sessionLabel } from "@/session/title"
@@ -529,6 +530,7 @@ function HomeSessionRow(
 ) {
   const title = createMemo(() => sessionLabel(props.record.session))
   const location = createMemo(() => props.location(props.record))
+  const platform = usePlatform()
   const showProjectName = () => props.showProjectName && props.record.projectName
   const sessionID = () => props.record.session.id
   const menu = () => (props.rowUI.menu?.id === sessionID() ? props.rowUI.menu : undefined)
@@ -558,6 +560,12 @@ function HomeSessionRow(
   onCleanup(clearLongPress)
 
   const openMenu = (element: HTMLElement, clientX: number, clientY: number) => {
+    if (platform.showContextMenu) {
+      void showNativeMenu({ x: clientX, y: clientY })
+
+      return
+    }
+
     const bounds = element.getBoundingClientRect()
     props.setRowUI("menu", { id: sessionID(), x: clientX - bounds.left, y: clientY - bounds.top })
   }
@@ -569,6 +577,32 @@ function HomeSessionRow(
       input?.focus()
       input?.select()
     })
+  }
+
+  // Desktop shows the OS menu; the web build keeps the in-app one.
+  const showNativeMenu = async (position: { x: number; y: number }) => {
+    const show = platform.showContextMenu
+
+    if (!show) return
+    const session = props.record.session
+    const chosen = await show(
+      [
+        {
+          id: "pin",
+          label: props.isPinned(session) ? props.language.t("common.unpin") : props.language.t("common.pin"),
+        },
+        { id: "rename", label: props.language.t("common.rename") },
+        { id: "export", label: `${props.language.t("common.export")}…` },
+        { type: "separator" },
+        { id: "delete", label: `${props.language.t("common.delete")}…` },
+      ],
+      position,
+    )
+
+    if (chosen === "pin") props.onTogglePin(session)
+    else if (chosen === "rename") openEditor()
+    else if (chosen === "export") void props.onExportSession(props.server, session)
+    else if (chosen === "delete") props.onDeleteSession(props.server, session)
   }
 
   const closeEditor = () => {

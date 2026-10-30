@@ -21,6 +21,14 @@ type OpenFilePathPickerOptions = { title?: string; multiple?: boolean; extension
 
 type SaveFilePickerOptions = { title?: string; defaultPath?: string }
 
+/** One entry of a native context menu; a chosen entry reports its `id`. */
+export type ContextMenuItem = {
+  id?: string
+  label?: string
+  type?: "normal" | "separator"
+  enabled?: boolean
+}
+
 type PlatformName = "web" | "desktop"
 
 type DesktopOS = "macos" | "windows" | "linux"
@@ -110,6 +118,9 @@ type PlatformBase = {
 
   /** Run a desktop-only menu action from the app chrome */
   runDesktopMenuAction?(action: DesktopMenuAction): Promise<void> | void
+
+  /** Show a native context menu at the pointer and resolve the chosen entry's id (desktop only) */
+  showContextMenu?(items: ContextMenuItem[], position?: { x: number; y: number }): Promise<string | undefined>
 
   /** Check if an editor app exists (desktop only) */
   checkAppExists?(appName: string): Promise<boolean>

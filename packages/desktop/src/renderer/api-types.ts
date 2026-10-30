@@ -12,6 +12,14 @@ import type {
   TitlebarTheme,
 } from "../shared/ipc-contract"
 
+/** One entry of a native context menu shown by the main process. */
+export type ContextMenuItem = {
+  id?: string
+  label?: string
+  type?: "normal" | "separator"
+  enabled?: boolean
+}
+
 export type ElectronAPI = {
   awaitInitialization(): Promise<ServerReadyData>
   reconnectService(): Promise<ServerReadyData>
@@ -68,6 +76,7 @@ export type ElectronAPI = {
   setTitlebar(theme: TitlebarTheme): Promise<void>
   setTrafficLightsPosition(position: { x: number; y: number }): Promise<void>
   runDesktopMenuAction(action: DesktopMenuAction): Promise<void>
+  showContextMenu(items: ContextMenuItem[], position?: { x: number; y: number }): Promise<string | undefined>
   setBackgroundColor(color: string): Promise<void>
   exportDebugLogs(): Promise<string>
   setForceFocus(enabled: boolean): Promise<void>

@@ -49,6 +49,7 @@ export function createDesktopPlatform(api: ElectronAPI, windowState: DesktopWind
       return () => window.removeEventListener(DragCancelEvent, callback)
     },
     runDesktopMenuAction: createDesktopMenuAction(api),
+    showContextMenu: (items, position) => api.showContextMenu(items, position),
     checkAppExists: async (appName) => {
       return api.checkAppExists(appName)
     },

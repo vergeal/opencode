@@ -11,6 +11,7 @@ import { Tooltip } from "@opencode/ui/tooltip"
 import { displayName } from "@opencode/ui/project-avatar"
 import { useServers } from "@/runtime/server/registry"
 import { useLanguage } from "@/runtime/i18n/language"
+import { usePlatform } from "@/runtime/platform/platform"
 import { usePinnedSessions } from "@/session/pins"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
@@ -81,13 +82,7 @@ export function SidebarInbox() {
   createEffect(() => {
     const visible = sections()
 
-    inbox.loadBranches([
-      ...visible.pinned,
-      ...visible.needs,
-      ...visible.working,
-      ...visible.inbox,
-      ...visible.archived,
-    ])
+    inbox.loadBranches([...visible.pinned, ...visible.needs, ...visible.working, ...visible.inbox, ...visible.archived])
   })
 
   function DeleteDialog(props: { entry: InboxEntry }) {
@@ -175,6 +170,10 @@ export function SidebarInbox() {
         >
           <Show when={sections().needs.length > 0}>
             <SectionHeader label={language.t("sidebar.inbox.section.recent")} />
+          </Show>
+          {/* Pinned rows sit above; name the rest so the two groups read apart. */}
+          <Show when={sections().needs.length === 0 && sections().pinned.length > 0}>
+            <SectionHeader label={language.t("sidebar.inbox.section.sessions")} />
           </Show>
           {rows(sections().inbox)}
         </Show>
@@ -265,6 +264,8 @@ function InboxRow(props: {
 }) {
   const language = useLanguage()
   const servers = useServers()
+  const platform = usePlatform()
+  const nativeMenu = () => !!platform.showContextMenu
   const project = createMemo(() => props.entry.ctx.projects.forSession(props.entry.session))
   const projectName = () => displayName(project() ?? { worktree: props.entry.session.location.directory })
   const title = () => sessionTabTitle(props.entry.session.title, language.t("session.tab.session"))
@@ -298,6 +299,29 @@ function InboxRow(props: {
     return seconds < 60 ? language.t("sidebar.inbox.time.now") : compact(seconds)
   }
 
+  const showNativeMenu = async (position: { x: number; y: number }) => {
+    const show = platform.showContextMenu
+
+    if (!show) return
+    const chosen = await show(
+      [
+        { id: "pin", label: props.pinned ? language.t("common.unpin") : language.t("common.pin") },
+        {
+          id: props.archived ? "unarchive" : "archive",
+          label: props.archived ? language.t("sidebar.inbox.unarchive") : language.t("common.archive"),
+        },
+        { type: "separator" },
+        { id: "delete", label: `${language.t("common.delete")}…` },
+      ],
+      position,
+    )
+
+    if (chosen === "pin") props.onTogglePin()
+    else if (chosen === "archive") props.onArchive()
+    else if (chosen === "unarchive") props.onUnarchive()
+    else if (chosen === "delete") props.onDelete()
+  }
+
   return (
     <Menu.Context modal={false}>
       <Menu.Context.Trigger
@@ -311,6 +335,11 @@ function InboxRow(props: {
           "transition-opacity hover:opacity-100 focus-visible:opacity-100": !props.selected,
           "opacity-70": status() === "working" && !props.selected,
           "opacity-50": props.archived && !props.selected,
+        }}
+        onContextMenu={(event) => {
+          if (!nativeMenu()) return
+          event.preventDefault()
+          void showNativeMenu({ x: event.clientX, y: event.clientY })
         }}
         onClick={props.onOpen}
       >
