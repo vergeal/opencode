@@ -3743,6 +3743,7 @@ export type ModelDefaultOutput = { location: LocationPublicRef; data: ModelInfo 
 
 export type GenerateTextInput = {
   readonly prompt: string
+  readonly small?: boolean | null | undefined
   readonly model?: { readonly id: string; readonly providerID: string; readonly variant?: string } | null | undefined
 }
 

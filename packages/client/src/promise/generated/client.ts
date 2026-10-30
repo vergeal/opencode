@@ -1185,7 +1185,7 @@ export function make(options: ClientOptions) {
           {
             method: "POST",
             path: `/api/experimental/generate/text`,
-            body: { prompt: input["prompt"], model: input["model"] },
+            body: { prompt: input["prompt"], small: input["small"], model: input["model"] },
             successStatus: 200,
             declaredStatuses: [400, 401, 404, 422, 502, 503],
             empty: false,

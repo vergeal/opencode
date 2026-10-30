@@ -25,6 +25,8 @@ const errors = [
 const textContract = {
   payload: Schema.Struct({
     prompt: Schema.String,
+    /** Use the provider's smallest text model instead of the configured default. */
+    small: Schema.optional(Schema.Boolean),
     model: Model.Ref.pipe(Schema.optional),
   }),
   success: Schema.Struct({

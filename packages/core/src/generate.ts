@@ -15,6 +15,8 @@ import { ModelRetry } from "./model-retry.js"
 
 export interface TextInput {
   readonly prompt: string
+  /** Use the provider's smallest text model instead of the default one. */
+  readonly small?: boolean
   readonly model?: Model.Ref
 }
 
@@ -90,25 +92,28 @@ export const layer = Layer.effect(
     const decisionClient = yield* DecisionClient.Service
 
     const runText = Effect.fn("Generate.text")(function* (input: TextInput) {
-      const resolved = yield* resolver.resolve(input.model).pipe(
-        Effect.catchTag(
-          [
-            "SessionRunnerModel.VariantUnavailableError",
-            "SessionRunnerModel.UnsupportedPackageError",
-            "SessionRunnerModel.ModelConfigurationError",
-            "SessionRunnerModel.ModelInitializationError",
-            "SessionRunnerModel.UnresolvedProviderVariablesError",
-            "SessionRunnerModel.UnsupportedCompactionError",
-          ],
-          (error) =>
-            Effect.fail(
-              input.model
-                ? resolutionError(input.model, "chat", error)
-                : new UnavailableError({ message: error.message, service: error.providerID }),
-            ),
-        ),
-      )
-      if (!resolved && input.model) return yield* missing(input.model, "chat")
+      const requested = input.model ?? (input.small ? yield* smallModel() : undefined)
+      const resolved = yield* resolver
+        .resolve(requested)
+        .pipe(
+          Effect.catchTag(
+            [
+              "SessionRunnerModel.VariantUnavailableError",
+              "SessionRunnerModel.UnsupportedPackageError",
+              "SessionRunnerModel.ModelConfigurationError",
+              "SessionRunnerModel.ModelInitializationError",
+              "SessionRunnerModel.UnresolvedProviderVariablesError",
+              "SessionRunnerModel.UnsupportedCompactionError",
+            ],
+            (error) =>
+              Effect.fail(
+                requested
+                  ? resolutionError(requested, "chat", error)
+                  : new UnavailableError({ message: error.message, service: error.providerID }),
+              ),
+          ),
+        )
+      if (!resolved && requested) return yield* missing(requested, "chat")
       if (!resolved)
         return yield* new UnavailableError({ message: "No model specified and no supported model is available" })
       const response = yield* llm
@@ -125,6 +130,13 @@ export const layer = Layer.effect(
           Effect.mapError((error) => providerError(resolved.ref, error)),
         )
       return response.text
+    })
+
+    const smallModel = Effect.fnUntraced(function* () {
+      const primary = yield* models.default()
+      if (!primary) return
+      const small = yield* models.small(primary.providerID)
+      return small && Model.Ref.make({ providerID: small.providerID, id: small.id })
     })
 
     // A ref no model of this type has: another type's model (422) or no model at all (404).
