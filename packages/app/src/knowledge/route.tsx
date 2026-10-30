@@ -68,6 +68,8 @@ export function KnowledgeScreen() {
     setState({ draftName: "", creating: false, selected: id })
   }
 
+  const startCreating = () => setState({ creating: true, draftName: "" })
+
   const removeLibrary = (library: KnowledgeLibrary) => {
     libraries.remove(library.id)
     setState({ selected: "", fileName: "", fileText: "" })
@@ -131,17 +133,33 @@ export function KnowledgeScreen() {
               {language.t("knowledge.description")}
             </p>
           </div>
+          <button
+            type="button"
+            class="flex h-7 shrink-0 items-center gap-1.5 rounded-[6px] border border-v2-border-border-muted px-2.5 text-[13px] leading-[var(--line-height-compact)] hover:bg-v2-background-bg-layer-02"
+            onClick={startCreating}
+          >
+            <Icon name="plus" size="small" />
+            {language.t("knowledge.new")}
+          </button>
         </header>
         <div class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-5 py-4" data-scrollable>
           <Show
-            when={libraries.libraries().length > 0}
+            when={libraries.libraries().length > 0 || state.creating}
             fallback={
-              <div class="flex h-full flex-col items-center justify-center gap-2 text-center">
+              <div class="flex h-full flex-col items-center justify-center gap-3 text-center">
                 <Icon name="folder" class="text-v2-text-text-faint" />
                 <p class="text-[15px] leading-[var(--line-height-base)]">{language.t("knowledge.empty")}</p>
                 <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
                   {language.t("knowledge.empty.hint")}
                 </p>
+                <button
+                  type="button"
+                  class="flex h-7 items-center gap-1.5 rounded-[6px] border border-v2-border-border-muted px-2.5 text-[13px] leading-[var(--line-height-compact)] hover:bg-v2-background-bg-layer-02"
+                  onClick={startCreating}
+                >
+                  <Icon name="plus" size="small" />
+                  {language.t("knowledge.new")}
+                </button>
               </div>
             }
           >
@@ -172,11 +190,7 @@ export function KnowledgeScreen() {
               <Show
                 when={state.creating}
                 fallback={
-                  <button
-                    type="button"
-                    class="knowledge-card-add"
-                    onClick={() => setState({ creating: true, draftName: "" })}
-                  >
+                  <button type="button" class="knowledge-card-add" onClick={startCreating}>
                     <Icon name="plus" />
                     <span class="text-[15px] leading-[var(--line-height-base)]">{language.t("knowledge.new")}</span>
                   </button>
