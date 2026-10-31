@@ -26,6 +26,62 @@ export type KnowledgeFileEntry = {
   name: string
   size: number
   kind: "document" | "spreadsheet" | "text"
+  /** Folder the document was imported from; empty for a file imported on its own. */
+  root: string
+  /** Absolute path of the original document, kept to show where it came from. */
+  source: string
+}
+
+export type KnowledgeReadFileInput = { libraryID: string; path: string }
+
+/** What one import looked at, kept and dropped. */
+export type KnowledgeImportStats = {
+  scanned: number
+  kept: number
+  /** Files whose content already existed in the library. */
+  duplicates: number
+  /** Files whose content nearly matched an existing document. */
+  similar: number
+  /** Non-documents, empty files and documents whose text could not be read. */
+  skipped: number
+}
+
+/** Opening text of one kept document, used to describe the library. */
+export type KnowledgeFileExcerpt = { path: string; excerpt: string }
+
+/** Why one file was left out of a library. */
+export type KnowledgeDiscardReason = "duplicate" | "similar" | "unsupported" | "noise" | "tooLarge" | "empty"
+
+export type KnowledgeDiscard = {
+  reason: KnowledgeDiscardReason
+  /** Absolute path of the original file. */
+  path: string
+  name: string
+  /** Library path of the document this one duplicated or nearly matched. */
+  matched?: string
+}
+
+export type KnowledgeImportResult = {
+  files: ReadonlyArray<KnowledgeFileEntry>
+  stats: KnowledgeImportStats
+  excerpts: ReadonlyArray<KnowledgeFileExcerpt>
+  discards: ReadonlyArray<KnowledgeDiscard>
+}
+
+/** One step of an import, reported while it runs. */
+export type KnowledgeImportProgress = {
+  libraryID: string
+  /** `scan` walks folders, `convert` reads documents, `dedupe` compares them, `done` ends the run. */
+  stage: "scan" | "convert" | "dedupe" | "done"
+  /** Folder being walked, or the document being read. */
+  current: string
+  processed: number
+  /** Zero while a folder is still being walked. */
+  total: number
+  kept: number
+  duplicates: number
+  similar: number
+  skipped: number
 }
 
 export type ElectronAPI = {
@@ -85,8 +141,11 @@ export type ElectronAPI = {
   setTrafficLightsPosition(position: { x: number; y: number }): Promise<void>
   runDesktopMenuAction(action: DesktopMenuAction): Promise<void>
   showContextMenu(items: ContextMenuItem[], position?: { x: number; y: number }): Promise<string | undefined>
-  scanKnowledgeDirectory(path: string): Promise<{ files: ReadonlyArray<KnowledgeFileEntry> }>
-  readKnowledgeFile(root: string, path: string): Promise<{ text: string }>
+  pickKnowledgeSources(): Promise<{ paths: string[] }>
+  importKnowledgePaths(input: { libraryID: string; paths: string[] }): Promise<KnowledgeImportResult>
+  readKnowledgeFile(input: KnowledgeReadFileInput): Promise<{ text: string }>
+  deleteKnowledgeFiles(libraryID: string, paths: string[]): Promise<void>
+  onKnowledgeImportProgress(cb: (progress: KnowledgeImportProgress) => void): () => void
   setBackgroundColor(color: string): Promise<void>
   exportDebugLogs(): Promise<string>
   setForceFocus(enabled: boolean): Promise<void>

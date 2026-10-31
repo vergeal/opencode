@@ -50,8 +50,11 @@ export function createDesktopPlatform(api: ElectronAPI, windowState: DesktopWind
     },
     runDesktopMenuAction: createDesktopMenuAction(api),
     showContextMenu: (items, position) => api.showContextMenu(items, position),
-    scanKnowledgeDirectory: (path) => api.scanKnowledgeDirectory(path),
-    readKnowledgeFile: (root, path) => api.readKnowledgeFile(root, path),
+    pickKnowledgeSources: () => api.pickKnowledgeSources(),
+    importKnowledgePaths: (input) => api.importKnowledgePaths(input),
+    readKnowledgeFile: (input) => api.readKnowledgeFile(input),
+    deleteKnowledgeFiles: (libraryID, paths) => api.deleteKnowledgeFiles(libraryID, paths),
+    onKnowledgeImportProgress: (callback) => api.onKnowledgeImportProgress(callback),
     checkAppExists: async (appName) => {
       return api.checkAppExists(appName)
     },

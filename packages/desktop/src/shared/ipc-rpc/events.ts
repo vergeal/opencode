@@ -70,6 +70,21 @@ export class PluginMenubarItemsChanged extends Schema.TaggedClass<PluginMenubarI
   { items: Schema.Array(PluginMenubarItem) },
 ) {}
 
+// One step of a library import, addressed to the window that started it.
+export class KnowledgeImportProgress extends Schema.TaggedClass<KnowledgeImportProgress>()("KnowledgeImportProgress", {
+  libraryID: Schema.String,
+  stage: Schema.Literals(["scan", "convert", "dedupe", "done"]),
+  /** Folder being walked, or the document being read. */
+  current: Schema.String,
+  processed: Schema.Number,
+  /** Zero while a folder is still being walked. */
+  total: Schema.Number,
+  kept: Schema.Number,
+  duplicates: Schema.Number,
+  similar: Schema.Number,
+  skipped: Schema.Number,
+}) {}
+
 export const DesktopEvent = Schema.Union([
   DeepLinksOpened,
   MenuCommandTriggered,
@@ -78,6 +93,7 @@ export const DesktopEvent = Schema.Union([
   WindowPinchZoomChanged,
   WindowZoomChanged,
   StorageChanged,
+  KnowledgeImportProgress,
   PluginState,
   PluginEvent,
   PluginAvailable,

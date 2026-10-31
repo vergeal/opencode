@@ -93,8 +93,25 @@ export const api: ElectronAPI = {
   runDesktopMenuAction: (action) => invoke("MenuRunAction", { action }),
   showContextMenu: (items, position) =>
     invoke("MenuShowContext", { items, x: position?.x, y: position?.y }).then((result) => result.id),
-  scanKnowledgeDirectory: (path) => invoke("KnowledgeScanDirectory", { path }),
-  readKnowledgeFile: (root, path) => invoke("KnowledgeReadFile", { root, path }),
+  pickKnowledgeSources: () => invoke("KnowledgePickSources").then((result) => ({ paths: [...result.paths] })),
+  importKnowledgePaths: (input) => invoke("KnowledgeImportPaths", input),
+  readKnowledgeFile: (input) => invoke("KnowledgeReadFile", input),
+  deleteKnowledgeFiles: (libraryID, paths) =>
+    invoke("KnowledgeDeleteFiles", { libraryID, paths }).then(() => undefined),
+  onKnowledgeImportProgress: (cb) =>
+    listen("KnowledgeImportProgress", (event) =>
+      cb({
+        libraryID: event.libraryID,
+        stage: event.stage,
+        current: event.current,
+        processed: event.processed,
+        total: event.total,
+        kept: event.kept,
+        duplicates: event.duplicates,
+        similar: event.similar,
+        skipped: event.skipped,
+      }),
+    ),
   setBackgroundColor: (color) => invoke("AppSetBackgroundColor", { color }),
   exportDebugLogs: () => invoke("AppExportDebugLogs"),
   setForceFocus: (enabled) => invoke("AppSetForceFocus", { enabled }),

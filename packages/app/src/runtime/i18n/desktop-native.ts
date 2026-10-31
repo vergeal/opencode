@@ -296,6 +296,7 @@ export const DESKTOP_NATIVE_ENGLISH = {
 
   "desktop.dialog.chooseFolder": "Choose a folder",
   "desktop.dialog.chooseFile": "Choose a file",
+  "desktop.dialog.chooseSources": "Choose folders or files",
   "desktop.dialog.saveFile": "Save file",
   "desktop.dialog.files": "Files",
   "desktop.onboarding.defaultProject": "Default Project",
