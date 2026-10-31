@@ -33,6 +33,22 @@ test("renders sent Markdown with the shared component", async ({ page }) => {
   await expect(message.locator("pre code")).toHaveText("const value = 1")
 })
 
+test("uses a circular black action for send and stop", async ({ page }) => {
+  await openSession(page, {
+    name: "ComposerSubmitAction",
+    sessions: [{ id: "ses_composer_submit_action", title: "Composer submit action" }],
+    seed: { tabs: ["ses_composer_submit_action"] },
+  })
+
+  const action = page.locator('[data-action="composer-submit"]')
+  await expect(action).toBeVisible()
+  await expect(action).toHaveCSS("width", "32px")
+  await expect(action).toHaveCSS("height", "32px")
+  await expect(action).toHaveCSS("border-radius", "9999px")
+  await expect(action).toHaveCSS("background-color", "rgb(0, 0, 0)")
+  await expect(action).toHaveCSS("color", "rgb(255, 255, 255)")
+})
+
 test("mention a session by title, send its stable token, and open its own tab", async ({ page }) => {
   const target = "ses_0123456789abcdefghijklmnop"
   const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []

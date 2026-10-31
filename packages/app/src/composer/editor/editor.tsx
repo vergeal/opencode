@@ -1426,7 +1426,7 @@ function ComposerEditorSubmitButton(props: {
         }
         aria-busy={props.held && !props.stopping}
         variant="submit"
-        class="size-7 rounded-md p-[6px]"
+        class="size-8 rounded-full p-2"
         aria-label={props.stopping ? props.stopLabel : props.sendLabel}
         onClick={(event) => {
           event.preventDefault()

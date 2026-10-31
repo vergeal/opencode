@@ -10,6 +10,29 @@
   box-shadow: inset 0 0 0 1px var(--v2-border-border-base);
 }
 
+:root [data-component="composer"] [data-action="composer-submit"] {
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  border-radius: 9999px;
+  background-color: #000;
+  background-image: none;
+  color: #fff;
+  text-shadow: none;
+}
+
+@media (hover: hover) {
+  :root [data-component="composer"] [data-action="composer-submit"]:is(:hover, [data-state="hover"]):not(:disabled) {
+    background-color: #222;
+    background-image: none;
+  }
+}
+
+:root [data-component="composer"] [data-action="composer-submit"]:is(:active, [data-state="pressed"]):not(:disabled) {
+  background-color: #333;
+  background-image: none;
+}
+
 /* Matches the 16px session title fade. The top fade only covers the editor's 16px top padding until text scrolls
    under it. */
 [data-component="composer-scroll"],
