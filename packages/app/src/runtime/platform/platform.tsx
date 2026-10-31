@@ -189,6 +189,8 @@ type PlatformBase = {
   }>
   readKnowledgeFile?(input: { libraryID: string; path: string }): Promise<{ text: string }>
   deleteKnowledgeFiles?(libraryID: string, paths: string[]): Promise<void>
+  listKnowledgeFiles?(input: { libraryID: string }): Promise<{ files: ReadonlyArray<KnowledgeFileEntry> }>
+  knowledgeImportStatus?(libraryID: string): Promise<{ progress: KnowledgeImportProgress | null }>
   onKnowledgeImportProgress?(callback: (progress: KnowledgeImportProgress) => void): () => void
 
   /** Check if an editor app exists (desktop only) */

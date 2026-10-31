@@ -145,6 +145,8 @@ export type ElectronAPI = {
   importKnowledgePaths(input: { libraryID: string; paths: string[] }): Promise<KnowledgeImportResult>
   readKnowledgeFile(input: KnowledgeReadFileInput): Promise<{ text: string }>
   deleteKnowledgeFiles(libraryID: string, paths: string[]): Promise<void>
+  listKnowledgeFiles(libraryID: string): Promise<{ files: KnowledgeFileEntry[] }>
+  knowledgeImportStatus(libraryID: string): Promise<{ progress: KnowledgeImportProgress | null }>
   onKnowledgeImportProgress(cb: (progress: KnowledgeImportProgress) => void): () => void
   setBackgroundColor(color: string): Promise<void>
   exportDebugLogs(): Promise<string>

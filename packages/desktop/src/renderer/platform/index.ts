@@ -54,6 +54,8 @@ export function createDesktopPlatform(api: ElectronAPI, windowState: DesktopWind
     importKnowledgePaths: (input) => api.importKnowledgePaths(input),
     readKnowledgeFile: (input) => api.readKnowledgeFile(input),
     deleteKnowledgeFiles: (libraryID, paths) => api.deleteKnowledgeFiles(libraryID, paths),
+    listKnowledgeFiles: (input) => api.listKnowledgeFiles(input.libraryID),
+    knowledgeImportStatus: (libraryID) => api.knowledgeImportStatus(libraryID),
     onKnowledgeImportProgress: (callback) => api.onKnowledgeImportProgress(callback),
     checkAppExists: async (appName) => {
       return api.checkAppExists(appName)

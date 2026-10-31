@@ -14,6 +14,7 @@ import { usePlatform, type KnowledgeDiscard, type KnowledgeDiscardReason } from 
 import { useServers } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
 import { importKnowledge, pickKnowledgeSources } from "./import"
+import { knowledgeImports, type KnowledgeImportJob } from "./import-status"
 import { NewLibraryDialog } from "./new-library-dialog"
 import { useKnowledgeLibraries, type KnowledgeFile, type KnowledgeFlag, type KnowledgeLibrary } from "./store"
 import { reviewLibrary } from "./summary"
@@ -37,8 +38,6 @@ type ImportStage = "scan" | "convert" | "dedupe" | "summarize"
 type DiscardGroup = "duplicate" | "similar" | "ignored"
 
 const DISCARD_GROUPS: ReadonlyArray<DiscardGroup> = ["duplicate", "similar", "ignored"]
-
-const EMPTY_PROGRESS = { current: "", processed: 0, total: 0, kept: 0, duplicates: 0, similar: 0, skipped: 0 }
 
 /** Duplicates and near-duplicates are explained one by one; everything else shares one list. */
 function discardGroup(reason: KnowledgeDiscardReason): DiscardGroup {
@@ -75,15 +74,12 @@ export function KnowledgeScreen() {
     fileName: "",
     fileText: "",
     loadingFile: false,
-    /** Which import step is running; empty when nothing is importing. */
-    importStage: "" as "" | ImportStage,
-    progress: { ...EMPTY_PROGRESS },
     importError: "",
     selectedFiles: [] as string[],
     listWidth: 280,
   })
 
-  const importing = () => state.importStage !== ""
+  const importing = () => !!knowledgeImports.get(state.selected)
 
   const selected = createMemo(() => (state.selected ? libraries.get(state.selected) : undefined))
 
@@ -123,20 +119,9 @@ export function KnowledgeScreen() {
   // Progress arrives while the import promise is still pending, so it cannot be read from its result.
   onMount(() => {
     const stop = platform.onKnowledgeImportProgress?.((progress) => {
-      if (progress.libraryID !== state.selected || progress.stage === "done") return
+      if (progress.stage === "done") return
 
-      setState({
-        importStage: progress.stage,
-        progress: {
-          current: progress.current,
-          processed: progress.processed,
-          total: progress.total,
-          kept: progress.kept,
-          duplicates: progress.duplicates,
-          similar: progress.similar,
-          skipped: progress.skipped,
-        },
-      })
+      knowledgeImports.update(progress)
     })
 
     onCleanup(() => stop?.())
@@ -151,6 +136,35 @@ export function KnowledgeScreen() {
         }}
       />
     ))
+
+  /**
+   * Opening a library reads its files back from the desktop store, which owns them, and rejoins an
+   * import that kept running after the user left the workspace.
+   */
+  const openLibrary = (library: KnowledgeLibrary) => {
+    setState({ selected: library.id, query: "", fileName: "", fileText: "", selectedFiles: [] })
+
+    void platform
+      .listKnowledgeFiles?.({ libraryID: library.id })
+      .then((stored) => {
+        if (stored) libraries.setFiles(library.id, stored.files)
+      })
+      .catch(() => undefined)
+
+    void platform
+      .knowledgeImportStatus?.(library.id)
+      .then((result) => {
+        if (!result) return
+        if (!result.progress || result.progress.stage === "done") {
+          knowledgeImports.end(library.id)
+
+          return
+        }
+
+        knowledgeImports.update(result.progress)
+      })
+      .catch(() => undefined)
+  }
 
   /** Libraries imported before the detail list existed only have counts, so their chips stay read-only. */
   const discardsOf = (library: KnowledgeLibrary, group: DiscardGroup) =>
@@ -265,7 +279,8 @@ export function KnowledgeScreen() {
     const paths = await pickKnowledgeSources(platform)
     if (!paths.length) return
 
-    setState({ importStage: "scan", importError: "", progress: { ...EMPTY_PROGRESS } })
+    setState("importError", "")
+    knowledgeImports.begin(library.id)
 
     try {
       const imported = await importKnowledge({ platform, libraryID: library.id, paths })
@@ -277,7 +292,14 @@ export function KnowledgeScreen() {
         stats: imported.stats,
         discards: imported.discards,
       })
-      setState({ fileName: "", fileText: "", selectedFiles: [], importStage: "summarize" })
+
+      // The main process owns the stored files, so reading them back also recovers an earlier run
+      // whose result never reached this window.
+      const stored = await platform.listKnowledgeFiles?.({ libraryID: library.id }).catch(() => undefined)
+      if (stored) libraries.setFiles(library.id, stored.files)
+
+      setState({ fileName: "", fileText: "", selectedFiles: [] })
+      knowledgeImports.stage(library.id, "summarize")
 
       // Re-importing a folder adds nothing, and an empty excerpt set cannot describe the library.
       // Keep the summary that already explains it.
@@ -293,7 +315,7 @@ export function KnowledgeScreen() {
               excerpts: imported.excerpts,
             })
           : undefined
-        const total = library.files.length + imported.files.length
+        const total = stored?.files.length ?? library.files.length + imported.files.length
 
         libraries.setSummary(
           library.id,
@@ -304,7 +326,7 @@ export function KnowledgeScreen() {
     } catch (error) {
       setState("importError", error instanceof Error ? error.message : String(error))
     } finally {
-      setState({ importStage: "", progress: { ...EMPTY_PROGRESS } })
+      knowledgeImports.end(library.id)
     }
   }
 
@@ -399,9 +421,7 @@ export function KnowledgeScreen() {
                         type="button"
                         class="knowledge-card flex-1"
                         data-tone={index() % TONE_COUNT}
-                        onClick={() =>
-                          setState({ selected: library.id, query: "", fileName: "", fileText: "", selectedFiles: [] })
-                        }
+                        onClick={() => openLibrary(library)}
                       >
                         <span class="flex min-w-0 items-center gap-2">
                           <span class="knowledge-card-icon">
@@ -421,17 +441,7 @@ export function KnowledgeScreen() {
                     </ContextMenu.Trigger>
                     <ContextMenu.Portal>
                       <ContextMenu.Content>
-                        <ContextMenu.Item
-                          onSelect={() =>
-                            setState({
-                              selected: library.id,
-                              query: "",
-                              fileName: "",
-                              fileText: "",
-                              selectedFiles: [],
-                            })
-                          }
-                        >
+                        <ContextMenu.Item onSelect={() => openLibrary(library)}>
                           <ContextMenu.ItemLabel>{language.t("knowledge.files.menu.open")}</ContextMenu.ItemLabel>
                         </ContextMenu.Item>
                         <ContextMenu.Separator />
@@ -456,6 +466,7 @@ export function KnowledgeScreen() {
 
   function LibraryDetail(props: { library: KnowledgeLibrary }) {
     const intro = () => props.library.summary || props.library.description || language.t("knowledge.summary.empty")
+    const job = () => knowledgeImports.get(props.library.id)
 
     return (
       <div class="flex min-h-0 flex-1 flex-col">
@@ -597,7 +608,7 @@ export function KnowledgeScreen() {
 
         <div class="flex min-h-0 flex-1">
           <Show
-            when={importing()}
+            when={job()}
             fallback={
               <>
                 <aside
@@ -819,7 +830,7 @@ export function KnowledgeScreen() {
               </>
             }
           >
-            <ImportPanel stage={state.importStage} progress={state.progress} />
+            <ImportPanel job={job()!} />
           </Show>
         </div>
       </div>
@@ -850,26 +861,15 @@ function groupLabel(directory: string) {
 }
 
 /** Shows the import pipeline: which step runs, the file being read and what has been kept so far. */
-function ImportPanel(props: {
-  stage: "" | ImportStage
-  progress: {
-    current: string
-    processed: number
-    total: number
-    kept: number
-    duplicates: number
-    similar: number
-    skipped: number
-  }
-}) {
+function ImportPanel(props: { job: KnowledgeImportJob }) {
   const language = useLanguage()
-  const stage = () => (props.stage === "" ? "scan" : props.stage)
+  const stage = () => (props.job.stage === "done" ? "scan" : props.job.stage)
   const stageLabel = (id: ImportStage) => language.t(`knowledge.import.stage.${id}`)
   const share = () => {
-    const total = props.progress.total
+    const total = props.job.total
     if (!total) return undefined
 
-    return Math.min(1, props.progress.processed / total)
+    return Math.min(1, props.job.processed / total)
   }
 
   return (
@@ -884,8 +884,8 @@ function ImportPanel(props: {
             {(value) => (
               <span class="shrink-0 text-[12px] leading-[var(--line-height-compact)] text-v2-text-text-faint">
                 {language.t("knowledge.import.progress", {
-                  processed: props.progress.processed,
-                  total: props.progress.total,
+                  processed: props.job.processed,
+                  total: props.job.total,
                 })}
               </span>
             )}
@@ -901,7 +901,7 @@ function ImportPanel(props: {
 
         <div class="flex h-5 min-w-0 items-center gap-2">
           <Show
-            when={props.progress.current}
+            when={props.job.current}
             fallback={
               <span class="text-[12px] leading-[var(--line-height-compact)] text-v2-text-text-faint">
                 {language.t("knowledge.import.stage.hint")}
@@ -921,23 +921,23 @@ function ImportPanel(props: {
 
         <div class="flex flex-wrap items-center gap-1.5">
           <span class="knowledge-chip">
-            {language.plural("knowledge.import.added", props.progress.kept, { count: props.progress.kept })}
+            {language.plural("knowledge.import.added", props.job.kept, { count: props.job.kept })}
           </span>
-          <Show when={props.progress.duplicates}>
+          <Show when={props.job.duplicates}>
             {(count) => (
               <span class="knowledge-chip">
                 {language.plural("knowledge.import.duplicates", count(), { count: count() })}
               </span>
             )}
           </Show>
-          <Show when={props.progress.similar}>
+          <Show when={props.job.similar}>
             {(count) => (
               <span class="knowledge-chip">
                 {language.plural("knowledge.import.similar", count(), { count: count() })}
               </span>
             )}
           </Show>
-          <Show when={props.progress.skipped}>
+          <Show when={props.job.skipped}>
             {(count) => (
               <span class="knowledge-chip">
                 {language.plural("knowledge.import.ignored", count(), { count: count() })}

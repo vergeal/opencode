@@ -53,6 +53,22 @@ export const KnowledgeFileExcerpt = Schema.Struct({
   excerpt: Schema.String,
 })
 
+/** One step of an import, reported while it runs and kept until the library is reopened. */
+export const KnowledgeImportProgress = Schema.Struct({
+  libraryID: Schema.String,
+  /** `scan` walks folders, `convert` reads documents, `dedupe` compares them, `done` ends the run. */
+  stage: Schema.Literals(["scan", "convert", "dedupe", "done"]),
+  /** Folder being walked, or the document being read. */
+  current: Schema.String,
+  processed: Schema.Number,
+  /** Zero while a folder is still being walked. */
+  total: Schema.Number,
+  kept: Schema.Number,
+  duplicates: Schema.Number,
+  similar: Schema.Number,
+  skipped: Schema.Number,
+})
+
 /** Opens one picker that accepts both files and folders, several at a time. */
 export const KnowledgePickSources = Rpc.make("KnowledgePickSources", {
   success: Schema.Struct({ paths: Schema.Array(Schema.String) }),
@@ -81,9 +97,23 @@ export const KnowledgeDeleteFiles = Rpc.make("KnowledgeDeleteFiles", {
   success: Schema.Struct({}),
 })
 
+/** Everything a library already holds, so a reopened workspace rebuilds its index from storage. */
+export const KnowledgeListFiles = Rpc.make("KnowledgeListFiles", {
+  payload: { libraryID: Schema.String },
+  success: Schema.Struct({ files: Schema.Array(KnowledgeFileEntry) }),
+})
+
+/** The import still running for a library, so a UI that left and came back can rejoin it. */
+export const KnowledgeImportStatus = Rpc.make("KnowledgeImportStatus", {
+  payload: { libraryID: Schema.String },
+  success: Schema.Struct({ progress: Schema.NullOr(KnowledgeImportProgress) }),
+})
+
 export const KnowledgeRpcs = RpcGroup.make(
   KnowledgePickSources,
   KnowledgeImportPaths,
   KnowledgeReadFile,
   KnowledgeDeleteFiles,
+  KnowledgeListFiles,
+  KnowledgeImportStatus,
 )

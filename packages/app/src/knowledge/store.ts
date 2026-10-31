@@ -166,6 +166,8 @@ export function useKnowledgeLibraries() {
           }
         }),
       ),
+    /** Replaces the file list from desktop storage, which owns the content a library holds. */
+    setFiles: (id: string, files: ReadonlyArray<KnowledgeFile>) => update(id, { files: [...files] }),
     removeFiles: (id: string, paths: ReadonlyArray<string>) => {
       const removed = new Set(paths)
 

@@ -101,6 +101,12 @@ function make(fs: FileSystem.FileSystem, path: Path.Path, db: DatabaseSync) {
   const selectFile = db.prepare("SELECT content FROM knowledge_file WHERE library_id = ? AND path = ?")
   const selectLibrary = db.prepare("SELECT content FROM knowledge_file WHERE library_id = ? ORDER BY path")
   const selectIdentities = db.prepare("SELECT path, hash, signature, length FROM knowledge_file WHERE library_id = ?")
+  const selectEntries = db.prepare(
+    "SELECT path, name, size, kind, root, source FROM knowledge_file WHERE library_id = ? ORDER BY path",
+  )
+
+  /** Imports run in this process, so a library can report one that outlived the window that started it. */
+  const running = new Map<string, ImportProgress>()
 
   return {
     /**
@@ -108,9 +114,16 @@ function make(fs: FileSystem.FileSystem, path: Path.Path, db: DatabaseSync) {
      * library itself, and skipped when the library already holds the same content — exactly or as a
      * near-duplicate of an earlier document. Importing again adds only what is new.
      */
-    importPaths: (request: ImportRequest, onProgress?: (progress: ImportProgress) => Effect.Effect<void>) =>
-      Effect.gen(function* () {
-        const report = onProgress ?? (() => Effect.void)
+    importPaths: (request: ImportRequest, onProgress?: (progress: ImportProgress) => Effect.Effect<void>) => {
+      // Progress is tracked in this process, not only streamed to the window that asked: the user may
+      // leave the workspace while the import keeps running and come back to watch it finish.
+      const report = (progress: ImportProgress) => {
+        running.set(request.libraryID, progress)
+
+        return onProgress ? onProgress(progress) : Effect.void
+      }
+
+      return Effect.gen(function* () {
         const stats = { scanned: 0, kept: 0, duplicates: 0, similar: 0, skipped: 0 }
         const known: Array<KnownDocument> = yield* Effect.sync(() =>
           (
@@ -225,7 +238,8 @@ function make(fs: FileSystem.FileSystem, path: Path.Path, db: DatabaseSync) {
         })
 
         return { files: kept.map((file) => file.entry), stats, excerpts, discards }
-      }),
+      }).pipe(Effect.ensuring(Effect.sync(() => running.delete(request.libraryID))))
+    },
     /** Reads one stored document. The imported folder is not consulted. */
     read: (libraryID: string, file: string) =>
       Effect.sync(() => {
@@ -251,6 +265,15 @@ function make(fs: FileSystem.FileSystem, path: Path.Path, db: DatabaseSync) {
     /** Everything a library holds, used to rebuild its index after a restart. */
     list: (libraryID: string) =>
       Effect.sync(() => (selectLibrary.all(libraryID) as Array<{ content: string }>).map((row) => row.content)),
+    /** Library entries without their text, so a reopened workspace can show what is already stored. */
+    entries: (libraryID: string) => Effect.sync(() => selectEntries.all(libraryID) as Array<FileEntry>),
+    /** The import still running for a library, or null once it finished. */
+    status: (libraryID: string) =>
+      Effect.sync(() => {
+        const progress = running.get(libraryID)
+
+        return progress ? { ...progress, libraryID } : null
+      }),
   }
 }
 

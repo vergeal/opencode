@@ -98,6 +98,8 @@ export const api: ElectronAPI = {
   readKnowledgeFile: (input) => invoke("KnowledgeReadFile", input),
   deleteKnowledgeFiles: (libraryID, paths) =>
     invoke("KnowledgeDeleteFiles", { libraryID, paths }).then(() => undefined),
+  listKnowledgeFiles: (libraryID) => invoke("KnowledgeListFiles", { libraryID }).then(mutable),
+  knowledgeImportStatus: (libraryID) => invoke("KnowledgeImportStatus", { libraryID }).then(mutable),
   onKnowledgeImportProgress: (cb) =>
     listen("KnowledgeImportProgress", (event) =>
       cb({

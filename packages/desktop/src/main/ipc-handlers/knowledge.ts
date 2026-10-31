@@ -45,6 +45,16 @@ export const knowledgeHandlers = KnowledgeRpcs.toLayer(
       },
       KnowledgeReadFile: ({ libraryID, path }) => knowledge.read(libraryID, path).pipe(Effect.orDie),
       KnowledgeDeleteFiles: ({ libraryID, paths }) => knowledge.deleteFiles(libraryID, paths).pipe(Effect.orDie),
+      KnowledgeListFiles: ({ libraryID }) =>
+        knowledge.entries(libraryID).pipe(
+          Effect.map((files) => ({ files })),
+          Effect.orDie,
+        ),
+      KnowledgeImportStatus: ({ libraryID }) =>
+        knowledge.status(libraryID).pipe(
+          Effect.map((progress) => ({ progress })),
+          Effect.orDie,
+        ),
     })
   }),
 )
