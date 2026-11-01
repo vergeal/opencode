@@ -10,9 +10,10 @@ import { IconButton } from "@opencode/ui/icon-button"
 import { Menu } from "@opencode/ui/menu"
 import { InlineInput } from "@opencode/ui/inline-input"
 import { Keybind } from "@opencode/ui/keybind"
-import { TextShimmer } from "@opencode/ui/text-shimmer"
 import type { BackgroundTask, MountedSession, SessionScreen } from "@opencode/plugin/gui"
 import { PluginSlot } from "@/runtime/plugin/render"
+import { usePluginHost } from "@/runtime/plugin/host"
+import { usePluginAttachment } from "@/runtime/plugin/attachment"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useServer } from "@/runtime/server/current"
 import { useWorkspaceLocation } from "@/workspaces/location"
@@ -36,6 +37,8 @@ import {
 import { SessionHeaderSpacer } from "@/session/header/session-header"
 import { SessionHeaderGap } from "@/session/header/drag-area"
 import { SessionWorkingIndicator } from "@/session/header/session-working-indicator"
+import { createResizeObserver } from "@solid-primitives/resize-observer"
+import { SessionWorkingActivity } from "./working-activity"
 
 type BlockingTask = { type: "shell" | "subagent"; partID: string; id?: string; label?: string }
 
@@ -137,6 +140,8 @@ function MessageTimelineView(
   const server = useServer()
   const data = server.ctx.data
   const sdk = useWorkspaceLocation()
+  const plugins = usePluginHost()
+  const attachment = usePluginAttachment()
   const sessionID = props.data.sessionID
   const sessionStatus = props.data.status
   const titleLabel = props.data.titleLabel
@@ -175,6 +180,7 @@ function MessageTimelineView(
   const showHeader = createMemo(() => !props.hideHeader && (props.data.showHeader() || workspaceSession()))
   const pinned = createMemo(() => props.pinned)
   const messageByID = projection.messageByID
+  const [workingStatusHeight, setWorkingStatusHeight] = createSignal(36)
 
   const virtualized = createTimelineVirtualizer({
     active: () => props.active !== false,
@@ -195,6 +201,7 @@ function MessageTimelineView(
     onSelectionInteraction: props.onSelectionInteraction,
     onUserScroll: props.onUserScroll,
     onHistoryScroll: props.onHistoryScroll,
+    statusHeight: workingStatusHeight,
     canRenderImmediately: (row, disclosure) => {
       if (
         Predicate.isTagged(row, "TurnGap") ||
@@ -377,6 +384,34 @@ function MessageTimelineView(
     1000,
   )
 
+  const workingMessages = createMemo(() => {
+    const active = projection.activeMessageID()
+
+    return active ? (projection.assistantMessagesByParent().get(active) ?? []) : []
+  })
+
+  const workingStartedAt = createMemo(() => {
+    const active = projection.activeMessageID()
+    const message = active ? messageByID().get(active) : undefined
+
+    if (message?.type === "user") return message.time.created
+
+    return workingMessages()[0]?.time.created ?? Date.now()
+  })
+
+  let workingStatus: HTMLDivElement | undefined
+
+  createResizeObserver(
+    () => workingStatus,
+    () => {
+      if (workingStatus) setWorkingStatusHeight(Math.ceil(workingStatus.getBoundingClientRect().height))
+    },
+  )
+
+  const openWorkingFile = (path: string) => {
+    void plugins.links.open({ href: path, exact: true, background: true, session: attachment.current() })
+  }
+
   const showWorking = createMemo(() => {
     const id = sessionID()
 
@@ -456,11 +491,19 @@ function MessageTimelineView(
         "md:max-w-session md:mx-auto": props.centered,
       }}
     >
-      <div class={`flex h-9 items-center gap-2 pt-3 text-[15px] font-[530] leading-text-compact ${turnPadding()}`}>
+      <div
+        ref={(element) => {
+          workingStatus = element
+          setWorkingStatusHeight(Math.ceil(element.getBoundingClientRect().height))
+        }}
+        class={`flex min-h-9 items-start gap-3 pb-1 pt-3 text-[15px] font-[530] leading-text-compact ${turnPadding()}`}
+      >
         <Show when={live() && showWorking()}>
-          <div data-component="session-working" role="status">
-            <TextShimmer text={language.t("session.timeline.working")} active />
-          </div>
+          <SessionWorkingActivity
+            started={workingStartedAt()}
+            messages={workingMessages()}
+            onOpenFile={openWorkingFile}
+          />
         </Show>
         <Show when={live() && backgroundHintPresence.present()}>
           <div

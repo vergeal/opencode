@@ -751,13 +751,15 @@ test.describe("Working", () => {
     })
 
     const working = page.locator('[data-component="session-working"]')
-    const shimmer = working.locator('[data-component="text-shimmer"]')
+    const shimmer = working.locator('[data-component="text-shimmer"][aria-label="Working for"]')
+    const duration = working.locator('[data-slot="session-working-duration"]')
     await expect(working).toHaveCount(1)
     await expect(working).toHaveRole("status")
-    await expect(shimmer).toHaveAttribute("aria-label", "Working")
+    await expect(shimmer).toHaveAttribute("aria-label", "Working for")
+    await expect(duration).toHaveText(/^\d+时\d+分\d+秒$/)
+    await expect(working.locator('[data-slot="session-working-divider"]')).toBeVisible()
     await expect(working).toBeInViewport()
     await expect(shimmer).toHaveAttribute("data-active", "true")
-    await expect(shimmer).toHaveCSS("line-height", "16px")
     await expect(page.locator('[data-timeline-row="Thinking"]')).toHaveCount(0)
 
     await timeline.send(stepStarted(assistantMessage([], { completed: false })))
@@ -768,7 +770,7 @@ test.describe("Working", () => {
 
     await timeline.send(partUpdated(reasoningPart("prt_working_reasoning", "The inspection is complete.")))
     await expect(page.locator('[data-timeline-row="Thinking"]')).toHaveCount(0)
-    await expect(shimmer).toHaveAttribute("aria-label", "Working")
+    await expect(shimmer).toHaveAttribute("aria-label", "Working for")
     await expect(working).toBeInViewport()
 
     await timeline.send(status("idle"))
@@ -861,9 +863,26 @@ test.describe("Working", () => {
       await timeline.send(partUpdated(toolPart(id, name, "completed", input, { metadata })))
       await expect(tool).toBeVisible()
       await expect(page.locator('[data-component="collapsed-tool-group"]')).toHaveCount(0)
-      await expect(working.locator('[data-component="text-shimmer"]')).toHaveAttribute("aria-label", "Working")
+      await expect(working.locator('[data-component="text-shimmer"][aria-label="Working for"]')).toHaveAttribute(
+        "aria-label",
+        "Working for",
+      )
       await expect(working).toBeVisible()
-      await expect(working.locator('[data-component="text-shimmer"]')).toHaveAttribute("data-active", "true")
+      await expect(working.locator('[data-component="text-shimmer"][aria-label="Working for"]')).toHaveAttribute(
+        "data-active",
+        "true",
+      )
+      if (name === "shell") {
+        await expect(working.getByText("Ran command", { exact: true })).toBeVisible()
+        await expect(working.getByText("printf ready", { exact: true })).toHaveCount(0)
+        await working.getByRole("button", { name: "printf ready", exact: true }).click()
+        await expect(working.getByText("printf ready", { exact: true })).toBeVisible()
+      }
+      if (name === "subagent") await expect(working.getByText("Subagent", { exact: true })).toBeVisible()
+      if (name === "patch") {
+        await expect(working.getByText("Editing", { exact: true })).toBeVisible()
+        await expect(working.getByRole("link", { name: "working.ts" })).toHaveAttribute("href", "src/working.ts")
+      }
     })
   }
 
@@ -904,6 +923,58 @@ test.describe("Working", () => {
     await timeline.send(partUpdated(toolPart("prt_read_four", "read", "completed", { path: "src/four.ts" })))
     await expect(shimmer).toHaveAttribute("data-active", "false")
     await expect(working).toBeVisible()
+  })
+
+  test("shows command progress with file links while timeline tools are hidden", async ({ page }) => {
+    const timeline = await setupTimeline(page, {
+      sessionStatus: { [sessionID]: { type: "busy" } },
+      messages: [
+        userMessage(),
+        assistantMessage(
+          [
+            toolPart("prt_working_read", "read", "completed", {
+              path: "packages/app/src/session/timeline/working-step.ts",
+            }),
+            toolPart("prt_working_command", "shell", "running", { command: "bun test" }),
+          ],
+          { completed: false },
+        ),
+      ],
+      settings: { timelineDetail: timelinePresets[4].value },
+    })
+
+    const working = page.locator('[data-component="session-working"]')
+    const header = working.locator('[data-component="text-shimmer"][aria-label="Working for"]')
+    const divider = working.locator('[data-slot="session-working-divider"]')
+    const file = working.getByRole("link", { name: "working-step.ts", exact: true })
+    const detail = working.getByText("bun test", { exact: true })
+
+    await expect(working.locator('[data-component="text-shimmer"][aria-label="Run command"]')).toBeVisible()
+    await expect(file).toHaveAttribute("href", "packages/app/src/session/timeline/working-step.ts")
+    await expect(detail).toHaveCount(0)
+    const [headerBox, dividerBox, fileBox] = await Promise.all([
+      header.boundingBox(),
+      divider.boundingBox(),
+      file.boundingBox(),
+    ])
+    expect(headerBox).not.toBeNull()
+    expect(dividerBox).not.toBeNull()
+    expect(fileBox).not.toBeNull()
+    const comfortableWidth = await working.evaluate((element) => {
+      const row = element.parentElement!
+      const style = getComputedStyle(row)
+
+      return row.getBoundingClientRect().width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+    })
+    expect(dividerBox!.width).toBeCloseTo(comfortableWidth, 0)
+    expect(headerBox!.y).toBeLessThan(dividerBox!.y)
+    expect(dividerBox!.y).toBeLessThan(fileBox!.y)
+
+    await working.getByRole("button", { name: "bun test", exact: true }).click()
+    await expect(detail).toBeVisible()
+
+    await timeline.send(partUpdated(toolPart("prt_working_command", "shell", "completed", { command: "bun test" })))
+    await expect(working.getByText("Ran command", { exact: true })).toBeVisible()
   })
 
   for (const grouped of [false, true]) {
@@ -975,7 +1046,10 @@ test.describe("Working", () => {
     await timeline.send(stepStarted(assistant))
     await expect(retry).toHaveCount(0)
     await expect(page.locator('[data-timeline-row="Thinking"]')).toHaveCount(0)
-    await expect(working.locator('[data-component="text-shimmer"]')).toHaveAttribute("aria-label", "Working")
+    await expect(working.locator('[data-component="text-shimmer"][aria-label="Working for"]')).toHaveAttribute(
+      "aria-label",
+      "Working for",
+    )
     await expect(working).toBeVisible()
   })
 
@@ -2142,10 +2216,7 @@ test("highlights a quote's source only while its first comment is written", asyn
     await expect
       .poll(() =>
         first.evaluate((element) =>
-          [
-            "::selection",
-            "::highlight(timeline-quote-source)",
-          ].map((pseudo) => {
+          ["::selection", "::highlight(timeline-quote-source)"].map((pseudo) => {
             const style = getComputedStyle(element, pseudo)
 
             return {
@@ -2245,11 +2316,13 @@ test("keeps the native selection height after quoting wrapped and formatted text
   const height = await source.locator("p").evaluate((element) => parseFloat(getComputedStyle(element).lineHeight))
   await expect
     .poll(() =>
-      source.locator('[data-component="timeline-quote-background"] > span').evaluateAll(
-        (lines, height) =>
-          lines.length > 0 && lines.every((line) => Math.abs(line.getBoundingClientRect().height - height) < 0.1),
-        height,
-      ),
+      source
+        .locator('[data-component="timeline-quote-background"] > span')
+        .evaluateAll(
+          (lines, height) =>
+            lines.length > 0 && lines.every((line) => Math.abs(line.getBoundingClientRect().height - height) < 0.1),
+          height,
+        ),
     )
     .toBe(true)
 })

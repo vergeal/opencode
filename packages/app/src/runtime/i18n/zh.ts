@@ -725,7 +725,7 @@ export const dict = {
   "home.projects.all": "所有项目",
   "session.view.select": "课次视图",
   "session.background.moveRunning": "移至背景",
-  "session.timeline.working": "工作中",
+  "session.timeline.working": "Working",
   "session.websearch.title": "第三方网页搜索",
   "session.websearch.description": "选择搜索提供商代理用于搜索网页",
   "session.websearch.provider": "搜索提供商",

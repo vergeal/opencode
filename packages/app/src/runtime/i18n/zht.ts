@@ -185,7 +185,6 @@ export const dict = {
   "provider.connect.toast.connected.title": "{{provider}} 已連線",
   "provider.connect.toast.connected.description": "現在可以使用 {{provider}} 模型了。",
 
-
   "provider.disconnect.toast.disconnected.title": "{{provider}} 已中斷連線",
   "provider.disconnect.toast.disconnected.description": "{{provider}} 模型已不再可用。",
   "provider.disconnect.toast.noCredentials.description": "找不到 {{provider}} 的可移除憑證。",
@@ -249,7 +248,6 @@ export const dict = {
 
   "dialog.mcp.title": "MCP",
   "dialog.mcp.empty": "未設定 MCP",
-
 
   "dialog.fork.empty": "沒有可用於分支的訊息",
 
@@ -702,7 +700,7 @@ export const dict = {
   "home.projects.all": "所有專案",
   "session.view.select": "工作階段檢視",
   "session.background.moveRunning": "移至背景",
-  "session.timeline.working": "工作中",
+  "session.timeline.working": "Working",
   "session.websearch.title": "第三方網頁搜尋",
   "session.websearch.description": "選擇搜尋提供者代理用於搜尋網頁",
   "session.websearch.provider": "搜索提供商",
