@@ -1,14 +1,9 @@
-import type { SessionMessageAssistant } from "@opencode/client/promise"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
-import { For, Show, createEffect, createSignal, onCleanup } from "solid-js"
+import { Show, createEffect, createSignal, onCleanup } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
-import { buildWorkingSteps, formatWorkingDuration, type WorkingStep } from "./working-step"
+import { formatWorkingDuration, type WorkingStep } from "./working-step"
 
-export function SessionWorkingActivity(props: {
-  started: number
-  messages: readonly Pick<SessionMessageAssistant, "id" | "content">[]
-  onOpenFile: (path: string) => void
-}) {
+export function SessionWorkingHeader(props: { started: number }) {
   const language = useLanguage()
   const [now, setNow] = createSignal(Date.now())
 
@@ -18,12 +13,11 @@ export function SessionWorkingActivity(props: {
     onCleanup(() => window.clearInterval(timer))
   })
 
-  const steps = () => buildWorkingSteps(props.messages)
   const elapsed = () => Math.max(0, now() - props.started)
   const showDuration = () => elapsed() >= 1000
 
   return (
-    <div data-component="session-working" role="status" class="min-w-0 flex-1">
+    <div data-component="session-working" role="status" class="min-w-0 w-full">
       <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-[530] leading-text-compact">
         <TextShimmer
           text={showDuration() ? language.t("session.working.for") : language.t("session.timeline.working")}
@@ -36,32 +30,29 @@ export function SessionWorkingActivity(props: {
         </Show>
       </div>
       <div data-slot="session-working-divider" class="mt-2 w-full border-t border-v2-border-border-muted" />
-      <Show when={steps().length > 0}>
-        <ol
-          data-slot="session-working-steps"
-          aria-label={language.t("session.working.steps")}
-          class="mt-1.5 flex flex-col gap-1 ps-1 text-[13px] leading-text-compact text-v2-text-text-muted"
-        >
-          <For each={steps()}>
-            {(step) => (
-              <li
-                data-slot="session-working-step"
-                data-state={step.running ? "running" : "completed"}
-                class="flex min-w-0 items-start gap-2"
-              >
-                <span
-                  data-slot="session-working-dot"
-                  aria-hidden="true"
-                  class="mt-[7px] size-1 shrink-0 rounded-full bg-v2-icon-icon-muted data-[state=running]:bg-v2-icon-icon-accent"
-                  data-state={step.running ? "running" : "completed"}
-                />
-                <WorkingStepText step={step} onOpenFile={props.onOpenFile} />
-              </li>
-            )}
-          </For>
-        </ol>
-      </Show>
     </div>
+  )
+}
+
+export function SessionAssistantActivity(props: { step?: WorkingStep; onOpenFile: (path: string) => void }) {
+  return (
+    <Show when={props.step}>
+      {(step) => (
+        <div
+          data-component="session-assistant-activity"
+          data-state={step().running ? "running" : "completed"}
+          class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-1 text-[13px] leading-text-compact text-v2-text-text-muted"
+        >
+          <span
+            data-slot="session-working-dot"
+            aria-hidden="true"
+            class="mt-[7px] size-1 shrink-0 rounded-full bg-v2-icon-icon-muted data-[state=running]:bg-v2-icon-icon-accent"
+            data-state={step().running ? "running" : "completed"}
+          />
+          <WorkingStepText step={step()} onOpenFile={props.onOpenFile} />
+        </div>
+      )}
+    </Show>
   )
 }
 

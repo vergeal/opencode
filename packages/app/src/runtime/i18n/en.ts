@@ -613,7 +613,6 @@ export const dict = {
   "session.todo.label.other": "{{done}} of {{count}} todos done",
   "session.timeline.working": "Working",
   "session.working.for": "Working for",
-  "session.working.steps": "Current work steps",
   "session.working.step.thinking": "Thinking",
   "session.working.step.runCommand": "Run command",
   "session.working.step.ranCommand": "Ran command",

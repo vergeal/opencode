@@ -638,18 +638,19 @@ test("shows a background subagent's outcome as its own row where it finished", a
   await expect(page).toHaveURL(new RegExp(`/session/${childID}$`))
 })
 
-test("holds undelivered input still while live status above it comes and goes", async ({ page }) => {
+test("holds undelivered input still while the assistant action comes and goes", async ({ page }) => {
   const timeline = await setupTimeline(page, {
     sessionStatus: { [sessionID]: { type: "busy" } },
     messages: [
       userMessage(),
-      // Streaming text stands in for Working, so live status has nothing to show.
+      // The task header remains visible while streaming text leaves no current assistant action.
       assistantMessage([textPart("prt_streaming_answer", "It ships as soon as it's ready.")], { completed: false }),
     ],
   })
 
   const answer = page.getByText("It ships as soon as it's ready.", { exact: true })
   const working = page.locator('[data-component="session-working"]')
+  const assistantActivity = page.locator('[data-component="session-assistant-activity"]')
   const activity = page.locator('[data-timeline-key="activity"]')
   const lane = async () => (await activity.boundingBox())?.height
 
@@ -677,10 +678,12 @@ test("holds undelivered input still while live status above it comes and goes", 
   }
 
   await expect(answer).toBeVisible()
+  await expect(working).toBeVisible()
+  await expect(assistantActivity).toHaveCount(0)
   await timeline.send(outcome("msg_pending_outcome", "Audit constraints"))
   await expect(first).toHaveText(/^General finished · Audit constraints$/)
-  await expect(working).toHaveCount(0)
-  // Live status moves above the waiting notice, but takes no room while it has nothing to show.
+  await expect(working).toBeVisible()
+  // The background hint lane takes no room while it has nothing to show.
   await expect.poll(lane).toBe(0)
   const pending = await gap()
 
@@ -692,14 +695,16 @@ test("holds undelivered input still while live status above it comes and goes", 
   await expect(page.locator('[data-slot="session-timeline-notice"]').filter({ hasText: "Review copy" })).toBeVisible()
   await expect.poll(lane).toBe(0)
 
-  // A finished read keeps Working on; the next streaming text hides it again. Once shown, the lane stays.
+  // A finished read becomes the current assistant action; the next text clears that action.
   await timeline.send(partUpdated(toolPart("prt_live_read", "read", "completed", { filePath: "README.md" })))
   await expect(working).toBeVisible()
-  await expect.poll(lane).toBe(36)
+  await expect(assistantActivity.getByText("Read", { exact: true })).toBeVisible()
+  await expect.poll(lane).toBe(0)
   await timeline.send(partUpdated(textPart("prt_live_text", "Checking the copy next.")))
   await expect(page.getByText("Checking the copy next.", { exact: true })).toBeVisible()
-  await expect(working).toHaveCount(0)
-  await expect.poll(lane).toBe(36)
+  await expect(working).toBeVisible()
+  await expect(assistantActivity).toHaveCount(0)
+  await expect.poll(lane).toBe(0)
 })
 
 test("jumps from a finished shell's notice to its call", async ({ page }) => {
@@ -742,7 +747,7 @@ test("jumps from a finished shell's notice to its call", async ({ page }) => {
 })
 
 test.describe("Working", () => {
-  test("shows Working between busy and reasoning states", async ({ page }) => {
+  test("keeps one task Working header while showing the current assistant action", async ({ page }) => {
     const timeline = await setupTimeline(page, {
       messages: [userMessage()],
       sessionStatus: { [sessionID]: { type: "busy" } },
@@ -751,6 +756,7 @@ test.describe("Working", () => {
     })
 
     const working = page.locator('[data-component="session-working"]')
+    const activity = page.locator('[data-component="session-assistant-activity"]')
     const shimmer = working.locator('[data-component="text-shimmer"][aria-label="Working for"]')
     const duration = working.locator('[data-slot="session-working-duration"]')
     await expect(working).toHaveCount(1)
@@ -761,23 +767,65 @@ test.describe("Working", () => {
     await expect(working).toBeInViewport()
     await expect(shimmer).toHaveAttribute("data-active", "true")
     await expect(page.locator('[data-timeline-row="Thinking"]')).toHaveCount(0)
+    await expect(activity).toHaveCount(0)
 
     await timeline.send(stepStarted(assistantMessage([], { completed: false })))
     await expect(working).toBeVisible()
+    await expect(activity.locator('[data-component="text-shimmer"][aria-label="Thinking"]')).toBeVisible()
     await timeline.send(partUpdated(reasoningPart("prt_working_reasoning", "")))
     await expect(page.locator('[data-timeline-row="Thinking"]')).toBeVisible()
-    await expect(working).toHaveCount(0)
+    await expect(working).toBeVisible()
+    await expect(activity.locator('[data-component="text-shimmer"][aria-label="Thinking"]')).toBeVisible()
 
     await timeline.send(partUpdated(reasoningPart("prt_working_reasoning", "The inspection is complete.")))
     await expect(page.locator('[data-timeline-row="Thinking"]')).toHaveCount(0)
     await expect(shimmer).toHaveAttribute("aria-label", "Working for")
     await expect(working).toBeInViewport()
+    await expect(activity.getByText("Thinking", { exact: true })).toBeVisible()
 
     await timeline.send(status("idle"))
     await expect(working).toHaveCount(0)
+    await expect(activity).toHaveCount(0)
   })
 
-  test("shows an expandable live Thinking in place of Working while reasoning is the only activity", async ({
+  test("places the next assistant action after the previous assistant answer", async ({ page }) => {
+    await setupTimeline(page, {
+      sessionStatus: { [sessionID]: { type: "busy" } },
+      messages: [
+        userMessage(),
+        assistantMessage([textPart("prt_first_answer", "The first step is complete.")], {
+          id: "msg_first_assistant",
+          completed: true,
+        }),
+        assistantMessage([toolPart("prt_second_action", "shell", "running", { command: "bun test" })], {
+          id: "msg_second_assistant",
+          created: 1700000002000,
+          completed: false,
+        }),
+      ],
+      settings: { timelineDetail: timelinePresets[4].value },
+    })
+
+    const working = page.locator('[data-component="session-working"]')
+    const activity = page.locator('[data-component="session-assistant-activity"]')
+    const answer = page.getByText("The first step is complete.", { exact: true })
+
+    await expect(working).toHaveCount(1)
+    await expect(activity.locator('[data-component="text-shimmer"][aria-label="Run command"]')).toBeVisible()
+    await expect(activity.locator('[data-slot="session-working-duration"]')).toHaveCount(0)
+    const [workingBox, answerBox, activityBox] = await Promise.all([
+      working.boundingBox(),
+      answer.boundingBox(),
+      activity.boundingBox(),
+    ])
+    expect(workingBox).not.toBeNull()
+    expect(answerBox).not.toBeNull()
+    expect(activityBox).not.toBeNull()
+    expect(workingBox!.y + workingBox!.height).toBeLessThanOrEqual(answerBox!.y)
+    expect(activityBox!.y).toBeGreaterThanOrEqual(answerBox!.y + answerBox!.height)
+  })
+
+  test("keeps task Working while a separate live Thinking group shows the current assistant activity", async ({
     page,
   }) => {
     const timeline = await setupTimeline(page, {
@@ -794,6 +842,7 @@ test.describe("Working", () => {
     await timeline.transport.waitForConnection()
 
     const working = page.locator('[data-component="session-working"]')
+    const activity = page.locator('[data-component="session-assistant-activity"]')
     const group = page.locator('[data-component="collapsed-tool-group"]')
     const trigger = group.locator('[data-component="context-tool-group-trigger"]')
     const elapsed = trigger.locator('[data-slot="basic-tool-tool-subtitle"]')
@@ -803,7 +852,8 @@ test.describe("Working", () => {
     await page.clock.pauseAt(1700000001000 + 492_000)
     await expect(trigger.locator('[data-component="text-shimmer"]')).toHaveAttribute("data-active", "true")
     await expect(elapsed).toHaveText("8m 12s")
-    await expect(working).toHaveCount(0)
+    await expect(working).toBeVisible()
+    await expect(activity.locator('[data-component="text-shimmer"][aria-label="Thinking"]')).toBeVisible()
     await expect(page.getByRole("button", { name: "Used 1 Thought" })).toHaveCount(0)
 
     await page.clock.fastForward(1_000)
@@ -823,7 +873,7 @@ test.describe("Working", () => {
   })
 
   for (const name of ["shell", "patch", "subagent"] as const) {
-    test(`hides Working during ${name} input and execution, then restores it on completion`, async ({ page }) => {
+    test(`keeps task Working while showing the current ${name} action`, async ({ page }) => {
       const timeline = await setupTimeline(page, {
         messages: [userMessage(), assistantMessage([], { completed: false })],
         settings: {
@@ -832,6 +882,7 @@ test.describe("Working", () => {
       })
 
       const working = page.locator('[data-component="session-working"]')
+      const activity = page.locator('[data-component="session-assistant-activity"]')
       await expect(working).toBeVisible()
 
       const id = `prt_working_${name}`
@@ -847,7 +898,18 @@ test.describe("Working", () => {
       await timeline.send(partUpdated(toolPart(id, name, "streaming", input)))
       const tool = page.locator(`[data-timeline-part-id="${id}"]`)
       await expect(tool).toBeVisible()
-      await expect(working).toHaveCount(0)
+      await expect(working).toBeVisible()
+      await expect(
+        activity.locator(
+          `[data-component="text-shimmer"][aria-label="${
+            {
+              shell: "Run command",
+              patch: "Editing",
+              subagent: "Subagent",
+            }[name]
+          }"]`,
+        ),
+      ).toBeVisible()
 
       const metadata =
         name === "patch"
@@ -858,7 +920,9 @@ test.describe("Working", () => {
       await expect(tool).toContainText(
         { shell: "printf ready", patch: "working.ts", subagent: "Inspect working indicator" }[name],
       )
-      await expect(working).toHaveCount(0)
+      await expect(working).toBeVisible()
+      if (name === "patch")
+        await expect(activity.getByRole("link", { name: "working.ts" })).toHaveAttribute("href", "src/working.ts")
 
       await timeline.send(partUpdated(toolPart(id, name, "completed", input, { metadata })))
       await expect(tool).toBeVisible()
@@ -873,15 +937,15 @@ test.describe("Working", () => {
         "true",
       )
       if (name === "shell") {
-        await expect(working.getByText("Ran command", { exact: true })).toBeVisible()
-        await expect(working.getByText("printf ready", { exact: true })).toHaveCount(0)
-        await working.getByRole("button", { name: "printf ready", exact: true }).click()
-        await expect(working.getByText("printf ready", { exact: true })).toBeVisible()
+        await expect(activity.getByText("Ran command", { exact: true })).toBeVisible()
+        await expect(activity.getByText("printf ready", { exact: true })).toHaveCount(0)
+        await activity.getByRole("button", { name: "printf ready", exact: true }).click()
+        await expect(activity.getByText("printf ready", { exact: true })).toBeVisible()
       }
-      if (name === "subagent") await expect(working.getByText("Subagent", { exact: true })).toBeVisible()
+      if (name === "subagent") await expect(activity.getByText("Subagent", { exact: true })).toBeVisible()
       if (name === "patch") {
-        await expect(working.getByText("Editing", { exact: true })).toBeVisible()
-        await expect(working.getByRole("link", { name: "working.ts" })).toHaveAttribute("href", "src/working.ts")
+        await expect(activity.getByText("Editing", { exact: true })).toBeVisible()
+        await expect(activity.getByRole("link", { name: "working.ts" })).toHaveAttribute("href", "src/working.ts")
       }
     })
   }
@@ -925,17 +989,16 @@ test.describe("Working", () => {
     await expect(working).toBeVisible()
   })
 
-  test("shows command progress with file links while timeline tools are hidden", async ({ page }) => {
+  test("shows only the current assistant action with the task-level Working header", async ({ page }) => {
     const timeline = await setupTimeline(page, {
       sessionStatus: { [sessionID]: { type: "busy" } },
       messages: [
         userMessage(),
         assistantMessage(
           [
-            toolPart("prt_working_read", "read", "completed", {
+            toolPart("prt_working_read", "read", "running", {
               path: "packages/app/src/session/timeline/working-step.ts",
             }),
-            toolPart("prt_working_command", "shell", "running", { command: "bun test" }),
           ],
           { completed: false },
         ),
@@ -944,22 +1007,22 @@ test.describe("Working", () => {
     })
 
     const working = page.locator('[data-component="session-working"]')
+    const activity = page.locator('[data-component="session-assistant-activity"]')
     const header = working.locator('[data-component="text-shimmer"][aria-label="Working for"]')
     const divider = working.locator('[data-slot="session-working-divider"]')
-    const file = working.getByRole("link", { name: "working-step.ts", exact: true })
-    const detail = working.getByText("bun test", { exact: true })
+    const file = activity.getByRole("link", { name: "working-step.ts", exact: true })
 
-    await expect(working.locator('[data-component="text-shimmer"][aria-label="Run command"]')).toBeVisible()
+    await expect(working).toHaveCount(1)
+    await expect(activity.locator('[data-component="text-shimmer"][aria-label="Read"]')).toBeVisible()
     await expect(file).toHaveAttribute("href", "packages/app/src/session/timeline/working-step.ts")
-    await expect(detail).toHaveCount(0)
-    const [headerBox, dividerBox, fileBox] = await Promise.all([
+    const [headerBox, dividerBox, activityBox] = await Promise.all([
       header.boundingBox(),
       divider.boundingBox(),
-      file.boundingBox(),
+      activity.boundingBox(),
     ])
     expect(headerBox).not.toBeNull()
     expect(dividerBox).not.toBeNull()
-    expect(fileBox).not.toBeNull()
+    expect(activityBox).not.toBeNull()
     const comfortableWidth = await working.evaluate((element) => {
       const row = element.parentElement!
       const style = getComputedStyle(row)
@@ -968,13 +1031,19 @@ test.describe("Working", () => {
     })
     expect(dividerBox!.width).toBeCloseTo(comfortableWidth, 0)
     expect(headerBox!.y).toBeLessThan(dividerBox!.y)
-    expect(dividerBox!.y).toBeLessThan(fileBox!.y)
+    expect(dividerBox!.y).toBeLessThan(activityBox!.y)
 
-    await working.getByRole("button", { name: "bun test", exact: true }).click()
+    await timeline.send(partUpdated(toolPart("prt_working_command", "shell", "running", { command: "bun test" })))
+    const detail = activity.getByText("bun test", { exact: true })
+    await expect(activity.locator('[data-component="text-shimmer"][aria-label="Run command"]')).toBeVisible()
+    await expect(file).toHaveCount(0)
+    await expect(detail).toHaveCount(0)
+
+    await activity.getByRole("button", { name: "bun test", exact: true }).click()
     await expect(detail).toBeVisible()
 
     await timeline.send(partUpdated(toolPart("prt_working_command", "shell", "completed", { command: "bun test" })))
-    await expect(working.getByText("Ran command", { exact: true })).toBeVisible()
+    await expect(activity.getByText("Ran command", { exact: true })).toBeVisible()
   })
 
   for (const grouped of [false, true]) {
@@ -1014,7 +1083,7 @@ test.describe("Working", () => {
 
       if (!grouped) {
         await expect(page.locator('[data-timeline-part-id="prt_background_active"]')).toBeVisible()
-        await expect(working).toHaveCount(0)
+        await expect(working).toBeVisible()
 
         return
       }
@@ -1053,7 +1122,7 @@ test.describe("Working", () => {
     await expect(working).toBeVisible()
   })
 
-  test("hides Working while assistant text streams", async ({ page }) => {
+  test("keeps the task Working header without an assistant action while text streams", async ({ page }) => {
     const timeline = await setupTimeline(page, {
       messages: [userMessage(), assistantMessage([], { completed: false })],
     })
@@ -1079,7 +1148,8 @@ test.describe("Working", () => {
     await expect(page.locator(`[data-timeline-part-id="${assistantID}:text:0"]`)).toContainText(
       "The response is streaming.",
     )
-    await expect(working).toHaveCount(0)
+    await expect(working).toBeVisible()
+    await expect(page.locator('[data-component="session-assistant-activity"]')).toHaveCount(0)
   })
 })
 

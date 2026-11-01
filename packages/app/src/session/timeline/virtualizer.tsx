@@ -74,8 +74,6 @@ type Input = {
   setContentRef: (element: HTMLDivElement) => void
   /** Height of the composer region floating over the timeline's bottom edge, where the timeline fades out. */
   bottomInset?: Accessor<number>
-  /** Measured height of the live Working status and its steps, which reserve space above the composer. */
-  statusHeight?: Accessor<number>
   setVisibleRef?: (element: HTMLDivElement | undefined) => void
   onScheduleScrollState: (element: HTMLDivElement) => void
   onPin: () => void
@@ -115,7 +113,6 @@ export function createTimelineVirtualizer(input: Input) {
   const [visibleArea, setVisibleArea] = createSignal<HTMLDivElement>()
   const [viewRoot, setViewRoot] = createSignal<HTMLDivElement>()
   const bottomInset = () => input.bottomInset?.() ?? 0
-  const tail = () => Math.max(tailSize, (input.statusHeight?.() ?? 36) + 46)
   const [toolOpen, setToolOpen] = createStore<Record<string, boolean | undefined>>(cached?.toolOpen ?? {})
   const patchGroupKeys = cached?.patchGroupKeys ?? new Map<string, string>()
   createEffect(
@@ -331,9 +328,7 @@ export function createTimelineVirtualizer(input: Input) {
       // Empty projections still need the bottom spacer for running status.
       return rows().length > 0 ? topOffset() : 0
     },
-    get paddingEnd() {
-      return tail()
-    },
+    paddingEnd: tailSize,
     // Revealed prompts sit below the solid header and its 16px fade.
     get scrollPaddingStart() {
       return input.showHeader() ? headerHeight() + 16 : 0
@@ -342,13 +337,6 @@ export function createTimelineVirtualizer(input: Input) {
       return rangeExtractor()
     },
   })
-
-  createEffect(
-    on(tail, () => {
-      if (!input.pinned()) return
-      queueMicrotask(() => virtualizer.scrollToEnd())
-    }),
-  )
 
   const resizeItem = virtualizer.resizeItem
   const pendingSizes = new Map<number, { key: string; size: number }>()
@@ -1007,8 +995,8 @@ export function createTimelineVirtualizer(input: Input) {
               data-timeline-row="bottom-spacer"
               class="absolute top-0 left-0 w-full"
               style={{
-                height: `${tail()}px`,
-                transform: `translateY(${virtualizer.getTotalSize() - tail() - rendering.scrollAdjustment}px)`,
+                height: `${tailSize}px`,
+                transform: `translateY(${virtualizer.getTotalSize() - tailSize - rendering.scrollAdjustment}px)`,
               }}
             >
               {props.bottomSpacer}

@@ -1,7 +1,7 @@
 import type { SessionMessageAssistant, SessionMessageAssistantTool } from "@opencode/client/promise"
 import { getFilename } from "@opencode/util/path"
 
-type AssistantMessage = Pick<SessionMessageAssistant, "id" | "content">
+type AssistantMessage = Pick<SessionMessageAssistant, "id" | "content" | "time">
 
 export type WorkingStep = {
   id: string
@@ -54,38 +54,28 @@ export function formatWorkingDuration(ms: number) {
   return `${seconds}秒`
 }
 
-export function buildWorkingSteps(messages: readonly AssistantMessage[]) {
-  const entries = messages.flatMap((message) => message.content.map((content, index) => ({ message, content, index })))
-  const lastText = entries.findLastIndex(({ content }) => content.type === "text" && content.text.trim().length > 0)
-  const steps: WorkingStep[] = []
-  let thinkingOpen = false
+export function buildWorkingStep(messages: readonly AssistantMessage[]): WorkingStep | undefined {
+  const latest = messages.at(-1)
 
-  for (const { message, content, index } of entries.slice(lastText + 1)) {
-    if (content.type === "reasoning") {
-      const running = content.time?.completed === undefined
+  if (!latest) return
+  const current = latest.content.at(-1)
 
-      if (thinkingOpen) {
-        const current = steps.at(-1)
-
-        if (current) current.running ||= running
-        continue
-      }
-
-      thinkingOpen = true
-      steps.push({
-        id: `${message.id}:thinking:${index}`,
-        kind: "thinking",
-        running,
-      })
-      continue
+  if (current?.type === "reasoning")
+    return {
+      id: `${latest.id}:thinking:${latest.content.length - 1}`,
+      kind: "thinking",
+      running: current.time?.completed === undefined,
     }
 
-    if (content.type !== "tool") continue
-    thinkingOpen = false
-    steps.push(toolStep(content))
-  }
+  if (current?.type === "tool") return toolStep(current)
+  if (current?.type === "text" && current.text.trim()) return
+  if (latest.time.completed !== undefined) return
 
-  return steps
+  return {
+    id: `${latest.id}:thinking`,
+    kind: "thinking",
+    running: true,
+  }
 }
 
 function toolStep(tool: SessionMessageAssistantTool): WorkingStep {
