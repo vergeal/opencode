@@ -268,11 +268,12 @@
     font-style: normal;
   }
 
-  /* Horizontal Rule - Invisible spacing only */
+  /* Horizontal Rule - A quiet divider, not a section break */
   hr {
     border: none;
+    border-top: 1px solid var(--v2-border-border-muted);
     height: 0;
-    margin: 32px 0;
+    margin: 12px 0;
   }
 
   .highlights {
@@ -427,7 +428,7 @@
     color: var(--v2-text-text-base);
     font-size: 15px;
     font-variant-numeric: tabular-nums;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
   }
