@@ -186,11 +186,11 @@
     unicode-bidi: plaintext;
     background: var(--v2-background-bg-layer-02);
     border: none;
-    padding: 8px 12px;
-    border-radius: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
     /* Where two bubbles of a run meet, their trailing corners tighten to 4px. */
-    border-start-end-radius: calc(10px - 6px * var(--user-run-top, 0));
-    border-end-end-radius: calc(10px - 6px * var(--user-run-bottom, 0));
+    border-start-end-radius: calc(12px - 8px * var(--user-run-top, 0));
+    border-end-end-radius: calc(12px - 8px * var(--user-run-bottom, 0));
     transition:
       background-color 150ms ease-out,
       color 150ms ease-out;
@@ -243,6 +243,9 @@
 
     [data-component="markdown"] pre {
       margin: 0;
+      /* The bubble already frames the block, so the inner code surface only tints it. */
+      --markdown-code-background: color-mix(in oklch, var(--v2-text-text-base) 6%, transparent);
+      border-color: transparent;
     }
   }
 
