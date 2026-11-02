@@ -1,8 +1,23 @@
 import { Icon } from "@opencode/ui/icon"
+import type { IconName } from "@opencode/ui/icons/catalog"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
 import { Show, createEffect, createSignal, onCleanup } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { formatWorkingDuration, type WorkingStep } from "./working-step"
+
+const stepIcons: Record<WorkingStep["kind"], IconName> = {
+  thinking: "outline-brain",
+  command: "outline-console",
+  read: "open-file",
+  edit: "pencil-line",
+  search: "magnifying-glass",
+  list: "file-tree",
+  browse: "outline-globe",
+  "web-search": "magnifying-glass-menu",
+  subagent: "providers",
+  skill: "graduation-cap",
+  tool: "cube",
+}
 
 export function SessionWorkingHeader(props: { started: number }) {
   const language = useLanguage()
@@ -100,13 +115,14 @@ function WorkingStepRow(props: { step: WorkingStep; onOpenFile: (path: string) =
     <div
       data-component="session-assistant-activity"
       data-state={props.step.running ? "running" : "completed"}
-      class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-3 text-[16px] leading-text-base text-v2-text-text-muted"
+      class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-1.5 text-[16px] leading-text-base text-v2-text-text-muted"
     >
-      <span
-        data-slot="session-working-dot"
-        aria-hidden="true"
-        class="mt-[7px] size-1 shrink-0 rounded-full bg-v2-icon-icon-muted data-[state=running]:bg-v2-icon-icon-accent"
+      <Icon
+        name={stepIcons[props.step.kind]}
+        size="small"
+        data-slot="session-working-icon"
         data-state={props.step.running ? "running" : "completed"}
+        class="mt-1 shrink-0 text-v2-icon-icon-muted data-[state=running]:text-v2-icon-icon-accent"
       />
       <WorkingStepText step={props.step} onOpenFile={props.onOpenFile} />
     </div>
