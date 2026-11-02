@@ -1,6 +1,7 @@
 import type { SessionInfo, SessionMessageInfo, SessionMessageUser } from "@opencode/client/promise"
 import { createMediaQuery } from "@solid-primitives/media"
 import { createMemo } from "solid-js"
+import { createStore } from "solid-js/store"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { useData } from "@/runtime/server/current"
 import { same } from "@/runtime/persistence/equality"
@@ -19,6 +20,10 @@ const emptyMessages: SessionMessageInfo[] = []
 const emptyUserMessages: SessionMessageUser[] = []
 
 const idle = { type: "idle" as const }
+
+// A screen clear hides messages up to a session-local boundary without touching the server transcript, so a session
+// model can be recreated on navigation without losing it. A reload starts from the full transcript again.
+const [clearedAt, setClearedAt] = createStore<Record<string, number | undefined>>({})
 
 export function useSessionModel() {
   const data = useData()
@@ -79,6 +84,26 @@ export function useSessionModel() {
 
   const project = createMemo(() => sessionProject(data, info(), location().directory))
 
+  const screenClearedAt = createMemo(() => {
+    const key = layout.sessionKey()
+
+    return key ? clearedAt[key] : undefined
+  })
+
+  const clearScreen = () => {
+    const key = layout.sessionKey()
+    const id = sessionID()
+
+    if (!key || !id) return
+    const times = [
+      data.session.message.list(id).at(-1)?.time.created,
+      data.session.pending.list(id).at(-1)?.time.created,
+    ].filter((value): value is number => value !== undefined)
+
+    if (times.length === 0) return
+    setClearedAt(key, Math.max(...times) + 1)
+  }
+
   return {
     shared: { data },
     project,
@@ -117,6 +142,10 @@ export function useSessionModel() {
       view: layout.view,
       tabKey: layout.tabKey,
       sessionKey: layout.sessionKey,
+    },
+    view: {
+      clearedAt: screenClearedAt,
+      clear: clearScreen,
     },
     ownership: createSessionOwnership(layout.sessionKey),
   }

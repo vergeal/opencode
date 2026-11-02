@@ -54,6 +54,7 @@ export type TimelineSessionSource = {
   identity: Pick<SessionModel["identity"], "params" | "sessionID" | "sessionKey">
   data: Pick<SessionModel["data"], "info" | "parent" | "parentID" | "status">
   history: Pick<SessionModel["history"], "messages">
+  view: Pick<SessionModel["view"], "clearedAt">
 }
 
 export function createTimelineController(input: { session: TimelineSessionSource }) {
@@ -86,6 +87,16 @@ export function createTimelineController(input: { session: TimelineSessionSource
       input.session.data.info(),
     ),
   )
+
+  // Clearing the screen hides the rendered transcript up to a boundary while the session keeps its full history.
+  const displayedMessages = createMemo(() => {
+    const boundary = input.session.view.clearedAt()
+    const messages = projectedMessages()
+
+    if (boundary === undefined) return messages
+
+    return messages.filter((message) => message.time.created > boundary)
+  })
 
   // Inputs that wait behind the active turn. A starting steer opens the next turn instead, so the turn before it
   // stays finished, as it will once the steer is delivered.
@@ -173,7 +184,7 @@ export function createTimelineController(input: { session: TimelineSessionSource
   const editToolPartsExpanded = () => timelineDetail().edit.details === "expanded"
 
   const projection = createTimelineProjection({
-    sessionMessages: projectedMessages,
+    sessionMessages: displayedMessages,
     status: input.session.data.status,
     reasoningMode,
     shellToolDefaultOpen: shellToolPartsExpanded,

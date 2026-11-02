@@ -61,6 +61,7 @@ export function createTimelineCache(
                 status: select(session.data.status),
               },
               history: { messages: select(session.history.messages) },
+              view: { clearedAt: select(session.view.clearedAt) },
             },
             active,
           ),
