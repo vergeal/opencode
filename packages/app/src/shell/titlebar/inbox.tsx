@@ -205,20 +205,20 @@ export function SidebarInbox() {
         class="-me-2.5 flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-1 pe-2.5"
       >
         <Show when={sections().pinned.length > 0}>
-          <div class="flex shrink-0 flex-col gap-px pb-3">
+          <div class="flex shrink-0 flex-col gap-px">
             <SectionHeader label={language.t("home.sessions.group.pinned")} />
             {rows(sections().pinned)}
           </div>
         </Show>
         <Show when={sections().needs.length > 0}>
-          <div class="flex shrink-0 flex-col gap-px pb-3">
+          <div class="flex shrink-0 flex-col gap-px" classList={{ "mt-3": sections().pinned.length > 0 }}>
             <SectionHeader label={language.t("sidebar.inbox.section.needsAttention")} count={sections().needs.length} />
             {rows(sections().needs)}
           </div>
         </Show>
         {/* The project list starts a new block, so it gets its own divider and heading. */}
         <Show when={sections().pinned.length > 0 || sections().needs.length > 0}>
-          <div class="my-1 h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
+          <div class="my-[9px] h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
         </Show>
         <Show
           when={sections().inbox.length > 0}
@@ -234,7 +234,7 @@ export function SidebarInbox() {
             </Show>
           }
         >
-          <div class="flex shrink-0 flex-col gap-px pb-3">
+          <div class="flex shrink-0 flex-col gap-px">
             <SectionHeader label={language.t("sidebar.inbox.section.projects")} />
             <For each={groupedInbox()}>
               {(group) => (
@@ -256,7 +256,7 @@ export function SidebarInbox() {
         {/* Archived is a folder of its own, separated from the project list above. */}
         <Show when={sections().archived.length > 0}>
           <Show when={sections().inbox.length > 0}>
-            <div class="my-1 h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
+            <div class="my-[9px] h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
           </Show>
           <div class="flex shrink-0 flex-col gap-px">
             <FolderRow

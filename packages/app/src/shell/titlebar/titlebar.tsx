@@ -856,7 +856,6 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 onNewTab={openNewTab}
                                 keybind={command.keybind("tab.new")}
                               />
-                              <div class="my-1 h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
                               <button
                                 type="button"
                                 data-titlebar-tab-action
@@ -870,7 +869,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 <span class="min-w-0 truncate">{language.t("knowledge.title")}</span>
                               </button>
                             </div>
-                            <div class="h-4 w-full shrink-0" aria-hidden="true" />
+                            <div class="my-[10px] h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
                             <div class="flex min-h-0 flex-1 flex-col gap-1">
                               <Show
                                 when={settings.appearance.tabLayout() === "inbox"}
