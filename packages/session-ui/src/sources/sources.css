@@ -51,7 +51,7 @@
   color: var(--v2-text-text-muted);
   font-family: var(--v2-font-family-sans);
   font-size: 13px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   letter-spacing: 0.05px;
   white-space: nowrap;
@@ -153,7 +153,7 @@
 
   [data-slot="sources-step-label"] {
     font-size: 13px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: 0.05px;
     color: var(--v2-text-text-faint);
@@ -170,7 +170,7 @@
   [data-slot="sources-step-detail"] {
     font-family: var(--font-family-mono);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
     color: var(--v2-text-text-base);
@@ -190,7 +190,7 @@
     align-self: start;
     height: 16px;
     font-size: 13px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     font-variant-numeric: tabular-nums;
     color: var(--v2-text-text-faint);

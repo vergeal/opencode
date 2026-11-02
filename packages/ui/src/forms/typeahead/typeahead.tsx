@@ -109,7 +109,7 @@ export function Typeahead<T>(props: {
   })
 
   return (
-    <div class="flex min-w-0 flex-col text-[15px] font-[440] leading-text-compact tracking-[-0.04px] text-v2-text-text-base">
+    <div class="flex min-w-0 flex-col text-[15px] font-[400] leading-text-compact tracking-[-0.04px] text-v2-text-text-base">
       <div class="flex h-8 shrink-0 items-center gap-2 ps-3 pe-2">
         {/* The loader shares the glyph's slot and fades in only for requests slower than 150 ms. */}
         <span

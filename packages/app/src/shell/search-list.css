@@ -79,7 +79,7 @@
 
 .search-list-title[data-weight="regular"] {
   flex: 1;
-  font-weight: 440;
+  font-weight: 400;
 }
 
 /* A zero basis lays the title out at full width first; the detail only fills what is left. */
@@ -88,7 +88,7 @@
   flex: 1 1 0;
   overflow: hidden;
   color: var(--v2-text-text-muted);
-  font-weight: 440;
+  font-weight: 400;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -99,7 +99,7 @@
   align-items: center;
   color: var(--v2-text-text-muted);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
 }
@@ -110,7 +110,7 @@
   place-items: center;
   color: var(--v2-text-text-muted);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
 }
@@ -194,7 +194,7 @@
   height: 20px;
   padding-inline: 5px;
   font-size: 12px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 18px;
   letter-spacing: 0.05px;
 }

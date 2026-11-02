@@ -567,7 +567,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
           box-shadow: none !important;
           color: var(--v2-text-text-muted) !important;
           font-size: 15px !important;
-          font-weight: 440 !important;
+          font-weight: 400 !important;
           letter-spacing: -0.04px !important;
         }
         button[data-type="item"]:hover {

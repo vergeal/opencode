@@ -48,7 +48,7 @@
 
   [data-slot="location-description"] {
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-base);
     color: var(--v2-text-text-muted);
   }

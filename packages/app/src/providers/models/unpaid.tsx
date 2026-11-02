@@ -92,7 +92,7 @@ export const DialogSelectModelUnpaid: Component<{ model?: ModelState }> = (props
         <div ref={listEl} class="flex min-h-0 flex-col">
           <div data-section="free-models" class="flex w-full flex-col items-start pb-3">
             <div class="flex h-8 w-full flex-none select-none flex-row items-center px-3 pb-2">
-              <div class="flex h-5 items-center text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted [font-family:var(--v2-font-family-sans)] [font-variant-numeric:tabular-nums] [font-variation-settings:'slnt'_0]">
+              <div class="flex h-5 items-center text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted [font-family:var(--v2-font-family-sans)] [font-variant-numeric:tabular-nums] [font-variation-settings:'slnt'_0]">
                 {language.t("dialog.model.unpaid.freeModels.title")}
               </div>
             </div>
@@ -135,7 +135,7 @@ export const DialogSelectModelUnpaid: Component<{ model?: ModelState }> = (props
           <div class="flex w-full flex-col">
             <div class="flex w-full flex-col items-start rounded-lg border-[0.5px] border-v2-border-border-muted bg-v2-background-bg-layer-02 p-2.5 pt-2">
               <div class="flex h-8 w-full select-none items-center px-0.5 pb-2">
-                <div class="flex h-5 items-center text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted [font-family:var(--v2-font-family-sans)] [font-variant-numeric:tabular-nums] [font-variation-settings:'slnt'_0]">
+                <div class="flex h-5 items-center text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted [font-family:var(--v2-font-family-sans)] [font-variant-numeric:tabular-nums] [font-variation-settings:'slnt'_0]">
                   {language.t("dialog.model.unpaid.addMore.title")}
                 </div>
               </div>
@@ -165,7 +165,7 @@ export const DialogSelectModelUnpaid: Component<{ model?: ModelState }> = (props
                       <span class="flex min-w-0 flex-col">
                         <span class="truncate">{providerName(provider)}</span>
                         <Show when={provider.id === "opencode" || provider.id === "opencode-go"}>
-                          <span class="truncate font-[440] text-v2-text-text-muted">
+                          <span class="truncate font-[400] text-v2-text-text-muted">
                             {language.t(
                               provider.id === "opencode"
                                 ? "dialog.provider.opencode.tagline"
@@ -179,7 +179,7 @@ export const DialogSelectModelUnpaid: Component<{ model?: ModelState }> = (props
                 </For>
                 <button
                   type="button"
-                  class="col-span-full flex h-8 w-full scroll-my-3.5 items-center justify-start rounded-md px-3 text-left text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted [font-family:var(--v2-font-family-sans)] [font-variation-settings:'slnt'_0] hover:bg-v2-overlay-simple-overlay-hover focus:bg-v2-overlay-simple-overlay-hover focus:outline-none"
+                  class="col-span-full flex h-8 w-full scroll-my-3.5 items-center justify-start rounded-md px-3 text-left text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted [font-family:var(--v2-font-family-sans)] [font-variation-settings:'slnt'_0] hover:bg-v2-overlay-simple-overlay-hover focus:bg-v2-overlay-simple-overlay-hover focus:outline-none"
                   onClick={() => openProviders()}
                 >
                   {language.t("dialog.model.unpaid.viewMoreProviders")}

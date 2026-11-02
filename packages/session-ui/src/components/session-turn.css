@@ -109,7 +109,7 @@
       color: var(--v2-text-text-faint);
       font-family: var(--v2-font-family-sans);
       font-size: 15px;
-      font-weight: 440;
+      font-weight: 400;
       line-height: var(--line-height-compact);
       letter-spacing: -0.04px;
     }

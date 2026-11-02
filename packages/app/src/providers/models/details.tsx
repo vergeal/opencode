@@ -46,7 +46,7 @@ export function ModelDetails(props: {
     <Show
       when={props.compact}
       fallback={
-        <div class="w-[188px] max-w-[calc(100vw-24px)] font-[440] text-v2-text-text-muted">
+        <div class="w-[188px] max-w-[calc(100vw-24px)] font-[400] text-v2-text-text-muted">
           <div class="border-b-[0.5px] border-v2-border-border-base py-0.5">
             <div class="flex h-6 min-w-0 items-center gap-1.5 px-2">
               <ProviderModelIcon provider={props.model.provider} class="!size-3.5 shrink-0" />
@@ -148,7 +148,7 @@ export function ModelDetails(props: {
       }
     >
       <div
-        class="px-3 py-2 text-[13px] font-[440] leading-5 text-v2-text-text-muted"
+        class="px-3 py-2 text-[13px] font-[400] leading-5 text-v2-text-text-muted"
         classList={{ "border-t border-v2-border-border-muted": !props.standalone }}
       >
         <bdi class="block">

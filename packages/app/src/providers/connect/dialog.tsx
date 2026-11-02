@@ -333,7 +333,7 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
             {(group) => (
               <Show when={group.items().length > 0}>
                 <section class="flex flex-col">
-                  <div class="px-3 pb-2 text-[15px] font-[440] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted">
+                  <div class="px-3 pb-2 text-[15px] font-[400] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted">
                     {group.title}
                   </div>
                   <For each={group.items()}>
@@ -379,7 +379,7 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
                             {provider.name}
                           </span>
                           <Show when={disabled(provider)}>
-                            <span class="min-w-0 truncate font-[440] text-v2-text-text-faint">
+                            <span class="min-w-0 truncate font-[400] text-v2-text-text-faint">
                               {language.t("dialog.provider.environmentOnly")}
                             </span>
                           </Show>
@@ -387,7 +387,7 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
                             <Match when={status()}>
                               <span
                                 data-slot="provider-status"
-                                class="ml-auto shrink-0 font-[440] text-[var(--v2-state-fg-warning)]"
+                                class="ml-auto shrink-0 font-[400] text-[var(--v2-state-fg-warning)]"
                               >
                                 {language.t("dialog.provider.signInRequired")}
                               </span>
@@ -395,7 +395,7 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
                             <Match when={connections().length > 0}>
                               <span
                                 data-slot="provider-connected"
-                                class="ml-auto flex min-w-0 items-center gap-1.5 font-[440] text-v2-text-text-muted"
+                                class="ml-auto flex min-w-0 items-center gap-1.5 font-[400] text-v2-text-text-muted"
                               >
                                 <span class="min-w-0 truncate">{summary()}</span>
                                 <Icon
@@ -416,7 +416,7 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
             )}
           </For>
           <Show when={all().length === 0}>
-            <div class="flex h-24 items-center justify-center text-[15px] font-[440] text-v2-text-text-muted">
+            <div class="flex h-24 items-center justify-center text-[15px] font-[400] text-v2-text-text-muted">
               {language.t("dialog.provider.empty")}
             </div>
           </Show>
@@ -904,7 +904,7 @@ function ProviderConnection(props: {
               </div>
               <Show when={current().description}>
                 {(description) => (
-                  <div class="text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
+                  <div class="text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
                     {description()}
                   </div>
                 )}
@@ -1128,7 +1128,7 @@ function ProviderConnection(props: {
 
   function CommandView() {
     return (
-      <div class="flex flex-col gap-4 px-3 text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
+      <div class="flex flex-col gap-4 px-3 text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
         <Show when={controller.command()?.output.trim()}>
           {(output) => (
             <pre
@@ -1146,7 +1146,7 @@ function ProviderConnection(props: {
 
   function StatusRow(input: { children: JSX.Element }) {
     return (
-      <div class="flex items-center gap-2 text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
+      <div class="flex items-center gap-2 text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
         <Loader class="size-4 shrink-0 text-v2-icon-icon-muted" />
         <span>{input.children}</span>
       </div>
@@ -1156,7 +1156,7 @@ function ProviderConnection(props: {
   function ErrorRow() {
     return (
       <div class="flex flex-col items-start" classList={{ "gap-3": !isConsole, "gap-4": isConsole }}>
-        <div class="flex items-start gap-2 text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-base">
+        <div class="flex items-start gap-2 text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-base">
           <Icon name="circle-ban-sign" size="small" class="mt-0.5 shrink-0 text-v2-state-fg-danger" />
           <span role="alert">
             {isConsole
@@ -1205,7 +1205,7 @@ function ProviderConnection(props: {
 
     return (
       <div
-        class="flex flex-col gap-5 px-3 text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted"
+        class="flex flex-col gap-5 px-3 text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted"
         classList={{ "pb-1": isConsole }}
       >
         <p>
@@ -1283,7 +1283,7 @@ function ProviderConnection(props: {
     }
 
     return (
-      <div class="flex flex-col gap-5 px-3 text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
+      <div class="flex flex-col gap-5 px-3 text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
         <div>{language.t("provider.connect.oauth.code.description", { provider: provider().name })}</div>
         <Button variant="neutral" icon="arrow-up-right" onClick={() => void controller.auth.open()}>
           {language.t("provider.connect.oauth.openBrowser")}
@@ -1321,7 +1321,7 @@ function ProviderConnection(props: {
 
   function OAuthAutoView() {
     return (
-      <div class="flex flex-col gap-5 px-3 text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
+      <div class="flex flex-col gap-5 px-3 text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
         <div>{language.t("provider.connect.oauth.auto.description", { provider: provider().name })}</div>
         <StatusRow>{language.t("provider.connect.status.waiting")}</StatusRow>
         <div class="flex flex-wrap items-center gap-2">
@@ -1396,7 +1396,7 @@ function ProviderConnection(props: {
                 when={state.confirming !== account.id}
                 fallback={
                   <div class="flex min-h-9 items-center gap-2 rounded-md px-3 text-[15px] leading-5 tracking-[-0.04px]">
-                    <span role="alert" class="min-w-0 flex-1 truncate font-[440] text-v2-text-text-base">
+                    <span role="alert" class="min-w-0 flex-1 truncate font-[400] text-v2-text-text-base">
                       {language.t("dialog.provider.accounts.removeConfirm", { account: account.label })}
                     </span>
                     <Button variant="ghost-muted" onClick={() => setState("confirming", undefined)}>
@@ -1415,7 +1415,7 @@ function ProviderConnection(props: {
                       <div class="flex min-h-9 min-w-0 flex-1 items-center ps-9 pe-3">
                         <AccountNameInput
                           value={account.label}
-                          class="-ms-1 max-w-full text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-base"
+                          class="-ms-1 max-w-full text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-base"
                           onSave={(label) => accountActions.rename(account, label)}
                           onClose={() => setState("renaming", undefined)}
                         />
@@ -1435,13 +1435,13 @@ function ProviderConnection(props: {
                           <Icon name="check" size="small" class="text-v2-icon-icon-base" />
                         </Show>
                       </span>
-                      <span class="min-w-0 truncate font-[440] text-v2-text-text-base">{account.label}</span>
+                      <span class="min-w-0 truncate font-[400] text-v2-text-text-base">{account.label}</span>
                       <Show when={account.status}>
                         {(status) => (
                           <span
                             data-slot="provider-account-status"
                             title={status().message}
-                            class="ms-auto shrink-0 font-[440] text-[var(--v2-state-fg-warning)]"
+                            class="ms-auto shrink-0 font-[400] text-[var(--v2-state-fg-warning)]"
                           >
                             {language.t("dialog.provider.signInRequired")}
                           </span>
@@ -1485,7 +1485,7 @@ function ProviderConnection(props: {
         <button
           type="button"
           data-action="provider-account-add"
-          class="flex h-9 w-full items-center gap-2 rounded-md px-3 text-start text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none disabled:pointer-events-none"
+          class="flex h-9 w-full items-center gap-2 rounded-md px-3 text-start text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none disabled:pointer-events-none"
           disabled={state.switching !== undefined || controller.methods().length === 0}
           onClick={addAccount}
         >
@@ -1718,7 +1718,7 @@ function ProviderConnection(props: {
             </div>
           </Match>
           <Match when={controller.methodIndex() === undefined && controller.methods().length === 0}>
-            <div class="px-3 text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
+            <div class="px-3 text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-muted">
               {language.t("dialog.provider.environmentOnly")}
             </div>
           </Match>

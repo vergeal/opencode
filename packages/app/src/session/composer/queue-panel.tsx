@@ -210,7 +210,7 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
                 data-action="session-queue-edit"
                 dir="auto"
                 aria-disabled={entry.pending}
-                class="max-w-full min-w-0 self-start truncate rounded-sm text-start text-[15px] font-[440] leading-[var(--line-height-compact)]"
+                class="max-w-full min-w-0 self-start truncate rounded-sm text-start text-[15px] font-[400] leading-[var(--line-height-compact)]"
                 classList={{
                   "text-v2-text-text-faint": editing() || entry.pending,
                   "cursor-progress": entry.pending,
@@ -223,7 +223,7 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
                   (entry.attachments ? language.plural("session.queue.attachments", entry.attachments) : "")}
               </button>
               <Show when={entry.attachments && entry.text}>
-                <span class="shrink-0 whitespace-nowrap text-[15px] font-[440] leading-[var(--line-height-compact)] text-v2-text-text-muted">
+                <span class="shrink-0 whitespace-nowrap text-[15px] font-[400] leading-[var(--line-height-compact)] text-v2-text-text-muted">
                   {language.plural("session.queue.attachments", entry.attachments)}
                 </span>
               </Show>

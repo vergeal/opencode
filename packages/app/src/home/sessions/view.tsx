@@ -28,7 +28,7 @@ import {
 
 const SHOW_HOME_SESSION_ARCHIVE = false
 
-const HOME_SECTION_LABEL = "text-v2-text-text-muted [font-weight:440]"
+const HOME_SECTION_LABEL = "text-v2-text-text-muted [font-weight: 400]"
 
 const HOME_SESSION_SEARCH_RESULTS_ID = "home-session-search-results"
 
@@ -301,7 +301,7 @@ function HomeSessionSearch(
                 <Show
                   when={!props.searchLoading}
                   fallback={
-                    <div class="flex items-center justify-center px-4 py-3 text-v2-text-text-muted [font-weight:440]">
+                    <div class="flex items-center justify-center px-4 py-3 text-v2-text-text-muted [font-weight: 400]">
                       <Loader class="size-4" />
                     </div>
                   }
@@ -312,7 +312,7 @@ function HomeSessionSearch(
                       <p
                         class={`
                           my-1.5 px-4 pb-2 text-[15px] leading-4 tracking-[-0.04px]
-                          text-v2-text-text-muted [font-weight:440]
+                          text-v2-text-text-muted [font-weight: 400]
                         `}
                       >
                         {props.searchNoResultsLabel}
@@ -323,7 +323,7 @@ function HomeSessionSearch(
                       <p
                         class={`
                           my-1.5 pl-[18px] pr-6 text-[15px] leading-4 tracking-[-0.04px]
-                          text-v2-text-text-muted [font-weight:440]
+                          text-v2-text-text-muted [font-weight: 400]
                         `}
                       >
                         {props.language.t("home.sessions.search.sessions")}
@@ -360,7 +360,7 @@ function HomeSessionSearch(
             ref={props.onSetSearchInput}
             class={`
               relative z-20 min-w-0 flex-1 border-0 bg-transparent outline-0
-              text-v2-text-text-base [font-weight:440] placeholder:text-v2-text-text-faint
+              text-v2-text-text-base [font-weight: 400] placeholder:text-v2-text-text-faint
             `}
             value={props.searchValue}
             placeholder={props.searchPlaceholder}
@@ -918,12 +918,12 @@ function HomeSessionLocation(props: {
       }}
     >
       <Icon name="outline-worktree" class="shrink-0 text-v2-icon-icon-muted" />
-      <span class="min-w-0 overflow-hidden text-ellipsis [font-weight:440]">{props.location.worktree}</span>
+      <span class="min-w-0 overflow-hidden text-ellipsis [font-weight: 400]">{props.location.worktree}</span>
       <Show when={props.location.branch}>
         {(branch) => (
           <>
             <Icon name="branch" class="shrink-0 text-v2-icon-icon-muted" />
-            <span class="min-w-0 overflow-hidden text-ellipsis [font-weight:440]">{branch()}</span>
+            <span class="min-w-0 overflow-hidden text-ellipsis [font-weight: 400]">{branch()}</span>
           </>
         )}
       </Show>
@@ -936,7 +936,7 @@ function HomeSessionProjectName(props: { name: string; search?: boolean; trailin
     <span
       data-component="home-session-project-name"
       dir="auto"
-      class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-v2-text-text-muted [font-weight:440]"
+      class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-v2-text-text-muted [font-weight: 400]"
       classList={{
         "flex-[0_1_auto]": !!props.trailing,
         "flex-[1_1_auto]": !props.trailing,
@@ -962,7 +962,7 @@ function HomeSessionsEmpty(props: { onNewSession?: () => void; language: ReturnT
       <p
         class={`
           mb-1 text-center text-[15px] leading-5 tracking-[-0.04px]
-          text-v2-text-text-muted [font-weight:440]
+          text-v2-text-text-muted [font-weight: 400]
         `}
       >
         {props.language.t("home.sessions.empty.description")}

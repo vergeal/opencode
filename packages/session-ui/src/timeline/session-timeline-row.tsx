@@ -772,7 +772,7 @@ export function createSessionTimelineRowRenderer(input: {
                             {(item) => (
                               <bdi
                                 dir="auto"
-                                class="min-w-0 truncate text-[15px] font-[440] leading-text-compact tracking-[-0.04px] text-v2-text-text-faint"
+                                class="min-w-0 truncate text-[15px] font-[400] leading-text-compact tracking-[-0.04px] text-v2-text-text-faint"
                               >
                                 {item}
                               </bdi>
@@ -1227,7 +1227,7 @@ export function createSessionTimelineRowRenderer(input: {
               {(notice) => (
                 <div
                   role="status"
-                  class="text-[15px] font-[440] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted"
+                  class="text-[15px] font-[400] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted"
                 >
                   {notice().text}
                   <Show when={input.actions?.chooseModel}>
@@ -1251,7 +1251,7 @@ export function createSessionTimelineRowRenderer(input: {
               {(text) => (
                 <div
                   role="status"
-                  class="text-[15px] font-[440] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted"
+                  class="text-[15px] font-[400] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted"
                 >
                   {text()}
                 </div>

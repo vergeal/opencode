@@ -41,7 +41,7 @@ export function SessionAssistantActivity(props: { step?: WorkingStep; onOpenFile
         <div
           data-component="session-assistant-activity"
           data-state={step().running ? "running" : "completed"}
-          class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-1 text-[13px] leading-text-compact text-v2-text-text-muted"
+          class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-1 text-[14px] leading-text-base text-v2-text-text-muted"
         >
           <span
             data-slot="session-working-dot"
@@ -129,7 +129,7 @@ function WorkingStepText(props: { step: WorkingStep; onOpenFile: (path: string) 
         {(detail) => (
           <code
             data-slot="session-working-command-detail"
-            class="mt-1 max-w-full truncate font-mono text-[12px] font-[440] leading-text-compact tracking-[-0.04px] text-v2-text-text-faint"
+            class="mt-1 max-w-full truncate font-mono text-[13px] font-[400] leading-text-base tracking-[-0.04px] text-v2-text-text-faint"
           >
             {detail()}
           </code>

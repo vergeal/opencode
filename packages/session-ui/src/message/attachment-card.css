@@ -59,7 +59,7 @@
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
-    font-weight: 440;
+    font-weight: 400;
     color: var(--v2-text-text-muted);
 
     [data-component="file-icon"],

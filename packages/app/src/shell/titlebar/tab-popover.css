@@ -53,7 +53,7 @@
   }
 
   [data-slot="project"] {
-    font-weight: 440;
+    font-weight: 400;
     font-size: 15px;
     line-height: 1.5;
     letter-spacing: -0.04px;
@@ -80,7 +80,7 @@
     min-width: 0;
     /* Wrap the full path onto the next line instead of clipping the end. */
     overflow-wrap: anywhere;
-    font-weight: 440;
+    font-weight: 400;
     font-size: 15px;
     line-height: 1.5;
     letter-spacing: -0.04px;
@@ -88,7 +88,7 @@
   }
 
   [data-slot="server"] {
-    font-weight: 440;
+    font-weight: 400;
     font-size: 15px;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;

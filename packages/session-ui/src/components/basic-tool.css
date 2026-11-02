@@ -242,7 +242,7 @@
   [data-slot="basic-tool-tool-subtitle"] {
     font-family: var(--v2-font-family-sans);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
   }
@@ -386,7 +386,7 @@
     [data-slot="basic-tool-tool-subtitle"] {
       font-family: var(--v2-font-family-sans, "Inter", sans-serif);
       font-style: normal;
-      font-weight: 440;
+      font-weight: 400;
       font-size: 15px;
       line-height: 20px;
       letter-spacing: -0.04px;
@@ -423,7 +423,7 @@
   font-variant-numeric: tabular-nums;
   font-size: inherit;
   font-style: normal;
-  font-weight: var(--font-weight-regular, 440);
+  font-weight: var(--font-weight-regular, 400);
   line-height: inherit;
   letter-spacing: var(--letter-spacing-normal);
 

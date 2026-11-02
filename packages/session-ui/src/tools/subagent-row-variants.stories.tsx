@@ -97,7 +97,7 @@ function PlainLabel() {
             <span class="font-[530] text-v2-text-text-base">
               <TextShimmer as="span" text={row.title} active={row.running} />
             </span>
-            <span class="font-[440] text-v2-text-text-muted">{row.subtitle}</span>
+            <span class="font-[400] text-v2-text-text-muted">{row.subtitle}</span>
           </div>
         )}
       </For>
