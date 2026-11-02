@@ -115,6 +115,16 @@
     }
   }
 
+  /* The inbox row's Working label is only a few characters, so TextShimmer's default 5.2ch sweep covers all of
+     it at once and reads as a faint tint. Narrow it, speed it up, and sweep a dimmed status colour up to the
+     full one, so a running row is visible at a glance. */
+  [data-slot="sidebar-inbox-working-status"] [data-component="text-shimmer"] {
+    --text-shimmer-base-color: color-mix(in oklch, var(--v2-state-fg-info) 45%, transparent);
+    --text-shimmer-peak-color: var(--v2-state-fg-info);
+    --text-shimmer-spread: 2.2ch;
+    --text-shimmer-duration: 900ms;
+  }
+
   ::highlight(timeline-search-hit) {
     background-color: color-mix(in srgb, var(--v2-icon-icon-accent) 28%, transparent);
   }

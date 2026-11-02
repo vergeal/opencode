@@ -422,17 +422,15 @@ export function SidebarInbox() {
             </div>
           </Show>
         </div>
-        {/* Working sessions sit in a shelf pinned below the scrolling list, raised as its own panel: it is the area
-            that is changing right now, so it should read apart from the history above. */}
+        {/* Working sessions sit in a shelf pinned below the scrolling list. */}
         <Show when={sections().working.length > 0}>
           <div
             data-slot="sidebar-inbox-working"
-            class="mt-1.5 flex max-h-[40%] shrink-0 flex-col gap-px rounded-[8px] bg-v2-background-bg-layer-01 p-1"
+            class="flex max-h-[40%] shrink-0 flex-col gap-px border-t border-v2-border-border-muted pt-1.5"
           >
             <SectionHeader
               label={language.t("sidebar.inbox.section.working")}
               count={sections().working.length}
-              active
               expanded={state.workingExpanded}
               onToggle={() => setState("workingExpanded", !state.workingExpanded)}
             />
@@ -496,19 +494,9 @@ function FolderRow(props: {
   )
 }
 
-function SectionHeader(props: {
-  label: string
-  count?: number
-  expanded?: boolean
-  onToggle?: () => void
-  // Marks a section whose sessions are running right now.
-  active?: boolean
-}) {
+function SectionHeader(props: { label: string; count?: number; expanded?: boolean; onToggle?: () => void }) {
   const content = (): JSX.Element => (
     <>
-      <Show when={props.active}>
-        <span class="size-1.5 shrink-0 rounded-full bg-v2-state-fg-info" aria-hidden="true" />
-      </Show>
       <span class="min-w-0 truncate">{props.label}</span>
       <Show when={props.count}>
         <span class="shrink-0 tabular-nums text-v2-text-text-faint">{props.count}</span>
@@ -693,6 +681,7 @@ function InboxRow(props: InboxRowProps) {
         class="group flex w-full shrink-0 flex-col gap-1 rounded-[8px] px-2 py-1.5 text-start hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover data-[state=active]:bg-v2-background-bg-layer-02"
         classList={{
           "transition-opacity hover:opacity-100 focus-visible:opacity-100": !props.selected,
+          "opacity-70": status() === "working" && !props.selected,
           "opacity-50": props.archived && !props.selected,
         }}
         onContextMenu={(event) => {
@@ -741,11 +730,9 @@ function InboxRow(props: InboxRowProps) {
                 >
                   {/* Announce only the status: the ticking duration would be re-read every second. */}
                   <span class="sr-only">{language.t("sidebar.inbox.status.working")}</span>
-                  {/* Keep the status colour under the sweep. */}
-                  <span
-                    aria-hidden="true"
-                    class="[&_[data-component=text-shimmer]]:[--text-shimmer-base-color:var(--v2-state-fg-info)]"
-                  >
+                  {/* The label is short, so the shared sweep covers all of it at once. A narrower, faster
+                      sweep in the status colour makes the row's activity read at a glance. */}
+                  <span aria-hidden="true" data-slot="sidebar-inbox-working-status">
                     <TextShimmer text={language.t("sidebar.inbox.status.workingFor", { duration: elapsed() })} active />
                   </span>
                 </Show>
