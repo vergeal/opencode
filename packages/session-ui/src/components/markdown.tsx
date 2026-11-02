@@ -1,6 +1,7 @@
 import { useI18n } from "@opencode/ui/context/i18n"
 import { abort } from "@opencode/util/abort"
 import { checksum } from "@opencode/util/encode"
+import { getFilename, parsePathLineSuffix } from "@opencode/util/path"
 import {
   type ComponentProps,
   createEffect,
@@ -411,6 +412,8 @@ function markInlineCode(
   const pending: Promise<void>[] = []
 
   for (const code of source.querySelectorAll<HTMLElement>(":not(pre) > code")) {
+    // Already shortened by an earlier pass; the full path lives in `data-local-path`.
+    if (code.dataset.localPath) continue
     delete code.dataset.inlineCodeKind
     const text = (code.textContent ?? "").trim()
     const kind = inlineCodeKind(text)
@@ -423,7 +426,7 @@ function markInlineCode(
     const previous = checked.get(text)
 
     if (previous !== undefined) {
-      if (previous === true) code.dataset.inlineCodeKind = "path"
+      if (previous === true) decoratePathCode(code, text)
 
       continue
     }
@@ -433,7 +436,7 @@ function markInlineCode(
 
     // Decorate the source before it is inserted or copied into a live Markdown renderer.
     if (exists === true || exists === false) {
-      if (exists) code.dataset.inlineCodeKind = "path"
+      if (exists) decoratePathCode(code, text)
 
       continue
     }
@@ -443,7 +446,7 @@ function markInlineCode(
         .then((exists) => {
           if (!exists || signal.aborted || inlineCodeChecks.get(target) !== check) return
           target.querySelectorAll<HTMLElement>(":not(pre) > code").forEach((node) => {
-            if (!node.closest("a") && (node.textContent ?? "").trim() === text) node.dataset.inlineCodeKind = "path"
+            if (!node.closest("a") && (node.textContent ?? "").trim() === text) decoratePathCode(node, text)
           })
         })
         .catch(() => undefined),
@@ -459,6 +462,17 @@ function markInlineCode(
   return check.pending
 }
 
+// A confirmed path shows only its file name so a long repository path does not dominate the sentence. The full path
+// stays in the tooltip and in `data-local-path`, which is what the click target opens.
+function decoratePathCode(code: HTMLElement, text: string) {
+  const { path } = parsePathLineSuffix(text)
+
+  code.dataset.inlineCodeKind = "path"
+  code.dataset.localPath = text
+  code.title = text
+  code.textContent = getFilename(path) + text.slice(path.length)
+}
+
 function localLinkTarget(target: EventTarget | null) {
   if (!(target instanceof Element)) return
   const link = target.closest("a[data-local-link]")
@@ -467,7 +481,8 @@ function localLinkTarget(target: EventTarget | null) {
   // Bare inline paths such as `src/app.ts` open like links when the host can resolve them.
   const code = target.closest(':not(pre) > code[data-inline-code-kind="path"]')
 
-  if (code instanceof HTMLElement && !code.closest("a")) return code.textContent?.trim() || undefined
+  if (code instanceof HTMLElement && !code.closest("a"))
+    return code.dataset.localPath ?? (code.textContent?.trim() || undefined)
 }
 
 function setupLocalLinks(root: HTMLDivElement, open: () => OpenMarkdownLocalFile | undefined) {
