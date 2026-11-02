@@ -824,7 +824,7 @@ test.describe("Working", () => {
     expect(answerBox).not.toBeNull()
     expect(answerPartBox).not.toBeNull()
     expect(activityBox).not.toBeNull()
-    expect(answerPartBox!.y - (workingBox!.y + workingBox!.height)).toBeCloseTo(8, 0)
+    expect(answerPartBox!.y - (workingBox!.y + workingBox!.height)).toBeCloseTo(15, 0)
     expect(workingBox!.y + workingBox!.height).toBeLessThanOrEqual(answerBox!.y)
     expect(activityBox!.y).toBeGreaterThanOrEqual(answerBox!.y + answerBox!.height)
   })
@@ -1159,8 +1159,8 @@ test.describe("Working", () => {
   test("freezes the Working header in place when the turn finishes", async ({ page }) => {
     const assistant = assistantMessage(
       [
-        toolPart("prt_worked_command", "shell", "completed", { command: "bun test" }),
         textPart("prt_worked_answer", "Done."),
+        toolPart("prt_worked_command", "shell", "completed", { command: "bun test" }),
       ],
       { completed: false },
     )
@@ -1168,9 +1168,11 @@ test.describe("Working", () => {
 
     const working = page.locator('[data-component="session-working"]')
     const worked = page.locator('[data-component="session-worked"]')
+    const answer = page.locator('[data-component="text-part"]').filter({ hasText: "Done." })
     await expect(working).toBeVisible()
     await expect(worked).toHaveCount(0)
     const before = await working.boundingBox()
+    const gapBefore = (await answer.boundingBox())!.y - (before!.y + before!.height)
 
     await timeline.send(messageUpdated(completedAssistantInfo(assistant)))
     await timeline.send(status("idle"))
@@ -1187,6 +1189,8 @@ test.describe("Working", () => {
     const after = await worked.boundingBox()
     expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1)
     expect(Math.abs(after!.x - before!.x)).toBeLessThanOrEqual(1)
+    // Settling must not push the answer further down.
+    expect((await answer.boundingBox())!.y - (after!.y + after!.height)).toBeCloseTo(gapBefore, 0)
   })
 })
 

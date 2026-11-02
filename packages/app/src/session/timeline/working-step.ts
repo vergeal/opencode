@@ -68,7 +68,6 @@ export function buildWorkingStep(messages: readonly AssistantMessage[]): Working
     }
 
   if (current?.type === "tool") return toolStep(current)
-  if (current?.type === "text" && current.text.trim()) return
   if (latest.time.completed !== undefined) return
 
   return {

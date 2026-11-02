@@ -399,19 +399,6 @@ function MessageTimelineView(
 
   const currentWorkingStep = createMemo(() => buildWorkingStep(workingMessages()))
 
-  const firstAssistantRow = createMemo(() => {
-    const active = projection.activeMessageID()
-
-    return active
-      ? projection.rows().find((row) => row.userMessageID === active && Predicate.isTagged(row, "AssistantPart"))
-      : undefined
-  })
-  const firstAssistantRowKey = createMemo(() => {
-    const row = firstAssistantRow()
-
-    return row ? TimelineRow.key(row) : undefined
-  })
-
   const assistantActivityPlacement = createMemo(() => {
     const active = projection.activeMessageID()
     const assistant = workingMessages().at(-1)
@@ -441,6 +428,27 @@ function MessageTimelineView(
     if (!anchor) return
 
     return { key: TimelineRow.key(anchor) }
+  })
+
+  // The turn header already owns the gap above the step when nothing visible precedes it; adding the step's own top
+  // margin there would double the spacing to 30px.
+  const activityFollowsContent = createMemo(() => {
+    const active = projection.activeMessageID()
+    const placement = assistantActivityPlacement()
+
+    if (!active || !placement) return false
+    const rows = projection.rows()
+    const index = rows.findIndex((row) => TimelineRow.key(row) === placement.key)
+
+    if (index < 0) return false
+
+    return rows
+      .slice(0, index + 1)
+      .some(
+        (row) =>
+          row.userMessageID === active &&
+          (Predicate.isTagged(row, "AssistantPart") || Predicate.isTagged(row, "Thinking")),
+      )
   })
 
   const openWorkingFile = (path: string) => {
@@ -499,6 +507,26 @@ function MessageTimelineView(
     return result
   })
 
+  // A turn header already supplies the gap above the turn's first assistant row. Clear that row's own text margin
+  // for settled turns as well, otherwise the gap jumps from 15px to 39px when Working settles into Worked.
+  const firstAssistantRowKeys = createMemo(() => {
+    const active = projection.activeMessageID()
+    const headers = workedHeaders()
+    const keys = new Set<string>()
+    const seen = new Set<string>()
+
+    for (const row of projection.rows()) {
+      if (!Predicate.isTagged(row, "AssistantPart") || seen.has(row.userMessageID)) continue
+
+      seen.add(row.userMessageID)
+      if (!headers.has(row.userMessageID) && !(showWorking() && row.userMessageID === active)) continue
+
+      keys.add(TimelineRow.key(row))
+    }
+
+    return keys
+  })
+
   // The bottom lane keeps the background hint in place without competing with the task-level Working header.
   const activity = () => (
     <div
@@ -539,8 +567,12 @@ function MessageTimelineView(
       }}
       renderRow={(row, onSizeChange) => {
         const assistantActivity = () => (
-          <Show when={showWorking() && assistantActivityPlacement()?.key === TimelineRow.key(row())}>
-            <div class={`w-full ${turnPadding()}`}>
+          <Show
+            when={
+              showWorking() && !!currentWorkingStep() && assistantActivityPlacement()?.key === TimelineRow.key(row())
+            }
+          >
+            <div class={`w-full ${turnPadding()}`} classList={{ "pt-[15px]": activityFollowsContent() }}>
               <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
                 <SessionAssistantActivity step={currentWorkingStep()} onOpenFile={openWorkingFile} />
               </div>
@@ -554,7 +586,7 @@ function MessageTimelineView(
             fallback={
               <>
                 <Show
-                  when={firstAssistantRowKey() === TimelineRow.key(row())}
+                  when={firstAssistantRowKeys().has(TimelineRow.key(row()))}
                   fallback={<rowRenderer.Row row={row} onSizeChange={onSizeChange} />}
                 >
                   <div data-session-first-assistant>
@@ -567,7 +599,7 @@ function MessageTimelineView(
                     fallback={
                       <Show when={workedHeaders().get(row().userMessageID)}>
                         {(header) => (
-                          <div class={`w-full pb-2 pt-4 ${turnPadding()}`}>
+                          <div class={`w-full pb-[15px] pt-4 ${turnPadding()}`}>
                             <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
                               <SessionWorkedHeader started={header().started} completed={header().completed} />
                             </div>
@@ -576,7 +608,7 @@ function MessageTimelineView(
                       </Show>
                     }
                   >
-                    <div class={`w-full pb-2 pt-4 ${turnPadding()}`}>
+                    <div class={`w-full pb-[15px] pt-4 ${turnPadding()}`}>
                       <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
                         <SessionWorkingHeader started={workingStartedAt()} />
                       </div>
