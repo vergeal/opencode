@@ -333,6 +333,31 @@ export function createSessionInbox(options: { archived?: boolean } = {}) {
         .update({ sessionID: entry.session.id, archived: false })
         .then(() => move(entry, undefined))
         .catch(requestFailed),
+    // Dragging a row into another project folder moves the session to that project's directory.
+    relocate: (entry: InboxEntry, target: { directory: string; projectID?: string }) =>
+      entry.ctx.sdk.api.session
+        .move({ sessionID: entry.session.id, directory: target.directory })
+        .then(() => {
+          const patch = (sessions?: SessionInfo[]) =>
+            sessions?.map((item) =>
+              item.id === entry.session.id
+                ? {
+                    ...item,
+                    location: { ...item.location, directory: target.directory },
+                    projectID: target.projectID ?? item.projectID,
+                  }
+                : item,
+            )
+
+          queryClient.setQueryData<SessionInfo[]>(["inbox-sessions", entry.conn], patch)
+          queryClient.setQueryData<SessionInfo[]>(["inbox-archived-sessions", entry.conn], patch)
+        })
+        .catch((cause) =>
+          showToast({
+            title: language.t("session.location.moveFailed"),
+            description: errorMessage(cause, language.t("session.location.moveFailed")),
+          }),
+        ),
     remove: (entry: InboxEntry) => {
       const ids = sessionTreeIDs(entry.ctx.data.session.list(), entry.session.id)
 
