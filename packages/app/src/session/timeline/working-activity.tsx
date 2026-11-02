@@ -64,7 +64,7 @@ function WorkingStepRow(props: { step: WorkingStep; onOpenFile: (path: string) =
     <div
       data-component="session-assistant-activity"
       data-state={props.step.running ? "running" : "completed"}
-      class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-1 text-[16px] leading-text-base text-v2-text-text-muted"
+      class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-3 text-[16px] leading-text-base text-v2-text-text-muted"
     >
       <span
         data-slot="session-working-dot"
