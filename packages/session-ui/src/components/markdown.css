@@ -444,6 +444,10 @@
   td {
     text-align: start;
     vertical-align: top;
+    /* Cap long cells so automatic layout hands the spare width to short ones. Without the cap a long
+       sentence next to a status column squeezes that column below its content and wraps "已完成" onto
+       two lines even though it easily fits on one. */
+    max-width: 12em;
   }
 
   th {
