@@ -1,7 +1,9 @@
 import { createEffect, createSignal, on } from "solid-js"
 import { createEventListener } from "@solid-primitives/event-listener"
 import { useCommand, type CommandOption } from "@/shell/commands/command"
+import { useTabs } from "@/shell/tabs/tabs"
 import { adjacentTabKey } from "@/shell/titlebar/tab-order"
+import { ServerConnection } from "@/runtime/server/registry"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { previewSelectedLines } from "@opencode/session-ui/pierre/selection-bridge"
 import { useFile, selectionFromLines, type FileSelection } from "@/workspaces/files/model"
@@ -56,6 +58,7 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
   const language = useLanguage()
   const prompt = useComposerState()
   const serverSDK = useServerSDK()
+  const tabs = useTabs()
   const data = useData()
   const settings = useSettings()
   const platform = usePlatform()
@@ -342,6 +345,26 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
     })
   }
 
+  const clear = async () => {
+    const sessionID = actions.session.identity.params.id
+    const directory = actions.session.data.info()?.location.directory
+
+    if (!sessionID || !directory) return
+
+    const server = ServerConnection.key(serverSDK.server)
+    const draft = await tabs.newDraft({ server, directory }, "", prompt.model.current())
+    // The new draft is the recent tab, so closing the previous one leaves the route on it.
+    tabs.remember(draft)
+    const index = tabs.store.findIndex(
+      (tab) =>
+        tab.type === "session" &&
+        tab.server === server &&
+        (tab.sessionId === sessionID || tab.routeSessionId === sessionID),
+    )
+
+    if (index !== -1) tabs.closeTab(index)
+  }
+
   const fork = () => {
     const sessionID = actions.session.identity.params.id
 
@@ -358,6 +381,14 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       title: language.t("command.session.new"),
       slash: "new",
       onSelect: (source) => command.trigger("tab.new", source),
+    }),
+    sessionCommand({
+      id: "session.clear",
+      title: language.t("command.session.clear"),
+      description: language.t("command.session.clear.description"),
+      slash: "clear",
+      disabled: !actions.session.identity.params.id,
+      onSelect: clear,
     }),
     sessionCommand({
       id: "session.undo",
