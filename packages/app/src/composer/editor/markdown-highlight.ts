@@ -76,8 +76,17 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     paint(text, collect(text).filter((segment) => segment.group !== "marker"))
   }
 
+  // Editing always shows the source. Decorating while focused would replace the text the
+  // caret is sitting in, so a Backspace could remove a whole wrapped block instead of one
+  // character. The rendered form is only for a draft the user is not currently editing.
+  const focused = () => {
+    const active = document.activeElement
+    return active === editor || !!active && editor.contains(active)
+  }
+
   const decorate = () => {
     if (disposed || composing) return
+    if (focused()) return
     if (editor.querySelector("[data-md-marker], [data-md-code-block]")) return
 
     const text = editor.textContent ?? ""
@@ -103,12 +112,23 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       const entry = locate(textNodes(editor), segment.start, segment.end)
       if (!entry) return
 
+      const span = document.createElement("span")
+      span.dataset.mdCodeBlock = ""
+
+      // An empty block has no content to surround, so the span is inserted as a zero-width
+      // placeholder that still paints the layer and keeps the caret on the body line.
+      if (segment.start === segment.end) {
+        const range = document.createRange()
+        range.setStart(entry.from.node, entry.from.offset)
+        range.collapse(true)
+        range.insertNode(span)
+
+        return
+      }
+
       const range = document.createRange()
       range.setStart(entry.from.node, entry.from.offset)
       range.setEnd(entry.to.node, entry.to.offset)
-
-      const span = document.createElement("span")
-      span.dataset.mdCodeBlock = ""
 
       try {
         range.surroundContents(span)
@@ -284,10 +304,15 @@ function locate(nodes: ReturnType<typeof textNodes>, start: number, end: number)
 }
 
 function point(nodes: ReturnType<typeof textNodes>, position: number) {
+  // Prefer a node boundary that starts at the position, so an empty range lands after a line
+  // break instead of at the previous node's end.
   for (const entry of nodes) {
-    if (position < entry.start || position > entry.end) continue
+    if (entry.start === position) return { node: entry.node, offset: 0 }
+    if (position > entry.start && position < entry.end) return { node: entry.node, offset: position - entry.start }
+  }
 
-    return { node: entry.node, offset: position - entry.start }
+  for (const entry of nodes) {
+    if (position === entry.end) return { node: entry.node, offset: entry.end - entry.start }
   }
 }
 
@@ -362,10 +387,15 @@ function collect(text: string): Segment[] {
           const closed = lastBreak > 0 && /^[ \t]*(?:`{3,}|~{3,})[ \t]*$/.test(trimmed.slice(lastBreak + 1))
 
           if (fenced) {
-            add(start, start + lines[0].length, "marker")
-            add(start + lines[0].length + 1, closed ? start + lastBreak : start + trimmed.length, "codeblock")
+            // The fence line's own line break belongs to the marker too, so hiding the marker removes
+            // the whole line box instead of leaving an empty 20px line above the block.
+            const bodyStart = start + lines[0].length + (raw.length > lines[0].length ? 1 : 0)
+            add(start, bodyStart, "marker")
+            add(bodyStart, closed ? start + lastBreak : start + trimmed.length, "codeblock")
+            // Hide the closing fence with the line break in front of it, which would otherwise draw a
+            // blank line between the block and whatever follows it.
+            if (closed) add(start + lastBreak, start + trimmed.length, "marker")
           }
-          if (closed) add(start + lastBreak + 1, start + trimmed.length, "marker")
           break
         }
       }
@@ -435,7 +465,8 @@ function collect(text: string): Segment[] {
   }
 
   function add(start: number, end: number, group: Group) {
-    if (end <= start) return
+    // An empty code block still needs a segment so its layer paints before the first character.
+    if (group === "codeblock" ? end < start : end <= start) return
     segments.push({ start, end, group })
   }
 }

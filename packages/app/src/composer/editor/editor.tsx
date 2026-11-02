@@ -46,6 +46,7 @@ import type { ComposerEditorModel, ComposerSelectControl } from "./interaction"
 import { isAttachment } from "../prompt-parts"
 import { QuoteCommentEditor } from "./quote-comment"
 import { createMarkdownHighlight } from "./markdown-highlight"
+import { setCursorPosition } from "./dom"
 import "../attachments/attachments.css"
 import "./editor.css"
 import "@/shell/palette-menu.css"
@@ -99,6 +100,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
   let highlight: ReturnType<typeof createMarkdownHighlight> | undefined
   const [overflow, setOverflow] = createStore({ start: false, end: false })
   const [historyLayout, setHistoryLayout] = createStore<{ height?: number }>({})
+  // The placeholder follows what the editor visibly holds, not just the synced draft: an IME's
+  // uncommitted text is visible before it reaches the controller, and a hint must not sit under it.
+  const [empty, setEmpty] = createSignal(true)
 
   onCleanup(() => highlight?.dispose())
 
@@ -161,6 +165,19 @@ export function ComposerEditor(props: ComposerEditorProps) {
     props.controller.onCursor(composerCursor(editor))
   }
 
+  // The editor's DOM is the source while typing, so the store only mirrors it. `localInput` tells the
+  // effect that reads the parts not to re-render text the browser just produced.
+  const sync = (element: HTMLDivElement, cursor: number) => {
+    const prompt = parseComposerEditor(element)
+    const attachments = props.controller.parts().filter(isAttachment)
+    localInput = true
+    props.controller.onInput(
+      prompt.map((part) => part.content).join(""),
+      [...prompt, ...attachments],
+      cursor,
+    )
+  }
+
   const mode = createMemo(() => state.mode)
 
   const buttons = createMemo(() => ({
@@ -181,6 +198,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
     }
 
     renderComposerEditor(editor, parts)
+    setEmpty(!editor.textContent)
   })
 
   // Kept out of JSX: an inline ternary prop compiles to a memo created on every read, and the popover reads
@@ -311,15 +329,20 @@ export function ComposerEditor(props: ComposerEditorProps) {
                 "text-align": "start",
               }}
               onInput={(event) => {
-                const cursor = composerCursor(event.currentTarget)
-                const prompt = parseComposerEditor(event.currentTarget)
-                const attachments = props.controller.parts().filter(isAttachment)
-                localInput = true
-                props.controller.onInput(
-                  prompt.map((part) => part.content).join(""),
-                  [...prompt, ...attachments],
-                  cursor,
-                )
+                const element = event.currentTarget
+                setEmpty(!element.textContent)
+
+                if (event instanceof InputEvent && event.isComposing) return
+
+                const completed = completeCodeFence(element)
+                sync(element, completed ?? composerCursor(element))
+              }}
+              // An IME reports its committed text in an input event that still carries `isComposing`, so the
+              // draft would keep whatever preceded the composition: the placeholder stays over the typed
+              // text and a send only carries the part typed before the IME started.
+              onCompositionEnd={(event) => {
+                const element = event.currentTarget
+                sync(element, composerCursor(element))
               }}
               onKeyDown={(event) => {
                 // Capture the opening footprint before the controller applies its first history preview.
@@ -332,6 +355,16 @@ export function ComposerEditor(props: ComposerEditorProps) {
                   if (height !== undefined && state.popover.type === "history") setHistoryLayout("height", height)
 
                   return
+                }
+
+                // Delete at the end of a fenced block would eat the closing fence. Leave the block
+                // instead, so the fence stays valid and the caret continues below it.
+                if (event.key === "Delete" && !event.metaKey && !event.ctrlKey && !event.altKey && !event.isComposing) {
+                  if (exitCodeBlock(event.currentTarget)) {
+                    event.preventDefault()
+                    sync(event.currentTarget, composerCursor(event.currentTarget))
+                    return
+                  }
                 }
 
                 const mod = event.metaKey || event.ctrlKey
@@ -373,7 +406,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               }}
               onFocus={() => props.controller.dispatch({ type: "focus.editor" })}
             />
-            <Show when={!props.controller.value()}>
+            <Show when={empty()}>
               <div
                 dir={state.mode === "normal" ? "auto" : "ltr"}
                 class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[var(--composer-scroll-end)] pt-4 text-[15px] font-[400] leading-5 text-v2-text-text-faint"
@@ -389,7 +422,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           </div>
         </div>
 
-        <div class="flex h-10 shrink-0 items-center border-t border-v2-border-border-muted px-2">
+        <div class="flex h-11 shrink-0 items-center border-t border-v2-border-border-muted px-2">
           <div
             class="flex shrink-0 items-center"
             aria-hidden={state.mode === "shell"}
@@ -666,6 +699,85 @@ function composerCursor(editor: HTMLDivElement) {
   range.setEnd(selection.anchorNode!, selection.anchorOffset)
 
   return range.toString().length
+}
+
+/**
+ * Expands a lone ``` on a line into an empty fenced block with the caret on the body line.
+ * Returns the caret after the edit, or undefined when the draft is unchanged.
+ */
+function completeCodeFence(editor: HTMLDivElement) {
+  const selection = window.getSelection()
+  if (!selection?.rangeCount || !selection.isCollapsed) return
+  if (!selection.anchorNode || !editor.contains(selection.anchorNode)) return
+
+  const text = editor.textContent ?? ""
+  const cursor = composerCursor(editor)
+  const lineStart = text.lastIndexOf("\n", cursor - 1) + 1
+  if (!/^[ \t]*```$/.test(text.slice(lineStart, cursor))) return
+  if (text.slice(cursor).split("\n")[0].trim() !== "") return
+
+  // Inside an open fence the user is closing it, not opening another one.
+  const fences = text
+    .slice(0, lineStart)
+    .split("\n")
+    .filter((line) => /^[ \t]*```/.test(line)).length
+  if (fences % 2 === 1) return
+
+  const body = document.createTextNode("\n\n```")
+  const range = document.createRange()
+  range.setStart(selection.anchorNode, selection.anchorOffset)
+  range.collapse(true)
+  range.insertNode(body)
+
+  const caret = document.createRange()
+  caret.setStart(body, 1)
+  caret.collapse(true)
+  selection.removeAllRanges()
+  selection.addRange(caret)
+
+  return composerCursor(editor)
+}
+
+/**
+ * Leaves a fenced block when Delete is pressed at the end of its last line: the caret moves past
+ * the closing fence instead of eating it. Returns true when it moved.
+ */
+function exitCodeBlock(editor: HTMLDivElement) {
+  const selection = window.getSelection()
+  if (!selection?.rangeCount || !selection.isCollapsed) return false
+  if (!selection.anchorNode || !editor.contains(selection.anchorNode)) return false
+
+  const text = editor.textContent ?? ""
+  const cursor = composerCursor(editor)
+  const lineEnd = text.indexOf("\n", cursor)
+  if (lineEnd !== cursor) return false
+
+  const fenceEnd = text.indexOf("\n", lineEnd + 1)
+  const fence = text.slice(lineEnd + 1, fenceEnd === -1 ? text.length : fenceEnd)
+  if (!/^[ \t]*(?:`{3,}|~{3,})[ \t]*$/.test(fence)) return false
+  if (fencesBefore(text, lineEnd) % 2 === 0) return false
+
+  if (fenceEnd === -1) {
+    // A closing fence at the very end has no line below it. Add a blank line so the caret has one to
+    // sit on: Chromium folds a lone trailing newline into the fence line above it.
+    editor.normalize()
+    const end = document.createRange()
+    end.selectNodeContents(editor)
+    end.collapse(false)
+    end.insertNode(document.createTextNode("\n\n"))
+  }
+
+  // After the closing fence's line break, which is the first line below the block.
+  setCursorPosition(editor, (fenceEnd === -1 ? text.length : fenceEnd) + 1)
+
+  return true
+}
+
+function fencesBefore(text: string, position: number) {
+  return text
+    .slice(0, position)
+    .split("\n")
+    .filter((line) => /^[ \t]*(?:`{3,}|~{3,})/.test(line)).length
 }
 
 function ComposerAttachments(props: {

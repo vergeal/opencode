@@ -1,3 +1,8 @@
+[data-component="composer-editor"] {
+  /* A writing surface, not a one-line strip: about three lines before the draft starts to scroll. */
+  min-height: 76px;
+}
+
 [data-component="composer-editor"]:empty::before {
   content: "\200B";
 }
@@ -38,29 +43,27 @@
 }
 
 /* Markdown paints over the editable text, so the text model, caret and mentions stay untouched. */
-/* Markers collapse to zero width so the draft reads as rendered markdown. They stay selectable and
-   editable: `display: none` would make them unreachable for Ctrl+A, Backspace and caret movement. */
+/* Decoration only exists while the draft is unfocused, and every interaction restores the source
+   first, so markers can leave the text flow entirely instead of holding a zero-width line box. */
 [data-component="composer-editor"] [data-md-marker] {
-  font-size: 0;
-  line-height: 0;
-  letter-spacing: 0;
+  display: none;
 }
 
-/* Fenced code renders as one block: code font on a soft layer, fence lines hidden. The span is only
-   present while the draft is idle; any edit restores plain text first. */
+/* Fenced code renders as one block: code font on a soft layer between two hidden fence lines. */
 [data-component="composer-editor"] [data-md-code-block] {
-  display: inline-block;
-  vertical-align: top;
-  min-width: 100%;
-  max-width: 100%;
+  display: block;
   box-sizing: border-box;
-  border-radius: 6px;
+  width: 100%;
+  min-height: calc(1.7em + 16px);
+  margin-block: 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
   background: var(--v2-background-bg-layer-02);
-  padding: 4px 8px;
   font-family: var(--font-family-mono);
   font-size: 12.5px;
   line-height: 1.7;
   white-space: pre-wrap;
+  tab-size: 2;
 }
 
 ::highlight(composer-md-strong) {
