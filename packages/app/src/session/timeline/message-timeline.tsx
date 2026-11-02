@@ -484,7 +484,12 @@ function MessageTimelineView(
       const last = messages.at(-1)
 
       if (!last?.time.completed || last.error || last.retry) continue
+      // A settled header only frames a turn that both ran work and left words behind.
       if (!messages.some((message) => message.content.some((content) => content.type !== "text"))) continue
+      if (
+        !messages.some((message) => message.content.some((content) => content.type === "text" && content.text.trim()))
+      )
+        continue
       result.set(turnID, {
         started: messageByID().get(turnID)?.time.created ?? messages[0]!.time.created,
         completed: last.time.completed,
@@ -557,21 +562,25 @@ function MessageTimelineView(
                   </div>
                 </Show>
                 <Show when={Predicate.isTagged(row(), "UserMessage")}>
-                  <Show when={showWorking() && row().userMessageID === projection.activeMessageID()}>
+                  <Show
+                    when={showWorking() && row().userMessageID === projection.activeMessageID()}
+                    fallback={
+                      <Show when={workedHeaders().get(row().userMessageID)}>
+                        {(header) => (
+                          <div class={`w-full pb-2 pt-4 ${turnPadding()}`}>
+                            <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                              <SessionWorkedHeader started={header().started} completed={header().completed} />
+                            </div>
+                          </div>
+                        )}
+                      </Show>
+                    }
+                  >
                     <div class={`w-full pb-2 pt-4 ${turnPadding()}`}>
                       <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
                         <SessionWorkingHeader started={workingStartedAt()} />
                       </div>
                     </div>
-                  </Show>
-                  <Show when={workedHeaders().get(row().userMessageID)}>
-                    {(header) => (
-                      <div class={`w-full pb-2 pt-4 ${turnPadding()}`}>
-                        <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
-                          <SessionWorkedHeader started={header().started} completed={header().completed} />
-                        </div>
-                      </div>
-                    )}
                   </Show>
                 </Show>
                 {assistantActivity()}
