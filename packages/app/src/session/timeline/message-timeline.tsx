@@ -399,6 +399,19 @@ function MessageTimelineView(
 
   const currentWorkingStep = createMemo(() => buildWorkingStep(workingMessages()))
 
+  const firstAssistantRow = createMemo(() => {
+    const active = projection.activeMessageID()
+
+    return active
+      ? projection.rows().find((row) => row.userMessageID === active && Predicate.isTagged(row, "AssistantPart"))
+      : undefined
+  })
+  const firstAssistantRowKey = createMemo(() => {
+    const row = firstAssistantRow()
+
+    return row ? TimelineRow.key(row) : undefined
+  })
+
   const assistantActivityPlacement = createMemo(() => {
     const active = projection.activeMessageID()
     const assistant = workingMessages().at(-1)
@@ -517,7 +530,14 @@ function MessageTimelineView(
             when={Predicate.isTagged(row(), "Activity")}
             fallback={
               <>
-                <rowRenderer.Row row={row} onSizeChange={onSizeChange} />
+                <Show
+                  when={firstAssistantRowKey() === TimelineRow.key(row())}
+                  fallback={<rowRenderer.Row row={row} onSizeChange={onSizeChange} />}
+                >
+                  <div data-session-first-assistant>
+                    <rowRenderer.Row row={row} onSizeChange={onSizeChange} />
+                  </div>
+                </Show>
                 <Show
                   when={
                     Predicate.isTagged(row(), "UserMessage") &&

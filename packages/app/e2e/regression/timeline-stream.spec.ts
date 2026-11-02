@@ -809,18 +809,22 @@ test.describe("Working", () => {
     const working = page.locator('[data-component="session-working"]')
     const activity = page.locator('[data-component="session-assistant-activity"]')
     const answer = page.getByText("The first step is complete.", { exact: true })
+    const answerPart = page.locator('[data-component="text-part"]').filter({ hasText: "The first step is complete." })
 
     await expect(working).toHaveCount(1)
     await expect(activity.locator('[data-component="text-shimmer"][aria-label="Run command"]')).toBeVisible()
     await expect(activity.locator('[data-slot="session-working-duration"]')).toHaveCount(0)
-    const [workingBox, answerBox, activityBox] = await Promise.all([
+    const [workingBox, answerBox, answerPartBox, activityBox] = await Promise.all([
       working.boundingBox(),
       answer.boundingBox(),
+      answerPart.boundingBox(),
       activity.boundingBox(),
     ])
     expect(workingBox).not.toBeNull()
     expect(answerBox).not.toBeNull()
+    expect(answerPartBox).not.toBeNull()
     expect(activityBox).not.toBeNull()
+    expect(answerPartBox!.y - (workingBox!.y + workingBox!.height)).toBeCloseTo(8, 0)
     expect(workingBox!.y + workingBox!.height).toBeLessThanOrEqual(answerBox!.y)
     expect(activityBox!.y).toBeGreaterThanOrEqual(answerBox!.y + answerBox!.height)
   })

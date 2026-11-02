@@ -545,6 +545,10 @@
   margin-top: 0;
 }
 
+[data-session-first-assistant] [data-component="text-part"] {
+  margin-top: 0;
+}
+
 [data-component="reasoning-part"] {
   width: 100%;
   color: var(--v2-text-text-muted);
