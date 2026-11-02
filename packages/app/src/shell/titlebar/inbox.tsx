@@ -14,6 +14,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { usePinnedSessions } from "@/session/pins"
 import { Persist, persisted } from "@/runtime/persistence/storage"
+import { pathKey } from "@/workspaces/path-key"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import { sessionTabTitle } from "./tab-title"
 import { sessionTitle } from "@/session/title"
@@ -22,6 +23,8 @@ import { createSessionInbox, inboxArchived, inboxBusy, type InboxEntry, type Inb
 // `since` is when the inbox was first used; Recent only lists sessions that finished a run after it.
 const InboxState = Persistence.struct({
   workingExpanded: Schema.Boolean,
+  archivedExpanded: Schema.Boolean,
+  expandedProjects: Schema.Array(Schema.String),
   since: Persistence.optional(Schema.Number),
 })
 
@@ -34,7 +37,20 @@ export function SidebarInbox() {
 
   const [state, setState, , ready] = persisted(Persist.global("sidebar.inbox"), InboxState, {
     workingExpanded: true,
+    archivedExpanded: false,
+    expandedProjects: [],
   })
+
+  // Projects behave like folders: every one starts collapsed and remembers being opened.
+  const projectExpanded = (key: string) => state.expandedProjects.includes(key)
+
+  const toggleProject = (key: string) =>
+    setState(
+      "expandedProjects",
+      state.expandedProjects.includes(key)
+        ? state.expandedProjects.filter((item) => item !== key)
+        : [...state.expandedProjects, key],
+    )
 
   const sections = createMemo(() => {
     const list = inbox.entries()
@@ -63,6 +79,40 @@ export function SidebarInbox() {
     }
   })
 
+  // Project headers replace the flat session list: each session stays under the project it belongs to, while the
+  // pinned, needs-attention and working sections above keep their own state-based order.
+  const projectKey = (entry: InboxEntry) =>
+    `${entry.server}\0${pathKey(
+      entry.ctx.projects.forSession(entry.session)?.worktree ?? entry.session.location.directory,
+    )}`
+
+  const projectGroups = (list: InboxEntry[]) => {
+    const groups = new Map<string, { key: string; name: string; entries: InboxEntry[] }>()
+
+    list.forEach((entry) => {
+      const key = projectKey(entry)
+      const group = groups.get(key)
+
+      if (group) {
+        group.entries.push(entry)
+
+        return
+      }
+
+      const project = entry.ctx.projects.forSession(entry.session)
+
+      groups.set(key, {
+        key,
+        name: displayName(project ?? { worktree: entry.session.location.directory }),
+        entries: [entry],
+      })
+    })
+
+    return [...groups.values()]
+  }
+
+  const groupedInbox = createMemo(() => projectGroups(sections().inbox))
+
   // The client only refreshes `time.idle` for loaded sessions when a run ends, so load every working one.
   createEffect(() => {
     ;[...sections().pinned, ...sections().working]
@@ -78,11 +128,19 @@ export function SidebarInbox() {
     if (ready() && state.since === undefined) setState("since", Date.now())
   })
 
-  // Git info is not stored on the session, so eagerly load it for every shown row.
+  // Git info is not stored on the session, so eagerly load it for every shown row. Folded folders and collapsed
+  // sections are skipped until the person opens them, since each lookup runs git on the server.
   createEffect(() => {
     const visible = sections()
+    const expanded = (list: InboxEntry[]) => list.filter((entry) => projectExpanded(projectKey(entry)))
 
-    inbox.loadBranches([...visible.pinned, ...visible.needs, ...visible.working, ...visible.inbox, ...visible.archived])
+    inbox.loadBranches([
+      ...visible.pinned,
+      ...visible.needs,
+      ...visible.working,
+      ...expanded(visible.inbox),
+      ...(state.archivedExpanded ? visible.archived : []),
+    ])
   })
 
   function DeleteDialog(props: { entry: InboxEntry }) {
@@ -113,7 +171,7 @@ export function SidebarInbox() {
     )
   }
 
-  const rows = (list: InboxEntry[]) => (
+  const rows = (list: InboxEntry[], showProjectName = true) => (
     <For each={list.map((entry) => entry.key)}>
       {(key) => (
         <Show when={inbox.byKey().get(key)}>
@@ -127,6 +185,7 @@ export function SidebarInbox() {
               worktree={inbox.inWorktree(entry())}
               archived={inboxArchived(entry())}
               pinned={pins.isPinned(entry().session.id)}
+              showProjectName={showProjectName}
               onTogglePin={() => pins.toggle(entry().session.id)}
               onOpen={() => inbox.open(entry())}
               onArchive={() => void inbox.archive(entry())}
@@ -157,6 +216,10 @@ export function SidebarInbox() {
             {rows(sections().needs)}
           </div>
         </Show>
+        {/* The project list starts a new block, so it gets its own divider and heading. */}
+        <Show when={sections().pinned.length > 0 || sections().needs.length > 0}>
+          <div class="my-1 h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
+        </Show>
         <Show
           when={sections().inbox.length > 0}
           fallback={
@@ -171,19 +234,40 @@ export function SidebarInbox() {
             </Show>
           }
         >
-          <Show when={sections().needs.length > 0}>
-            <SectionHeader label={language.t("sidebar.inbox.section.recent")} />
-          </Show>
-          {/* Pinned rows sit above; name the rest so the two groups read apart. */}
-          <Show when={sections().needs.length === 0 && sections().pinned.length > 0}>
-            <SectionHeader label={language.t("sidebar.inbox.section.sessions")} />
-          </Show>
-          {rows(sections().inbox)}
+          <div class="flex shrink-0 flex-col gap-px pb-3">
+            <SectionHeader label={language.t("sidebar.inbox.section.projects")} />
+            <For each={groupedInbox()}>
+              {(group) => (
+                <div class="flex shrink-0 flex-col gap-px">
+                  <FolderRow
+                    label={group.name}
+                    count={group.entries.length}
+                    expanded={projectExpanded(group.key)}
+                    onToggle={() => toggleProject(group.key)}
+                  />
+                  <Show when={projectExpanded(group.key)}>
+                    <div class="flex flex-col gap-px ps-2">{rows(group.entries, false)}</div>
+                  </Show>
+                </div>
+              )}
+            </For>
+          </div>
         </Show>
+        {/* Archived is a folder of its own, separated from the project list above. */}
         <Show when={sections().archived.length > 0}>
-          <div class="flex shrink-0 flex-col gap-px pt-3">
-            <SectionHeader label={language.t("sidebar.inbox.section.archived")} />
-            {rows(sections().archived)}
+          <Show when={sections().inbox.length > 0}>
+            <div class="my-1 h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
+          </Show>
+          <div class="flex shrink-0 flex-col gap-px">
+            <FolderRow
+              label={language.t("sidebar.inbox.section.archived")}
+              count={sections().archived.length}
+              expanded={state.archivedExpanded}
+              onToggle={() => setState("archivedExpanded", !state.archivedExpanded)}
+            />
+            <Show when={state.archivedExpanded}>
+              <div class="flex flex-col gap-px ps-2">{rows(sections().archived)}</div>
+            </Show>
           </div>
         </Show>
       </div>
@@ -206,6 +290,33 @@ export function SidebarInbox() {
         </div>
       </Show>
     </div>
+  )
+}
+
+/** A folder row: folded by default, opening it reveals the sessions inside. */
+function FolderRow(props: { label: string; count: number; expanded: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-expanded={props.expanded}
+      class={`
+        flex h-6 w-full shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-start
+        text-[13px] leading-4 font-medium text-v2-text-text-muted
+        hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base
+        focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
+      `}
+      onClick={props.onToggle}
+    >
+      <Icon name="folder" size="small" class="shrink-0" />
+      <span class="min-w-0 flex-1 truncate">{props.label}</span>
+      <span class="shrink-0 tabular-nums text-v2-text-text-faint">{props.count}</span>
+      <Icon
+        name="chevron-down"
+        size="small"
+        class="shrink-0 transition-transform"
+        classList={{ "-rotate-90 rtl:rotate-90": !props.expanded }}
+      />
+    </button>
   )
 }
 
@@ -259,6 +370,7 @@ function InboxRow(props: {
   worktree: boolean
   archived: boolean
   pinned: boolean
+  showProjectName: boolean
   onOpen: () => void
   onTogglePin: () => void
   onArchive: () => void
@@ -274,6 +386,9 @@ function InboxRow(props: {
   const title = () => sessionTabTitle(props.entry.session.title, language.t("session.tab.session"))
   const status = () => props.entry.status
   const unread = () => status() !== "ready" && status() !== "working"
+  const showLocation = () => props.branchLoading || !!props.branch || props.worktree
+  // A project header above the row already names the project, so the row only adds its branch.
+  const showSecondary = () => props.showProjectName || showLocation() || !!servers.tag(props.entry.conn)
 
   // Sessions on the current server are not marked.
   const tag = () => servers.tag(props.entry.conn)
@@ -397,40 +512,46 @@ function InboxRow(props: {
             </Show>
           </span>
         </span>
-        <span class="flex h-4 w-full min-w-0 items-center gap-1.5 text-[12px] leading-4 text-v2-text-text-faint">
-          <span class="min-w-0 max-w-[46%] truncate" title={projectName()}>
-            {projectName()}
-          </span>
-          <Show when={props.branchLoading}>
-            <span
-              aria-hidden="true"
-              class="h-2 w-16 max-w-full animate-pulse rounded-full bg-v2-background-bg-layer-03"
-            />
-          </Show>
-          <Show when={!props.branchLoading && (props.branch || props.worktree)}>
-            <span aria-hidden="true" class="shrink-0">
-              ·
-            </span>
-            <span class="flex min-w-0 items-center gap-1">
-              {/* The worktree icon stands in for the branch icon to mark sessions outside the project checkout. */}
-              <Icon name={props.worktree ? "outline-worktree" : "branch"} size="small" class="shrink-0" />
-              <Show when={props.branch}>
-                {(name) => (
-                  <span dir="ltr" class="min-w-0 truncate">
-                    {name()}
-                  </span>
-                )}
+        <Show when={showSecondary()}>
+          <span class="flex h-4 w-full min-w-0 items-center gap-1.5 text-[12px] leading-4 text-v2-text-text-faint">
+            <Show when={props.showProjectName}>
+              <span class="min-w-0 max-w-[46%] truncate" title={projectName()}>
+                {projectName()}
+              </span>
+            </Show>
+            <Show when={props.branchLoading}>
+              <span
+                aria-hidden="true"
+                class="h-2 w-16 max-w-full animate-pulse rounded-full bg-v2-background-bg-layer-03"
+              />
+            </Show>
+            <Show when={!props.branchLoading && (props.branch || props.worktree)}>
+              <Show when={props.showProjectName}>
+                <span aria-hidden="true" class="shrink-0">
+                  ·
+                </span>
               </Show>
-            </span>
-          </Show>
-          <Show when={tag()}>
-            {(name) => (
-              <Tooltip placement="right" value={name()} class="ms-auto flex shrink-0">
-                <Icon name="server" size="small" aria-label={name()} />
-              </Tooltip>
-            )}
-          </Show>
-        </span>
+              <span class="flex min-w-0 items-center gap-1">
+                {/* The worktree icon stands in for the branch icon to mark sessions outside the project checkout. */}
+                <Icon name={props.worktree ? "outline-worktree" : "branch"} size="small" class="shrink-0" />
+                <Show when={props.branch}>
+                  {(name) => (
+                    <span dir="ltr" class="min-w-0 truncate">
+                      {name()}
+                    </span>
+                  )}
+                </Show>
+              </span>
+            </Show>
+            <Show when={tag()}>
+              {(name) => (
+                <Tooltip placement="right" value={name()} class="ms-auto flex shrink-0">
+                  <Icon name="server" size="small" aria-label={name()} />
+                </Tooltip>
+              )}
+            </Show>
+          </span>
+        </Show>
       </Menu.Context.Trigger>
       <Menu.Context.Portal>
         <Menu.Context.Content>
