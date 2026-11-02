@@ -37,8 +37,8 @@ import {
 import { SessionHeaderSpacer } from "@/session/header/session-header"
 import { SessionHeaderGap } from "@/session/header/drag-area"
 import { SessionWorkingIndicator } from "@/session/header/session-working-indicator"
-import { SessionAssistantActivity, SessionWorkingHeader } from "./working-activity"
-import { buildWorkingStep } from "./working-step"
+import { SessionAssistantActivity, SessionWorkedBlock, SessionWorkingHeader } from "./working-activity"
+import { buildWorkingStep, buildWorkingSteps } from "./working-step"
 
 type BlockingTask = { type: "shell" | "subagent"; partID: string; id?: string; label?: string }
 
@@ -476,6 +476,18 @@ function MessageTimelineView(
     })
   })
 
+  const workedSteps = createMemo(() => buildWorkingSteps(workingMessages()))
+
+  // The finished turn swaps its live header for one collapsed row that keeps the steps reachable.
+  const showWorked = createMemo(() => {
+    if (showWorking()) return false
+    const last = workingMessages().at(-1)
+
+    if (!last?.time.completed || last.error || last.retry) return false
+
+    return workedSteps().length > 0
+  })
+
   // The bottom lane keeps the background hint in place without competing with the task-level Working header.
   const activity = () => (
     <div
@@ -516,13 +528,26 @@ function MessageTimelineView(
       }}
       renderRow={(row, onSizeChange) => {
         const assistantActivity = () => (
-          <Show when={showWorking() && assistantActivityPlacement()?.key === TimelineRow.key(row())}>
-            <div class={`w-full ${turnPadding()}`}>
-              <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
-                <SessionAssistantActivity step={currentWorkingStep()} onOpenFile={openWorkingFile} />
+          <>
+            <Show when={showWorking() && assistantActivityPlacement()?.key === TimelineRow.key(row())}>
+              <div class={`w-full ${turnPadding()}`}>
+                <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                  <SessionAssistantActivity step={currentWorkingStep()} onOpenFile={openWorkingFile} />
+                </div>
               </div>
-            </div>
-          </Show>
+            </Show>
+            <Show when={showWorked() && assistantActivityPlacement()?.key === TimelineRow.key(row())}>
+              <div class={`w-full pb-2 pt-1 ${turnPadding()}`}>
+                <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                  <Show when={workingMessages().at(-1)?.time.completed}>
+                    {(completed) => (
+                      <SessionWorkedBlock started={workingStartedAt()} completed={completed()} steps={workedSteps()} />
+                    )}
+                  </Show>
+                </div>
+              </div>
+            </Show>
+          </>
         )
 
         return (

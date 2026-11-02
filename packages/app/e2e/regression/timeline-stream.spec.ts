@@ -1155,6 +1155,36 @@ test.describe("Working", () => {
     await expect(working).toBeVisible()
     await expect(page.locator('[data-component="session-assistant-activity"]')).toHaveCount(0)
   })
+
+  test("replaces the finished turn with one collapsed Worked summary", async ({ page }) => {
+    await setupTimeline(page, {
+      messages: [
+        userMessage(),
+        assistantMessage(
+          [
+            toolPart("prt_worked_command_one", "shell", "completed", { command: "bun test" }),
+            toolPart("prt_worked_command_two", "shell", "completed", { command: "bun run check" }),
+            toolPart("prt_worked_read", "read", "completed", { path: "README.md" }),
+            textPart("prt_worked_answer", "Done."),
+          ],
+          { completed: true },
+        ),
+      ],
+    })
+
+    const worked = page.locator('[data-component="session-worked"]')
+    await expect(worked).toBeVisible()
+    await expect(worked).toContainText("Worked for")
+    await expect(worked).toHaveAttribute("data-state", "collapsed")
+    await expect(page.locator('[data-component="session-working"]')).toHaveCount(0)
+    await expect(page.locator('[data-slot="session-worked-group"]')).toHaveCount(0)
+
+    await worked.getByRole("button").click()
+    await expect(worked).toHaveAttribute("data-state", "expanded")
+    await expect(page.locator('[data-slot="session-worked-group"]')).toHaveText(["Ran commands · 2", "Read files · 1"])
+    // The summary counts the work and never repeats a command's own text.
+    await expect(worked.getByText("bun test", { exact: true })).toHaveCount(0)
+  })
 })
 
 test.describe("background shortcut", () => {
