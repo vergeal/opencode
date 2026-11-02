@@ -906,6 +906,11 @@ function renderable(content: Content, showReasoning: boolean, detail?: TimelineD
   if (content.type === "reasoning")
     return (detail ? detail.thinking.placement !== "hidden" : showReasoning) && !!content.text.trim()
 
+  // A hidden shell stays hidden even when it failed: the row renderer drops it entirely, so keeping the
+  // row here would leave an empty spacer between the surrounding answers.
+  if (detail?.shell.placement === "hidden" && content.type === "tool" && timelineCategory(content) === "shell")
+    return false
+
   if (detail && currentToolFailed(content)) return true
 
   if (content.name === "todowrite") return false

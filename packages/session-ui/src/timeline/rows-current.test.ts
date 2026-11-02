@@ -334,6 +334,28 @@ describe("current session timeline rows", () => {
     ).toEqual(["UserMessage", "AssistantPart"])
   })
 
+  test("drops a failed shell from the transcript when the shell placement is hidden", () => {
+    const document = storyDocument(
+      [
+        storyTool("part_shell", "shell", "error", { command: "bun test" }),
+        { type: "text", text: "The command failed." },
+      ],
+      false,
+    )
+
+    const rows = (detail: (typeof timelinePresets)[number]["value"]) =>
+      createTimelineProjection({
+        sessionMessages: document.messages,
+        status: document.status,
+        reasoningMode: "compact",
+        timelineDetail: detail,
+      }).rows.map((row) => row._tag)
+
+    expect(rows(timelinePresets[2].value)).toEqual(["UserMessage", "AssistantPart", "AssistantPart"])
+    // Nothing renders for a hidden shell, so the row must not survive as an empty spacer.
+    expect(rows(timelinePresets[4].value)).toEqual(["UserMessage", "AssistantPart"])
+  })
+
   test("stops thinking on idle, message completion, errors and retries", () => {
     const document = storyDocument([{ type: "reasoning", text: "Current thought" }], true)
     expect(
@@ -1176,7 +1198,12 @@ describe("current session timeline rows", () => {
     {
       name: "default",
       grouped: false,
-      groups: [["context", "read", "grep"], ["part", "agent_1"], ["part", "agent_2"], ["context", "glob", "read_2"]],
+      groups: [
+        ["context", "read", "grep"],
+        ["part", "agent_1"],
+        ["part", "agent_2"],
+        ["context", "glob", "read_2"],
+      ],
     },
     { name: "opted in", grouped: true, groups: [["context", "read", "grep", "agent_1", "agent_2", "glob", "read_2"]] },
   ])("gives each subagent its own row unless subagent grouping is enabled ($name)", (input) => {
