@@ -14,6 +14,11 @@ export function createMarkdownBase() {
 
 let smallParser: Marked | undefined
 
+/** Tokens for surfaces that style markdown without rendering it, such as the composer. */
+export function lexMarkdown(text: string) {
+  return (smallParser ??= createMarkdownBase()).lexer(text)
+}
+
 export function parseSmallMarkdown(text: string) {
   // Any possible KaTeX delimiter stays on the worker, including escaped ones.
   // Dollar math needs a pair, so a lone price such as `$5` can stay on this path.

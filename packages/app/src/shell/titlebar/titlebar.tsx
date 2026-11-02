@@ -391,6 +391,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                 case "connect":
                 case "components":
                 case "knowledge":
+                case "scheduled":
                 case "home": {
                   const selection = layout.home.selection()
 
@@ -856,18 +857,6 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 onNewTab={openNewTab}
                                 keybind={command.keybind("tab.new")}
                               />
-                              <button
-                                type="button"
-                                data-titlebar-tab-action
-                                data-action="vertical-tabs-knowledge"
-                                data-state={layout.route().type === "knowledge" ? "pressed" : undefined}
-                                aria-pressed={layout.route().type === "knowledge"}
-                                class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
-                                onClick={() => navigate("/knowledge")}
-                              >
-                                <Icon name="folder" class="shrink-0" />
-                                <span class="min-w-0 truncate">{language.t("knowledge.title")}</span>
-                              </button>
                             </div>
                             <div class="my-[10px] h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
                             <div class="flex min-h-0 flex-1 flex-col gap-1">
@@ -893,6 +882,44 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                               >
                                 <SidebarInbox />
                               </Show>
+                            </div>
+                            <div class="mt-2 flex w-full shrink-0 flex-col gap-1 border-t border-v2-border-border-muted pt-2">
+                              <button
+                                type="button"
+                                data-titlebar-tab-action
+                                data-action="vertical-tabs-inbox"
+                                data-state={layout.route().type === "inbox" ? "pressed" : undefined}
+                                aria-pressed={layout.route().type === "inbox"}
+                                class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                onClick={() => navigate("/inbox")}
+                              >
+                                <Icon name="notifications" class="shrink-0" />
+                                <span class="min-w-0 truncate">{language.t("inbox.title")}</span>
+                              </button>
+                              <button
+                                type="button"
+                                data-titlebar-tab-action
+                                data-action="vertical-tabs-knowledge"
+                                data-state={layout.route().type === "knowledge" ? "pressed" : undefined}
+                                aria-pressed={layout.route().type === "knowledge"}
+                                class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                onClick={() => navigate("/knowledge")}
+                              >
+                                <Icon name="folder" class="shrink-0" />
+                                <span class="min-w-0 truncate">{language.t("knowledge.title")}</span>
+                              </button>
+                              <button
+                                type="button"
+                                data-titlebar-tab-action
+                                data-action="vertical-tabs-scheduled"
+                                data-state={layout.route().type === "scheduled" ? "pressed" : undefined}
+                                aria-pressed={layout.route().type === "scheduled"}
+                                class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                onClick={() => navigate("/scheduled")}
+                              >
+                                <Icon name="task" class="shrink-0" />
+                                <span class="min-w-0 truncate">{language.t("scheduled.title")}</span>
+                              </button>
                             </div>
                             <Show when={titlebarItems.ids().length > 0}>
                               <div data-slot="vertical-tabs-footer" class="mt-2 flex w-full shrink-0 flex-col">

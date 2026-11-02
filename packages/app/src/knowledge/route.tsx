@@ -13,6 +13,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform, type KnowledgeDiscard, type KnowledgeDiscardReason } from "@/runtime/platform/platform"
 import { useServers } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
+import { PageHeader } from "@/shell/page"
 import { importKnowledge, pickKnowledgeSources } from "./import"
 import { knowledgeImports, type KnowledgeImportJob } from "./import-status"
 import { NewLibraryDialog } from "./new-library-dialog"
@@ -383,18 +384,16 @@ export function KnowledgeScreen() {
   function LibraryGrid() {
     return (
       <div class="flex min-h-0 flex-1 flex-col">
-        <header class="flex shrink-0 items-center gap-3 border-b border-v2-border-border-muted px-5 py-4">
-          <div class="flex min-w-0 flex-1 flex-col gap-1">
-            <h1 class="text-[17px] leading-[var(--line-height-base)] font-medium">{language.t("knowledge.title")}</h1>
-            <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
-              {language.t("knowledge.description")}
-            </p>
-          </div>
-          <button type="button" class="knowledge-toolbar-button" onClick={openNewLibrary}>
-            <Icon name="plus" size="small" />
-            {language.t("knowledge.new")}
-          </button>
-        </header>
+        <PageHeader
+          title={language.t("knowledge.title")}
+          description={language.t("knowledge.description")}
+          actions={
+            <button type="button" class="knowledge-toolbar-button" onClick={openNewLibrary}>
+              <Icon name="plus" size="small" />
+              {language.t("knowledge.new")}
+            </button>
+          }
+        />
         <div class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-5 py-4" data-scrollable>
           <Show
             when={libraries.libraries().length > 0}

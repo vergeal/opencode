@@ -8,6 +8,7 @@ export function HomeSessions(props: {
   sessions: HomeSessionsController
   search: HomeSessionSearchController
   scroll: HomeScrollController
+  projectCount: number
 }) {
   return (
     <Show when={props.sessions.session.server()}>
@@ -15,6 +16,7 @@ export function HomeSessions(props: {
         <HomeSessionsView
           language={props.sessions.copy.language}
           groups={props.sessions.data.groups()}
+          projectCount={props.projectCount}
           loading={props.sessions.data.loading()}
           desktop={props.sessions.platform.desktop}
           location={props.sessions.location.value}

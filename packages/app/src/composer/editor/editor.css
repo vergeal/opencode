@@ -2,6 +2,104 @@
   content: "\200B";
 }
 
+/* Card, chips and send button follow the workbench design: a 12px card with a strong hairline and a
+   faint accent halo, outlined controls, and a compact rounded send button. */
+[data-component="composer"] {
+  border: 1px solid var(--v2-border-border-strong);
+  border-radius: 12px;
+  box-shadow:
+    var(--v2-elevation-raised),
+    0 0 0 3px color-mix(in srgb, var(--v2-background-bg-accent) 6%, transparent);
+  transition:
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+[data-component="composer"]:focus-within {
+  box-shadow:
+    var(--v2-elevation-raised),
+    0 0 0 3px color-mix(in srgb, var(--v2-background-bg-accent) 10%, transparent);
+}
+
+[data-component="composer"] [data-slot="composer-controls"] :is([data-component="button-v2"], [data-component="icon-button-v2"]) {
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--v2-border-border-muted);
+  background: var(--v2-background-bg-base);
+  font-size: 12px;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+[data-component="composer"] [data-slot="composer-controls"] :is([data-component="button-v2"], [data-component="icon-button-v2"]):is(:hover, [data-state="hover"], [data-expanded]) {
+  border-color: var(--v2-border-border-base);
+  background: var(--v2-background-bg-layer-01);
+}
+
+/* Markdown paints over the editable text, so the text model, caret and mentions stay untouched. */
+/* Markers collapse to zero width so the draft reads as rendered markdown. They stay selectable and
+   editable: `display: none` would make them unreachable for Ctrl+A, Backspace and caret movement. */
+[data-component="composer-editor"] [data-md-marker] {
+  font-size: 0;
+  line-height: 0;
+  letter-spacing: 0;
+}
+
+/* Fenced code renders as one block: code font on a soft layer, fence lines hidden. The span is only
+   present while the draft is idle; any edit restores plain text first. */
+[data-component="composer-editor"] [data-md-code-block] {
+  display: inline-block;
+  vertical-align: top;
+  min-width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background: var(--v2-background-bg-layer-02);
+  padding: 4px 8px;
+  font-family: var(--font-family-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+::highlight(composer-md-strong) {
+  color: var(--v2-text-text-base);
+  text-shadow:
+    0.35px 0 0 currentColor,
+    -0.35px 0 0 currentColor;
+}
+
+::highlight(composer-md-em) {
+  color: var(--v2-text-text-base);
+}
+
+::highlight(composer-md-strike) {
+  color: var(--v2-text-text-faint);
+  text-decoration: line-through;
+}
+
+::highlight(composer-md-code) {
+  color: var(--v2-text-text-base);
+  background-color: var(--v2-background-bg-layer-02);
+}
+
+::highlight(composer-md-link) {
+  color: var(--v2-text-text-accent);
+  text-decoration: underline;
+}
+
+::highlight(composer-md-heading) {
+  color: var(--v2-text-text-base);
+  text-shadow:
+    0.3px 0 0 currentColor,
+    -0.3px 0 0 currentColor;
+}
+
+::highlight(composer-md-quote) {
+  color: var(--v2-text-text-muted);
+}
+
 [data-component="composer-editor"] [data-mention="session"] {
   border-radius: 4px;
   padding-inline: 4px;
@@ -11,25 +109,25 @@
 }
 
 :root [data-component="composer"] [data-action="composer-submit"] {
-  width: 32px;
-  height: 32px;
-  padding: 8px;
-  border-radius: 9999px;
-  background-color: #000;
+  width: 26px;
+  height: 26px;
+  padding: 5px;
+  border-radius: 8px;
+  background-color: var(--v2-background-bg-contrast);
   background-image: none;
-  color: #fff;
+  color: var(--v2-text-text-inverse);
   text-shadow: none;
 }
 
 @media (hover: hover) {
   :root [data-component="composer"] [data-action="composer-submit"]:is(:hover, [data-state="hover"]):not(:disabled) {
-    background-color: #222;
+    background-color: color-mix(in srgb, var(--v2-background-bg-contrast) 86%, transparent);
     background-image: none;
   }
 }
 
 :root [data-component="composer"] [data-action="composer-submit"]:is(:active, [data-state="pressed"]):not(:disabled) {
-  background-color: #333;
+  background-color: color-mix(in srgb, var(--v2-background-bg-contrast) 72%, transparent);
   background-image: none;
 }
 

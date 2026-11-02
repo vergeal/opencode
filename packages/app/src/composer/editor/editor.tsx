@@ -45,6 +45,7 @@ import type {
 import type { ComposerEditorModel, ComposerSelectControl } from "./interaction"
 import { isAttachment } from "../prompt-parts"
 import { QuoteCommentEditor } from "./quote-comment"
+import { createMarkdownHighlight } from "./markdown-highlight"
 import "../attachments/attachments.css"
 import "./editor.css"
 import "@/shell/palette-menu.css"
@@ -95,8 +96,11 @@ export function ComposerEditor(props: ComposerEditorProps) {
   let viewport: HTMLDivElement | undefined
   let controlsViewport!: HTMLDivElement
   let controlsContent!: HTMLDivElement
+  let highlight: ReturnType<typeof createMarkdownHighlight> | undefined
   const [overflow, setOverflow] = createStore({ start: false, end: false })
   const [historyLayout, setHistoryLayout] = createStore<{ height?: number }>({})
+
+  onCleanup(() => highlight?.dispose())
 
   createEffect(() => {
     if (state.popover.type !== "history") setHistoryLayout("height", undefined)
@@ -285,6 +289,8 @@ export function ComposerEditor(props: ComposerEditorProps) {
               ref={(element) => {
                 editor = element
                 props.controller.setEditor(element)
+                highlight?.dispose()
+                highlight = createMarkdownHighlight(element)
               }}
               data-component="composer-editor"
               role="textbox"
@@ -383,7 +389,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           </div>
         </div>
 
-        <div class="flex h-11 shrink-0 items-center px-2">
+        <div class="flex h-10 shrink-0 items-center border-t border-v2-border-border-muted px-2">
           <div
             class="flex shrink-0 items-center"
             aria-hidden={state.mode === "shell"}

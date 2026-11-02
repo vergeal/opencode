@@ -58,6 +58,7 @@ function isBackgroundOpen(event: MouseEvent) {
 export type HomeSessionsViewProps = {
   language: ReturnType<typeof useLanguage>
   groups: HomeSessionGroup[]
+  projectCount: number
   loading: boolean
   desktop: boolean
   location: (record: HomeSessionRecord) => { worktree: string; branch: string | undefined }
@@ -185,6 +186,11 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
             }
           >
             <div ref={props.onSetContent} class="flex flex-col pt-1 pr-3 pb-16 md:pt-3">
+              <HomeTodaySummary
+                groups={props.groups}
+                projectCount={props.projectCount}
+                language={props.language}
+              />
               {/* Index keeps group subtrees mounted when the group arrays are
                   rebuilt, so store updates cannot recreate rows mid-gesture. */}
               <Index each={props.groups}>
@@ -493,6 +499,52 @@ function HomeSessionSearchResultRow(
         />
       </div>
     </button>
+  )
+}
+
+function HomeTodaySummary(props: {
+  groups: HomeSessionGroup[]
+  projectCount: number
+  language: ReturnType<typeof useLanguage>
+}) {
+  const today = createMemo(() => props.groups.find((group) => group.id === "today"))
+  const recent = createMemo(() => props.groups.reduce((count, group) => count + group.sessions.length, 0))
+  const pinned = createMemo(() => props.groups.find((group) => group.id === "pinned")?.sessions.length ?? 0)
+  const date = createMemo(() =>
+    new Intl.DateTimeFormat(props.language.intl(), { month: "long", day: "numeric", weekday: "long" }).format(
+      new Date(),
+    ),
+  )
+  const greeting = createMemo(() => {
+    const hour = new Date().getHours()
+
+    if (hour < 12) return props.language.t("home.today.greeting.morning")
+    if (hour < 18) return props.language.t("home.today.greeting.afternoon")
+
+    return props.language.t("home.today.greeting.evening")
+  })
+
+  return (
+    <Show when={recent() > 0}>
+      <div class="flex flex-col pb-1">
+        <h1 class="text-[21px] leading-[28px] font-semibold tracking-[-0.02em]">{greeting()}</h1>
+        <p class="mt-1.5 text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">{date()}</p>
+        <div class="mt-[18px] mb-5 flex flex-wrap gap-2 pr-24">
+          <HomeTodayChip label={props.language.t("home.today.stat.sessions")} value={today()?.sessions.length ?? 0} />
+          <HomeTodayChip label={props.language.t("home.today.stat.projects")} value={props.projectCount} />
+          <HomeTodayChip label={props.language.t("home.today.stat.pinned")} value={pinned()} />
+        </div>
+      </div>
+    </Show>
+  )
+}
+
+function HomeTodayChip(props: { label: string; value: number }) {
+  return (
+    <span class="flex h-[30px] items-center gap-[7px] rounded-[8px] border border-v2-border-border-muted bg-v2-background-bg-deep px-[11px] text-[12px] text-v2-text-text-muted">
+      {props.label}
+      <b class="font-semibold tabular-nums text-v2-text-text-base">{props.value}</b>
+    </span>
   )
 }
 

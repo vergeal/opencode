@@ -47,7 +47,12 @@ export function Home() {
           <Show when={!mobile()}>
             <HomeProjects projects={projects} scroll={scroll} />
           </Show>
-          <HomeSessions sessions={sessions} search={search} scroll={scroll} />
+          <HomeSessions
+            sessions={sessions}
+            search={search}
+            scroll={scroll}
+            projectCount={projects.project.list().length}
+          />
         </div>
       </ScrollView>
       <div class="hidden shrink-0 px-3 py-2 md:block lg:hidden">
