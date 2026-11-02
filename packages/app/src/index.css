@@ -394,3 +394,10 @@
     padding-block: 0;
   }
 }
+
+/* A turn header owns the gap above the turn's first row. The row after a folded turn is that first row too, so it
+   must not also carry the group spacing its position would normally give it. Unlayered on purpose: the padding lives
+   in a utility class, and a layered rule cannot override the utilities layer. */
+[data-session-first-assistant] [data-timeline-row="AssistantPart"] {
+  padding-top: 0;
+}

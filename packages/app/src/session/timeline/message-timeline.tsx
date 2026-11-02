@@ -669,26 +669,19 @@ function MessageTimelineView(
                     when={showWorking() && row().userMessageID === projection.activeMessageID()}
                     fallback={
                       <Show when={workedHeaders().get(row().userMessageID)}>
-                        {(header) => {
-                          // Folded, the answer row below brings its own 16px top padding, so the header keeps only
-                          // that gap instead of adding its own 15px on top.
-                          const folded = () =>
-                            workedFinalAnswer().has(row().userMessageID) && !expandedTurns().has(row().userMessageID)
-
-                          return (
-                            <div class={`w-full ${folded() ? "pb-0" : "pb-[15px]"} pt-4 ${turnPadding()}`}>
-                              <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
-                                <SessionWorkedHeader
-                                  started={header().started}
-                                  completed={header().completed}
-                                  expandable={workedFinalAnswer().has(row().userMessageID)}
-                                  expanded={expandedTurns().has(row().userMessageID)}
-                                  onToggle={() => toggleWorked(row().userMessageID)}
-                                />
-                              </div>
+                        {(header) => (
+                          <div class={`w-full pb-[15px] pt-4 ${turnPadding()}`}>
+                            <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                              <SessionWorkedHeader
+                                started={header().started}
+                                completed={header().completed}
+                                expandable={workedFinalAnswer().has(row().userMessageID)}
+                                expanded={expandedTurns().has(row().userMessageID)}
+                                onToggle={() => toggleWorked(row().userMessageID)}
+                              />
                             </div>
-                          )
-                        }}
+                          </div>
+                        )}
                       </Show>
                     }
                   >

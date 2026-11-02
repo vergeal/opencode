@@ -1213,9 +1213,9 @@ test.describe("Working", () => {
     await expect(toggle).toHaveAttribute("aria-expanded", "false")
     await expect(answer).toBeVisible()
     await expect(step).toHaveCount(0)
-    // The folded answer keeps the one gap its own row provides; the header does not add a second one.
+    // The folded answer takes the same 15px header gap as any other turn's first row.
     const boxes = await Promise.all([worked.boundingBox(), answer.boundingBox()])
-    expect(boxes[1]!.y - (boxes[0]!.y + boxes[0]!.height)).toBeCloseTo(16, 0)
+    expect(boxes[1]!.y - (boxes[0]!.y + boxes[0]!.height)).toBeCloseTo(15, 0)
 
     await toggle.click()
 
