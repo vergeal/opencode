@@ -47,7 +47,6 @@ import { GenericTool } from "../components/basic-tool"
 import { SessionRetry } from "../components/session-retry"
 import { SessionError } from "../components/session-error"
 import { timelineCategory, type TimelineDetail } from "./detail"
-import { currentToolFailed } from "../message/current-tool-state"
 import { userMessageRuns, userRunSpring } from "./user-runs"
 import { attached } from "../components/message-file"
 import {
@@ -244,6 +243,12 @@ export function createSessionTimelineRowRenderer(input: {
   }
 
   const renderAssistant = (row: Accessor<TimelineRow.AssistantPart>, onSizeChange?: () => void) => {
+    // A hidden shell placement removes the command and its output from the transcript, failures included.
+    const hideShell = (item: SessionMessageAssistant["content"][number]) =>
+      item.type === "tool" &&
+      timelineCategory(item) === "shell" &&
+      input.timelineDetail?.().shell.placement === "hidden"
+
     if (row().group.type === "context") {
       const parts = createMemo(() => {
         const group = row().group
@@ -256,6 +261,7 @@ export function createSessionTimelineRowRenderer(input: {
           const content = contents.get(ref.messageID)?.get(ref.partID)
 
           if (content?.type === "tool") {
+            if (hideShell(content)) return []
             patchPartKeys.set(content, `${ref.messageID}:${ref.partID}`)
 
             return [content]
@@ -459,7 +465,7 @@ export function createSessionTimelineRowRenderer(input: {
     return (
       <Show when={message()}>
         {(message) => (
-          <Show when={content()}>
+          <Show when={content() && !hideShell(content()!) ? content() : undefined}>
             {(content) => (
               <SessionAssistantContent
                 message={message()}
@@ -486,14 +492,6 @@ export function createSessionTimelineRowRenderer(input: {
 
     if (input.timelineDetail) {
       const category = timelineCategory(item)
-
-      if (
-        category &&
-        input.timelineDetail()[category].placement === "hidden" &&
-        item.type === "tool" &&
-        currentToolFailed(item)
-      )
-        return true
 
       if (category === "shell" || category === "edit" || category === "thinking")
         return input.timelineDetail()[category].details === "expanded"
@@ -816,17 +814,15 @@ export function createSessionTimelineRowRenderer(input: {
 
     const defaultOpen = createMemo(() => {
       if (!input.timelineDetail) return input.shellToolDefaultOpen()
-      const value = message()
 
-      return (
-        input.timelineDetail().shell.details === "expanded" ||
-        (input.timelineDetail().shell.placement === "hidden" &&
-          (value?.status === "timeout" || (value?.status === "exited" && value.exit !== undefined && value.exit !== 0)))
-      )
+      return input.timelineDetail().shell.details === "expanded"
     })
 
+    // A hidden shell placement removes the row outright; a failed command must not resurface its own text.
+    const hidden = createMemo(() => input.timelineDetail?.().shell.placement === "hidden")
+
     return (
-      <Show when={message()}>
+      <Show when={hidden() ? undefined : message()}>
         {(message) => (
           <div data-slot="session-turn-message-container" class={`w-full ${props.grouped ? "" : padding()}`}>
             <SessionShellMessage
