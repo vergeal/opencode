@@ -141,7 +141,10 @@ export function SidebarInbox() {
 
   return (
     <div data-slot="sidebar-inbox" class="flex min-h-0 flex-1 flex-col">
-      <div data-slot="sidebar-inbox-scroll" class="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-1">
+      <div
+        data-slot="sidebar-inbox-scroll"
+        class="-me-2.5 flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-1 pe-2.5"
+      >
         <Show when={sections().pinned.length > 0}>
           <div class="flex shrink-0 flex-col gap-px pb-3">
             <SectionHeader label={language.t("home.sessions.group.pinned")} />
