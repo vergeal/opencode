@@ -18,13 +18,13 @@ export function SessionWorkingHeader(props: { started: number }) {
 
   return (
     <div data-component="session-working" role="status" class="min-w-0 w-full">
-      <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-[530] leading-text-compact">
+      <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] leading-text-compact">
         <TextShimmer
           text={showDuration() ? language.t("session.working.for") : language.t("session.timeline.working")}
           active
         />
         <Show when={showDuration()}>
-          <span data-slot="session-working-duration" class="font-[530] tabular-nums">
+          <span data-slot="session-working-duration" class="tabular-nums">
             {formatWorkingDuration(elapsed())}
           </span>
         </Show>
@@ -42,10 +42,10 @@ export function SessionWorkedHeader(props: { started: number; completed: number 
 
   return (
     <div data-component="session-worked" role="status" class="min-w-0 w-full">
-      <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-[530] leading-text-compact">
+      <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] leading-text-compact">
         <span>{language.t(showDuration() ? "session.worked.for" : "session.worked")}</span>
         <Show when={showDuration()}>
-          <span data-slot="session-worked-duration" class="font-[530] tabular-nums">
+          <span data-slot="session-worked-duration" class="tabular-nums">
             {formatWorkingDuration(duration())}
           </span>
         </Show>
