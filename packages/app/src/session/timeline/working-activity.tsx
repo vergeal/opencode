@@ -1,5 +1,5 @@
 import { TextShimmer } from "@opencode/ui/text-shimmer"
-import { For, Show, createEffect, createSignal, onCleanup } from "solid-js"
+import { Show, createEffect, createSignal, onCleanup } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { formatWorkingDuration, type WorkingStep } from "./working-step"
 
@@ -34,91 +34,29 @@ export function SessionWorkingHeader(props: { started: number }) {
   )
 }
 
-export function SessionAssistantActivity(props: { step?: WorkingStep; onOpenFile: (path: string) => void }) {
-  return <Show when={props.step}>{(step) => <WorkingStepRow step={step()} onOpenFile={props.onOpenFile} />}</Show>
-}
-
-// The finished turn keeps its work behind one collapsed row, so the answer stays the last thing read.
-// The summary counts what happened and never repeats a command's own text.
-export function SessionWorkedBlock(props: { started: number; completed: number; steps: WorkingStep[] }) {
+// The same header the turn showed while it worked, frozen once the turn settles.
+export function SessionWorkedHeader(props: { started: number; completed: number }) {
   const language = useLanguage()
-  const [expanded, setExpanded] = createSignal(false)
   const duration = () => Math.max(0, props.completed - props.started)
   const showDuration = () => duration() >= 1000
-  const groups = () => {
-    const counts = new Map<WorkingStep["kind"], number>()
-
-    for (const step of props.steps) counts.set(step.kind, (counts.get(step.kind) ?? 0) + 1)
-
-    return [...counts].map(([kind, count]) => ({ kind, label: workedGroupLabel(language, kind, count) }))
-  }
 
   return (
-    <div data-component="session-worked" data-state={expanded() ? "expanded" : "collapsed"} class="min-w-0 w-full">
-      <button
-        type="button"
-        aria-expanded={expanded()}
-        class="flex items-center gap-1.5 whitespace-nowrap rounded text-[15px] font-[530] leading-text-compact text-v2-text-text-muted hover:text-v2-text-text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-border-border-focus"
-        onClick={() => setExpanded((value) => !value)}
-      >
-        <span
-          aria-hidden="true"
-          data-slot="session-worked-chevron"
-          class="size-1.5 border-e border-b border-current transition-transform motion-reduce:transition-none"
-          classList={{ "rotate-45": expanded(), "-rotate-45": !expanded() }}
-        />
+    <div data-component="session-worked" role="status" class="min-w-0 w-full">
+      <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] font-[530] leading-text-compact">
         <span>{language.t(showDuration() ? "session.worked.for" : "session.worked")}</span>
         <Show when={showDuration()}>
-          <span data-slot="session-worked-duration" class="tabular-nums">
+          <span data-slot="session-worked-duration" class="font-[530] tabular-nums">
             {formatWorkingDuration(duration())}
           </span>
         </Show>
-      </button>
-      <Show when={expanded()}>
-        <div data-slot="session-worked-groups" class="mt-1 flex min-w-0 flex-col">
-          <For each={groups()}>
-            {(group) => (
-              <div
-                data-slot="session-worked-group"
-                data-kind={group.kind}
-                class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-1 text-[14px] leading-text-base text-v2-text-text-muted"
-              >
-                <span aria-hidden="true" class="mt-[7px] size-1 shrink-0 rounded-full bg-v2-icon-icon-muted" />
-                <span class="truncate">{group.label}</span>
-              </div>
-            )}
-          </For>
-        </div>
-      </Show>
+      </div>
+      <div data-slot="session-worked-divider" class="mt-2 w-full border-t border-v2-border-border-muted" />
     </div>
   )
 }
 
-function workedGroupLabel(language: ReturnType<typeof useLanguage>, kind: WorkingStep["kind"], count: number) {
-  switch (kind) {
-    case "thinking":
-      return language.t("session.working.step.thinking")
-    case "command":
-      return language.t("session.worked.steps.command", { count })
-    case "read":
-      return language.t("session.worked.steps.read", { count })
-    case "edit":
-      return language.t("session.worked.steps.edit", { count })
-    case "search":
-      return language.t("session.worked.steps.search", { count })
-    case "list":
-      return language.t("session.worked.steps.list", { count })
-    case "browse":
-      return language.t("session.worked.steps.browse", { count })
-    case "web-search":
-      return language.t("session.worked.steps.webSearch", { count })
-    case "subagent":
-      return language.t("session.worked.steps.subagent", { count })
-    case "skill":
-      return language.t("session.worked.steps.skill", { count })
-    case "tool":
-      return language.t("session.worked.steps.tool", { count })
-  }
+export function SessionAssistantActivity(props: { step?: WorkingStep; onOpenFile: (path: string) => void }) {
+  return <Show when={props.step}>{(step) => <WorkingStepRow step={step()} onOpenFile={props.onOpenFile} />}</Show>
 }
 
 function WorkingStepRow(props: { step: WorkingStep; onOpenFile: (path: string) => void }) {

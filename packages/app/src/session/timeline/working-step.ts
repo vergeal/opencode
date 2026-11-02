@@ -54,24 +54,6 @@ export function formatWorkingDuration(ms: number) {
   return `${seconds}秒`
 }
 
-export function buildWorkingSteps(messages: readonly AssistantMessage[]): WorkingStep[] {
-  return messages.flatMap((message) =>
-    message.content.flatMap<WorkingStep>((content, index) => {
-      if (content.type === "tool") return [toolStep(content)]
-
-      if (content.type !== "reasoning" || !content.text.trim()) return []
-
-      return [
-        {
-          id: `${message.id}:thinking:${index}`,
-          kind: "thinking",
-          running: content.time?.completed === undefined,
-        },
-      ]
-    }),
-  )
-}
-
 export function buildWorkingStep(messages: readonly AssistantMessage[]): WorkingStep | undefined {
   const latest = messages.at(-1)
 

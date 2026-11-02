@@ -37,8 +37,8 @@ import {
 import { SessionHeaderSpacer } from "@/session/header/session-header"
 import { SessionHeaderGap } from "@/session/header/drag-area"
 import { SessionWorkingIndicator } from "@/session/header/session-working-indicator"
-import { SessionAssistantActivity, SessionWorkedBlock, SessionWorkingHeader } from "./working-activity"
-import { buildWorkingStep, buildWorkingSteps } from "./working-step"
+import { SessionAssistantActivity, SessionWorkedHeader, SessionWorkingHeader } from "./working-activity"
+import { buildWorkingStep } from "./working-step"
 
 type BlockingTask = { type: "shell" | "subagent"; partID: string; id?: string; label?: string }
 
@@ -476,16 +476,22 @@ function MessageTimelineView(
     })
   })
 
-  const workedSteps = createMemo(() => buildWorkingSteps(workingMessages()))
+  // A turn that ran tools freezes its live header in place, so the answer keeps one settled row above it.
+  const workedHeaders = createMemo(() => {
+    const result = new Map<string, { started: number; completed: number }>()
 
-  // The finished turn swaps its live header for one collapsed row that keeps the steps reachable.
-  const showWorked = createMemo(() => {
-    if (showWorking()) return false
-    const last = workingMessages().at(-1)
+    for (const [turnID, messages] of projection.assistantMessagesByParent()) {
+      const last = messages.at(-1)
 
-    if (!last?.time.completed || last.error || last.retry) return false
+      if (!last?.time.completed || last.error || last.retry) continue
+      if (!messages.some((message) => message.content.some((content) => content.type !== "text"))) continue
+      result.set(turnID, {
+        started: messageByID().get(turnID)?.time.created ?? messages[0]!.time.created,
+        completed: last.time.completed,
+      })
+    }
 
-    return workedSteps().length > 0
+    return result
   })
 
   // The bottom lane keeps the background hint in place without competing with the task-level Working header.
@@ -528,26 +534,13 @@ function MessageTimelineView(
       }}
       renderRow={(row, onSizeChange) => {
         const assistantActivity = () => (
-          <>
-            <Show when={showWorking() && assistantActivityPlacement()?.key === TimelineRow.key(row())}>
-              <div class={`w-full ${turnPadding()}`}>
-                <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
-                  <SessionAssistantActivity step={currentWorkingStep()} onOpenFile={openWorkingFile} />
-                </div>
+          <Show when={showWorking() && assistantActivityPlacement()?.key === TimelineRow.key(row())}>
+            <div class={`w-full ${turnPadding()}`}>
+              <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                <SessionAssistantActivity step={currentWorkingStep()} onOpenFile={openWorkingFile} />
               </div>
-            </Show>
-            <Show when={showWorked() && assistantActivityPlacement()?.key === TimelineRow.key(row())}>
-              <div class={`w-full pb-2 pt-1 ${turnPadding()}`}>
-                <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
-                  <Show when={workingMessages().at(-1)?.time.completed}>
-                    {(completed) => (
-                      <SessionWorkedBlock started={workingStartedAt()} completed={completed()} steps={workedSteps()} />
-                    )}
-                  </Show>
-                </div>
-              </div>
-            </Show>
-          </>
+            </div>
+          </Show>
         )
 
         return (
@@ -563,18 +556,23 @@ function MessageTimelineView(
                     <rowRenderer.Row row={row} onSizeChange={onSizeChange} />
                   </div>
                 </Show>
-                <Show
-                  when={
-                    Predicate.isTagged(row(), "UserMessage") &&
-                    row().userMessageID === projection.activeMessageID() &&
-                    showWorking()
-                  }
-                >
-                  <div class={`w-full pb-2 pt-4 ${turnPadding()}`}>
-                    <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
-                      <SessionWorkingHeader started={workingStartedAt()} />
+                <Show when={Predicate.isTagged(row(), "UserMessage")}>
+                  <Show when={showWorking() && row().userMessageID === projection.activeMessageID()}>
+                    <div class={`w-full pb-2 pt-4 ${turnPadding()}`}>
+                      <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                        <SessionWorkingHeader started={workingStartedAt()} />
+                      </div>
                     </div>
-                  </div>
+                  </Show>
+                  <Show when={workedHeaders().get(row().userMessageID)}>
+                    {(header) => (
+                      <div class={`w-full pb-2 pt-4 ${turnPadding()}`}>
+                        <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                          <SessionWorkedHeader started={header().started} completed={header().completed} />
+                        </div>
+                      </div>
+                    )}
+                  </Show>
                 </Show>
                 {assistantActivity()}
               </>

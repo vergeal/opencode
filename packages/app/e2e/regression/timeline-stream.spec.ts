@@ -1156,34 +1156,37 @@ test.describe("Working", () => {
     await expect(page.locator('[data-component="session-assistant-activity"]')).toHaveCount(0)
   })
 
-  test("replaces the finished turn with one collapsed Worked summary", async ({ page }) => {
-    await setupTimeline(page, {
-      messages: [
-        userMessage(),
-        assistantMessage(
-          [
-            toolPart("prt_worked_command_one", "shell", "completed", { command: "bun test" }),
-            toolPart("prt_worked_command_two", "shell", "completed", { command: "bun run check" }),
-            toolPart("prt_worked_read", "read", "completed", { path: "README.md" }),
-            textPart("prt_worked_answer", "Done."),
-          ],
-          { completed: true },
-        ),
+  test("freezes the Working header in place when the turn finishes", async ({ page }) => {
+    const assistant = assistantMessage(
+      [
+        toolPart("prt_worked_command", "shell", "completed", { command: "bun test" }),
+        textPart("prt_worked_answer", "Done."),
       ],
-    })
+      { completed: false },
+    )
+    const timeline = await setupTimeline(page, { messages: [userMessage(), assistant] })
 
+    const working = page.locator('[data-component="session-working"]')
     const worked = page.locator('[data-component="session-worked"]')
+    await expect(working).toBeVisible()
+    await expect(worked).toHaveCount(0)
+    const before = await working.boundingBox()
+
+    await timeline.send(messageUpdated(completedAssistantInfo(assistant)))
+    await timeline.send(status("idle"))
+
+    await expect(working).toHaveCount(0)
     await expect(worked).toBeVisible()
     await expect(worked).toContainText("Worked for")
-    await expect(worked).toHaveAttribute("data-state", "collapsed")
-    await expect(page.locator('[data-component="session-working"]')).toHaveCount(0)
-    await expect(page.locator('[data-slot="session-worked-group"]')).toHaveCount(0)
-
-    await worked.getByRole("button").click()
-    await expect(worked).toHaveAttribute("data-state", "expanded")
-    await expect(page.locator('[data-slot="session-worked-group"]')).toHaveText(["Ran commands · 2", "Read files · 1"])
-    // The summary counts the work and never repeats a command's own text.
+    await expect(page.locator('[data-slot="session-worked-divider"]')).toBeVisible()
+    await expect(page.locator('[data-component="session-assistant-activity"]')).toHaveCount(0)
+    // The finished header never repeats the command it ran.
     await expect(worked.getByText("bun test", { exact: true })).toHaveCount(0)
+
+    // It occupies the exact slot the live header had, with no extra row at the bottom.
+    const after = await worked.boundingBox()
+    expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1)
+    expect(Math.abs(after!.x - before!.x)).toBeLessThanOrEqual(1)
   })
 })
 
