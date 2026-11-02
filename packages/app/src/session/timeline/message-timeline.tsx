@@ -507,16 +507,85 @@ function MessageTimelineView(
     return result
   })
 
+  const [expandedTurns, setExpandedTurns] = createSignal<ReadonlySet<string>>(new Set())
+
+  const toggleWorked = (turnID: string) =>
+    setExpandedTurns((current) => {
+      const next = new Set(current)
+
+      if (next.has(turnID)) next.delete(turnID)
+      else next.add(turnID)
+
+      return next
+    })
+
+  // A settled turn keeps only the words written after its last tool call; everything before that folds away behind
+  // the Worked header. A turn with no answer after its last tool call has nothing to fold to, so it stays open.
+  const workedFinalAnswer = createMemo(() => {
+    const result = new Map<string, string>()
+
+    for (const [turnID, messages] of projection.assistantMessagesByParent()) {
+      if (!workedHeaders().has(turnID)) continue
+
+      const entries = messages.flatMap((message) =>
+        Timeline.contentEntries(message).map((entry) => ({ messageID: message.id, entry })),
+      )
+      const lastTool = entries.findLastIndex(({ entry }) => entry.content.type === "tool")
+
+      if (lastTool < 0) continue
+      const answer = entries
+        .slice(lastTool + 1)
+        .find(({ entry }) => entry.content.type === "text" && entry.content.text.trim())
+
+      if (!answer) continue
+      result.set(turnID, `${answer.messageID}:${answer.entry.id}`)
+    }
+
+    return result
+  })
+
+  const collapsedRowKeys = createMemo(() => {
+    const starts = workedFinalAnswer()
+    const expanded = expandedTurns()
+    const keys = new Set<string>()
+    const reached = new Set<string>()
+
+    for (const row of projection.rows()) {
+      const start = starts.get(row.userMessageID)
+
+      if (!start || expanded.has(row.userMessageID) || reached.has(row.userMessageID)) continue
+      if (!Predicate.isTagged(row, "AssistantPart") && !Predicate.isTagged(row, "Thinking")) continue
+
+      const refs = Predicate.isTagged(row, "AssistantPart")
+        ? row.group.type === "part"
+          ? [row.group.ref]
+          : row.group.refs
+        : [row.ref]
+
+      if (refs.some((ref) => `${ref.messageID}:${ref.partID}` === start)) {
+        reached.add(row.userMessageID)
+        continue
+      }
+
+      keys.add(TimelineRow.key(row))
+    }
+
+    return keys
+  })
+
   // A turn header already supplies the gap above the turn's first assistant row. Clear that row's own text margin
   // for settled turns as well, otherwise the gap jumps from 15px to 39px when Working settles into Worked.
   const firstAssistantRowKeys = createMemo(() => {
     const active = projection.activeMessageID()
     const headers = workedHeaders()
+    const collapsed = collapsedRowKeys()
     const keys = new Set<string>()
     const seen = new Set<string>()
 
     for (const row of projection.rows()) {
       if (!Predicate.isTagged(row, "AssistantPart") || seen.has(row.userMessageID)) continue
+      // The folded first row disappears, so the answer below it becomes the row that owns the header gap.
+      if (collapsed.has(TimelineRow.key(row))) continue
 
       seen.add(row.userMessageID)
       if (!headers.has(row.userMessageID) && !(showWorking() && row.userMessageID === active)) continue
@@ -566,6 +635,8 @@ function MessageTimelineView(
         return content?.type === "tool" && ["edit", "write"].includes(content.name)
       }}
       renderRow={(row, onSizeChange) => {
+        if (collapsedRowKeys().has(TimelineRow.key(row()))) return <></>
+
         const assistantActivity = () => (
           <Show
             when={
@@ -598,13 +669,26 @@ function MessageTimelineView(
                     when={showWorking() && row().userMessageID === projection.activeMessageID()}
                     fallback={
                       <Show when={workedHeaders().get(row().userMessageID)}>
-                        {(header) => (
-                          <div class={`w-full pb-[15px] pt-4 ${turnPadding()}`}>
-                            <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
-                              <SessionWorkedHeader started={header().started} completed={header().completed} />
+                        {(header) => {
+                          // Folded, the answer row below brings its own 16px top padding, so the header keeps only
+                          // that gap instead of adding its own 15px on top.
+                          const folded = () =>
+                            workedFinalAnswer().has(row().userMessageID) && !expandedTurns().has(row().userMessageID)
+
+                          return (
+                            <div class={`w-full ${folded() ? "pb-0" : "pb-[15px]"} pt-4 ${turnPadding()}`}>
+                              <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                                <SessionWorkedHeader
+                                  started={header().started}
+                                  completed={header().completed}
+                                  expandable={workedFinalAnswer().has(row().userMessageID)}
+                                  expanded={expandedTurns().has(row().userMessageID)}
+                                  onToggle={() => toggleWorked(row().userMessageID)}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )
+                        }}
                       </Show>
                     }
                   >

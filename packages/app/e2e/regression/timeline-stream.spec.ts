@@ -1192,6 +1192,41 @@ test.describe("Working", () => {
     // Settling must not push the answer further down.
     expect((await answer.boundingBox())!.y - (after!.y + after!.height)).toBeCloseTo(gapBefore, 0)
   })
+
+  test("folds the working steps behind Worked and keeps the final answer", async ({ page }) => {
+    const assistant = assistantMessage(
+      [
+        textPart("prt_step_note", "Looking at the file first."),
+        toolPart("prt_step_shell", "shell", "completed", { command: "bun test" }),
+        textPart("prt_final_answer", "All tests pass."),
+      ],
+      { completed: true },
+    )
+    await setupTimeline(page, { messages: [userMessage(), assistant] })
+
+    const worked = page.locator('[data-component="session-worked"]')
+    const toggle = worked.getByRole("button")
+    const step = page.getByText("Looking at the file first.", { exact: true })
+    const answer = page.getByText("All tests pass.", { exact: true })
+
+    await expect(worked).toBeVisible()
+    await expect(toggle).toHaveAttribute("aria-expanded", "false")
+    await expect(answer).toBeVisible()
+    await expect(step).toHaveCount(0)
+    // The folded answer keeps the one gap its own row provides; the header does not add a second one.
+    const boxes = await Promise.all([worked.boundingBox(), answer.boundingBox()])
+    expect(boxes[1]!.y - (boxes[0]!.y + boxes[0]!.height)).toBeCloseTo(16, 0)
+
+    await toggle.click()
+
+    await expect(toggle).toHaveAttribute("aria-expanded", "true")
+    await expect(step).toBeVisible()
+
+    await toggle.click()
+
+    await expect(toggle).toHaveAttribute("aria-expanded", "false")
+    await expect(step).toHaveCount(0)
+  })
 })
 
 test.describe("background shortcut", () => {

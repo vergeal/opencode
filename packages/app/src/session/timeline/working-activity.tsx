@@ -1,3 +1,4 @@
+import { Icon } from "@opencode/ui/icon"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
 import { Show, createEffect, createSignal, onCleanup } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -35,21 +36,56 @@ export function SessionWorkingHeader(props: { started: number }) {
 }
 
 // The same header the turn showed while it worked, frozen once the turn settles.
-export function SessionWorkedHeader(props: { started: number; completed: number }) {
+// A settled turn folds its working steps behind this header and keeps only the final answer, so the header doubles
+// as the disclosure control whenever there is something to fold away.
+export function SessionWorkedHeader(props: {
+  started: number
+  completed: number
+  expandable?: boolean
+  expanded?: boolean
+  onToggle?: () => void
+}) {
   const language = useLanguage()
   const duration = () => Math.max(0, props.completed - props.started)
   const showDuration = () => duration() >= 1000
+  const content = () => (
+    <>
+      <span>{language.t(showDuration() ? "session.worked.for" : "session.worked")}</span>
+      <Show when={showDuration()}>
+        <span data-slot="session-worked-duration" class="tabular-nums">
+          {formatWorkingDuration(duration())}
+        </span>
+      </Show>
+      <Show when={props.expandable}>
+        <span class="ms-auto shrink-0 text-v2-icon-icon-muted">
+          <Icon
+            name="chevron-down"
+            size="small"
+            class={`transition-transform ${props.expanded ? "" : "-rotate-90 rtl:rotate-90"}`}
+          />
+        </span>
+      </Show>
+    </>
+  )
+  const row = () => (
+    <div class="flex min-w-0 w-full items-center gap-1.5 whitespace-nowrap text-[15px] leading-text-compact">
+      {content()}
+    </div>
+  )
 
   return (
     <div data-component="session-worked" role="status" class="min-w-0 w-full">
-      <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] leading-text-compact">
-        <span>{language.t(showDuration() ? "session.worked.for" : "session.worked")}</span>
-        <Show when={showDuration()}>
-          <span data-slot="session-worked-duration" class="tabular-nums">
-            {formatWorkingDuration(duration())}
-          </span>
-        </Show>
-      </div>
+      <Show when={props.expandable} fallback={row()}>
+        <button
+          type="button"
+          class="flex min-w-0 w-full items-center gap-1.5 text-start focus-visible:outline-none"
+          aria-expanded={props.expanded}
+          aria-label={language.t(props.expanded ? "session.worked.collapse" : "session.worked.expand")}
+          onClick={() => props.onToggle?.()}
+        >
+          {row()}
+        </button>
+      </Show>
       <div data-slot="session-worked-divider" class="mt-2 w-full border-t border-v2-border-border-muted" />
     </div>
   )

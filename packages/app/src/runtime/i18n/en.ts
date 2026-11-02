@@ -626,6 +626,8 @@ export const dict = {
   "session.working.step.skill": "Load skill",
   "session.worked": "Worked",
   "session.worked.for": "Worked for",
+  "session.worked.expand": "Show work",
+  "session.worked.collapse": "Hide work",
   "session.running.stop.subagent": "Interrupt subagent",
   "session.running.stop.shell": "Kill shell command",
 
