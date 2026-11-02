@@ -160,20 +160,20 @@
   gap: 2px;
 }
 
-/* The workbench sidebar is a compact list: 30px rows at 12.5px, one line per session, and the
+/* The workbench sidebar is a compact list: 30px rows at 14px, one line per session, and the
    active row reads as a raised white card on the soft sidebar surface. */
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab],
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action] {
   height: 30px;
   border-radius: 7px;
-  font-size: 12.5px;
-  line-height: 18px;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab] [data-slot="tab-link"],
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action] {
-  font-size: 12.5px;
-  line-height: 18px;
+  font-size: 14px;
+  line-height: 20px;
   color: var(--v2-text-text-muted);
 }
 
@@ -496,7 +496,7 @@
   }
 }
 
-/* Sidebar sessions read as one compact 30px line, matching the workbench list: the project and
+/* Sidebar sessions read as one 30px line, matching the workbench list: the project and
    branch line stays out of the list, and the active row is a raised white card. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] {
   flex-direction: row;
@@ -513,8 +513,8 @@
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:nth-child(2) {
-  font-size: 12.5px;
-  line-height: 18px;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:last-child {
