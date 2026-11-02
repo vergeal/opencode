@@ -34,7 +34,7 @@ export function SessionWorkingHeader(props: { started: number }) {
 
   return (
     <div data-component="session-working" role="status" class="min-w-0 w-full">
-      <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] leading-text-compact">
+      <div class="flex items-center gap-1.5 whitespace-nowrap text-[13px] leading-text-compact">
         <TextShimmer
           text={showDuration() ? language.t("session.working.for") : language.t("session.timeline.working")}
           active
@@ -83,7 +83,7 @@ export function SessionWorkedHeader(props: {
     </>
   )
   const row = () => (
-    <div class="flex min-w-0 w-full items-center gap-1.5 whitespace-nowrap text-[15px] leading-text-compact">
+    <div class="flex min-w-0 w-full items-center gap-1.5 whitespace-nowrap text-[13px] leading-text-compact">
       {content()}
     </div>
   )

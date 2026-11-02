@@ -1,14 +1,14 @@
 import type { JSX, ParentProps } from "solid-js"
 
 /**
- * The shared surface every full-page screen sits on: one raised panel inside the shell insets.
+ * The shared surface every full-page screen sits on: one flat white panel that fills the shell.
  * Keeping this in one place means a screen only chooses its content, not its frame.
  */
 export function PagePanel(props: ParentProps<{ class?: string }>) {
   return (
     <div
       data-slot="page-panel"
-      class={`mx-[var(--shell-inline-inset,8px)] mb-[var(--shell-bottom-inset,8px)] mt-[var(--shell-top-inset,8px)] flex min-h-0 flex-1 flex-col self-stretch overflow-hidden rounded-[10px] bg-v2-background-bg-base shadow-[var(--v2-elevation-raised)] ${props.class ?? ""}`}
+      class={`flex min-h-0 flex-1 flex-col self-stretch overflow-hidden bg-v2-background-bg-base ${props.class ?? ""}`}
     >
       {props.children}
     </div>

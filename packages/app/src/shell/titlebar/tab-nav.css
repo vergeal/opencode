@@ -157,7 +157,56 @@
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-list][data-orientation="vertical"] {
-  gap: 4px;
+  gap: 2px;
+}
+
+/* The workbench sidebar is a compact list: 30px rows at 12.5px, one line per session, and the
+   active row reads as a raised white card on the soft sidebar surface. */
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab],
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action] {
+  height: 30px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab] [data-slot="tab-link"],
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action] {
+  font-size: 12.5px;
+  line-height: 18px;
+  color: var(--v2-text-text-muted);
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab][data-active="true"],
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action][data-state="pressed"] {
+  background: var(--v2-background-bg-base);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab][data-active="true"] [data-slot="tab-link"] {
+  color: var(--v2-text-text-base);
+  font-weight: 500;
+}
+
+/* Sessions read as one line; the project and branch stay in the hover preview. */
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab][data-orientation="vertical"]:has([data-slot="tab-project"]) {
+  height: 30px;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-titlebar-tab][data-orientation="vertical"] [data-slot="tab-project"] {
+  display: none;
+}
+
+[data-slot="vertical-tabs-sidebar"]
+  [data-titlebar-tab][data-orientation="vertical"]:has([data-slot="tab-project"])
+  [data-slot="tab-link"] {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  line-height: 18px;
 }
 
 /* Each link owns half the gap, without expanding its painted background or close button. */
@@ -421,8 +470,7 @@
   }
 }
 
-/* A prompt that arrives in a background tab rings it once, like the TUI's prompt pulse. */
-[data-titlebar-tab] [data-slot="tab-prompt-pulse"] {
+/* A prompt that arrives in a background tab rings it once, like the TUI's prompt pulse. */[data-titlebar-tab] [data-slot="tab-prompt-pulse"] {
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -446,4 +494,46 @@
   [data-titlebar-tab] [data-slot="tab-prompt-pulse"] {
     animation: none;
   }
+}
+
+/* Sidebar sessions read as one compact 30px line, matching the workbench list: the project and
+   branch line stays out of the list, and the active row is a raised white card. */
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 7px;
+  background: transparent;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child {
+  height: auto;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:nth-child(2) {
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:last-child {
+  font-size: 10.5px;
+  line-height: 14px;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span + span {
+  display: none;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"] {
+  background: var(--v2-background-bg-base);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
+/* Session rows are text only, as the workbench list is; the project stays in the hover preview. */
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:first-child {
+  display: none;
 }

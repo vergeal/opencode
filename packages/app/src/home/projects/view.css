@@ -15,8 +15,12 @@
   --home-row-surface: var(--v2-background-bg-layer-01);
 }
 
+/* A selected row is a white card with the design's hairline, not a gray fill. */
 [data-home-row][data-selected] {
-  --home-row-surface: var(--v2-background-bg-layer-03);
+  --home-row-surface: var(--v2-background-bg-base);
+  box-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.04),
+    0 0 0 0.5px rgba(0, 0, 0, 0.08);
 }
 
 [data-home-row][data-dimmed="true"] {

@@ -474,7 +474,7 @@ function FolderRow(props: {
       data-drop-target={drop.isDropTarget() || undefined}
       class={`
         flex h-6 w-full shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-start
-        text-[13px] leading-4 font-medium text-v2-text-text-muted
+        text-[12.5px] leading-[18px] font-medium text-v2-text-text-muted
         hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base
         focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
         data-[drop-target]:bg-v2-overlay-simple-overlay-hover data-[drop-target]:text-v2-text-text-base
@@ -516,7 +516,7 @@ function SectionHeader(props: { label: string; count?: number; expanded?: boolea
     <Show
       when={props.onToggle}
       fallback={
-        <div class="flex h-6 shrink-0 items-center gap-1.5 px-1.5 text-[13px] leading-4 font-medium text-v2-text-text-muted">
+        <div class="flex h-6 shrink-0 items-center gap-1.5 px-1.5 text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint">
           {content()}
         </div>
       }
@@ -525,7 +525,7 @@ function SectionHeader(props: { label: string; count?: number; expanded?: boolea
         <button
           type="button"
           aria-expanded={props.expanded}
-          class="flex h-6 w-full shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-start text-[13px] leading-4 font-medium text-v2-text-text-muted hover:text-v2-text-text-base focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover"
+          class="flex h-6 w-full shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-start text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint hover:text-v2-text-text-base focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover"
           onClick={toggle()}
         >
           {content()}

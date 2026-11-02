@@ -53,7 +53,7 @@ export default function Layout(props: ParentProps) {
     tabsAside: HTMLElement | undefined
     tabsPanel: HTMLElement | undefined
   }>({
-    tabsWidth: 276,
+    tabsWidth: 234,
     tabsMount: undefined,
     tabsAside: undefined,
     tabsPanel: undefined,

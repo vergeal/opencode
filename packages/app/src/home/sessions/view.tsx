@@ -28,7 +28,8 @@ import {
 
 const SHOW_HOME_SESSION_ARCHIVE = false
 
-const HOME_SECTION_LABEL = "text-v2-text-text-muted [font-weight: 400]"
+const HOME_SECTION_LABEL =
+  "text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint"
 
 const HOME_SESSION_SEARCH_RESULTS_ID = "home-session-search-results"
 
@@ -356,9 +357,9 @@ function HomeSessionSearch(
         </Show>
         <label
           class={`
-            relative z-20 flex h-9 w-full items-center gap-2 rounded-[6px] py-1 ps-3 pe-2
-            bg-v2-background-bg-layer-02/60 text-v2-icon-icon-muted transition-[background-color,box-shadow]
-            duration-[120ms] ease-in-out hover:bg-v2-background-bg-layer-02 focus-within:bg-v2-background-bg-layer-02
+            relative z-20 flex h-[34px] w-full max-w-[420px] items-center gap-2 rounded-[8px] border border-v2-border-border-muted py-1 ps-3 pe-2
+            text-[13px] leading-[var(--line-height-compact)] bg-v2-background-bg-base text-v2-icon-icon-muted transition-[background-color,border-color,box-shadow]
+            duration-[120ms] ease-in-out hover:border-v2-border-border-strong focus-within:border-v2-border-border-strong
           `}
         >
           <Icon name="magnifying-glass" />
@@ -527,8 +528,8 @@ function HomeTodaySummary(props: {
   return (
     <Show when={recent() > 0}>
       <div class="flex flex-col pb-1">
-        <h1 class="text-[21px] leading-[28px] font-semibold tracking-[-0.02em]">{greeting()}</h1>
-        <p class="mt-1.5 text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">{date()}</p>
+        <h1 class="text-[26px] leading-[32px] font-semibold tracking-[-0.02em]">{greeting()}</h1>
+        <p class="mt-1.5 text-[14px] leading-[20px] text-v2-text-text-muted">{date()}</p>
         <div class="mt-[18px] mb-5 flex flex-wrap gap-2 pr-24">
           <HomeTodayChip label={props.language.t("home.today.stat.sessions")} value={today()?.sessions.length ?? 0} />
           <HomeTodayChip label={props.language.t("home.today.stat.projects")} value={props.projectCount} />
@@ -541,7 +542,7 @@ function HomeTodaySummary(props: {
 
 function HomeTodayChip(props: { label: string; value: number }) {
   return (
-    <span class="flex h-[30px] items-center gap-[7px] rounded-[8px] border border-v2-border-border-muted bg-v2-background-bg-deep px-[11px] text-[12px] text-v2-text-text-muted">
+    <span class="flex h-8 items-center gap-[7px] rounded-[8px] border border-v2-border-border-muted bg-v2-background-bg-deep px-3 text-[12.5px] text-v2-text-text-muted">
       {props.label}
       <b class="font-semibold tabular-nums text-v2-text-text-base">{props.value}</b>
     </span>
@@ -937,7 +938,7 @@ function HomeSessionTitle(props: { title: string; showProjectName: boolean; sear
     <span
       data-component="home-session-title"
       dir="auto"
-      class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-v2-text-text-base [font-weight:530]"
+      class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-base [font-weight:530]"
       classList={{
         "text-[15px] leading-4 tracking-[-0.04px]": !!props.search,
         "max-w-[min(70%,480px)] flex-[0_1_auto]": props.showProjectName,

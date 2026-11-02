@@ -7,7 +7,16 @@
   align-items: center;
   gap: 0;
   inline-size: 100%;
-  block-size: 48px;
+  block-size: 44px;
+}
+
+/* The location reads as a quiet crumb above the title's weight, not as a second title. */
+.session-header-location [data-slot="session-location-trigger"] {
+  block-size: 24px;
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0;
+  color: var(--v2-text-text-faint);
 }
 
 .session-header-location {
@@ -56,6 +65,14 @@
   flex-shrink: 1;
 }
 
+/* The title carries the weight; its font utilities are unreliable inside the sticky header. */
+.session-header-title h1 {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: -0.02em;
+}
+
 .session-header-title-measure {
   position: absolute;
   visibility: hidden;
@@ -70,10 +87,10 @@
   inline-size: max-content;
   padding-inline: 4px;
   white-space: nowrap;
-  font-size: 15px;
-  font-weight: 530;
-  line-height: var(--line-height-compact);
-  letter-spacing: -0.04px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: -0.02em;
 }
 
 .session-header-actions {
@@ -85,7 +102,7 @@
 }
 
 .session-header-fade {
-  top: 48px;
+  top: 45px;
 }
 
 .session-header-separator {
@@ -95,7 +112,7 @@
   /* The neighbouring segments' own padding counts toward the gap; 0.5px is the text's side bearing. */
   margin-inline: calc(var(--separator-gap) - var(--separator-before) - 0.5px)
     calc(var(--separator-gap) - var(--separator-after) - 0.5px);
-  /* The header's segments are 13px text, and the slash takes their size. */
-  font-size: 15px;
-  line-height: var(--line-height-compact);
+  /* The crumb's segments are 11px text, and the slash takes their size. */
+  font-size: 11px;
+  line-height: 14px;
 }

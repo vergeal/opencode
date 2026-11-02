@@ -452,7 +452,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                   data-titlebar-tab-action
                   data-action="vertical-tabs-home"
                   data-state={layout.route().type === "home" ? "pressed" : undefined}
-                  class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                  class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-[12.5px] leading-[18px] text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
                   onClick={toggleHome}
                   aria-label={language.t("home.title")}
                   aria-pressed={layout.route().type === "home"}
@@ -499,7 +499,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                   type="button"
                   data-titlebar-tab-action
                   data-action="vertical-tabs-search"
-                  class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base"
+                  class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-[12.5px] leading-[18px] text-v2-text-text-faint hover:text-v2-text-text-base"
                   onClick={() => command.trigger("sessions.search")}
                 >
                   <Icon name="magnifying-glass" class="shrink-0" />
@@ -890,7 +890,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 data-action="vertical-tabs-inbox"
                                 data-state={layout.route().type === "inbox" ? "pressed" : undefined}
                                 aria-pressed={layout.route().type === "inbox"}
-                                class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-[12.5px] leading-[18px] text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
                                 onClick={() => navigate("/inbox")}
                               >
                                 <Icon name="notifications" class="shrink-0" />
@@ -902,7 +902,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 data-action="vertical-tabs-knowledge"
                                 data-state={layout.route().type === "knowledge" ? "pressed" : undefined}
                                 aria-pressed={layout.route().type === "knowledge"}
-                                class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-[12.5px] leading-[18px] text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
                                 onClick={() => navigate("/knowledge")}
                               >
                                 <Icon name="folder" class="shrink-0" />
@@ -914,7 +914,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 data-action="vertical-tabs-scheduled"
                                 data-state={layout.route().type === "scheduled" ? "pressed" : undefined}
                                 aria-pressed={layout.route().type === "scheduled"}
-                                class="group flex h-7 w-full shrink-0 items-center gap-1.5 rounded-[6px] ps-1.5 pe-2 text-[15px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-[12.5px] leading-[18px] text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
                                 onClick={() => navigate("/scheduled")}
                               >
                                 <Icon name="task" class="shrink-0" />

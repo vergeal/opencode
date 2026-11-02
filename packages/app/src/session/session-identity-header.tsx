@@ -35,7 +35,7 @@ import { useLayout, type LocalProject } from "@/shell/state/layout"
 import { tabKey, useTabs } from "@/shell/tabs/tabs"
 import { useSettingsSurface } from "@/settings/surface"
 import { pathKey } from "@/workspaces/path-key"
-import { isProjectDirectory, workspaceDirectories } from "@/workspaces/paths"
+import { isProjectDirectory, workspaceSelectionDirectories } from "@/workspaces/paths"
 import { sessionHref } from "@/shell/routes/session"
 import { showToast } from "@/shell/notifications/toast"
 import { sessionTitle } from "./title"
@@ -52,7 +52,7 @@ export function SessionTitleHeader(props: ParentProps) {
     <>
       {/* The bottom inset reserves room for the fade without covering rows stuck below the bar. */}
       <div data-session-title class="pointer-events-none sticky top-0 z-30 w-full pb-4">
-        <div class="pointer-events-auto flex items-center bg-v2-background-bg-base pe-3 ps-2.5">
+        <div class="pointer-events-auto flex items-center border-b border-v2-border-border-muted bg-v2-background-bg-base pe-3 ps-2.5">
           <CollapsedSidebarToggleSpace />
           <div class="min-w-0 flex-1">{props.children}</div>
         </div>
@@ -118,7 +118,8 @@ export function SessionLocation(props: {
     const directory = props.directory
 
     if (!props.project || !directory) return
-    const root = workspaceDirectories(props.project).find((item) => containsDirectory(item, directory))
+    // Git worktrees are workspaces too, so a session running in one names it next to the project.
+    const root = workspaceSelectionDirectories(props.project, []).find((item) => containsDirectory(item, directory))
 
     return root ? getFilename(root) : undefined
   })
@@ -628,7 +629,7 @@ export function SessionIdentityHeader(props: { sessionID: string; session?: Sess
               <h1
                 data-slot={parentID() ? "session-title-child" : undefined}
                 dir="auto"
-                class="w-fit truncate rounded-[6px] px-1 py-1.5 text-[15px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base"
+                class="w-fit truncate rounded-[6px] px-1 py-1.5 text-[13.5px] font-semibold leading-[18px] tracking-[-0.02em] text-v2-text-text-base"
                 classList={{ "max-w-[45%] shrink-0": !!parentID() }}
               >
                 {value()}

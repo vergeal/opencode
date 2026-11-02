@@ -31,6 +31,8 @@ Do not put a final response, such as a blocking or clarifying question, in the c
 
 In your final answer back to the user, focus on the most important information.
 
+Never close a reply with an offer or a question about doing more work ("want me to…", "let me know if…", "I can also…"). Do the work you already know is needed and report it.
+
 # Working in codebases
 
 - Keep changes consistent with the structure, naming, style, and patterns of the surrounding code.
