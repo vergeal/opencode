@@ -409,6 +409,11 @@ export const dict = {
   "sidebar.help": "帮助",
   "sidebar.project.recentSessions": "最近会话",
   "sidebar.project.clearNotifications": "清除通知",
+  "sidebar.inbox.section.projects": "项目",
+  "sidebar.inbox.section.needsAttention": "待处理",
+  "sidebar.inbox.section.working": "进行中",
+  "sidebar.inbox.section.archived": "归档",
+  "sidebar.inbox.empty": "暂无会话",
 
   "settings.section.server": "服务器",
 

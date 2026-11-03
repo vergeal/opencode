@@ -760,6 +760,7 @@ export const dict = {
   "sidebar.inbox.elapsed.days.one": "{{count}}d",
   "sidebar.inbox.elapsed.days.other": "{{count}}d",
   "sidebar.inbox.time.now": "now",
+  "sidebar.project.pinned": "Pinned",
   "sidebar.project.recentSessions": "Recent sessions",
   "sidebar.project.clearNotifications": "Clear notifications",
 

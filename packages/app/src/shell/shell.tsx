@@ -207,18 +207,25 @@ export default function Layout(props: ParentProps) {
     <div
       class="relative bg-v2-background-bg-deep flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
       style={{
-        // Mobile panels only need clearance for their outer border.
-        "--shell-inline-inset": mobile() ? "1px" : "8px",
+        // The workbench design butts the 250 sidebar against the 255 content panel with a single
+        // hairline, so vertical tabs drop the shell's floating inset entirely.
+        "--shell-inline-inset": verticalTabs() ? "0px" : mobile() ? "1px" : "8px",
+        // The panel follows the same rule: flush edges in the workbench layout, rounded when floating.
+        "--shell-panel-radius": verticalTabs() ? "0px" : "10px",
         // A bottom mobile titlebar leaves main's top edge to the safe area. Native Windows chrome supplies the gap;
         // retain outer-outline clearance.
-        "--shell-top-inset": bottomTitlebar()
+        "--shell-top-inset": verticalTabs()
           ? "0px"
-          : platform.platform === "desktop" && platform.os === "windows"
-            ? "1px"
-            : "8px",
-        "--shell-bottom-inset": bottomTitlebar()
-          ? "8px"
-          : "max(0px, calc(8px - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))))",
+          : bottomTitlebar()
+            ? "0px"
+            : platform.platform === "desktop" && platform.os === "windows"
+              ? "1px"
+              : "8px",
+        "--shell-bottom-inset": verticalTabs()
+          ? "0px"
+          : bottomTitlebar()
+            ? "8px"
+            : "max(0px, calc(8px - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))))",
       }}
     >
       <Titlebar verticalTabs={verticalTabs() ? { mount: state.tabsMount } : undefined} />
@@ -240,7 +247,7 @@ export default function Layout(props: ParentProps) {
             data-peek={peek.shown() ? "" : undefined}
             style={{ "--sidebar-peek-width": `${state.tabsWidth}px` }}
             ref={(element) => setState("tabsAside", element)}
-            class="relative z-10 h-full min-h-0 shrink-0"
+            class="relative z-10 h-full min-h-0 shrink-0 border-e border-v2-border-border-muted bg-v2-background-bg-deep"
           >
             {/* Skipped rather than display: none or inert, so neither direction restyles the sidebar's contents and
                   a reopen reuses their layout. */}
@@ -262,7 +269,7 @@ export default function Layout(props: ParentProps) {
               <div
                 ref={(element) => setState("tabsMount", element)}
                 data-slot="vertical-tabs-mount"
-                class="absolute inset-y-0 end-0 contain-strict will-change-[opacity] flex min-h-0 flex-col bg-v2-background-bg-deep pe-2.5 ps-4.5 pb-[var(--shell-bottom-inset,8px)] pt-[var(--shell-top-inset,8px)]"
+                class="absolute inset-y-0 end-0 contain-strict will-change-[opacity] flex min-h-0 flex-col bg-v2-background-bg-deep pe-2.5 ps-2.5 pb-[var(--shell-bottom-inset,8px)] pt-[max(12px,var(--shell-top-inset,8px))]"
                 style={{
                   width: `${state.tabsWidth}px`,
                   "padding-bottom": "max(10px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
@@ -290,6 +297,7 @@ export default function Layout(props: ParentProps) {
         <main
           class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-content"
           style={{
+            background: verticalTabs() ? "var(--v2-background-bg-base)" : undefined,
             "padding-top": bottomTitlebar() ? "env(safe-area-inset-top, 0px)" : "0px",
             "padding-bottom":
               bottomTitlebar() || settings.active()

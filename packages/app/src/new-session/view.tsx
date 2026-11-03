@@ -85,7 +85,7 @@ export function NewSessionView(props: {
       <div
         ref={panel}
         data-component="new-session"
-        class="relative isolate flex-1 min-h-0 overflow-hidden rounded-[10px] bg-v2-background-bg-base shadow-[var(--v2-elevation-raised)]"
+        class="relative isolate flex-1 min-h-0 overflow-hidden rounded-[var(--shell-panel-radius,10px)] bg-v2-background-bg-base shadow-[var(--v2-elevation-raised)]"
       >
         <ComposerDropzone
           active={props.composer.state.drag === "active"}

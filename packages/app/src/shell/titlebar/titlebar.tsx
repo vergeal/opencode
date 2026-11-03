@@ -128,7 +128,6 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
 
   const titlebarItems = useTitlebarItems()
   const hideVerticalTitlebar = createMemo(() => !!props.verticalTabs && !windows())
-  const homeInSidebarHeader = () => !windows() && !macTrafficLights()
 
   const back = () => {
     const next = backPath(history)
@@ -419,99 +418,52 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
 
             const toggleHome = () => tabs.toggleHome({ home: layout.route().type === "home", current: currentTab() })
 
-            const homeButton = (vertical = false) => (
-              <Show
-                when={vertical}
-                fallback={
-                  <Tooltip
-                    placement="bottom"
-                    value={
-                      <>
-                        {language.t("home.title")}
-                        <Keybind keys={command.keybindParts("home.toggle")} variant="neutral" />
-                      </>
-                    }
-                    class="shrink-0"
-                  >
-                    <IconButton
-                      type="button"
-                      variant="ghost-muted"
-                      size="large"
-                      class="!w-9 shrink-0"
-                      icon={<Icon name="grid-plus" />}
-                      state={layout.route().type === "home" ? "pressed" : undefined}
-                      onClick={toggleHome}
-                      aria-label={language.t("home.title")}
-                      aria-pressed={layout.route().type === "home"}
-                    />
-                  </Tooltip>
+            const homeButton = () => (
+              <Tooltip
+                placement="bottom"
+                value={
+                  <>
+                    {language.t("home.title")}
+                    <Keybind keys={command.keybindParts("home.toggle")} variant="neutral" />
+                  </>
                 }
+                class="shrink-0"
               >
-                <button
+                <IconButton
                   type="button"
-                  data-titlebar-tab-action
-                  data-action="vertical-tabs-home"
-                  data-state={layout.route().type === "home" ? "pressed" : undefined}
-                  class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                  variant="ghost-muted"
+                  size="large"
+                  class="!w-9 shrink-0"
+                  icon={<Icon name="grid-plus" />}
+                  state={layout.route().type === "home" ? "pressed" : undefined}
                   onClick={toggleHome}
                   aria-label={language.t("home.title")}
                   aria-pressed={layout.route().type === "home"}
-                >
-                  <Icon name="grid-plus" class="shrink-0" />
-                  <span class="min-w-0 truncate">{language.t("home.title")}</span>
-                  <span
-                    class="ms-auto hidden min-w-0 truncate text-v2-text-text-faint group-hover:block group-focus-visible:block"
-                    aria-hidden="true"
-                  >
-                    <bdi dir="ltr">{command.keybind("home.toggle")}</bdi>
-                  </span>
-                </button>
-              </Show>
+                />
+              </Tooltip>
             )
 
-            const searchButton = (vertical = false) => (
-              <Show
-                when={vertical}
-                fallback={
-                  <Tooltip
-                    placement="bottom"
-                    value={
-                      <>
-                        {language.t("command.session.search")}
-                        <Keybind keys={command.keybindParts("sessions.search")} variant="neutral" />
-                      </>
-                    }
-                    class="shrink-0"
-                  >
-                    <IconButton
-                      type="button"
-                      variant="ghost-muted"
-                      size="large"
-                      class="!w-9 shrink-0"
-                      icon={<Icon name="magnifying-glass" />}
-                      onClick={() => command.trigger("sessions.search")}
-                      aria-label={language.t("command.session.search")}
-                    />
-                  </Tooltip>
+            const searchButton = () => (
+              <Tooltip
+                placement="bottom"
+                value={
+                  <>
+                    {language.t("command.session.search")}
+                    <Keybind keys={command.keybindParts("sessions.search")} variant="neutral" />
+                  </>
                 }
+                class="shrink-0"
               >
-                <button
+                <IconButton
                   type="button"
-                  data-titlebar-tab-action
-                  data-action="vertical-tabs-search"
-                  class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-v2-text-text-faint hover:text-v2-text-text-base"
+                  variant="ghost-muted"
+                  size="large"
+                  class="!w-9 shrink-0"
+                  icon={<Icon name="magnifying-glass" />}
                   onClick={() => command.trigger("sessions.search")}
-                >
-                  <Icon name="magnifying-glass" class="shrink-0" />
-                  <span class="min-w-0 truncate">{language.t("command.session.search")}</span>
-                  <span
-                    class="ms-auto hidden min-w-0 truncate text-v2-text-text-faint group-hover:block group-focus-visible:block"
-                    aria-hidden="true"
-                  >
-                    <bdi dir="ltr">{command.keybind("sessions.search")}</bdi>
-                  </span>
-                </button>
-              </Show>
+                  aria-label={language.t("command.session.search")}
+                />
+              </Tooltip>
             )
 
             command.register("titlebar-home", () => [
@@ -813,16 +765,11 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                             ref={(element) => (element.className = "flex size-full min-h-0 flex-col")}
                           >
                             <Show when={!windows()}>
-                              {/* Shares the session header's 48px center line. Without traffic lights, Home fills the
-                                  start so the row doesn't leave an empty band. */}
+                              {/* The brand row replaces the old icon header: the mark and name at the start,
+                                  the search keybind at the end. It shares the session header's center line. */}
                               <div
                                 data-slot="sidebar-header"
-                                data-home={homeInSidebarHeader() ? "" : undefined}
-                                class="flex w-full shrink-0 gap-2"
-                                classList={{
-                                  "items-start pt-2.5 pb-1": homeInSidebarHeader(),
-                                  "mb-2 h-12 items-center": !homeInSidebarHeader(),
-                                }}
+                                class="flex w-full shrink-0 items-center gap-2"
                                 style={{
                                   "min-height": macVerticalTabs()
                                     ? `${macTrafficLightsTopClearance / zoom()}px`
@@ -840,25 +787,41 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                     aria-hidden="true"
                                   />
                                 </Show>
-                                <Show when={homeInSidebarHeader()} fallback={<div class="flex-1" />}>
-                                  <div class="min-w-0 flex-1">{homeButton(true)}</div>
-                                </Show>
-                                {/* Optically aligns the toggle's glyph with the selected session's end edge. */}
-                                <div class="-me-0.5 flex shrink-0">
-                                  <SidebarToggle handoff="out" />
+                                <span data-slot="sidebar-brand-logo" aria-hidden="true">
+                                  O
+                                </span>
+                                <span data-slot="sidebar-brand-name" class="min-w-0 truncate">
+                                  opencode
+                                </span>
+                                {/* The trailing group shares the rows' end edge, so the keybind and the
+                                    sidebar toggle line up with the times and counts below. */}
+                                <div class="ms-auto flex shrink-0 items-center gap-2">
+                                  <Tooltip
+                                    placement="bottom"
+                                    value={
+                                      <>
+                                        {language.t("command.palette")}
+                                        <Keybind keys={command.keybindParts("command.palette")} variant="neutral" />
+                                      </>
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      data-slot="sidebar-brand-search"
+                                      class="[app-region:no-drag] shrink-0"
+                                      onClick={() => command.trigger("command.palette")}
+                                      aria-label={language.t("command.palette")}
+                                    >
+                                      <bdi dir="ltr">{command.keybind("command.palette")}</bdi>
+                                    </button>
+                                  </Tooltip>
+                                  {/* Optically aligns the toggle's glyph with the selected session's end edge. */}
+                                  <div class="flex shrink-0">
+                                    <SidebarToggle handoff="out" />
+                                  </div>
                                 </div>
                               </div>
                             </Show>
-                            <div class="flex w-full shrink-0 flex-col gap-1">
-                              <Show when={!homeInSidebarHeader()}>{homeButton(true)}</Show>
-                              {searchButton(true)}
-                              <RecentlyClosedTabsMenu
-                                vertical
-                                onNewTab={openNewTab}
-                                keybind={command.keybind("tab.new")}
-                              />
-                            </div>
-                            <div class="my-[10px] h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
                             <div class="flex min-h-0 flex-1 flex-col gap-1">
                               <Show
                                 when={settings.appearance.tabLayout() === "inbox"}
@@ -883,17 +846,27 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 <SidebarInbox />
                               </Show>
                             </div>
-                            <div class="mt-2 flex w-full shrink-0 flex-col gap-1 border-t border-v2-border-border-muted pt-2">
+                            <div data-slot="sidebar-foot" class="flex w-full shrink-0 flex-col">
+                              <button
+                                type="button"
+                                data-titlebar-tab-action
+                                data-action="vertical-tabs-home"
+                                data-state={layout.route().type === "home" ? "pressed" : undefined}
+                                aria-pressed={layout.route().type === "home"}
+                                class="group flex h-[30px] w-full shrink-0 items-center rounded-[7px] px-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                onClick={toggleHome}
+                              >
+                                <span class="min-w-0 truncate">{language.t("home.title")}</span>
+                              </button>
                               <button
                                 type="button"
                                 data-titlebar-tab-action
                                 data-action="vertical-tabs-inbox"
                                 data-state={layout.route().type === "inbox" ? "pressed" : undefined}
                                 aria-pressed={layout.route().type === "inbox"}
-                                class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                class="group flex h-[30px] w-full shrink-0 items-center rounded-[7px] px-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
                                 onClick={() => navigate("/inbox")}
                               >
-                                <Icon name="notifications" class="shrink-0" />
                                 <span class="min-w-0 truncate">{language.t("inbox.title")}</span>
                               </button>
                               <button
@@ -902,10 +875,9 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 data-action="vertical-tabs-knowledge"
                                 data-state={layout.route().type === "knowledge" ? "pressed" : undefined}
                                 aria-pressed={layout.route().type === "knowledge"}
-                                class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                class="group flex h-[30px] w-full shrink-0 items-center rounded-[7px] px-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
                                 onClick={() => navigate("/knowledge")}
                               >
-                                <Icon name="folder" class="shrink-0" />
                                 <span class="min-w-0 truncate">{language.t("knowledge.title")}</span>
                               </button>
                               <button
@@ -914,10 +886,9 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                 data-action="vertical-tabs-scheduled"
                                 data-state={layout.route().type === "scheduled" ? "pressed" : undefined}
                                 aria-pressed={layout.route().type === "scheduled"}
-                                class="group flex h-[30px] w-full shrink-0 items-center gap-1.5 rounded-[7px] ps-1.5 pe-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+                                class="group flex h-[30px] w-full shrink-0 items-center rounded-[7px] px-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
                                 onClick={() => navigate("/scheduled")}
                               >
-                                <Icon name="task" class="shrink-0" />
                                 <span class="min-w-0 truncate">{language.t("scheduled.title")}</span>
                               </button>
                             </div>

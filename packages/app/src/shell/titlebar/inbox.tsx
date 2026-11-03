@@ -22,6 +22,7 @@ import { usePinnedSessions } from "@/session/pins"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { pathKey } from "@/workspaces/path-key"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
+import type { LocalProject } from "@/shell/state/layout"
 import { sessionTabTitle } from "./tab-title"
 import { sessionTitle } from "@/session/title"
 import { createSessionInbox, inboxArchived, inboxBusy, type InboxEntry, type InboxStatus } from "./inbox-model"
@@ -31,6 +32,7 @@ const PINNED = "pinned"
 const ARCHIVED = "archived"
 const NEEDS = "needs"
 const WORKING = "working"
+const RECENT = "recent"
 const projectContainer = (key: string) => `project:${key}`
 
 // `since` is when the inbox was first used; Recent only lists sessions that finished a run after it.
@@ -93,6 +95,10 @@ export function SidebarInbox() {
       return entry ? [entry] : []
     })
     const rest = list.filter((entry) => !pinnedIDs.has(entry.session.id))
+    // Everything that is not waiting on the person and not archived belongs in the Recent list.
+    const settled = rest
+      .filter((entry) => !inboxBusy(entry.status) && !inboxArchived(entry))
+      .toSorted((a, b) => (b.session.time.idle ?? 0) - (a.session.time.idle ?? 0))
     // The most recently finished session comes first.
     const finished = rest
       .filter((entry) => {
@@ -105,6 +111,7 @@ export function SidebarInbox() {
     return {
       pinned: applyOrder(state.order, PINNED, pinned),
       needs: rest.filter((entry) => entry.status === "approval" || entry.status === "input"),
+      recent: settled,
       inbox: finished.filter((entry) => !inboxArchived(entry)),
       archived: applyOrder(state.order, ARCHIVED, finished.filter(inboxArchived)),
       working: rest.filter((entry) => entry.status === "working"),
@@ -121,7 +128,13 @@ export function SidebarInbox() {
   const projectGroups = (list: InboxEntry[]) => {
     const groups = new Map<
       string,
-      { key: string; name: string; directory: string; projectID?: string; entries: InboxEntry[] }
+      {
+        key: string
+        name: string
+        directory: string
+        project: ReturnType<InboxEntry["ctx"]["projects"]["forSession"]>
+        entries: InboxEntry[]
+      }
     >()
 
     list.forEach((entry) => {
@@ -140,7 +153,7 @@ export function SidebarInbox() {
         key,
         name: displayName(project ?? { worktree: entry.session.location.directory }),
         directory: project?.worktree ?? entry.session.location.directory,
-        projectID: project?.id,
+        project,
         entries: [entry],
       })
     })
@@ -151,16 +164,22 @@ export function SidebarInbox() {
     }))
   }
 
-  const groupedInbox = createMemo(() => projectGroups(sections().inbox))
+  // Working and needs-attention rows live in their own shelves, so the project folders and Recent list leave them out.
+  const projectEntries = createMemo(() => [...sections().pinned, ...sections().inbox])
+
+  const groupedInbox = createMemo(() => projectGroups(projectEntries()))
+
+  // The Recent list is the shortcut for everything that is neither pinned nor archived.
+  const recent = createMemo(() => applyOrder(state.order, RECENT, sections().recent))
 
   // The rows each container holds, in the order they are drawn: reordering and cross-container drops both need it.
   const containers = createMemo(() => {
     const map = new Map<string, InboxEntry[]>()
 
-    map.set(PINNED, sections().pinned)
     map.set(NEEDS, sections().needs)
     map.set(WORKING, sections().working)
     map.set(ARCHIVED, sections().archived)
+    map.set(RECENT, recent())
     groupedInbox().forEach((group) => map.set(projectContainer(group.key), group.entries))
 
     return map
@@ -169,18 +188,9 @@ export function SidebarInbox() {
   const writeOrder = (container: string, keys: string[]) =>
     setState("order", (current) => ({ ...current, [container]: keys }))
 
-  // A drop outside the source container means the folder it landed in acts on the session: pin, archive, or move the
+  // A drop outside the source container means the folder it landed in acts on the session: archive it away, or move the
   // session into that project. Rows in Needs attention and Working are state-driven, so they never take a drop.
-  const dropInto = async (entry: InboxEntry, from: string, to: string) => {
-    if (from === PINNED && to !== PINNED) pins.remove([entry.session.id])
-
-    if (to === PINNED) {
-      if (!pins.isPinned(entry.session.id)) pins.toggle(entry.session.id)
-      if (inboxArchived(entry)) await inbox.unarchive(entry)
-
-      return
-    }
-
+  const dropInto = async (entry: InboxEntry, to: string) => {
     if (to === ARCHIVED) {
       if (!inboxArchived(entry)) await inbox.archive(entry)
 
@@ -193,7 +203,7 @@ export function SidebarInbox() {
     if (inboxArchived(entry)) await inbox.unarchive(entry)
     if (pathKey(group.directory) === pathKey(entry.session.location.directory)) return
 
-    await inbox.relocate(entry, { directory: group.directory, projectID: group.projectID })
+    await inbox.relocate(entry, { directory: group.directory, projectID: group.project?.id })
   }
 
   const endDrag: NonNullable<DragDropProviderProps["onDragEnd"]> = (event) => {
@@ -228,7 +238,7 @@ export function SidebarInbox() {
     const at = isSortable(target) ? Math.max(0, Math.min(target.index, keys.length)) : 0
 
     writeOrder(to, [...keys.slice(0, at), entry.key, ...keys.slice(at)])
-    void dropInto(entry, from, to)
+    void dropInto(entry, to)
   }
 
   // The client only refreshes `time.idle` for loaded sessions when a run ends, so load every working one.
@@ -323,6 +333,35 @@ export function SidebarInbox() {
     </For>
   )
 
+  // The Recent list is a shortcut, not a container: its rows open and archive, but they never take a drag, which keeps
+  // a session from registering as sortable twice while its project folder is open.
+  const compactRows = (list: InboxEntry[]) => (
+    <For each={list.map((entry) => entry.key)}>
+      {(key) => (
+        <Show when={inbox.byKey().get(key)}>
+          {(entry) => (
+            <InboxRow
+              entry={entry()}
+              selected={inbox.selected(entry())}
+              now={inbox.now()}
+              branchLoading={inbox.branchLoading(entry())}
+              branch={inbox.branch(entry())}
+              worktree={inbox.inWorktree(entry())}
+              archived={inboxArchived(entry())}
+              pinned={pins.isPinned(entry().session.id)}
+              showProjectName={false}
+              onTogglePin={() => pins.toggle(entry().session.id)}
+              onOpen={() => inbox.open(entry())}
+              onArchive={() => void inbox.archive(entry())}
+              onUnarchive={() => void inbox.unarchive(entry())}
+              onDelete={() => dialog.show(() => <DeleteDialog entry={entry()} />)}
+            />
+          )}
+        </Show>
+      )}
+    </For>
+  )
+
   return (
     <DragDropProvider
       sensors={(defaults) => [
@@ -348,39 +387,21 @@ export function SidebarInbox() {
           data-slot="sidebar-inbox-scroll"
           class="-me-2.5 flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-1 pe-2.5"
         >
-          <Show when={sections().pinned.length > 0}>
-            <DropSection container={PINNED} className="flex shrink-0 flex-col gap-px">
-              <SectionHeader label={language.t("home.sessions.group.pinned")} />
-              {rows(sections().pinned, PINNED)}
-            </DropSection>
-          </Show>
-          <Show when={sections().needs.length > 0}>
-            <div class="flex shrink-0 flex-col gap-px" classList={{ "mt-3": sections().pinned.length > 0 }}>
-              <SectionHeader
-                label={language.t("sidebar.inbox.section.needsAttention")}
-                count={sections().needs.length}
-              />
-              {rows(sections().needs, NEEDS, { disabled: true })}
-            </div>
-          </Show>
-          {/* The project list starts a new block, so it gets its own divider and heading. */}
-          <Show when={sections().pinned.length > 0 || sections().needs.length > 0}>
-            <div class="my-[9px] h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
-          </Show>
           <Show
-            when={sections().inbox.length > 0}
-            fallback={
-              <Show
-                when={
-                  sections().needs.length === 0 && sections().working.length === 0 && sections().archived.length === 0
-                }
-              >
-                <div class="px-1.5 py-2 text-[15px] leading-4 text-v2-text-text-faint">
-                  {language.t("sidebar.inbox.empty")}
-                </div>
-              </Show>
+            when={
+              recent().length === 0 &&
+              sections().pinned.length === 0 &&
+              sections().needs.length === 0 &&
+              sections().working.length === 0 &&
+              sections().archived.length === 0
             }
           >
+            <div class="px-1.5 py-2 text-[13px] leading-4 text-v2-text-text-faint">
+              {language.t("sidebar.inbox.empty")}
+            </div>
+          </Show>
+          {/* Projects open as folders, the way the design lists them above the recent sessions. */}
+          <Show when={groupedInbox().length > 0}>
             <div class="flex shrink-0 flex-col gap-px">
               <SectionHeader label={language.t("sidebar.inbox.section.projects")} />
               <For each={groupedInbox()}>
@@ -389,6 +410,8 @@ export function SidebarInbox() {
                     <FolderRow
                       label={group.name}
                       count={group.entries.length}
+                      project={group.project}
+                      directory={group.directory}
                       container={projectContainer(group.key)}
                       expanded={projectExpanded(group.key)}
                       onToggle={() => toggleProject(group.key)}
@@ -403,11 +426,31 @@ export function SidebarInbox() {
               </For>
             </div>
           </Show>
-          {/* Archived is a folder of its own, separated from the project list above. */}
+          <Show when={sections().needs.length > 0}>
+            <div class="flex shrink-0 flex-col gap-px">
+              <SectionHeader
+                label={language.t("sidebar.inbox.section.needsAttention")}
+                count={sections().needs.length}
+              />
+              {rows(sections().needs, NEEDS, { disabled: true })}
+            </div>
+          </Show>
+          {/* Recent sessions are a flat shortcut list, so their rows stay one line and never drag between projects. */}
+          {/* Pinned sessions are the top shelf; the Recent list below holds everything else. */}
+          <Show when={sections().pinned.length > 0}>
+            <div class="flex shrink-0 flex-col gap-px">
+              <SectionHeader label={language.t("sidebar.project.pinned")} />
+              {compactRows(sections().pinned)}
+            </div>
+          </Show>
+          <Show when={recent().length > 0}>
+            <div class="flex shrink-0 flex-col gap-px">
+              <SectionHeader label={language.t("sidebar.project.recentSessions")} />
+              {compactRows(recent())}
+            </div>
+          </Show>
+          {/* Archived is a folder of its own; the design separates groups with spacing, not a rule. */}
           <Show when={sections().archived.length > 0 || dragging()}>
-            <Show when={sections().inbox.length > 0}>
-              <div class="my-[9px] h-px w-full shrink-0 bg-v2-border-border-muted" aria-hidden="true" />
-            </Show>
             <div class="flex shrink-0 flex-col gap-px">
               <FolderRow
                 label={language.t("sidebar.inbox.section.archived")}
@@ -426,7 +469,7 @@ export function SidebarInbox() {
         <Show when={sections().working.length > 0}>
           <div
             data-slot="sidebar-inbox-working"
-            class="flex max-h-[40%] shrink-0 flex-col gap-px border-t border-v2-border-border-muted pt-1.5"
+            class="mb-2.5 flex max-h-[40%] shrink-0 flex-col gap-px border-t border-v2-border-border-muted pt-1.5"
           >
             <SectionHeader
               label={language.t("sidebar.inbox.section.working")}
@@ -456,6 +499,8 @@ function FolderRow(props: {
   container: string
   expanded: boolean
   onToggle: () => void
+  project?: LocalProject
+  directory?: string
 }) {
   const drop = useDroppable({
     get id() {
@@ -470,26 +515,45 @@ function FolderRow(props: {
     <button
       ref={drop.ref}
       type="button"
+      data-slot="sidebar-folder-row"
       aria-expanded={props.expanded}
       data-drop-target={drop.isDropTarget() || undefined}
-      class={`
-        flex h-6 w-full shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-start
-        text-[12.5px] leading-[18px] font-medium text-v2-text-text-muted
+      class="
+        group flex h-[30px] w-full shrink-0 items-center gap-2 rounded-[7px] px-2 text-start
+        text-[14px] leading-5 text-v2-text-text-muted
         hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base
         focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
         data-[drop-target]:bg-v2-overlay-simple-overlay-hover data-[drop-target]:text-v2-text-text-base
-      `}
+      "
       onClick={props.onToggle}
     >
-      <Icon name="folder" size="small" class="shrink-0" />
+      <Show when={props.directory} fallback={<Icon name="folder" size="small" class="shrink-0" />}>
+        {(directory) => (
+          <span class="flex size-4 shrink-0 items-center justify-center">
+            <SessionTabAvatarView project={props.project} directory={directory()} unread={false} />
+          </span>
+        )}
+      </Show>
       <span class="min-w-0 flex-1 truncate">{props.label}</span>
-      <span class="shrink-0 tabular-nums text-v2-text-text-faint">{props.count}</span>
-      <Icon
-        name="chevron-down"
-        size="small"
-        class="shrink-0 transition-transform"
-        classList={{ "-rotate-90 rtl:rotate-90": !props.expanded }}
-      />
+      {/* The count and the disclosure share one end-aligned slot, so project counts line up with
+          the session times above them instead of sitting 24px inboard. */}
+      <span class="relative flex w-4 shrink-0 items-center justify-end">
+        <span
+          class="text-[10.5px] leading-[14px] tabular-nums text-v2-text-text-faint transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"
+          classList={{ "opacity-0": props.expanded }}
+        >
+          {props.count}
+        </span>
+        <Icon
+          name="chevron-down"
+          size="small"
+          class="absolute end-0 text-v2-text-text-faint opacity-0 transition-[opacity,transform] group-hover:opacity-100 group-focus-visible:opacity-100"
+          classList={{
+            "-rotate-90 rtl:rotate-90": !props.expanded,
+            "opacity-100": props.expanded,
+          }}
+        />
+      </span>
     </button>
   )
 }
@@ -516,7 +580,7 @@ function SectionHeader(props: { label: string; count?: number; expanded?: boolea
     <Show
       when={props.onToggle}
       fallback={
-        <div class="flex h-6 shrink-0 items-center gap-1.5 px-1.5 text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint">
+        <div data-slot="sidebar-section-label" class="flex shrink-0 items-center gap-1.5 text-v2-text-text-faint">
           {content()}
         </div>
       }
@@ -524,8 +588,9 @@ function SectionHeader(props: { label: string; count?: number; expanded?: boolea
       {(toggle) => (
         <button
           type="button"
+          data-slot="sidebar-section-label"
           aria-expanded={props.expanded}
-          class="flex h-6 w-full shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-start text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint hover:text-v2-text-text-base focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover"
+          class="flex w-full shrink-0 items-center gap-1.5 rounded-[6px] text-start text-v2-text-text-faint hover:text-v2-text-text-base focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover"
           onClick={toggle()}
         >
           {content()}
@@ -550,28 +615,6 @@ type InboxRowProps = {
   onArchive: () => void
   onUnarchive: () => void
   onDelete: () => void
-}
-
-/** A section that accepts drops: landing a session here pins it. */
-function DropSection(props: { container: string; className: string; children: JSX.Element }) {
-  const drop = useDroppable({
-    get id() {
-      return `section:${props.container}`
-    },
-    get data() {
-      return { container: props.container }
-    },
-  })
-
-  return (
-    <div
-      ref={drop.ref}
-      class={props.className}
-      classList={{ "rounded-[6px] bg-v2-overlay-simple-overlay-hover": drop.isDropTarget() }}
-    >
-      {props.children}
-    </div>
-  )
 }
 
 /** A row that can be reordered inside its container and dropped onto another one. */

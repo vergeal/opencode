@@ -470,7 +470,8 @@
   }
 }
 
-/* A prompt that arrives in a background tab rings it once, like the TUI's prompt pulse. */[data-titlebar-tab] [data-slot="tab-prompt-pulse"] {
+/* A prompt that arrives in a background tab rings it once, like the TUI's prompt pulse. */
+[data-titlebar-tab] [data-slot="tab-prompt-pulse"] {
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -494,6 +495,82 @@
   [data-titlebar-tab] [data-slot="tab-prompt-pulse"] {
     animation: none;
   }
+}
+
+/* The brand row: mark, product name, and the search keybind at the end. It has no icon buttons,
+   so the sidebar reads as one text column from the brand down to the foot. Its inline padding
+   matches the rows below, which keeps the mark and the first session title on one edge. */
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-header"] {
+  padding: 4px 8px 8px;
+}
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-logo"] {
+  display: flex;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: var(--v2-background-bg-inverse);
+  color: var(--v2-text-text-inverse);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-name"] {
+  color: var(--v2-text-text-base);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: var(--line-height-compact);
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-search"] {
+  margin-inline-start: auto;
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 5px;
+  padding: 1px 5px;
+  background: var(--v2-background-bg-base);
+  color: var(--v2-text-text-faint);
+  font-size: 10.5px;
+  line-height: 14px;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-search"]:hover {
+  color: var(--v2-text-text-base);
+}
+
+/* The foot holds every navigation entry, separated from the session list by a hairline. */
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-foot"] {
+  margin-top: auto;
+  border-top: 1px solid var(--v2-border-border-muted);
+  padding-top: 8px;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-foot"] [data-titlebar-tab-action] {
+  gap: 8px;
+  padding-inline: 8px;
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-foot"] [data-titlebar-tab-action][data-state="pressed"] {
+  font-weight: 500;
+}
+
+/* The design leaves 18px between groups: 12px from the label inset plus 6px of group spacing. */
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-scroll"] > div + div:not([aria-hidden]) {
+  margin-top: 6px;
+}
+
+/* Section labels follow the design's uppercase scale and start a group rather than a row. */
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-section-label"] {
+  height: auto;
+  padding: 12px 8px 6px;
+  font-size: 12.5px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* Sidebar sessions read as one 30px line, matching the workbench list: the project and
@@ -531,6 +608,23 @@
   box-shadow:
     0 1px 1px rgba(0, 0, 0, 0.04),
     0 0 0 0.5px rgba(0, 0, 0, 0.08);
+}
+
+[data-slot="vertical-tabs-sidebar"]
+  [data-slot="sidebar-inbox-item"][data-state="active"]
+  > span:first-child
+  > span:nth-child(2) {
+  font-weight: 500;
+}
+
+/* The row's own transparent background would otherwise win over the option's hover utility, so
+   the hover surface is set here, and the selected card keeps its white surface while hovered. */
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"]:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"]:hover {
+  background: var(--v2-background-bg-base);
 }
 
 /* Session rows are text only, as the workbench list is; the project stays in the hover preview. */
