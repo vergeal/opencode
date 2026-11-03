@@ -240,6 +240,65 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     }
   }
 
+  // Moving past the first or last line of a fenced block leaves the block. When there is nothing outside it
+  // in that direction, a new line is added so the caret lands somewhere visible instead of on the fence.
+  const leaveBlockVertically = (direction: "up" | "down") => {
+    const selection = window.getSelection()
+    if (!selection?.rangeCount || !selection.isCollapsed) return false
+
+    const node = selection.anchorNode
+    if (!node || !editor.contains(node)) return false
+
+    const element = node instanceof Element ? node : node.parentElement
+    const block = element?.closest("[data-md-code-block]")
+    if (!block) return false
+
+    const caret = offsetOf(editor, node, selection.anchorOffset)
+    const start = offsetOf(editor, block, 0)
+    if (caret === undefined || start === undefined) return false
+
+    const body = block.textContent ?? ""
+    const relative = caret - start
+    if (relative < 0 || relative > body.length) return false
+
+    if (direction === "up") {
+      if (relative > 0 && body.slice(0, relative).includes("\n")) return false
+    } else if (relative < body.length && body.slice(relative).includes("\n")) return false
+
+    const fence = direction === "up" ? block.previousElementSibling : block.nextElementSibling
+    if (!fence) return false
+
+    const source = editor.textContent ?? ""
+    const fenceStart = offsetOf(editor, fence, 0)
+    const fenceEnd = offsetOf(editor, fence, fence.childNodes.length)
+    if (fenceStart === undefined || fenceEnd === undefined) return false
+
+    const outside = direction === "up" ? source.slice(0, fenceStart) : source.slice(fenceEnd)
+    const line = document.createTextNode("\n")
+
+    // An existing line above or below, even an empty one, is somewhere to land. Only a block already at the
+    // very start or end of the draft needs a new line.
+    if (outside.length === 0) {
+      fence.parentElement?.insertBefore(line, direction === "up" ? fence : fence.nextSibling)
+      const at = document.createRange()
+      at.setStart(line, 1)
+      at.collapse(true)
+      selection.removeAllRanges()
+      selection.addRange(at)
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertLineBreak" }))
+
+      return true
+    }
+
+    const target = direction === "up" ? fenceStart : fenceEnd
+    const at = locate(textNodes(editor), target, target)
+    if (!at) return false
+
+    selection.setBaseAndExtent(at.from.node, at.from.offset, at.from.node, at.from.offset)
+
+    return true
+  }
+
   const leaveMarker = () => {
     const selection = window.getSelection()
     if (!selection?.rangeCount || !selection.isCollapsed) return
@@ -396,6 +455,14 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     // A line break inside a zero-size marker would split the hidden span. Move the caret past the marker
     // first, so the new line lands in the draft itself.
     if (event.key === "Enter") leaveMarker()
+    // Up on the block's first line and down on its last line leave the block, the way the caret leaves any
+    // other nested box.
+    if (
+      (event.key === "ArrowUp" || event.key === "ArrowDown") &&
+      leaveBlockVertically(event.key === "ArrowUp" ? "up" : "down")
+    )
+      event.preventDefault()
+
     // Typing on a fence line would turn the closing fence into body text. Leave the block first.
     if (event.key.length === 1) leaveMarker()
     // Tab belongs to the draft here: two spaces read as code indentation, and focus stays in the editor.

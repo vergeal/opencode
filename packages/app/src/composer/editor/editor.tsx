@@ -46,7 +46,6 @@ import type { ComposerEditorModel, ComposerSelectControl } from "./interaction"
 import { isAttachment } from "../prompt-parts"
 import { QuoteCommentEditor } from "./quote-comment"
 import { createMarkdownHighlight } from "./markdown-highlight"
-import { setCursorPosition } from "./dom"
 import "../attachments/attachments.css"
 import "./editor.css"
 import "@/shell/palette-menu.css"
@@ -350,16 +349,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
                   if (height !== undefined && state.popover.type === "history") setHistoryLayout("height", height)
 
                   return
-                }
-
-                // Delete at the end of a fenced block would eat the closing fence. Leave the block
-                // instead, so the fence stays valid and the caret continues below it.
-                if (event.key === "Delete" && !event.metaKey && !event.ctrlKey && !event.altKey && !event.isComposing) {
-                  if (exitCodeBlock(event.currentTarget)) {
-                    event.preventDefault()
-                    sync(event.currentTarget, composerCursor(event.currentTarget))
-                    return
-                  }
                 }
 
                 const mod = event.metaKey || event.ctrlKey
@@ -731,48 +720,6 @@ function completeCodeFence(editor: HTMLDivElement) {
   selection.addRange(caret)
 
   return composerCursor(editor)
-}
-
-/**
- * Leaves a fenced block when Delete is pressed at the end of its last line: the caret moves past
- * the closing fence instead of eating it. Returns true when it moved.
- */
-function exitCodeBlock(editor: HTMLDivElement) {
-  const selection = window.getSelection()
-  if (!selection?.rangeCount || !selection.isCollapsed) return false
-  if (!selection.anchorNode || !editor.contains(selection.anchorNode)) return false
-
-  const text = editor.textContent ?? ""
-  const cursor = composerCursor(editor)
-  const lineEnd = text.indexOf("\n", cursor)
-  if (lineEnd !== cursor) return false
-
-  const fenceEnd = text.indexOf("\n", lineEnd + 1)
-  const fence = text.slice(lineEnd + 1, fenceEnd === -1 ? text.length : fenceEnd)
-  if (!/^[ \t]*(?:`{3,}|~{3,})[ \t]*$/.test(fence)) return false
-  if (fencesBefore(text, lineEnd) % 2 === 0) return false
-
-  if (fenceEnd === -1) {
-    // A closing fence at the very end has no line below it. Add a blank line so the caret has one to
-    // sit on: Chromium folds a lone trailing newline into the fence line above it.
-    editor.normalize()
-    const end = document.createRange()
-    end.selectNodeContents(editor)
-    end.collapse(false)
-    end.insertNode(document.createTextNode("\n\n"))
-  }
-
-  // After the closing fence's line break, which is the first line below the block.
-  setCursorPosition(editor, (fenceEnd === -1 ? text.length : fenceEnd) + 1)
-
-  return true
-}
-
-function fencesBefore(text: string, position: number) {
-  return text
-    .slice(0, position)
-    .split("\n")
-    .filter((line) => /^[ \t]*(?:`{3,}|~{3,})/.test(line)).length
 }
 
 function ComposerAttachments(props: {
