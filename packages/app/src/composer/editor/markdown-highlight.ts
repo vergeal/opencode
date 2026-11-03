@@ -249,14 +249,72 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     const node = selection.anchorNode
     if (!node || !editor.contains(node)) return false
 
-    const element = node instanceof Element ? node : node.parentElement
-    const block = element?.closest("[data-md-code-block]")
-    if (!block) return false
+    const caret = textOffset(editor, node, selection.anchorOffset)
+    if (caret === undefined) return false
+    if (typeof window !== "undefined")
+      ((window as unknown as { __vert?: unknown[] }).__vert ??= []).push({
+        direction,
+        caret,
+        blocks: [...editor.querySelectorAll("[data-md-code-block]")].map((b) => [
+          elementStart(editor, b),
+          elementEnd(editor, b),
+        ]),
+      })
 
-    const caret = offsetOf(editor, node, selection.anchorOffset)
-    const start = offsetOf(editor, block, 0)
-    if (caret === undefined || start === undefined) return false
+    // Find the block by text range instead of the anchor's ancestors: an empty block has no text node, so
+    // its caret sits on the editor itself and `closest` would miss it.
+    const blocks = [...editor.querySelectorAll("[data-md-code-block]")] as HTMLElement[]
+    const found = blocks
+      .map((candidate) => ({ candidate, start: elementStart(editor, candidate), end: elementEnd(editor, candidate) }))
+      .find(({ start, end }) => start !== undefined && end !== undefined && caret >= start && caret <= end)
+    if (!found || found.start === undefined) {
+      // Outside a block: up on the line right below one returns to its last line, down on the line right
+      // above one returns to its first line. Leave the browser to everything else.
+      const source = editor.textContent ?? ""
+      const candidate = blocks
+        .map((candidate) => ({
+          block: candidate,
+          // Include the fences: they are part of the block in source order, so the gap check must start
+          // outside them.
+          start: elementStart(editor, candidate.previousElementSibling ?? candidate),
+          end: elementEnd(editor, candidate.nextElementSibling ?? candidate),
+        }))
+        .filter(({ start, end }) => {
+          // The caret only returns to the block from its immediate neighbouring line: the gap may hold one
+          // newline and that line's text, never a blank line in between.
+          if (direction === "up")
+            return end !== undefined && end <= caret && source.slice(end, caret).split("\n").length <= 2
+          return start !== undefined && start >= caret && source.slice(caret, start).split("\n").length <= 2
+        })
+        .sort((a, b) => (direction === "up" ? (b.end ?? 0) - (a.end ?? 0) : (a.start ?? 0) - (b.start ?? 0)))[0]
+      if (!candidate) return false
 
+      // Land inside the block's own text node. An offset on its boundary resolves to the fence node, where
+      // the caret has no line box.
+      const textNode = direction === "up" ? candidate.block.lastChild : candidate.block.firstChild
+      if (textNode?.nodeType === Node.TEXT_NODE) {
+        const at = document.createRange()
+        at.setStart(textNode, direction === "up" ? (textNode as Text).data.length : 0)
+        at.collapse(true)
+        selection.removeAllRanges()
+        selection.addRange(at)
+
+        return true
+      }
+
+      const target = direction === "up" ? elementEnd(editor, candidate.block) : elementStart(editor, candidate.block)
+      if (target === undefined) return false
+
+      const at = locate(textNodes(editor), target, target)
+      if (!at) return false
+
+      selection.setBaseAndExtent(at.from.node, at.from.offset, at.from.node, at.from.offset)
+
+      return true
+    }
+
+    const block = found.candidate
+    const start = found.start
     const body = block.textContent ?? ""
     const relative = caret - start
     if (relative < 0 || relative > body.length) return false
@@ -269,19 +327,25 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     if (!fence) return false
 
     const source = editor.textContent ?? ""
-    const fenceStart = offsetOf(editor, fence, 0)
-    const fenceEnd = offsetOf(editor, fence, fence.childNodes.length)
+    const fenceStart = elementStart(editor, fence)
+    const fenceEnd = elementEnd(editor, fence)
     if (fenceStart === undefined || fenceEnd === undefined) return false
 
     const outside = direction === "up" ? source.slice(0, fenceStart) : source.slice(fenceEnd)
-    const line = document.createTextNode("\n")
+    // Chromium folds a lone trailing newline into the line above, so a block at the end of the draft needs
+    // two to keep a caret line of its own.
+    // A zero-width space gives the empty line a caret box; a plain newline has none and folds into the fence.
+    const line = document.createTextNode(direction === "up" ? "\n" : "\n\u200B")
 
     // An existing line above or below, even an empty one, is somewhere to land. Only a block already at the
     // very start or end of the draft needs a new line.
     if (outside.length === 0) {
       fence.parentElement?.insertBefore(line, direction === "up" ? fence : fence.nextSibling)
       const at = document.createRange()
-      at.setStart(line, 1)
+      // Down lands on the first new line itself, so the draft shows one blank line rather than two.
+      // Down lands on the first blank line: the second newline only keeps Chromium from folding the first
+      // into the fence line.
+      at.setStart(line, direction === "up" ? 0 : 1)
       at.collapse(true)
       selection.removeAllRanges()
       selection.addRange(at)
@@ -290,13 +354,38 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       return true
     }
 
-    const target = direction === "up" ? fenceStart : fenceEnd
-    const at = locate(textNodes(editor), target, target)
-    if (!at) return false
+    // Land inside the neighbouring line's own text node. A bare offset on a line boundary is resolved by the
+    // browser to the fence side, which is how typing ended up back inside the block.
+    const neighbour = direction === "up" ? previousText(fence) : nextText(fence)
+    if (!neighbour) return false
 
-    selection.setBaseAndExtent(at.from.node, at.from.offset, at.from.node, at.from.offset)
+    const at = document.createRange()
+    at.setStart(neighbour, direction === "up" ? neighbour.data.length : neighbour.data.startsWith("\n") ? 1 : 0)
+    at.collapse(true)
+    selection.removeAllRanges()
+    selection.addRange(at)
 
     return true
+  }
+
+  // Nearest non-empty text node before an element, so a caret can sit inside the line above a fence.
+  const previousText = (element: Element) => {
+    for (let node = element.previousSibling; node; node = node.previousSibling) {
+      if (node.nodeType !== Node.TEXT_NODE) continue
+      const text = node as Text
+      if (text.data.trim() === "") continue
+      return text
+    }
+  }
+
+  // Nearest non-empty text node after an element, skipping the newline that starts the next line.
+  const nextText = (element: Element) => {
+    for (let node = element.nextSibling; node; node = node.nextSibling) {
+      if (node.nodeType !== Node.TEXT_NODE) continue
+      const text = node as Text
+      if (text.data.trim() === "") continue
+      return text
+    }
   }
 
   const leaveMarker = () => {
@@ -573,8 +662,8 @@ function capture(editor: HTMLElement): Caret | undefined {
   if (!selection.anchorNode || !selection.focusNode) return
   if (!editor.contains(selection.anchorNode) || !editor.contains(selection.focusNode)) return
 
-  const anchor = offsetOf(editor, selection.anchorNode, selection.anchorOffset)
-  const focus = offsetOf(editor, selection.focusNode, selection.focusOffset)
+  const anchor = textOffset(editor, selection.anchorNode, selection.anchorOffset)
+  const focus = textOffset(editor, selection.focusNode, selection.focusOffset)
   if (anchor === undefined || focus === undefined) return
 
   const forward = anchor < focus || (anchor === focus && selection.anchorOffset <= selection.focusOffset)
@@ -582,6 +671,18 @@ function capture(editor: HTMLElement): Caret | undefined {
   return forward
     ? { start: anchor, end: focus, direction: "forward" }
     : { start: focus, end: anchor, direction: "backward" }
+}
+
+/** Offset of a DOM position in the editor's text order, counting hidden markers. */
+function textOffset(editor: HTMLElement, node: Node, offset: number) {
+  if (!editor.contains(node)) return
+
+  const entry = textNodes(editor).find((item) => item.node === node)
+  if (entry) return entry.start + offset
+
+  const inside = textNodes(editor).filter((item) => node.contains(item.node))
+
+  return inside[0]?.start
 }
 
 function offsetOf(editor: HTMLElement, node: Node, offset: number) {
@@ -618,6 +719,35 @@ function restore(editor: HTMLElement, caret: Caret) {
   else selection.setBaseAndExtent(entry.to.node, entry.to.offset, entry.from.node, entry.from.offset)
 }
 
+/** Offset of the first character inside an element, in the editor's text order. */
+function elementStart(editor: HTMLElement, element: Element) {
+  const nodes = textNodes(editor)
+  const inside = nodes.filter((entry) => element.contains(entry.node))
+  if (inside.length > 0) return inside[0]!.start
+
+  // An empty element (an empty fenced block) has no text of its own: its position is where the text before
+  // it ends.
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT)
+  let offset = 0
+
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (element.contains(node)) return offset
+    if (element.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_PRECEDING) return offset
+    offset += (node as Text).data.length
+  }
+
+  return offset
+}
+
+/** Offset just past the last character inside an element, in the editor's text order. */
+function elementEnd(editor: HTMLElement, element: Element) {
+  const nodes = textNodes(editor)
+  const inside = nodes.filter((entry) => element.contains(entry.node))
+  if (inside.length > 0) return inside.at(-1)!.end
+
+  return elementStart(editor, element)
+}
+
 function textNodes(root: HTMLElement) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   const nodes: { node: Text; start: number; end: number }[] = []
@@ -644,6 +774,8 @@ function locate(nodes: ReturnType<typeof textNodes>, start: number, end: number)
 
 function endPoint(nodes: ReturnType<typeof textNodes>, position: number) {
   for (const entry of nodes) {
+    // Skip empty text nodes: a caret placed in one has no line box.
+    if (entry.start === entry.end) continue
     if (entry.end === position) return { node: entry.node, offset: entry.end - entry.start }
     if (position > entry.start && position < entry.end) return { node: entry.node, offset: position - entry.start }
   }
@@ -653,6 +785,7 @@ function point(nodes: ReturnType<typeof textNodes>, position: number) {
   // Prefer a node boundary that starts at the position, so an empty range lands after a line
   // break instead of at the previous node's end.
   for (const entry of nodes) {
+    if (entry.start === entry.end) continue
     if (entry.start === position) return { node: entry.node, offset: 0 }
     if (position > entry.start && position < entry.end) return { node: entry.node, offset: position - entry.start }
   }

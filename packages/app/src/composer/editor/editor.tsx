@@ -167,7 +167,11 @@ export function ComposerEditor(props: ComposerEditorProps) {
   // The editor's DOM is the source while typing, so the store only mirrors it. `localInput` tells the
   // effect that reads the parts not to re-render text the browser just produced.
   const sync = (element: HTMLDivElement, cursor: number) => {
-    const prompt = parseComposerEditor(element)
+    // Zero-width spaces keep an empty line under a fenced block addressable; they never belong in the draft.
+    const prompt = parseComposerEditor(element).map((part) => ({
+      ...part,
+      content: part.content.replaceAll("\u200B", ""),
+    }))
     const attachments = props.controller.parts().filter(isAttachment)
     localInput = true
     props.controller.onInput(prompt.map((part) => part.content).join(""), [...prompt, ...attachments], cursor)

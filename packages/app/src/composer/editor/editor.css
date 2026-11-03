@@ -60,9 +60,16 @@
   color: transparent;
 }
 
-/* A fenced block's own fence line carries a line break, so it leaves the flow entirely. */
+/* A fenced block's own fence line carries a line break. Taking it out of the flow with absolute
+   positioning keeps it out of the caret's line boxes without leaving a display:none element between the
+   draft and the block, which Chromium resolves to the wrong insertion point. */
 [data-component="composer-editor"] [data-md-marker-block] {
-  display: none;
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Inline code renders as a chip over the text. The padding is paid back by the negative margin, so the
@@ -80,7 +87,7 @@
   display: block;
   box-sizing: border-box;
   width: 100%;
-  min-height: calc(var(--line-height-base) * 3 + 24px);
+  min-height: calc(var(--line-height-base) + 24px);
   margin-block: 6px;
   padding: 12px 14px;
   border-radius: 10px;
