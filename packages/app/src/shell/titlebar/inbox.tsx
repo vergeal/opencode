@@ -1,7 +1,7 @@
 import { Schema } from "effect"
 import { Persistence } from "@/runtime/persistence/schema"
-import { createEffect, createMemo, createSignal, For, Show, type JSX } from "solid-js"
-import { DragDropProvider, PointerSensor, useDroppable, type DragDropProviderProps } from "@dnd-kit/solid"
+import { createEffect, createMemo, For, Show, type JSX } from "solid-js"
+import { DragDropProvider, PointerSensor, type DragDropProviderProps } from "@dnd-kit/solid"
 import { isSortable, useSortable } from "@dnd-kit/solid/sortable"
 import { AutoScroller, Feedback, PointerActivationConstraints } from "@dnd-kit/dom"
 import { RestrictToVerticalAxis } from "@dnd-kit/abstract/modifiers"
@@ -9,7 +9,7 @@ import { RestrictToElement } from "@dnd-kit/dom/modifiers"
 import { arrayMove } from "@/runtime/array-move"
 import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
-import { Dialog, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
+import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { Icon } from "@opencode/ui/icon"
 import { Menu } from "@opencode/ui/menu"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
@@ -22,14 +22,12 @@ import { usePinnedSessions } from "@/session/pins"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { pathKey } from "@/workspaces/path-key"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
-import type { LocalProject } from "@/shell/state/layout"
 import { sessionTabTitle } from "./tab-title"
 import { sessionTitle } from "@/session/title"
 import { createSessionInbox, inboxArchived, inboxBusy, type InboxEntry, type InboxStatus } from "./inbox-model"
 
 // Drop containers: a session reorders inside its own container and changes sections by landing in another one.
 const PINNED = "pinned"
-const ARCHIVED = "archived"
 const NEEDS = "needs"
 const WORKING = "working"
 const RECENT = "recent"
@@ -38,7 +36,6 @@ const projectContainer = (key: string) => `project:${key}`
 // `since` is when the inbox was first used; Recent only lists sessions that finished a run after it.
 const InboxState = Persistence.struct({
   workingExpanded: Schema.Boolean,
-  archivedExpanded: Schema.Boolean,
   expandedProjects: Schema.Array(Schema.String),
   // Manually dragged order per container. Containers without an entry keep their derived order.
   order: Persistence.record(Persistence.array(Schema.String)),
@@ -65,26 +62,15 @@ export function SidebarInbox() {
   const pins = usePinnedSessions()
   // Drags stay inside the scrolling list, so a row never floats over the Working shelf.
   let scrollRef!: HTMLDivElement
-  // An empty Archived folder is still a drop target, so it appears while a row is in flight.
-  const [dragging, setDragging] = createSignal(false)
 
   const [state, setState, , ready] = persisted(Persist.global("sidebar.inbox"), InboxState, {
     workingExpanded: true,
-    archivedExpanded: false,
     expandedProjects: [],
     order: {},
   })
 
   // Projects behave like folders: every one starts collapsed and remembers being opened.
   const projectExpanded = (key: string) => state.expandedProjects.includes(key)
-
-  const toggleProject = (key: string) =>
-    setState(
-      "expandedProjects",
-      state.expandedProjects.includes(key)
-        ? state.expandedProjects.filter((item) => item !== key)
-        : [...state.expandedProjects, key],
-    )
 
   const sections = createMemo(() => {
     const list = inbox.entries()
@@ -113,7 +99,6 @@ export function SidebarInbox() {
       needs: rest.filter((entry) => entry.status === "approval" || entry.status === "input"),
       recent: settled,
       inbox: finished.filter((entry) => !inboxArchived(entry)),
-      archived: applyOrder(state.order, ARCHIVED, finished.filter(inboxArchived)),
       working: rest.filter((entry) => entry.status === "working"),
     }
   })
@@ -178,7 +163,6 @@ export function SidebarInbox() {
 
     map.set(NEEDS, sections().needs)
     map.set(WORKING, sections().working)
-    map.set(ARCHIVED, sections().archived)
     map.set(RECENT, recent())
     groupedInbox().forEach((group) => map.set(projectContainer(group.key), group.entries))
 
@@ -188,15 +172,9 @@ export function SidebarInbox() {
   const writeOrder = (container: string, keys: string[]) =>
     setState("order", (current) => ({ ...current, [container]: keys }))
 
-  // A drop outside the source container means the folder it landed in acts on the session: archive it away, or move the
-  // session into that project. Rows in Needs attention and Working are state-driven, so they never take a drop.
+  // A drop outside the source container means the folder it landed in acts on the session: move the session into that
+  // project. Rows in Needs attention and Working are state-driven, so they never take a drop.
   const dropInto = async (entry: InboxEntry, to: string) => {
-    if (to === ARCHIVED) {
-      if (!inboxArchived(entry)) await inbox.archive(entry)
-
-      return
-    }
-
     const group = groupedInbox().find((item) => projectContainer(item.key) === to)
 
     if (!group) return
@@ -207,8 +185,6 @@ export function SidebarInbox() {
   }
 
   const endDrag: NonNullable<DragDropProviderProps["onDragEnd"]> = (event) => {
-    setDragging(false)
-
     const source = event.operation.source
 
     if (event.canceled || !isSortable(source)) return
@@ -262,42 +238,19 @@ export function SidebarInbox() {
     const visible = sections()
     const expanded = (list: InboxEntry[]) => list.filter((entry) => projectExpanded(projectKey(entry)))
 
-    inbox.loadBranches([
-      ...visible.pinned,
-      ...visible.needs,
-      ...visible.working,
-      ...expanded(visible.inbox),
-      ...(state.archivedExpanded ? visible.archived : []),
-    ])
+    inbox.loadBranches([...visible.pinned, ...visible.needs, ...visible.working, ...expanded(visible.inbox)])
   })
 
-  function DeleteDialog(props: { entry: InboxEntry }) {
-    const confirm = async () => {
-      await inbox.remove(props.entry)
-      pins.remove([props.entry.session.id])
-      dialog.close()
-    }
-    return (
-      <Dialog fit>
-        <DialogHeader hideClose>
-          <DialogTitleGroup
-            title={language.t("session.delete.title")}
-            description={language.t("session.delete.confirm", {
-              name: sessionTitle(props.entry.session.title) ?? language.t("command.session.new"),
-            })}
-          />
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="ghost" autofocus onClick={() => dialog.close()}>
-            {language.t("common.cancel")}
-          </Button>
-          <Button variant="danger" onClick={confirm}>
-            {language.t("session.delete.button")}
-          </Button>
-        </DialogFooter>
-      </Dialog>
-    )
-  }
+  const deleteDialog = (entry: InboxEntry) =>
+    dialog.show(() => (
+      <DeleteDialog
+        entry={entry}
+        onConfirm={async () => {
+          await inbox.remove(entry)
+          pins.remove([entry.session.id])
+        }}
+      />
+    ))
 
   const rows = (
     list: InboxEntry[],
@@ -325,7 +278,7 @@ export function SidebarInbox() {
               onOpen={() => inbox.open(entry())}
               onArchive={() => void inbox.archive(entry())}
               onUnarchive={() => void inbox.unarchive(entry())}
-              onDelete={() => dialog.show(() => <DeleteDialog entry={entry()} />)}
+              onDelete={() => deleteDialog(entry())}
             />
           )}
         </Show>
@@ -354,7 +307,7 @@ export function SidebarInbox() {
               onOpen={() => inbox.open(entry())}
               onArchive={() => void inbox.archive(entry())}
               onUnarchive={() => void inbox.unarchive(entry())}
-              onDelete={() => dialog.show(() => <DeleteDialog entry={entry()} />)}
+              onDelete={() => deleteDialog(entry())}
             />
           )}
         </Show>
@@ -379,55 +332,28 @@ export function SidebarInbox() {
         Feedback.configure({ dropAnimation: null }),
       ]}
       onDragEnd={endDrag}
-      onDragStart={() => setDragging(true)}
     >
       <div data-slot="sidebar-inbox" class="flex min-h-0 flex-1 flex-col">
         <div
           ref={scrollRef}
           data-slot="sidebar-inbox-scroll"
-          class="-me-2.5 flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-1 pe-2.5"
+          class="-me-2.5 flex min-h-0 flex-1 flex-col gap-[2px] overflow-y-auto pb-1 pe-2.5"
         >
           <Show
             when={
               recent().length === 0 &&
               sections().pinned.length === 0 &&
               sections().needs.length === 0 &&
-              sections().working.length === 0 &&
-              sections().archived.length === 0
+              sections().working.length === 0
             }
           >
             <div class="px-1.5 py-2 text-[13px] leading-4 text-v2-text-text-faint">
               {language.t("sidebar.inbox.empty")}
             </div>
           </Show>
-          {/* Projects open as folders, the way the design lists them above the recent sessions. */}
-          <Show when={groupedInbox().length > 0}>
-            <div class="flex shrink-0 flex-col gap-px">
-              <SectionHeader label={language.t("sidebar.inbox.section.projects")} />
-              <For each={groupedInbox()}>
-                {(group) => (
-                  <div class="flex shrink-0 flex-col gap-px">
-                    <FolderRow
-                      label={group.name}
-                      count={group.entries.length}
-                      project={group.project}
-                      directory={group.directory}
-                      container={projectContainer(group.key)}
-                      expanded={projectExpanded(group.key)}
-                      onToggle={() => toggleProject(group.key)}
-                    />
-                    <Show when={projectExpanded(group.key)}>
-                      <div class="flex flex-col gap-px ps-2">
-                        {rows(group.entries, projectContainer(group.key), { showProjectName: false })}
-                      </div>
-                    </Show>
-                  </div>
-                )}
-              </For>
-            </div>
-          </Show>
+          {/* Projects are gone from the navigation: every session lives in the flat Recent shelf. */}
           <Show when={sections().needs.length > 0}>
-            <div class="flex shrink-0 flex-col gap-px">
+            <div class="flex shrink-0 flex-col gap-[2px]">
               <SectionHeader
                 label={language.t("sidebar.inbox.section.needsAttention")}
                 count={sections().needs.length}
@@ -438,30 +364,15 @@ export function SidebarInbox() {
           {/* Recent sessions are a flat shortcut list, so their rows stay one line and never drag between projects. */}
           {/* Pinned sessions are the top shelf; the Recent list below holds everything else. */}
           <Show when={sections().pinned.length > 0}>
-            <div class="flex shrink-0 flex-col gap-px">
+            <div class="flex shrink-0 flex-col gap-[2px]">
               <SectionHeader label={language.t("sidebar.project.pinned")} />
               {compactRows(sections().pinned)}
             </div>
           </Show>
           <Show when={recent().length > 0}>
-            <div class="flex shrink-0 flex-col gap-px">
+            <div class="flex shrink-0 flex-col gap-[2px]">
               <SectionHeader label={language.t("sidebar.project.recentSessions")} />
               {compactRows(recent())}
-            </div>
-          </Show>
-          {/* Archived is a folder of its own; the design separates groups with spacing, not a rule. */}
-          <Show when={sections().archived.length > 0 || dragging()}>
-            <div class="flex shrink-0 flex-col gap-px">
-              <FolderRow
-                label={language.t("sidebar.inbox.section.archived")}
-                count={sections().archived.length}
-                container={ARCHIVED}
-                expanded={state.archivedExpanded}
-                onToggle={() => setState("archivedExpanded", !state.archivedExpanded)}
-              />
-              <Show when={state.archivedExpanded}>
-                <div class="flex flex-col gap-px ps-2">{rows(sections().archived, ARCHIVED)}</div>
-              </Show>
             </div>
           </Show>
         </div>
@@ -469,7 +380,7 @@ export function SidebarInbox() {
         <Show when={sections().working.length > 0}>
           <div
             data-slot="sidebar-inbox-working"
-            class="mb-2.5 flex max-h-[40%] shrink-0 flex-col gap-px border-t border-v2-border-border-muted pt-1.5"
+            class="mb-2.5 flex max-h-[40%] shrink-0 flex-col gap-[2px] border-t border-v2-border-border-muted pt-1.5"
           >
             <SectionHeader
               label={language.t("sidebar.inbox.section.working")}
@@ -477,10 +388,10 @@ export function SidebarInbox() {
               expanded={state.workingExpanded}
               onToggle={() => setState("workingExpanded", !state.workingExpanded)}
             />
-            <div class="flex min-h-0 flex-col gap-px overflow-y-auto">
-              {/* A collapsed shelf still shows the session that is open. */}
+            <div class="flex min-h-0 flex-col gap-[2px] overflow-y-auto">
+              {/* The shelf folds completely; keeping the open session visible made a collapse look ignored. */}
               {rows(
-                sections().working.filter((entry) => state.workingExpanded || inbox.selected(entry)),
+                sections().working.filter(() => state.workingExpanded),
                 WORKING,
                 { disabled: true },
               )}
@@ -489,72 +400,6 @@ export function SidebarInbox() {
         </Show>
       </div>
     </DragDropProvider>
-  )
-}
-
-/** A folder row: folded by default, opening it reveals the sessions inside. Dropping a session here moves it in. */
-function FolderRow(props: {
-  label: string
-  count: number
-  container: string
-  expanded: boolean
-  onToggle: () => void
-  project?: LocalProject
-  directory?: string
-}) {
-  const drop = useDroppable({
-    get id() {
-      return `folder:${props.container}`
-    },
-    get data() {
-      return { container: props.container }
-    },
-  })
-
-  return (
-    <button
-      ref={drop.ref}
-      type="button"
-      data-slot="sidebar-folder-row"
-      aria-expanded={props.expanded}
-      data-drop-target={drop.isDropTarget() || undefined}
-      class="
-        group flex h-[30px] w-full shrink-0 items-center gap-2 rounded-[7px] px-2 text-start
-        text-[14px] leading-5 text-v2-text-text-muted
-        hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base
-        focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
-        data-[drop-target]:bg-v2-overlay-simple-overlay-hover data-[drop-target]:text-v2-text-text-base
-      "
-      onClick={props.onToggle}
-    >
-      <Show when={props.directory} fallback={<Icon name="folder" size="small" class="shrink-0" />}>
-        {(directory) => (
-          <span class="flex size-4 shrink-0 items-center justify-center">
-            <SessionTabAvatarView project={props.project} directory={directory()} unread={false} />
-          </span>
-        )}
-      </Show>
-      <span class="min-w-0 flex-1 truncate">{props.label}</span>
-      {/* The count and the disclosure share one end-aligned slot, so project counts line up with
-          the session times above them instead of sitting 24px inboard. */}
-      <span class="relative flex w-4 shrink-0 items-center justify-end">
-        <span
-          class="text-[10.5px] leading-[14px] tabular-nums text-v2-text-text-faint transition-opacity group-hover:opacity-0 group-focus-visible:opacity-0"
-          classList={{ "opacity-0": props.expanded }}
-        >
-          {props.count}
-        </span>
-        <Icon
-          name="chevron-down"
-          size="small"
-          class="absolute end-0 text-v2-text-text-faint opacity-0 transition-[opacity,transform] group-hover:opacity-100 group-focus-visible:opacity-100"
-          classList={{
-            "-rotate-90 rtl:rotate-90": !props.expanded,
-            "opacity-100": props.expanded,
-          }}
-        />
-      </span>
-    </button>
   )
 }
 
@@ -721,11 +566,10 @@ function InboxRow(props: InboxRowProps) {
         data-slot="sidebar-inbox-item"
         data-status={status()}
         data-state={props.selected ? "active" : undefined}
-        class="group flex w-full shrink-0 flex-col gap-1 rounded-[8px] px-2 py-1.5 text-start hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover data-[state=active]:bg-v2-background-bg-layer-02"
+        class="group flex w-full shrink-0 flex-col gap-[2px] rounded-[6px] px-2 py-1 text-start hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover data-[state=active]:bg-v2-background-bg-layer-03"
         classList={{
           "transition-opacity hover:opacity-100 focus-visible:opacity-100": !props.selected,
           "opacity-70": status() === "working" && !props.selected,
-          "opacity-50": props.archived && !props.selected,
         }}
         onContextMenu={(event) => {
           if (!nativeMenu()) return
@@ -734,7 +578,7 @@ function InboxRow(props: InboxRowProps) {
         }}
         onClick={props.onOpen}
       >
-        <span class="flex h-5 w-full min-w-0 items-center gap-1.5">
+        <span class="flex h-4 w-full min-w-0 items-center gap-1.5">
           <span class="flex size-4 shrink-0 items-center justify-center">
             <SessionTabAvatarView
               project={project()}
@@ -745,7 +589,7 @@ function InboxRow(props: InboxRowProps) {
           <span
             dir="auto"
             title={title()}
-            class="min-w-0 flex-1 truncate text-[13px] leading-5"
+            class="min-w-0 flex-1 truncate text-[13px] leading-4"
             // Rows recede once read so unread results stand out.
             classList={{
               "font-medium text-v2-text-text-base": unread(),
@@ -755,7 +599,7 @@ function InboxRow(props: InboxRowProps) {
             {title()}
           </span>
           <span
-            class="shrink-0 text-[12px] leading-4 tabular-nums text-v2-text-text-faint"
+            class="shrink-0 text-[11px] leading-[14px] tabular-nums text-v2-text-text-faint"
             role={status() === "ready" ? undefined : "status"}
           >
             <Show when={status() !== "ready"} fallback={age()}>
@@ -784,7 +628,7 @@ function InboxRow(props: InboxRowProps) {
           </span>
         </span>
         <Show when={showSecondary()}>
-          <span class="flex h-4 w-full min-w-0 items-center gap-1.5 text-[12px] leading-4 text-v2-text-text-faint">
+          <span class="flex h-3.5 w-full min-w-0 items-center gap-1.5 text-[11px] leading-[14px] text-v2-text-text-faint">
             <Show when={props.showProjectName}>
               <span class="min-w-0 max-w-[46%] truncate" title={projectName()}>
                 {projectName()}
@@ -840,5 +684,115 @@ function InboxRow(props: InboxRowProps) {
         </Menu.Context.Content>
       </Menu.Context.Portal>
     </Menu.Context>
+  )
+}
+
+/** The archive lives behind the foot's entry, so the sidebar list stays focused on current work. */
+export function ArchivedSessionsDialog() {
+  const language = useLanguage()
+  const dialog = useDialog()
+  const inbox = createSessionInbox({ archived: true })
+  const pins = usePinnedSessions()
+  // Newest archive first; older sessions only have a settled timestamp.
+  const archivedAt = (entry: InboxEntry) => entry.session.time.archived ?? entry.session.time.idle ?? 0
+  const archived = createMemo(() =>
+    inbox
+      .entries()
+      .filter(inboxArchived)
+      .toSorted((a, b) => archivedAt(b) - archivedAt(a)),
+  )
+
+  createEffect(() => inbox.loadBranches(archived()))
+
+  return (
+    <Dialog
+      fit
+      size="large"
+      containerClass="archived-sessions-dialog !h-auto !w-[min(calc(100vw_-_32px),560px)] !rounded-[12px]"
+    >
+      <DialogHeader>
+        <DialogTitleGroup
+          title={language.t("sidebar.inbox.section.archived")}
+          description={language.plural("sidebar.inbox.archived.count", archived().length)}
+        />
+      </DialogHeader>
+      <DialogBody>
+        <Show
+          when={archived().length > 0}
+          fallback={
+            <p class="px-4 py-8 text-[13px] leading-5 text-v2-text-text-faint">
+              {language.t("sidebar.inbox.archived.empty")}
+            </p>
+          }
+        >
+          <div data-scrollable class="flex max-h-[min(60dvh,520px)] min-h-0 flex-col gap-[2px] overflow-y-auto p-2">
+            <For each={archived()}>
+              {(entry) => (
+                <InboxRow
+                  entry={entry}
+                  selected={false}
+                  now={inbox.now()}
+                  branchLoading={inbox.branchLoading(entry)}
+                  branch={inbox.branch(entry)}
+                  worktree={inbox.inWorktree(entry)}
+                  archived
+                  pinned={pins.isPinned(entry.session.id)}
+                  showProjectName
+                  onTogglePin={() => pins.toggle(entry.session.id)}
+                  onOpen={() => {
+                    dialog.close()
+                    inbox.open(entry)
+                  }}
+                  onArchive={() => void inbox.archive(entry)}
+                  onUnarchive={() => void inbox.unarchive(entry)}
+                  onDelete={() =>
+                    dialog.show(() => (
+                      <DeleteDialog
+                        entry={entry}
+                        onConfirm={async () => {
+                          await inbox.remove(entry)
+                          pins.remove([entry.session.id])
+                        }}
+                      />
+                    ))
+                  }
+                />
+              )}
+            </For>
+          </div>
+        </Show>
+      </DialogBody>
+    </Dialog>
+  )
+}
+
+function DeleteDialog(props: { entry: InboxEntry; onConfirm: () => Promise<void> }) {
+  const language = useLanguage()
+  const dialog = useDialog()
+
+  const confirm = async () => {
+    await props.onConfirm()
+    dialog.close()
+  }
+
+  return (
+    <Dialog fit>
+      <DialogHeader hideClose>
+        <DialogTitleGroup
+          title={language.t("session.delete.title")}
+          description={language.t("session.delete.confirm", {
+            name: sessionTitle(props.entry.session.title) ?? language.t("command.session.new"),
+          })}
+        />
+      </DialogHeader>
+      <DialogFooter>
+        <Button variant="ghost" autofocus onClick={() => dialog.close()}>
+          {language.t("common.cancel")}
+        </Button>
+        <Button variant="danger" onClick={confirm}>
+          {language.t("session.delete.button")}
+        </Button>
+      </DialogFooter>
+    </Dialog>
   )
 }

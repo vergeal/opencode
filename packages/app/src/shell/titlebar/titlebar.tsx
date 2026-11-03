@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "@solidjs/router"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Icon } from "@opencode/ui/icon"
+import type { IconName } from "@opencode/ui/icons/catalog"
 import { Keybind } from "@opencode/ui/keybind"
 import { Tooltip } from "@opencode/ui/tooltip"
 
@@ -765,8 +766,8 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                             ref={(element) => (element.className = "flex size-full min-h-0 flex-col")}
                           >
                             <Show when={!windows()}>
-                              {/* The brand row replaces the old icon header: the mark and name at the start,
-                                  the search keybind at the end. It shares the session header's center line. */}
+                              {/* The top row keeps the traffic lights' clear space and the trailing actions;
+                                  navigation starts on the row below, as in a macOS sidebar. */}
                               <div
                                 data-slot="sidebar-header"
                                 class="flex w-full shrink-0 items-center gap-2"
@@ -787,14 +788,8 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                     aria-hidden="true"
                                   />
                                 </Show>
-                                <span data-slot="sidebar-brand-logo" aria-hidden="true">
-                                  O
-                                </span>
-                                <span data-slot="sidebar-brand-name" class="min-w-0 truncate">
-                                  opencode
-                                </span>
-                                {/* The trailing group shares the rows' end edge, so the keybind and the
-                                    sidebar toggle line up with the times and counts below. */}
+                                {/* The top row keeps only the window controls' clear space and the trailing
+                                    actions; navigation itself starts on the next row, like a macOS sidebar. */}
                                 <div class="ms-auto flex shrink-0 items-center gap-2">
                                   <Tooltip
                                     placement="bottom"
@@ -821,6 +816,36 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                   </div>
                                 </div>
                               </div>
+                              <div data-slot="sidebar-nav" class="flex w-full shrink-0 flex-col gap-1 pb-2">
+                                <SidebarNavItem
+                                  action="vertical-tabs-home"
+                                  label={language.t("home.title")}
+                                  icon="workspace"
+                                  pressed={layout.route().type === "home"}
+                                  onClick={toggleHome}
+                                />
+                                <SidebarNavItem
+                                  action="vertical-tabs-inbox"
+                                  label={language.t("inbox.title")}
+                                  icon="bubble-5"
+                                  pressed={layout.route().type === "inbox"}
+                                  onClick={() => navigate("/inbox")}
+                                />
+                                <SidebarNavItem
+                                  action="vertical-tabs-knowledge"
+                                  label={language.t("knowledge.title")}
+                                  icon="file-document"
+                                  pressed={layout.route().type === "knowledge"}
+                                  onClick={() => navigate("/knowledge")}
+                                />
+                                <SidebarNavItem
+                                  action="vertical-tabs-scheduled"
+                                  label={language.t("scheduled.title")}
+                                  icon="checklist"
+                                  pressed={layout.route().type === "scheduled"}
+                                  onClick={() => navigate("/scheduled")}
+                                />
+                              </div>
                             </Show>
                             <div class="flex min-h-0 flex-1 flex-col gap-1">
                               <Show
@@ -845,52 +870,6 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                               >
                                 <SidebarInbox />
                               </Show>
-                            </div>
-                            <div data-slot="sidebar-foot" class="flex w-full shrink-0 flex-col">
-                              <button
-                                type="button"
-                                data-titlebar-tab-action
-                                data-action="vertical-tabs-home"
-                                data-state={layout.route().type === "home" ? "pressed" : undefined}
-                                aria-pressed={layout.route().type === "home"}
-                                class="group flex h-[30px] w-full shrink-0 items-center rounded-[7px] px-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
-                                onClick={toggleHome}
-                              >
-                                <span class="min-w-0 truncate">{language.t("home.title")}</span>
-                              </button>
-                              <button
-                                type="button"
-                                data-titlebar-tab-action
-                                data-action="vertical-tabs-inbox"
-                                data-state={layout.route().type === "inbox" ? "pressed" : undefined}
-                                aria-pressed={layout.route().type === "inbox"}
-                                class="group flex h-[30px] w-full shrink-0 items-center rounded-[7px] px-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
-                                onClick={() => navigate("/inbox")}
-                              >
-                                <span class="min-w-0 truncate">{language.t("inbox.title")}</span>
-                              </button>
-                              <button
-                                type="button"
-                                data-titlebar-tab-action
-                                data-action="vertical-tabs-knowledge"
-                                data-state={layout.route().type === "knowledge" ? "pressed" : undefined}
-                                aria-pressed={layout.route().type === "knowledge"}
-                                class="group flex h-[30px] w-full shrink-0 items-center rounded-[7px] px-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
-                                onClick={() => navigate("/knowledge")}
-                              >
-                                <span class="min-w-0 truncate">{language.t("knowledge.title")}</span>
-                              </button>
-                              <button
-                                type="button"
-                                data-titlebar-tab-action
-                                data-action="vertical-tabs-scheduled"
-                                data-state={layout.route().type === "scheduled" ? "pressed" : undefined}
-                                aria-pressed={layout.route().type === "scheduled"}
-                                class="group flex h-[30px] w-full shrink-0 items-center rounded-[7px] px-2 text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
-                                onClick={() => navigate("/scheduled")}
-                              >
-                                <span class="min-w-0 truncate">{language.t("scheduled.title")}</span>
-                              </button>
                             </div>
                             <Show when={titlebarItems.ids().length > 0}>
                               <div data-slot="vertical-tabs-footer" class="mt-2 flex w-full shrink-0 flex-col">
@@ -917,5 +896,28 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
         </Match>
       </Switch>
     </header>
+  )
+}
+
+function SidebarNavItem(props: {
+  action: string
+  label: string
+  icon: IconName
+  pressed: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      data-titlebar-tab-action
+      data-action={props.action}
+      data-state={props.pressed ? "pressed" : undefined}
+      aria-pressed={props.pressed}
+      class="group flex h-7 w-full shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
+      onClick={props.onClick}
+    >
+      <Icon name={props.icon} class="shrink-0" />
+      <span class="min-w-0 truncate">{props.label}</span>
+    </button>
   )
 }

@@ -7,11 +7,11 @@
   gap: 10px;
 }
 
-/* The transcript reads at 13px on a 1.7 line, as the workbench design does, and keeps headings one
+/* The transcript reads at 13px on a 1.65 line, as the workbench design does, and keeps headings one
    step above the body instead of the article scale the shared markdown uses. */
 [data-component="assistant-message"] [data-component="markdown"] {
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 [data-component="assistant-message"] [data-component="markdown"] :is(h1, h2, h3, h4, h5, h6) {
@@ -199,11 +199,11 @@
     unicode-bidi: plaintext;
     background: var(--v2-background-bg-layer-02);
     border: none;
-    padding: 9px 12px;
-    border-radius: 10px;
-    /* Where two bubbles of a run meet, their trailing corners tighten to 4px. */
-    border-start-end-radius: calc(10px - 6px * var(--user-run-top, 0));
-    border-end-end-radius: calc(10px - 6px * var(--user-run-bottom, 0));
+    padding: 8px 12px;
+    border-radius: 14px;
+    /* Where two bubbles of a run meet, their trailing corners tighten to 6px. */
+    border-start-end-radius: calc(14px - 8px * var(--user-run-top, 0));
+    border-end-end-radius: calc(14px - 8px * var(--user-run-bottom, 0));
     transition:
       background-color 150ms ease-out,
       color 150ms ease-out;

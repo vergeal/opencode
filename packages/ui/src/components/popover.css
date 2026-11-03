@@ -6,8 +6,9 @@
   z-index: 50;
   min-width: 200px;
   max-width: 320px;
-  border-radius: var(--radius-md);
-  background-color: var(--surface-raised-stronger-non-alpha);
+  border-radius: 10px;
+  background-color: var(--v2-material-surface-strong);
+  backdrop-filter: var(--v2-material-blur-thick);
 
   border: 1px solid var(--v2-border-border-muted);
   background-clip: padding-box;

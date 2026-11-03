@@ -465,7 +465,7 @@
 }
 
 .settings-back:focus-visible {
-  outline: 2px solid var(--v2-border-border-focus);
+  outline: 3px solid var(--v2-focus-ring-color);
   outline-offset: 2px;
 }
 
@@ -1270,11 +1270,7 @@
 .settings-project-empty-card {
   width: 100%;
   border-radius: 8px;
-  background: color-mix(
-    in oklab,
-    var(--v2-background-bg-base) 50%,
-    var(--v2-background-bg-layer-01)
-  );
+  background: color-mix(in oklab, var(--v2-background-bg-base) 50%, var(--v2-background-bg-layer-01));
   box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
 }
 
@@ -1358,7 +1354,7 @@
 }
 
 .settings-models-group-trigger:focus-visible {
-  outline: 2px solid var(--v2-border-border-focus);
+  outline: 3px solid var(--v2-focus-ring-color);
   outline-offset: 2px;
 }
 
@@ -1456,7 +1452,7 @@
 }
 
 .provider-model-group-trigger:focus-visible {
-  outline: 2px solid var(--v2-border-border-focus);
+  outline: 3px solid var(--v2-focus-ring-color);
   outline-offset: -2px;
 }
 

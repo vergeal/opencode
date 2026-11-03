@@ -23,6 +23,12 @@
     user-select: none;
     cursor: pointer;
     outline: none;
+    /* macOS controls depress slightly under the pointer instead of only changing fill. */
+    transition: transform 100ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  [data-component="button-v2"]:is(:active, [data-state="pressed"]):not(:disabled) {
+    transform: scale(0.97);
   }
 
   [data-component="button-v2"] > * {
@@ -34,8 +40,8 @@
   }
 
   [data-component="button-v2"]:is(:focus-visible, [data-state="focus"]):not(:disabled):not([data-variant="loading"]) {
-    outline: 2px solid var(--v2-border-border-focus);
-    outline-offset: 2.5px;
+    outline: 3px solid var(--v2-focus-ring-color);
+    outline-offset: 1px;
   }
 
   [data-component="button-v2"][data-size="normal"] {
@@ -328,5 +334,16 @@
   [data-component="button-v2"][data-variant="ghost-faint"]:is(:disabled, [data-state="disabled"]) {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+/* The focus ring and the press scale are the only motion here; drop it when the user asks. */
+@media (prefers-reduced-motion: reduce) {
+  [data-component="button-v2"] {
+    transition: none;
+  }
+
+  [data-component="button-v2"]:is(:active, [data-state="pressed"]):not(:disabled) {
+    transform: none;
   }
 }

@@ -255,7 +255,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 0.5px solid var(--v2-border-border-base);
   background: color-mix(in srgb, var(--background-base) 92%, transparent);
   transition:

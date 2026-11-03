@@ -154,7 +154,7 @@ function ComposerModelControl(props: {
               size="normal"
               class="min-w-0 max-w-[60cqw] justify-start ![font-weight: 400]"
               classList={{ "animate-in fade-in": shouldAnimate() }}
-              style={{ height: "28px" }}
+              style={{ height: "24px" }}
               onMouseDown={(event: MouseEvent) => event.preventDefault()}
               onClick={(event: MouseEvent) => {
                 if (!props.loading) return open(event.detail)
@@ -175,7 +175,7 @@ function ComposerModelControl(props: {
                 {...triggerProps}
                 variant="ghost-muted"
                 size="normal"
-                style={{ height: "28px" }}
+                style={{ height: "24px" }}
                 class="min-w-0 max-w-[60cqw] justify-start ![font-weight: 400]"
                 classList={{ "animate-in fade-in": shouldAnimate() }}
                 data-action="composer-model"

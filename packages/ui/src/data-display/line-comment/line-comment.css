@@ -107,7 +107,7 @@
 }
 
 [data-slot="line-comment-v2-overflow"]:focus-visible {
-  outline: 2px solid var(--v2-border-border-focus);
+  outline: 3px solid var(--v2-focus-ring-color);
   outline-offset: 2px;
 }
 

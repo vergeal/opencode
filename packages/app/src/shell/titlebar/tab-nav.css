@@ -497,35 +497,11 @@
   }
 }
 
-/* The brand row: mark, product name, and the search keybind at the end. It has no icon buttons,
-   so the sidebar reads as one text column from the brand down to the foot. Its inline padding
-   matches the rows below, which keeps the mark and the first session title on one edge. */
+/* The top row keeps the search keybind at its end; navigation starts on the next row, so the
+   sidebar reads as a macOS navigation column. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-header"] {
   padding: 4px 8px 8px;
 }
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-logo"] {
-  display: flex;
-  width: 22px;
-  height: 22px;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  border-radius: 7px;
-  background: var(--v2-background-bg-inverse);
-  color: var(--v2-text-text-inverse);
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-name"] {
-  color: var(--v2-text-text-base);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: var(--line-height-compact);
-}
-
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-search"] {
   margin-inline-start: auto;
   border: 1px solid var(--v2-border-border-muted);
@@ -541,35 +517,33 @@
   color: var(--v2-text-text-base);
 }
 
-/* The foot holds every navigation entry, separated from the session list by a hairline. */
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-foot"] {
-  margin-top: auto;
-  border-top: 1px solid var(--v2-border-border-muted);
-  padding-top: 8px;
-}
-
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-foot"] [data-titlebar-tab-action] {
+/* Navigation rows: 28px tall with an icon and a 13px label, matching the session rows' scale. */
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-nav"] [data-titlebar-tab-action] {
   gap: 8px;
+  height: 28px;
+  border-radius: 6px;
   padding-inline: 8px;
+  font-size: 13px;
+  line-height: var(--line-height-compact);
 }
 
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-foot"] [data-titlebar-tab-action][data-state="pressed"] {
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-nav"] [data-titlebar-tab-action][data-state="pressed"] {
   font-weight: 500;
 }
 
 /* The design leaves 18px between groups: 12px from the label inset plus 6px of group spacing. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-scroll"] > div + div:not([aria-hidden]) {
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 /* Section labels follow the design's uppercase scale and start a group rather than a row. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-section-label"] {
   height: auto;
-  padding: 12px 8px 6px;
-  font-size: 12.5px;
-  line-height: 16px;
+  padding: 12px 8px 4px;
+  font-size: 11px;
+  line-height: 14px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -578,38 +552,36 @@
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] {
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: 2px;
   height: auto;
-  padding: 6px 8px;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
   background: transparent;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child {
-  height: 20px;
+  height: 16px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:nth-child(2) {
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 13px;
+  line-height: 16px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:last-child {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 11px;
+  line-height: 14px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span + span {
-  height: 16px;
-  font-size: 12px;
-  line-height: 16px;
+  height: 14px;
+  font-size: 11px;
+  line-height: 14px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"] {
-  background: var(--v2-background-bg-base);
-  box-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.04),
-    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  background: var(--v2-background-bg-layer-03);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
 }
 
 [data-slot="vertical-tabs-sidebar"]
@@ -620,11 +592,32 @@
 }
 
 /* The row's own transparent background would otherwise win over the option's hover utility, so
-   the hover surface is set here, and the selected card keeps its white surface while hovered. */
+   the hover surface is set here, and the selected row keeps its tint while hovered. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"]:hover {
   background: var(--v2-overlay-simple-overlay-hover);
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"]:hover {
-  background: var(--v2-background-bg-base);
+  background: var(--v2-background-bg-layer-03);
+}
+
+/* The archive reads as a macOS panel: a compact title block over a hairline, then a padded list.
+   The container class sits below the dialog's own selectors, so match the same depth to win. */
+[data-component="dialog-v2"] .archived-sessions-dialog [data-slot="dialog-content"] {
+  [data-slot="dialog-header"] {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--v2-border-border-muted);
+  }
+
+  [data-slot="dialog-header"] [data-slot="dialog-title"] {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  [data-slot="dialog-header"] [data-slot="dialog-description"] {
+    font-size: 12px;
+    line-height: 16px;
+  }
 }

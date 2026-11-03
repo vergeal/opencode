@@ -182,7 +182,10 @@
 }
 
 /* Outranks the list's dark-scheme highlight, which uses a lighter alpha. */
-[data-component="dialog-v2"] .model-dialog-next [data-component="search-list"] [data-slot="search-list-row"][data-active] {
+[data-component="dialog-v2"]
+  .model-dialog-next
+  [data-component="search-list"]
+  [data-slot="search-list-row"][data-active] {
   background: var(--v2-overlay-simple-overlay-hover);
 }
 

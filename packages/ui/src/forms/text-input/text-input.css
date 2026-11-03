@@ -151,7 +151,7 @@
   }
 
   [data-component="text-input-v2"] [data-slot="text-input-v2-icon-button"]:focus-visible {
-    outline: 2px solid var(--v2-border-border-focus);
+    outline: 3px solid var(--v2-focus-ring-color);
     outline-offset: 1px;
   }
 

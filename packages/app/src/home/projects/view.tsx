@@ -91,7 +91,7 @@ export function HomeProjectsView(props: HomeProjectsViewProps) {
         <Popover.Trigger
           data-component="home-projects-dropdown"
           aria-label={props.language.t("home.projects")}
-          class="flex h-10 w-full min-w-0 items-center gap-2 rounded-[6px] bg-v2-background-bg-base px-1.5 text-start text-v2-text-text-base outline-none hover:bg-v2-background-bg-layer-01"
+          class="flex h-8 w-full min-w-0 items-center gap-2 rounded-[6px] bg-transparent px-1.5 text-start text-v2-text-text-base outline-none transition-colors duration-100 hover:bg-v2-overlay-simple-overlay-hover data-[expanded]:bg-v2-overlay-simple-overlay-pressed"
         >
           <Show when={selected()} fallback={<Icon name="folder" size="small" />}>
             {(project) => <HomeProjectAvatar project={project()} />}
@@ -103,11 +103,7 @@ export function HomeProjectsView(props: HomeProjectsViewProps) {
               </Show>
             </bdi>
             <Show when={props.servers.length > 1 && server()}>
-              {(server) => (
-                <bdi class="truncate text-v2-text-text-muted opacity-70">
-                  {props.serverLabel(server())}
-                </bdi>
-              )}
+              {(server) => <bdi class="truncate text-v2-text-text-muted opacity-70">{props.serverLabel(server())}</bdi>}
             </Show>
           </span>
           <Icon name="chevron-down" size="small" class="shrink-0 text-v2-icon-icon-muted" />
@@ -179,7 +175,9 @@ function HomeProjectsPanel(props: HomeProjectsViewProps) {
               which lines the label up with the icons that follow it in the session and settings headers. */}
           <div class="flex min-w-0 items-center">
             <CollapsedSidebarToggleSpace start={20} class="lg:hidden" />
-            <div class="text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint">{props.language.t("home.projects")}</div>
+            <div class="text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint">
+              {props.language.t("home.projects")}
+            </div>
           </div>
           <Show when={props.servers.length === 1}>
             <Tooltip placement="bottom" value={props.language.t("home.project.add")}>
@@ -215,8 +213,7 @@ function HomeProjectsPanel(props: HomeProjectsViewProps) {
               props.servers.length > 1 ||
               props.servers.some(
                 (server) =>
-                  signInRequired(server, props.serverHealth(server)) ||
-                  (server.type === "plugin" && server.connecting),
+                  signInRequired(server, props.serverHealth(server)) || (server.type === "plugin" && server.connecting),
               )
             }
             fallback={
@@ -432,7 +429,9 @@ function HomeServerRow(props: {
             class="flex min-w-0 flex-1 items-center gap-1"
             classList={{ "opacity-60": !healthy() && !incompatible() }}
           >
-            <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{props.serverLabel(props.server)}</span>
+            <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
+              {props.serverLabel(props.server)}
+            </span>
             <Show when={props.server.label}>
               {(label) => (
                 <span

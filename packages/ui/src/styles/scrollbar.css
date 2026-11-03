@@ -44,7 +44,7 @@
   ::-webkit-scrollbar-thumb {
     min-width: 32px;
     min-height: 32px;
-    border: 2px solid transparent;
+    border: 1px solid transparent;
     border-radius: 9999px;
     background-color: transparent;
     background-clip: padding-box;

@@ -171,11 +171,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
     const prompt = parseComposerEditor(element)
     const attachments = props.controller.parts().filter(isAttachment)
     localInput = true
-    props.controller.onInput(
-      prompt.map((part) => part.content).join(""),
-      [...prompt, ...attachments],
-      cursor,
-    )
+    props.controller.onInput(prompt.map((part) => part.content).join(""), [...prompt, ...attachments], cursor)
   }
 
   const mode = createMemo(() => state.mode)
@@ -247,10 +243,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
         ref={composer}
         data-component="composer"
         data-dock-border-underlay={props.borderUnderlay ? "true" : undefined}
-        class="group/composer relative w-full overflow-clip rounded-xl bg-v2-background-bg-base"
+        class="group/composer relative w-full overflow-clip rounded-[20px] bg-v2-background-bg-base"
         style={{ height: historyLayout.height === undefined ? undefined : `${historyLayout.height}px` }}
         classList={{
-          "shadow-[var(--v2-elevation-raised)]": !props.borderUnderlay,
           "flex flex-col": historyLayout.height !== undefined,
         }}
         onSubmit={(event) => {
@@ -322,7 +317,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               spellcheck={state.mode === "normal"}
               // @ts-expect-error
               autocomplete="off"
-              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-4 pe-[var(--composer-scroll-end)] pt-4 pb-2 text-[15px] font-[400] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-4 pe-[var(--composer-scroll-end)] pt-3 pb-2 text-[15px] font-[400] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
               classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell", "opacity-50": props.disabled }}
               style={{
                 "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -409,7 +404,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             <Show when={empty()}>
               <div
                 dir={state.mode === "normal" ? "auto" : "ltr"}
-                class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[var(--composer-scroll-end)] pt-4 text-[15px] font-[400] leading-5 text-v2-text-text-faint"
+                class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[var(--composer-scroll-end)] pt-3 text-[15px] font-[400] leading-5 text-v2-text-text-faint"
                 classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell" }}
                 style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
               >
@@ -422,7 +417,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           </div>
         </div>
 
-        <div class="flex h-11 shrink-0 items-center border-t border-v2-border-border-muted px-2">
+        <div class="flex h-10 shrink-0 items-center border-t border-v2-border-border-muted px-2">
           <div
             class="flex shrink-0 items-center"
             aria-hidden={state.mode === "shell"}

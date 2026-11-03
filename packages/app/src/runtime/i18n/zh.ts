@@ -413,6 +413,9 @@ export const dict = {
   "sidebar.inbox.section.needsAttention": "待处理",
   "sidebar.inbox.section.working": "进行中",
   "sidebar.inbox.section.archived": "归档",
+  "sidebar.inbox.archived.count.one": "{{count}} 个会话",
+  "sidebar.inbox.archived.count.other": "{{count}} 个会话",
+  "sidebar.inbox.archived.empty": "还没有归档会话",
   "sidebar.inbox.empty": "暂无会话",
 
   "settings.section.server": "服务器",

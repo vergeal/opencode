@@ -25,11 +25,12 @@
     }
 
     &[data-checked] {
-      box-shadow: inset 0 0 0 1.5px var(--v2-border-border-focus);
+      background-color: color-mix(in srgb, var(--v2-system-accent) 5%, var(--v2-background-bg-layer-01));
+      box-shadow: inset 0 0 0 2px var(--v2-system-accent);
     }
 
     &:has(input:focus-visible) {
-      outline: 2px solid var(--v2-border-border-focus);
+      outline: 3px solid var(--v2-focus-ring-color);
       outline-offset: 2px;
     }
 

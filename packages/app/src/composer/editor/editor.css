@@ -1,32 +1,35 @@
 [data-component="composer-editor"] {
-  /* A writing surface, not a one-line strip: about three lines before the draft starts to scroll. */
-  min-height: 76px;
+  /* A writing surface, not a one-line strip: about two lines before the draft starts to scroll. */
+  min-height: 56px;
 }
 
 [data-component="composer-editor"]:empty::before {
   content: "\200B";
 }
 
-/* Card, chips and send button follow the workbench design: a 12px card with a strong hairline and a
-   faint accent halo, outlined controls, and a compact rounded send button. */
+/* Card, chips and send button follow macOS: a 20px card with a hairline, a soft shadow, and a
+   round accent send button. */
 [data-component="composer"] {
-  border: 1px solid var(--v2-border-border-strong);
-  border-radius: 12px;
-  box-shadow:
-    var(--v2-elevation-raised),
-    0 0 0 3px color-mix(in srgb, var(--v2-background-bg-accent) 6%, transparent);
+  border: 1px solid var(--v2-border-border-muted);
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   transition:
     box-shadow 160ms ease,
     border-color 160ms ease;
 }
 
-[data-component="composer"]:focus-within {
-  box-shadow:
-    var(--v2-elevation-raised),
-    0 0 0 3px color-mix(in srgb, var(--v2-background-bg-accent) 10%, transparent);
+/* The dock draws its own border underlay, so the card does not need a shadow there. */
+[data-component="composer"][data-dock-border-underlay="true"] {
+  box-shadow: none;
 }
 
-[data-component="composer"] [data-slot="composer-controls"] :is([data-component="button-v2"], [data-component="icon-button-v2"]) {
+[data-component="composer"]:focus-within {
+  border-color: var(--v2-border-border-base);
+}
+
+[data-component="composer"]
+  [data-slot="composer-controls"]
+  :is([data-component="button-v2"], [data-component="icon-button-v2"]) {
   height: 24px;
   border-radius: 6px;
   border: 1px solid var(--v2-border-border-muted);
@@ -37,7 +40,13 @@
     border-color 120ms ease;
 }
 
-[data-component="composer"] [data-slot="composer-controls"] :is([data-component="button-v2"], [data-component="icon-button-v2"]):is(:hover, [data-state="hover"], [data-expanded]) {
+[data-component="composer"]
+  [data-slot="composer-controls"]
+  :is([data-component="button-v2"], [data-component="icon-button-v2"]):is(
+    :hover,
+    [data-state="hover"],
+    [data-expanded]
+  ) {
   border-color: var(--v2-border-border-base);
   background: var(--v2-background-bg-layer-01);
 }
@@ -112,11 +121,11 @@
 }
 
 :root [data-component="composer"] [data-action="composer-submit"] {
-  width: 26px;
-  height: 26px;
-  padding: 5px;
-  border-radius: 8px;
-  background-color: var(--v2-background-bg-contrast);
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border-radius: 9999px;
+  background-color: var(--v2-background-bg-accent);
   background-image: none;
   color: var(--v2-text-text-inverse);
   text-shadow: none;
@@ -124,13 +133,13 @@
 
 @media (hover: hover) {
   :root [data-component="composer"] [data-action="composer-submit"]:is(:hover, [data-state="hover"]):not(:disabled) {
-    background-color: color-mix(in srgb, var(--v2-background-bg-contrast) 86%, transparent);
+    background-color: color-mix(in srgb, var(--v2-background-bg-accent) 86%, transparent);
     background-image: none;
   }
 }
 
 :root [data-component="composer"] [data-action="composer-submit"]:is(:active, [data-state="pressed"]):not(:disabled) {
-  background-color: color-mix(in srgb, var(--v2-background-bg-contrast) 72%, transparent);
+  background-color: color-mix(in srgb, var(--v2-background-bg-accent) 72%, transparent);
   background-image: none;
 }
 

@@ -421,3 +421,34 @@ input:where([type="button"], [type="reset"], [type="submit"]),
     font-size: 15px;
   }
 }
+
+/*
+  macOS interaction defaults. AppKit draws text with grayscale antialiasing, tints selection and the caret
+  with the system accent, and lets the user tint form controls the same way. Applying them once here keeps
+  every surface consistent instead of per component.
+*/
+
+:root {
+  accent-color: var(--v2-system-accent);
+  caret-color: var(--v2-system-accent);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--v2-system-accent) 30%, transparent);
+}
+
+/*
+  Vibrancy is opt-out at the OS level. When the user asks for less transparency, floating surfaces fall back
+  to their opaque twins so nothing turns into unreadable tinted glass.
+*/
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --v2-material-blur-thick: none;
+    --v2-material-blur-regular: none;
+    --v2-material-surface: var(--v2-material-surface-opaque);
+    --v2-material-surface-strong: var(--v2-material-surface-strong-opaque);
+  }
+}

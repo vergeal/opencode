@@ -21,9 +21,10 @@
   outline: none;
   user-select: none;
   -webkit-user-select: none;
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--v2-text-text-base);
-  background: var(--v2-background-bg-layer-01);
+  background: var(--v2-material-surface-strong);
+  backdrop-filter: var(--v2-material-blur-thick);
   box-shadow: var(--v2-elevation-floating);
   transition:
     transform 280ms cubic-bezier(0.2, 0, 0, 1),
@@ -38,7 +39,7 @@
   &:focus-visible {
     box-shadow:
       var(--v2-elevation-floating),
-      0 0 0 2px var(--v2-border-border-focus);
+      0 0 0 3px var(--v2-focus-ring-color);
   }
 
   &[data-expanded="true"] {
@@ -123,7 +124,7 @@
   }
 
   > [data-close-button]:focus-visible {
-    outline: 2px solid var(--v2-border-border-focus);
+    outline: 3px solid var(--v2-focus-ring-color);
     outline-offset: 2px;
   }
 

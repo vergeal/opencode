@@ -5,7 +5,7 @@
 /* The composer buttons' overlays and focus ring, with overlays layered over the capsule's own surface. */
 [data-slot="session-activity-chip"] {
   &:focus-visible {
-    outline: 2px solid var(--v2-border-border-focus);
+    outline: 3px solid var(--v2-focus-ring-color);
     outline-offset: 2.5px;
   }
 
@@ -57,7 +57,7 @@
 
   /* Match the queue panel's inset-ring pattern inside a clipped scrollport. */
   :is([data-component="menu-v2-item"], [data-component="icon-button-v2"]):is(:focus-visible, [data-state="focus"]) {
-    outline: 2px solid var(--v2-border-border-focus);
+    outline: 3px solid var(--v2-focus-ring-color);
     outline-offset: -2px;
   }
 

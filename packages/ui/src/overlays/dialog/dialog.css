@@ -5,6 +5,8 @@
   inset: 0;
   z-index: 50;
   background-color: var(--v2-overlay-simple-overlay-scrim);
+  /* macOS dims the window behind a sheet and blurs it slightly, so the sheet reads as a separate layer. */
+  backdrop-filter: blur(6px);
 }
 
 [data-component="dialog-v2"] {
@@ -22,9 +24,10 @@
     align-items: flex-start;
     width: 480px;
     height: 368px;
-    background: var(--v2-background-bg-layer-01);
+    background: var(--v2-material-surface-strong);
+    backdrop-filter: var(--v2-material-blur-thick);
     box-shadow: var(--v2-elevation-overlay);
-    border-radius: 6px;
+    border-radius: 12px;
     overflow: hidden;
     pointer-events: auto;
 

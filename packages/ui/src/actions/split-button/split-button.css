@@ -43,7 +43,7 @@
 }
 
 [data-component="split-button-v2-action"]:is(:focus-visible, [data-focus]) {
-  outline: 2px solid var(--v2-border-border-focus);
+  outline: 3px solid var(--v2-focus-ring-color);
   outline-offset: -2px;
   z-index: 1;
 }
@@ -67,7 +67,7 @@
 }
 
 [data-component="split-button-v2-menu-trigger"]:is(:focus-visible, [data-focus]) {
-  outline: 2px solid var(--v2-border-border-focus);
+  outline: 3px solid var(--v2-focus-ring-color);
   outline-offset: -2px;
   z-index: 1;
 }

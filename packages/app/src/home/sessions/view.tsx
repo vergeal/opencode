@@ -10,10 +10,12 @@ import { IconButton } from "@opencode/ui/icon-button"
 import { Menu } from "@opencode/ui/menu"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { prefersReducedMotion } from "@opencode/ui/motion"
+import { useDialog } from "@opencode/ui/context/dialog"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { ServerConnection } from "@/runtime/server/registry"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
+import { ArchivedSessionsDialog } from "@/shell/titlebar/inbox"
 import { sessionLabel } from "@/session/title"
 import { shouldOpenSessionInBackground } from "./open"
 import { createAltHold } from "./alt-hold"
@@ -28,8 +30,7 @@ import {
 
 const SHOW_HOME_SESSION_ARCHIVE = false
 
-const HOME_SECTION_LABEL =
-  "text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint"
+const HOME_SECTION_LABEL = "text-[11px] leading-4 font-semibold uppercase tracking-[0.05em] text-v2-text-text-faint"
 
 const HOME_SESSION_SEARCH_RESULTS_ID = "home-session-search-results"
 
@@ -112,6 +113,7 @@ type HomeSessionRowUI = {
 export function HomeSessionsView(props: HomeSessionsViewProps) {
   const [rowUI, setRowUI] = createStore<HomeSessionRowUI>({ menu: undefined, editor: undefined })
   const [hover, setHover] = createStore<{ sessionID: string | undefined }>({ sessionID: undefined })
+  const dialog = useDialog()
   const showLocations = createAltHold(props.desktop, props.onRevealLocations)
   // A list that arrives within the delay paints directly; slower loads show placeholder rows until it does, which stay
   // mounted while the list fades in over them.
@@ -141,8 +143,23 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
           hoveredSession={hover.sessionID}
           onHoverSession={(sessionID) => setHover("sessionID", sessionID)}
         />
-        <Show when={props.groups.length > 0 && props.canCreateSession}>
-          <div class="pointer-events-none absolute right-0 top-[68px] z-20 flex md:top-[84px] lg:top-[108px]">
+        <div class="pointer-events-none absolute right-0 top-[68px] z-20 flex items-center gap-1 md:top-[84px] lg:top-[108px]">
+          <Tooltip
+            class="pointer-events-auto flex shrink-0 items-center"
+            placement="bottom"
+            value={props.language.t("common.archive")}
+          >
+            <IconButton
+              data-action="home-archive"
+              variant="ghost-muted"
+              size="normal"
+              icon={<Icon name="archive" />}
+              class="h-7"
+              aria-label={props.language.t("common.archive")}
+              onClick={() => void dialog.show(() => <ArchivedSessionsDialog />)}
+            />
+          </Tooltip>
+          <Show when={props.groups.length > 0 && props.canCreateSession}>
             <Button
               data-action="home-new-session"
               variant="ghost-muted"
@@ -153,8 +170,8 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
             >
               {props.language.t("command.session.new")}
             </Button>
-          </div>
-        </Show>
+          </Show>
+        </div>
       </div>
       <div class="pointer-events-none sticky top-[68px] z-40 h-0 -mr-3 md:top-[84px] lg:top-[108px]">
         <div
@@ -187,11 +204,7 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
             }
           >
             <div ref={props.onSetContent} class="flex flex-col pt-1 pr-3 pb-16 md:pt-3">
-              <HomeTodaySummary
-                groups={props.groups}
-                projectCount={props.projectCount}
-                language={props.language}
-              />
+              <HomeTodaySummary groups={props.groups} projectCount={props.projectCount} language={props.language} />
               {/* Index keeps group subtrees mounted when the group arrays are
                   rebuilt, so store updates cannot recreate rows mid-gesture. */}
               <Index each={props.groups}>
@@ -542,7 +555,7 @@ function HomeTodaySummary(props: {
 
 function HomeTodayChip(props: { label: string; value: number }) {
   return (
-    <span class="flex h-8 items-center gap-[7px] rounded-[8px] border border-v2-border-border-muted bg-v2-background-bg-deep px-3 text-[12.5px] text-v2-text-text-muted">
+    <span class="flex h-6 items-center gap-1.5 rounded-[6px] bg-v2-background-bg-layer-02 px-2 text-[11.5px] text-v2-text-text-muted">
       {props.label}
       <b class="font-semibold tabular-nums text-v2-text-text-base">{props.value}</b>
     </span>

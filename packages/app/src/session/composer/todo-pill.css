@@ -5,7 +5,7 @@
 /* The activity capsule's overlays and focus ring. */
 [data-slot="session-todo-pill"] {
   &:focus-visible {
-    outline: 2px solid var(--v2-border-border-focus);
+    outline: 3px solid var(--v2-focus-ring-color);
     outline-offset: 2.5px;
   }
 

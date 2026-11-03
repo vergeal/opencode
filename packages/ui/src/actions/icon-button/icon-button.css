@@ -22,7 +22,7 @@
   }
 
   [data-component="icon-button-v2"]:is(:focus-visible, [data-state="focus"]):not(:disabled) {
-    outline: 2px solid var(--v2-border-border-focus);
+    outline: 3px solid var(--v2-focus-ring-color);
     outline-offset: 2.5px;
   }
 
