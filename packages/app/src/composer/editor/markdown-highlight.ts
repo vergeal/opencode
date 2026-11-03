@@ -36,6 +36,7 @@ const IDLE = 150
 export function createMarkdownHighlight(editor: HTMLElement) {
   let frame: number | undefined
   let idle: ReturnType<typeof setTimeout> | undefined
+  let immediate: number | undefined
   let decorating = false
   let disposed = false
   let composing = false
@@ -322,7 +323,15 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     if (!(editor.textContent ?? "").endsWith("`")) return
     if (idle !== undefined) clearTimeout(idle)
     idle = undefined
-    if (!decorating) decorate()
+
+    // Render on the next frame instead of inside the input event: rebuilding the draft synchronously here
+    // forces a layout in the same task as the browser's own edit, which reads as a flash.
+    if (immediate !== undefined) return
+    immediate = requestAnimationFrame(() => {
+      immediate = undefined
+      if (disposed || decorating) return
+      decorate()
+    })
   }
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -482,6 +491,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       editor.removeEventListener("drop", onDrop)
       editor.removeEventListener("copy", onCopy)
       if (frame !== undefined) cancelAnimationFrame(frame)
+      if (immediate !== undefined) cancelAnimationFrame(immediate)
       if (idle !== undefined) clearTimeout(idle)
       clearPaint()
     },
