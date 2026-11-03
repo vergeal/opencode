@@ -34,7 +34,7 @@ export function SessionWorkingHeader(props: { started: number }) {
 
   return (
     <div data-component="session-working" role="status" class="min-w-0 w-full">
-      <div class="flex items-center gap-1.5 whitespace-nowrap text-[13px] leading-text-compact text-v2-text-text-faint">
+      <div class="flex items-center gap-1.5 whitespace-nowrap text-[15px] leading-text-base text-v2-text-text-faint">
         <TextShimmer
           text={showDuration() ? language.t("session.working.for") : language.t("session.timeline.working")}
           active
@@ -45,8 +45,7 @@ export function SessionWorkingHeader(props: { started: number }) {
           </span>
         </Show>
       </div>
-      {/* The divider keeps the live header's height without drawing a rule across the transcript. */}
-      <div data-slot="session-working-divider" class="mt-2 h-px w-full" />
+      <div data-slot="session-working-divider" class="mt-2 w-full border-t border-v2-border-border-muted" />
     </div>
   )
 }
@@ -84,7 +83,7 @@ export function SessionWorkedHeader(props: {
     </>
   )
   const row = () => (
-    <div class="flex min-w-0 w-full items-center gap-1.5 whitespace-nowrap text-[13px] leading-text-compact text-v2-text-text-faint">
+    <div class="flex min-w-0 w-full items-center gap-1.5 whitespace-nowrap text-[15px] leading-text-base text-v2-text-text-faint">
       {content()}
     </div>
   )
@@ -102,7 +101,7 @@ export function SessionWorkedHeader(props: {
           {row()}
         </button>
       </Show>
-      <div data-slot="session-worked-divider" class="mt-2 h-px w-full" />
+      <div data-slot="session-worked-divider" class="mt-2 w-full border-t border-v2-border-border-muted" />
     </div>
   )
 }
@@ -116,7 +115,7 @@ function WorkingStepRow(props: { step: WorkingStep; onOpenFile: (path: string) =
     <div
       data-component="session-assistant-activity"
       data-state={props.step.running ? "running" : "completed"}
-      class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-0.5 text-[13px] leading-text-compact text-v2-text-text-muted"
+      class="flex min-w-0 items-start gap-2 pb-2 pt-1 ps-0.5 text-[15px] leading-text-base text-v2-text-text-muted"
     >
       <Icon
         name={stepIcons[props.step.kind]}

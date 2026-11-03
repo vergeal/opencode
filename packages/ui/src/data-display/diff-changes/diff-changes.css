@@ -30,7 +30,7 @@
   [data-slot="diff-changes-deletions"] {
     font-family: var(--font-family-mono);
     font-feature-settings: var(--font-family-mono--font-feature-settings);
-    font-size: 16px;
+    font-size: 15px;
     font-style: normal;
     font-weight: var(--font-weight-regular);
     line-height: var(--line-height-large);

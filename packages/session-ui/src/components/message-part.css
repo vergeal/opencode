@@ -1405,7 +1405,7 @@
 
   [data-slot="permission-header-title"] {
     font-family: var(--font-family-sans);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-large);
     color: var(--v2-text-text-base);
@@ -1422,7 +1422,7 @@
 
   [data-slot="permission-hint"] {
     font-family: var(--font-family-sans);
-    font-size: 16px;
+    font-size: 15px;
     font-weight: var(--font-weight-regular);
     line-height: var(--line-height-large);
     color: var(--v2-text-text-muted);

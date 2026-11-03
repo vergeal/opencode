@@ -43,7 +43,7 @@
   overflow-wrap: break-word;
   color: var(--v2-text-text-base);
   font-family: var(--font-family-sans);
-  font-size: var(--font-size-base); /* 16px */
+  font-size: var(--font-size-base); /* 15px */
   line-height: 160%;
   /* Shells such as the app's turn off selection for chrome; Markdown is content, so it stays selectable. */
   -webkit-user-select: text;
@@ -96,7 +96,7 @@
   }
 
   h3 {
-    font-size: 16px;
+    font-size: 15px;
     color: var(--v2-text-text-base);
     font-weight: var(--font-weight-bold);
     margin-top: 20px;
@@ -107,7 +107,7 @@
   h4,
   h5,
   h6 {
-    font-size: 16px;
+    font-size: 15px;
     color: var(--v2-text-text-muted);
     font-weight: var(--font-weight-medium);
     margin-top: 20px;
