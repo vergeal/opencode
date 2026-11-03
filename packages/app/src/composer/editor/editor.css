@@ -82,7 +82,7 @@
 }
 
 /* Fenced code renders as one block: code font on a soft layer between two hidden fence lines. The block
-   reads as a surface of its own, so it keeps three lines of room and a normal code line height. */
+   reads as a surface of its own: one line of room plus padding, growing with its content. */
 [data-component="composer-editor"] [data-md-code-block] {
   display: block;
   box-sizing: border-box;

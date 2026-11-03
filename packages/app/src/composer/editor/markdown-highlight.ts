@@ -977,9 +977,12 @@ function collect(text: string): Segment[] {
             const bodyStart = start + lines[0].length + (raw.length > lines[0].length ? 1 : 0)
             add(start, bodyStart, "marker")
             add(bodyStart, closed ? start + lastBreak : start + trimmed.length, "codeblock")
-            // Hide the closing fence with the line break in front of it, which would otherwise draw a
-            // blank line between the block and whatever follows it.
-            if (closed) add(start + lastBreak, start + trimmed.length, "marker")
+            // Hide the closing fence with the line break in front of it. The line break after it joins the
+            // marker too, otherwise it draws an empty line between the block and the next line.
+            if (closed) {
+              const after = start + trimmed.length
+              add(start + lastBreak, text[after] === "\n" ? after + 1 : after, "marker")
+            }
           }
           break
         }
