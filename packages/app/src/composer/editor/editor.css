@@ -54,23 +54,42 @@
 /* Markdown paints over the editable text, so the text model, caret and mentions stay untouched. */
 /* Decoration only exists while the draft is unfocused, and every interaction restores the source
    first, so markers can leave the text flow entirely instead of holding a zero-width line box. */
+/* An inline marker keeps a zero-size line box: it draws nothing, yet the caret can sit inside it, so
+   typing after a closing tick lands outside the chip. */
 [data-component="composer-editor"] [data-md-marker] {
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+}
+
+/* A fenced block's own fence line carries a line break, so it leaves the flow entirely. */
+[data-component="composer-editor"] [data-md-marker-block] {
   display: none;
 }
 
-/* Fenced code renders as one block: code font on a soft layer between two hidden fence lines. */
+/* Inline code renders as a chip over the text. The padding is paid back by the negative margin, so the
+   rendered form keeps the same text position as the source it replaces. */
+[data-component="composer-editor"] [data-md-code] {
+  padding-inline: 4px;
+  margin-inline: -4px;
+  border-radius: 4px;
+  background: var(--v2-background-bg-layer-02);
+}
+
+/* Fenced code renders as one block: code font on a soft layer between two hidden fence lines. The block
+   reads as a surface of its own, so it keeps three lines of room and a normal code line height. */
 [data-component="composer-editor"] [data-md-code-block] {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  min-height: calc(1.7em + 16px);
-  margin-block: 4px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  min-height: calc(var(--line-height-base) * 3 + 24px);
+  margin-block: 6px;
+  padding: 12px 14px;
+  border-radius: 10px;
   background: var(--v2-background-bg-layer-02);
   font-family: var(--font-family-mono);
-  font-size: 12.5px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: var(--line-height-base);
   white-space: pre-wrap;
   tab-size: 2;
 }
