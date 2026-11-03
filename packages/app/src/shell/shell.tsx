@@ -235,7 +235,7 @@ export default function Layout(props: ParentProps) {
           <div
             data-slot="shell-drag-inset"
             aria-hidden="true"
-            class="absolute inset-x-0 top-0 h-[var(--shell-top-inset,8px)]"
+            class="absolute inset-x-0 top-0 h-[max(8px,var(--shell-top-inset,8px))]"
             data-tauri-drag-region
           />
         </Show>
