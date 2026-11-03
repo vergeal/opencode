@@ -1,7 +1,7 @@
 import { Icon } from "@opencode/ui/icon"
 import type { IconName } from "@opencode/ui/icons/catalog"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
-import { Show, createEffect, createSignal, on, onCleanup } from "solid-js"
+import { Show, createEffect, createSignal, onCleanup } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { formatWorkingDuration, type WorkingStep } from "./working-step"
 
@@ -18,6 +18,10 @@ const stepIcons: Record<WorkingStep["kind"], IconName> = {
   skill: "graduation-cap",
   tool: "cube",
 }
+
+// The activity feed shares one disclosure state, so an expanded step stays expanded while the turn
+// streams and clicking any expandable step opens or closes all of them at once.
+const [activityExpanded, setActivityExpanded] = createSignal(false)
 
 export function SessionWorkingHeader(props: { started: number }) {
   const language = useLanguage()
@@ -131,7 +135,6 @@ function WorkingStepRow(props: { step: WorkingStep; onOpenFile: (path: string) =
 
 function WorkingStepText(props: { step: WorkingStep; onOpenFile: (path: string) => void }) {
   const language = useLanguage()
-  const [expanded, setExpanded] = createSignal(false)
   const label = () => {
     switch (props.step.kind) {
       case "thinking":
@@ -163,15 +166,6 @@ function WorkingStepText(props: { step: WorkingStep; onOpenFile: (path: string) 
 
   const expandable = () => !!props.step.detail && (props.step.kind === "command" || props.step.kind === "thinking")
 
-  // Each step starts collapsed: a new command or thinking part should not inherit the previous one's disclosure.
-  createEffect(
-    on(
-      () => props.step.id,
-      () => setExpanded(false),
-      { defer: true },
-    ),
-  )
-
   const content = () => (
     <Show when={props.step.running} fallback={<span>{label()}</span>}>
       <TextShimmer text={label()} active />
@@ -185,9 +179,9 @@ function WorkingStepText(props: { step: WorkingStep; onOpenFile: (path: string) 
           <button
             type="button"
             data-slot="session-working-activity-label"
-            aria-expanded={expanded()}
+            aria-expanded={activityExpanded()}
             class="min-w-0 rounded text-start hover:text-v2-text-text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-border-border-focus"
-            onClick={() => setExpanded((value) => !value)}
+            onClick={() => setActivityExpanded((value) => !value)}
           >
             {content()}
           </button>
@@ -212,21 +206,21 @@ function WorkingStepText(props: { step: WorkingStep; onOpenFile: (path: string) 
           <button
             type="button"
             data-slot="session-working-activity-toggle"
-            aria-expanded={expanded()}
+            aria-expanded={activityExpanded()}
             aria-label={props.step.detail}
             class="shrink-0 rounded p-0.5 text-v2-icon-icon-muted hover:text-v2-text-text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-border-border-focus"
-            onClick={() => setExpanded((value) => !value)}
+            onClick={() => setActivityExpanded((value) => !value)}
           >
             <Icon
               name="chevron-down"
               size="small"
               class="transition-transform"
-              classList={{ "-rotate-90 rtl:rotate-90": !expanded() }}
+              classList={{ "-rotate-90 rtl:rotate-90": !activityExpanded() }}
             />
           </button>
         </Show>
       </span>
-      <Show when={expanded() && expandable()}>
+      <Show when={activityExpanded() && expandable()}>
         <Show
           when={props.step.kind === "command"}
           fallback={
