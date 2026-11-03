@@ -349,7 +349,7 @@ export function SidebarInbox() {
               worktree={inbox.inWorktree(entry())}
               archived={inboxArchived(entry())}
               pinned={pins.isPinned(entry().session.id)}
-              showProjectName={false}
+              showProjectName
               onTogglePin={() => pins.toggle(entry().session.id)}
               onOpen={() => inbox.open(entry())}
               onArchive={() => void inbox.archive(entry())}

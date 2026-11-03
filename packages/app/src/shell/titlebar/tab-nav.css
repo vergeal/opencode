@@ -573,20 +573,20 @@
   text-transform: uppercase;
 }
 
-/* Sidebar sessions read as one 30px line, matching the workbench list: the project and
-   branch line stays out of the list, and the active row is a raised white card. */
+/* Sidebar sessions keep the product's two-line row: the avatar and title sit on the first line,
+   and the workspace, branch and server meta on the second, so the list stays readable at a glance. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  height: 30px;
-  padding: 0 8px;
-  border-radius: 7px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  height: auto;
+  padding: 6px 8px;
+  border-radius: 8px;
   background: transparent;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child {
-  height: auto;
+  height: 20px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:nth-child(2) {
@@ -595,12 +595,14 @@
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:last-child {
-  font-size: 10.5px;
-  line-height: 14px;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span + span {
-  display: none;
+  height: 16px;
+  font-size: 12px;
+  line-height: 16px;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"] {
@@ -625,9 +627,4 @@
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"]:hover {
   background: var(--v2-background-bg-base);
-}
-
-/* Session rows are text only, as the workbench list is; the project stays in the hover preview. */
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:first-child {
-  display: none;
 }
