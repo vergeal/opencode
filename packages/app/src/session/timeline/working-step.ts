@@ -64,6 +64,7 @@ export function buildWorkingStep(messages: readonly AssistantMessage[]): Working
     return {
       id: `${latest.id}:thinking:${latest.content.length - 1}`,
       kind: "thinking",
+      ...(current.text.trim() ? { detail: current.text } : {}),
       running: current.time?.completed === undefined,
     }
 

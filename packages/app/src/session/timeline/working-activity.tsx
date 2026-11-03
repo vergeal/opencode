@@ -1,7 +1,7 @@
 import { Icon } from "@opencode/ui/icon"
 import type { IconName } from "@opencode/ui/icons/catalog"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
-import { Show, createEffect, createSignal, onCleanup } from "solid-js"
+import { Show, createEffect, createSignal, on, onCleanup } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { formatWorkingDuration, type WorkingStep } from "./working-step"
 
@@ -161,11 +161,36 @@ function WorkingStepText(props: { step: WorkingStep; onOpenFile: (path: string) 
     }
   }
 
+  const expandable = () => !!props.step.detail && (props.step.kind === "command" || props.step.kind === "thinking")
+
+  // Each step starts collapsed: a new command or thinking part should not inherit the previous one's disclosure.
+  createEffect(
+    on(
+      () => props.step.id,
+      () => setExpanded(false),
+      { defer: true },
+    ),
+  )
+
+  const content = () => (
+    <Show when={props.step.running} fallback={<span>{label()}</span>}>
+      <TextShimmer text={label()} active />
+    </Show>
+  )
+
   return (
     <span class="flex min-w-0 flex-1 flex-col">
       <span class="flex min-w-0 items-center gap-1.5">
-        <Show when={props.step.running} fallback={<span>{label()}</span>}>
-          <TextShimmer text={label()} active />
+        <Show when={expandable()} fallback={content()}>
+          <button
+            type="button"
+            data-slot="session-working-activity-label"
+            aria-expanded={expanded()}
+            class="min-w-0 rounded text-start hover:text-v2-text-text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-border-border-focus"
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {content()}
+          </button>
         </Show>
         <Show when={props.step.file && props.step.path}>
           <a
@@ -183,30 +208,43 @@ function WorkingStepText(props: { step: WorkingStep; onOpenFile: (path: string) 
             {(count) => <span class="shrink-0 text-v2-text-text-faint">+{count()}</span>}
           </Show>
         </Show>
-        <Show when={props.step.kind === "command" && props.step.detail}>
-          {(detail) => (
-            <button
-              type="button"
-              data-slot="session-working-command-toggle"
-              aria-expanded={expanded()}
-              aria-label={detail()}
-              class="ms-0.5 rounded p-0.5 text-v2-icon-icon-muted hover:text-v2-text-text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-border-border-focus"
-              onClick={() => setExpanded((value) => !value)}
-            >
-              <span class="block size-1.5 rotate-45 border-e border-b border-current" aria-hidden="true" />
-            </button>
-          )}
+        <Show when={expandable()}>
+          <button
+            type="button"
+            data-slot="session-working-activity-toggle"
+            aria-expanded={expanded()}
+            aria-label={props.step.detail}
+            class="shrink-0 rounded p-0.5 text-v2-icon-icon-muted hover:text-v2-text-text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-border-border-focus"
+            onClick={() => setExpanded((value) => !value)}
+          >
+            <Icon
+              name="chevron-down"
+              size="small"
+              class="transition-transform"
+              classList={{ "-rotate-90 rtl:rotate-90": !expanded() }}
+            />
+          </button>
         </Show>
       </span>
-      <Show when={expanded() && props.step.kind === "command" && props.step.detail}>
-        {(detail) => (
+      <Show when={expanded() && expandable()}>
+        <Show
+          when={props.step.kind === "command"}
+          fallback={
+            <div
+              data-slot="session-working-thinking-detail"
+              class="mt-1 max-w-full whitespace-pre-wrap [overflow-wrap:anywhere] text-[13px] leading-text-base text-v2-text-text-faint"
+            >
+              {props.step.detail}
+            </div>
+          }
+        >
           <code
             data-slot="session-working-command-detail"
-            class="mt-1 max-w-full truncate font-mono text-[13px] font-[400] leading-text-base tracking-[-0.04px] text-v2-text-text-faint"
+            class="mt-1 block max-w-full whitespace-pre-wrap [overflow-wrap:anywhere] font-mono text-[13px] font-[400] leading-text-base tracking-[-0.04px] text-v2-text-text-faint"
           >
-            {detail()}
+            {props.step.detail}
           </code>
-        )}
+        </Show>
       </Show>
     </span>
   )
