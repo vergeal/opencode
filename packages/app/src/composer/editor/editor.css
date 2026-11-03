@@ -54,11 +54,9 @@
 /* Markdown paints over the editable text, so the text model, caret and mentions stay untouched. */
 /* Decoration only exists while the draft is unfocused, and every interaction restores the source
    first, so markers can leave the text flow entirely instead of holding a zero-width line box. */
-/* An inline marker keeps a zero-size line box: it draws nothing, yet the caret can sit inside it, so
-   typing after a closing tick lands outside the chip. */
-[data-component="composer-editor"] [data-md-marker] {
-  font-size: 0;
-  line-height: 0;
+/* Inline markers stay in the text so the caret, selection and undo keep working on plain source; the
+   highlight paints them transparent. */
+::highlight(composer-md-marker) {
   color: transparent;
 }
 
@@ -103,6 +101,11 @@
 
 ::highlight(composer-md-em) {
   color: var(--v2-text-text-base);
+}
+
+/* The highlight API cannot slant text, so emphasis carries its own span. */
+[data-component="composer-editor"] [data-md-em] {
+  font-style: italic;
 }
 
 ::highlight(composer-md-strike) {

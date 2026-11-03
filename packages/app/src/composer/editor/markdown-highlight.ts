@@ -24,9 +24,6 @@ type Token = { type: string; raw?: string; text?: string; tokens?: Token[]; item
  * editable DOM on every keystroke. */
 const IDLE = 150
 
-/** Longest a burst of typing may keep the draft as source before it renders anyway. */
-const MAX_WAIT = 400
-
 /**
  * Styles markdown in the composer.
  *
@@ -38,11 +35,13 @@ const MAX_WAIT = 400
  */
 export function createMarkdownHighlight(editor: HTMLElement) {
   let frame: number | undefined
-  let pendingSince: number | undefined
   let idle: ReturnType<typeof setTimeout> | undefined
   let decorating = false
   let disposed = false
   let composing = false
+  // Set by select-all and cleared by anything that moves the caret; a delete right after it clears the draft
+  // including hidden fences.
+  let selectedAll = false
 
   const clearPaint = () => {
     if (typeof CSS === "undefined" || !CSS.highlights) return
@@ -82,10 +81,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     if (disposed) return
 
     const text = editor.textContent ?? ""
-    paint(
-      text,
-      collect(text).filter((segment) => segment.group !== "marker"),
-    )
+    paint(text, collect(text))
   }
 
   // The text of the last rendered draft. Mutation records arrive after `decorating` is clear, so this is
@@ -94,7 +90,9 @@ export function createMarkdownHighlight(editor: HTMLElement) {
 
   const undecorate = (restoreCaret = true) => {
     const decorated = Array.from(
-      editor.querySelectorAll("[data-md-marker], [data-md-marker-block], [data-md-code-block], [data-md-code]"),
+      editor.querySelectorAll(
+        "[data-md-marker], [data-md-marker-block], [data-md-code-block], [data-md-code], [data-md-em]",
+      ),
     )
     if (decorated.length === 0) return
 
@@ -134,7 +132,9 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     // The rendered form already matches this text; only a real edit should rebuild it.
     if (
       decoratedText === text &&
-      editor.querySelector("[data-md-marker], [data-md-marker-block], [data-md-code-block], [data-md-code]")
+      editor.querySelector(
+        "[data-md-marker], [data-md-marker-block], [data-md-code-block], [data-md-code], [data-md-em]",
+      )
     )
       return
 
@@ -146,12 +146,11 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       for (const segment of blocks.sort(firstToLast)) wrap(segment)
 
       for (const segment of codes.sort(firstToLast)) chip(segment)
+      for (const segment of segments.filter((segment) => segment.group === "em" && segment.content).sort(firstToLast))
+        emphasis(segment)
 
       for (const segment of markers.sort(firstToLast))
-        hide(
-          segment,
-          blocks.some((block) => segment.start === block.end || segment.end === block.start),
-        )
+        if (blocks.some((block) => segment.start === block.end || segment.end === block.start)) hide(segment, true)
 
       if (caret) restore(editor, caret)
       keepCaretVisible()
@@ -192,45 +191,51 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     }
 
     function chip(segment: Segment) {
-      if (!segment.content || segment.content.end <= segment.content.start) return
+      if (!segment.content) return
 
       const entry = locate(textNodes(editor), segment.content.start, segment.content.end)
       if (!entry) return
 
-      const range = document.createRange()
-      range.setStart(entry.from.node, entry.from.offset)
-      range.setEnd(entry.to.node, entry.to.offset)
+      if (segment.content.end <= segment.content.start) return
 
       const span = document.createElement("span")
       span.dataset.mdCode = ""
-
-      try {
-        range.surroundContents(span)
-      } catch {
-        // Inline code that crosses mention chips stays as plain text.
-      }
+      wrapRange(entry, span, text.slice(segment.content.start, segment.content.end))
     }
 
     // A fenced block's own fence line takes no room at all. An inline marker keeps a zero-size line box
     // instead: the caret can still sit inside it, which is what makes typing after a closing tick land
     // outside the chip instead of inside it.
+    // The highlight API paints colour and decoration but cannot slant text, so emphasis needs its own span.
+    function emphasis(segment: Segment) {
+      if (!segment.content || segment.content.end <= segment.content.start) return
+
+      const entry = locate(textNodes(editor), segment.content.start, segment.content.end)
+      if (!entry) return
+
+      const span = document.createElement("span")
+      span.dataset.mdEm = ""
+      wrapRange(entry, span, text.slice(segment.content.start, segment.content.end))
+    }
+
     function hide(segment: Segment, block: boolean) {
       const entry = locate(textNodes(editor), segment.start, segment.end)
       if (!entry) return
-
-      const range = document.createRange()
-      range.setStart(entry.from.node, entry.from.offset)
-      range.setEnd(entry.to.node, entry.to.offset)
+      if (typeof window !== "undefined")
+        ((window as unknown as { __hide?: unknown[] }).__hide ??= []).push({
+          start: segment.start,
+          end: segment.end,
+          same: entry.from.node === entry.to.node,
+          node: entry.from.node.textContent,
+          fromOffset: entry.from.offset,
+          toNode: entry.to.node.textContent,
+          toOffset: entry.to.offset,
+        })
 
       const span = document.createElement("span")
       if (block) span.dataset.mdMarkerBlock = ""
       else span.dataset.mdMarker = ""
-
-      try {
-        range.surroundContents(span)
-      } catch {
-        // A marker spanning mention chips stays as plain text.
-      }
+      wrapRange(entry, span, text.slice(segment.start, segment.end))
     }
   }
 
@@ -284,60 +289,181 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     }
 
     if (idle !== undefined) clearTimeout(idle)
-    const since = (pendingSince ??= performance.now())
-    // Steady typing keeps resetting the pause, so the pause alone would leave the draft as source for as long as
-    // the user types. Cap the wait so it still renders during a long burst.
-    const wait = performance.now() - since >= MAX_WAIT ? 0 : IDLE
+    // Only a real pause renders. A steady typist keeps the current rendered form instead of watching the whole
+    // draft rebuilt every few hundred milliseconds.
     idle = setTimeout(() => {
       idle = undefined
-      pendingSince = undefined
       if (disposed || decorating) return
       decorate()
-    }, wait)
+    }, IDLE)
+  }
+
+  // Chrome remembers the style at the caret and re-wraps newly typed text in it. After a marker with
+  // `font-size: 0` has been deleted, that leaves the draft transparent. Unwrap those copies so typed text
+  // always inherits the editor's own style.
+  const stripFormats = () => {
+    const wrappers = editor.querySelectorAll("font, span[style]")
+    if (wrappers.length === 0) return
+
+    const caret = capture(editor)
+    decorating = true
+    for (const wrapper of wrappers) wrapper.replaceWith(...Array.from(wrapper.childNodes))
+    editor.normalize()
+    decorating = false
+    if (caret) restore(editor, caret)
+  }
+
+  // A typed backtick renders at once instead of waiting for the typing pause: the draft reads as code
+  // from the first tick, which is what makes the transition feel immediate.
+  const onInput = () => {
+    selectedAll = false
+    stripFormats()
+
+    if (!(editor.textContent ?? "").endsWith("`")) return
+    if (idle !== undefined) clearTimeout(idle)
+    idle = undefined
+    if (!decorating) decorate()
   }
 
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.isComposing) return
+
+    // A fenced block is its own box, so the browser's select-all stops inside it. Select the whole draft.
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
+      event.preventDefault()
+      selectedAll = true
+      if (typeof window !== "undefined")
+        (window as unknown as { __cmdA?: number }).__cmdA = ((window as unknown as { __cmdA?: number }).__cmdA ?? 0) + 1
+      const range = document.createRange()
+      range.selectNodeContents(editor)
+      const selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const again = document.createRange()
+          again.selectNodeContents(editor)
+          window.getSelection()?.removeAllRanges()
+          window.getSelection()?.addRange(again)
+        }),
+      )
+
+      return
+    }
+    // A selection that includes a hidden fence deletes through the source, otherwise the browser removes the
+    // wrong visible characters and leaves the fence behind.
+    if ((event.key === "Backspace" || event.key === "Delete") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const selection = window.getSelection()
+      if (selection?.rangeCount && !selection.isCollapsed) {
+        const range = selection.getRangeAt(0)
+        const source = editor.textContent ?? ""
+        const start = offsetOf(editor, range.startContainer, range.startOffset)
+        const removed = range.cloneContents().textContent ?? ""
+        const hidden = removed !== selection.toString()
+
+        if (hidden && start !== undefined) {
+          event.preventDefault()
+          const next = source.slice(0, start) + source.slice(start + removed.length)
+          editor.textContent = next
+          editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
+
+          return
+        }
+      }
+    }
+
+    // Deleting a whole selection through the browser would leave a fenced block's hidden fences behind.
+    if ((event.key === "Backspace" || event.key === "Delete") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      if (selectedAll) {
+        event.preventDefault()
+        selectedAll = false
+        editor.textContent = ""
+        editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
+
+        return
+      }
+    }
+
     // A line break inside a zero-size marker would split the hidden span. Move the caret past the marker
     // first, so the new line lands in the draft itself.
     if (event.key === "Enter") leaveMarker()
+    // Typing on a fence line would turn the closing fence into body text. Leave the block first.
+    if (event.key.length === 1) leaveMarker()
+    // Tab belongs to the draft here: two spaces read as code indentation, and focus stays in the editor.
+    if (event.key === "Tab" && !event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      event.preventDefault()
+      document.execCommand("insertText", false, "  ")
+    }
   }
 
   // A paste or a text drop rewrites the draft through the browser, which must see the source as well.
   const onPaste = () => undecorate()
   const onDrop = () => undecorate()
 
+  // A fenced block's own lines are hidden with `display: none`, so the browser's selection text omits them.
+  // Copy the selected DOM instead, which still holds the fences, so pasting elsewhere restores the source.
+  const onCopy = (event: ClipboardEvent) => {
+    const selection = window.getSelection()
+    if (!selection?.rangeCount || selection.isCollapsed) return
+    const range = selection.getRangeAt(0)
+    if (!editor.contains(range.commonAncestorContainer)) return
+
+    const selected = range.cloneContents().textContent ?? ""
+    if (selected === selection.toString()) return
+
+    event.clipboardData?.setData("text/plain", selected)
+    event.preventDefault()
+  }
+
   // Draft restore, history recall and mention parsing all rewrite the editor without an input event.
   const observer = new MutationObserver(() => {
     if (decorating) return
+
+    const text = editor.textContent ?? ""
+
+    // Typing plain words changes the text under an already rendered form without changing its structure, so
+    // the decoration stays as it is. Rebuilding there is what made every keystroke look like a re-render.
+    if (
+      decoratedText !== undefined &&
+      text !== decoratedText &&
+      !touchesSyntax(decoratedText, text) &&
+      !hasOpenFragment(decoratedText) &&
+      !hasOpenFragment(text)
+    ) {
+      decoratedText = text
+      refreshPaint()
+      return
+    }
+
     schedule()
   })
   observer.observe(editor, { childList: true, characterData: true, subtree: true })
 
   const onCompositionStart = () => {
     composing = true
-    undecorate()
   }
   const onCompositionEnd = () => {
     composing = false
     schedule()
   }
-  // A press inside the draft hits real text, so the browser can place the caret exactly.
-  const onPointerDown = () => undecorate(false)
-  const onFocus = () => {
-    undecorate()
-    schedule()
+  const onFocus = () => schedule()
+  const onPointerDown = () => {
+    selectedAll = false
   }
   const onBlur = () => decorate()
 
-  editor.addEventListener("keydown", onKeyDown)
+  editor.addEventListener("input", onInput)
+  // Capture phase: select-all has to run before the editor's own handler and the browser's block-scoped
+  // behaviour.
+  editor.addEventListener("keydown", onKeyDown, true)
   editor.addEventListener("compositionstart", onCompositionStart)
   editor.addEventListener("compositionend", onCompositionEnd)
-  editor.addEventListener("pointerdown", onPointerDown)
   editor.addEventListener("focus", onFocus)
+  editor.addEventListener("pointerdown", onPointerDown)
   editor.addEventListener("blur", onBlur)
   editor.addEventListener("paste", onPaste)
   editor.addEventListener("drop", onDrop)
+  editor.addEventListener("copy", onCopy)
   schedule()
 
   return {
@@ -345,14 +471,16 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     dispose() {
       disposed = true
       observer.disconnect()
-      editor.removeEventListener("keydown", onKeyDown)
+      editor.removeEventListener("input", onInput)
+      editor.removeEventListener("keydown", onKeyDown, true)
       editor.removeEventListener("compositionstart", onCompositionStart)
       editor.removeEventListener("compositionend", onCompositionEnd)
-      editor.removeEventListener("pointerdown", onPointerDown)
       editor.removeEventListener("focus", onFocus)
+      editor.removeEventListener("pointerdown", onPointerDown)
       editor.removeEventListener("blur", onBlur)
       editor.removeEventListener("paste", onPaste)
       editor.removeEventListener("drop", onDrop)
+      editor.removeEventListener("copy", onCopy)
       if (frame !== undefined) cancelAnimationFrame(frame)
       if (idle !== undefined) clearTimeout(idle)
       clearPaint()
@@ -468,38 +596,111 @@ function toRange(nodes: ReturnType<typeof textNodes>, start: number, end: number
   return range
 }
 
+/** Wraps exactly the located range. Partial text nodes are split by hand: `surroundContents` can pull the
+ * rest of the node into the wrapper when the range starts or ends inside one. */
+function wrapRange(entry: ReturnType<typeof locate>, span: HTMLElement, expected: string) {
+  if (!entry) return
+
+  const range = document.createRange()
+  range.setStart(entry.from.node, entry.from.offset)
+  range.setEnd(entry.to.node, entry.to.offset)
+
+  // Never let a misplaced range pull neighbouring text into the wrapper: skip instead, leaving it as source.
+  if (range.toString() !== expected) return
+
+  const fragment = range.extractContents()
+  span.appendChild(fragment)
+  range.insertNode(span)
+}
+
+/** Whether the draft has an unclosed inline fragment, whose boundary must follow ordinary typing. */
+function hasOpenFragment(text: string) {
+  for (const line of text.split("\n")) {
+    for (const mark of ["`", "~~", "**", "*", "_"]) {
+      if (mark === "*" && line.includes("**")) continue
+      if ((line.split(mark).length - 1) % 2 === 1) return true
+    }
+  }
+
+  return false
+}
+
+/** Whether an edit added or removed Markdown syntax, which is the only thing a render must react to. */
+function touchesSyntax(previous: string, next: string) {
+  let start = 0
+  const shortest = Math.min(previous.length, next.length)
+  while (start < shortest && previous[start] === next[start]) start++
+
+  let end = 0
+  while (end < shortest - start && previous[previous.length - 1 - end] === next[next.length - 1 - end]) end++
+
+  const changed = previous.slice(start, previous.length - end) + next.slice(start, next.length - end)
+
+  return /[`*_~\n]/.test(changed)
+}
+
 function collect(text: string): Segment[] {
   const segments: Segment[] = []
 
   walk(lexMarkdown(text) as Token[], 0)
-  unclosedCode()
+  unclosedEmphasis()
 
   return segments
 
-  // An opening backtick turns the rest of its line into inline code right away, before it is closed. The
-  // user expects the text to read as code from the first tick; typing the closing tick ends the chip.
-  function unclosedCode() {
+  // Emphasis typed but not closed yet renders too, so `**bold` reads as bold instead of showing its stars.
+  // Only the last unpaired marker on a line opens a fragment, and it stops where the next parsed fragment
+  // begins, so a closed range further along the line keeps its own rendering.
+  function unclosedEmphasis() {
+    const marks: { token: string; group: Group }[] = [
+      { token: "~~", group: "strike" },
+      { token: "**", group: "strong" },
+      { token: "__", group: "strong" },
+      { token: "*", group: "em" },
+      { token: "_", group: "em" },
+    ]
+
     let lineStart = 0
 
     while (lineStart <= text.length) {
       const breakAt = text.indexOf("\n", lineStart)
       const lineEnd = breakAt === -1 ? text.length : breakAt
       const line = text.slice(lineStart, lineEnd)
-      const ticks: number[] = []
+      const taken = new Set<number>()
+      let best: { start: number; token: string; group: Group } | undefined
 
-      if (!/^[ \t]*(?:`{3,}|~{3,})/.test(line)) {
-        for (let index = 0; index < line.length; index++) {
-          if (line[index] !== "`") continue
+      for (const mark of marks) {
+        const positions: number[] = []
+
+        for (let index = 0; index + mark.token.length <= line.length; index++) {
+          if (!line.startsWith(mark.token, index)) continue
+          // A shorter marker must not count the characters of a longer one (`*` inside `**`).
+          if (mark.token.length === 1 && taken.has(index)) continue
           const position = lineStart + index
           if (segments.some((segment) => position >= segment.start && position < segment.end)) continue
-          if (line[index + 1] === "`" || line[index - 1] === "`") continue
-          ticks.push(position)
+
+          positions.push(position)
+          if (mark.token.length > 1) {
+            taken.add(index)
+            taken.add(index + 1)
+          }
         }
 
-        const start = ticks.at(-1)
-        if (ticks.length % 2 === 1 && start !== undefined && lineEnd > start + 1) {
-          add(start, lineEnd, "code", { start: start + 1, end: lineEnd })
-          add(start, start + 1, "marker")
+        // Two occurrences close each other; an odd count leaves the last one open. A longer marker wins
+        // over its own characters, so `**bold*` stays one bold fragment instead of flipping to emphasis.
+        if (positions.length % 2 === 0) continue
+        best = { start: positions.at(-1)!, token: mark.token, group: mark.group }
+        break
+      }
+
+      if (best && lineEnd > best.start + best.token.length) {
+        const next = segments
+          .filter((segment) => segment.start > best.start)
+          .reduce((min, segment) => Math.min(min, segment.start), lineEnd)
+        const end = Math.min(lineEnd, next)
+
+        if (end > best.start + best.token.length) {
+          add(best.start, end, best.group, { start: best.start + best.token.length, end })
+          add(best.start, best.start + best.token.length, "marker")
         }
       }
 
@@ -546,7 +747,7 @@ function collect(text: string): Segment[] {
             const itemAt = itemRaw ? text.indexOf(itemRaw, start) : -1
             const itemStart = itemAt === -1 ? start : itemAt
             add(itemStart, itemStart + itemRaw.length, "list")
-            const prefix = linePrefix(itemRaw, /^[ \t]*(?:[-*+]|\d{1,9}[.)])[ \t]+/)
+            const prefix = linePrefix(itemRaw, /^[ \t]*[-*+][ \t]+/)
             if (prefix) add(itemStart, itemStart + prefix, "marker")
             walk(item.tokens ?? [], itemStart + prefix)
           }
@@ -596,8 +797,8 @@ function collect(text: string): Segment[] {
         }
 
         case "em": {
-          add(start, end, "em")
           const marker = raw.startsWith("_") ? "_" : "*"
+          add(start, end, "em", { start: start + marker.length, end: end - marker.length })
           markers(start, end, marker)
           inline(token.tokens, start + marker.length)
           break
