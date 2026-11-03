@@ -846,6 +846,15 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                   onClick={() => navigate("/scheduled")}
                                 />
                               </div>
+                              {/* The first row of the tab list is starting a session; the menu keeps recently closed
+                                  tabs reachable from the same row. */}
+                              <div class="flex w-full shrink-0 flex-col gap-1 pb-2">
+                                <RecentlyClosedTabsMenu
+                                  vertical
+                                  onNewTab={openNewTab}
+                                  keybind={command.keybind("tab.new")}
+                                />
+                              </div>
                             </Show>
                             <div class="flex min-h-0 flex-1 flex-col gap-1">
                               <Show
