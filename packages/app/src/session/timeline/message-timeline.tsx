@@ -487,10 +487,15 @@ function MessageTimelineView(
   // A turn that ran tools freezes its live header in place, so the answer keeps one settled row above it.
   const workedHeaders = createMemo(() => {
     const result = new Map<string, { started: number; completed: number }>()
+    const active = projection.activeMessageID()
+    const running = sessionStatus().type !== "idle"
 
     for (const [turnID, messages] of projection.assistantMessagesByParent()) {
       const last = messages.at(-1)
 
+      // A running turn can look settled between tool calls, because its last message completes before the next
+      // one starts. Folding it then would hide the text already written until the whole turn finishes.
+      if (running && turnID === active) continue
       if (!last?.time.completed || last.error || last.retry) continue
       // A settled header only frames a turn that both ran work and left words behind.
       if (!messages.some((message) => message.content.some((content) => content.type !== "text"))) continue
