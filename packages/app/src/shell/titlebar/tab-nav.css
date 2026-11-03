@@ -160,6 +160,29 @@
   gap: 2px;
 }
 
+/* Selected rows in the sidebar read as white liquid glass: a translucent white fill over the
+   column material, a blurred backdrop and a bright inner edge. The variables keep the fill,
+   edge and shadow identical for session rows, tabs and navigation actions. */
+[data-slot="vertical-tabs-sidebar"] {
+  --sidebar-glass-fill: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--v2-grey-50) 96%, transparent) 0%,
+    color-mix(in srgb, var(--v2-grey-50) 78%, transparent) 100%
+  );
+  --sidebar-glass-edge:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 0 rgba(255, 255, 255, 0.45),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.7);
+  --sidebar-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.07);
+}
+
+[data-color-scheme="dark"] [data-slot="vertical-tabs-sidebar"] {
+  --sidebar-glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.09) 100%);
+  --sidebar-glass-edge:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --sidebar-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
 /* The workbench sidebar is a compact list: 30px rows at 14px, one line per session, and the
    active row reads as a raised white card on the soft sidebar surface. */
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab],
@@ -179,10 +202,10 @@
 
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab][data-active="true"],
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action][data-state="pressed"] {
-  background: var(--v2-background-bg-base);
-  box-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.04),
-    0 0 0 0.5px rgba(0, 0, 0, 0.08);
+  background: var(--sidebar-glass-fill);
+  -webkit-backdrop-filter: var(--v2-material-blur-regular);
+  backdrop-filter: var(--v2-material-blur-regular);
+  box-shadow: var(--sidebar-glass-edge), var(--sidebar-glass-shadow);
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab][data-active="true"] [data-slot="tab-link"] {
@@ -527,36 +550,8 @@
   line-height: var(--line-height-compact);
 }
 
-/* The selected navigation row is a white liquid-glass capsule: a translucent white fill over the
-   sidebar's material, a blurred backdrop, and a bright top edge so it reads as a lens, not a flat
-   chip. It stays below the session card's contrast so the active session remains the focus. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-nav"] [data-titlebar-tab-action][data-state="pressed"] {
   font-weight: 500;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--v2-grey-50) 94%, transparent) 0%,
-    color-mix(in srgb, var(--v2-grey-50) 76%, transparent) 100%
-  );
-  -webkit-backdrop-filter: var(--v2-material-blur-regular);
-  backdrop-filter: var(--v2-material-blur-regular);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 0 rgba(255, 255, 255, 0.45),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.65),
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 0 0 0.5px rgba(0, 0, 0, 0.07);
-}
-
-[data-color-scheme="dark"]
-  [data-slot="vertical-tabs-sidebar"]
-  [data-slot="sidebar-nav"]
-  [data-titlebar-tab-action][data-state="pressed"] {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* The design leaves 18px between groups: 12px from the label inset plus 6px of group spacing. */
@@ -608,8 +603,10 @@
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"] {
-  background: var(--v2-background-bg-layer-03);
-  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  background: var(--sidebar-glass-fill);
+  -webkit-backdrop-filter: var(--v2-material-blur-regular);
+  backdrop-filter: var(--v2-material-blur-regular);
+  box-shadow: var(--sidebar-glass-edge), var(--sidebar-glass-shadow);
 }
 
 [data-slot="vertical-tabs-sidebar"]
@@ -626,7 +623,7 @@
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"]:hover {
-  background: var(--v2-background-bg-layer-03);
+  background: var(--sidebar-glass-fill);
 }
 
 /* The archive reads as a macOS panel: a compact title block over a hairline, then a padded list.
