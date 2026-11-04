@@ -160,10 +160,32 @@ export function ComposerEditor(props: ComposerEditorProps) {
     })
   })
   let localInput = false
+  let caretFrame: number | undefined
+
+  // Keep the caret inside the composer's own scroll viewport. Typing a long fenced block would otherwise
+  // push the caret below the fold, because nothing scrolled the editor after the line grew.
+  const keepCaretInView = () => {
+    if (caretFrame !== undefined) return
+    caretFrame = requestAnimationFrame(() => {
+      caretFrame = undefined
+      if (!editor || !viewport) return
+      const selection = window.getSelection()
+      if (!selection?.rangeCount || !selection.isCollapsed) return
+      const range = selection.getRangeAt(0)
+      if (!editor.contains(range.startContainer)) return
+      const caret = range.getBoundingClientRect()
+      if (!caret.height) return
+      const bounds = viewport.getBoundingClientRect()
+      // Matches the viewport's 16px scroll-padding, which keeps the caret clear of the fades.
+      if (caret.bottom > bounds.bottom - 16) viewport.scrollTop += caret.bottom - bounds.bottom + 16
+      else if (caret.top < bounds.top + 16) viewport.scrollTop -= bounds.top + 16 - caret.top
+    })
+  }
 
   const updateCursor = () => {
     if (!editor || !window.getSelection()?.isCollapsed) return
     props.controller.onCursor(composerCursor(editor))
+    keepCaretInView()
   }
 
   // The editor's DOM is the source while typing, so the store only mirrors it. `localInput` tells the
@@ -342,6 +364,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                     ? completeCodeFence(element)
                     : undefined
                 sync(element, completed ?? composerCursor(element))
+                keepCaretInView()
               }}
               // An IME reports its committed text in an input event that still carries `isComposing`, so the
               // draft would keep whatever preceded the composition: the placeholder stays over the typed
