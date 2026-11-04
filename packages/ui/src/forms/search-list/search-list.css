@@ -148,6 +148,8 @@
     text-align: start;
     cursor: default;
     scroll-margin-block: 0 24px;
+    /* Sweeping the list should glide between rows instead of blinking one fill on after another. */
+    transition: background-color 110ms ease;
 
     &[data-active] {
       background: var(--v2-overlay-simple-overlay-hover);
