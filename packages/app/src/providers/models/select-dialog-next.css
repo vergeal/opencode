@@ -5,6 +5,9 @@
   min-height: 0;
   border-radius: 10px;
   background: var(--v2-background-bg-base);
+  /* The fill above is opaque, so the inherited 30px blur would only cost a backdrop resample on
+     every hover repaint. Dropping it keeps the dialog identical and the list smooth. */
+  backdrop-filter: none;
 }
 
 .model-dialog-next {

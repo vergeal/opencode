@@ -1,3 +1,10 @@
+/* Registered so hover can cross-fade instead of swapping the gradient fill in one frame. */
+@property --tab-overlay {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
 [data-titlebar-tab] [data-slot="tab-close"] {
   position: absolute;
   top: 4px;
@@ -77,6 +84,7 @@
   --tab-base: var(--v2-background-bg-deep);
   --tab-overlay: transparent;
   background: linear-gradient(var(--tab-overlay), var(--tab-overlay)), var(--tab-base);
+  transition: --tab-overlay 120ms ease;
 }
 
 [data-titlebar-tab][data-orientation="vertical"]:has([data-slot="tab-project"]) {
@@ -580,6 +588,8 @@
   padding: 4px 8px;
   border-radius: 6px;
   background: transparent;
+  /* The fill follows the cursor instead of appearing row by row. */
+  transition: background-color 110ms ease;
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child {
