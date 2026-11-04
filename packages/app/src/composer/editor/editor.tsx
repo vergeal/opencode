@@ -334,10 +334,11 @@ export function ComposerEditor(props: ComposerEditorProps) {
 
                 if (event instanceof InputEvent && event.isComposing) return
 
-                // Expanding a lone fence belongs to typing. Running it after a delete re-opened the block
-                // the user just tried to remove, adding another fence on every backspace.
+                // Expanding a lone fence belongs to typing, and only a typed tick can open one. Checking
+                // on every keystroke cost two full-text scans; running it after a delete re-opened the
+                // block the user just tried to remove.
                 const completed =
-                  event instanceof InputEvent && event.inputType === "insertText"
+                  event instanceof InputEvent && event.inputType === "insertText" && event.data?.includes("`")
                     ? completeCodeFence(element)
                     : undefined
                 sync(element, completed ?? composerCursor(element))
