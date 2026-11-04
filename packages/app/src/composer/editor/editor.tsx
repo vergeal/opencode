@@ -76,7 +76,8 @@ export type ComposerEditorProps = {
   readOnly?: boolean
   borderUnderlay?: boolean
   class?: string
-  modelControl?: JSX.Element
+  /** Rendered with the variant control, so the model chip can show and change the effort too. */
+  modelControl?: (variant: ComposerSelectControl | undefined) => JSX.Element
   modelControlsVisible?: boolean
   attachKeybind?: string[]
   attachShortcut?: string
@@ -102,6 +103,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
   // The placeholder follows what the editor visibly holds, not just the synced draft: an IME's
   // uncommitted text is visible before it reaches the controller, and a hint must not sit under it.
   const [empty, setEmpty] = createSignal(true)
+  const mobile = createMediaQuery("(max-width: 767px)")
 
   onCleanup(() => highlight?.dispose())
 
@@ -455,8 +457,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
                   />
                 )}
               </Show>
-              <Show when={props.modelControlsVisible ?? true}>
-                {props.modelControl}
+              <Show when={props.modelControlsVisible ?? true}>{props.modelControl?.(view.variant)}</Show>
+              {/* The model chip owns the variant on desktop; touch layouts get the slider here. */}
+              <Show when={mobile()}>
                 <Show when={view.variant} keyed>
                   {(control) => (
                     <Show when={control.options().length > 1}>
@@ -465,7 +468,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
                         title={i18n.t("ui.promptInput.chooseVariant")}
                         keybind={["Shift", "Mod", "D"]}
                         control={control}
-                        class={control.current() === "default" ? "composer-variant-default" : undefined}
                       />
                     </Show>
                   )}

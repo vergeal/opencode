@@ -151,7 +151,12 @@ test("the free usage limit opens the Go dialog once, leaves a readable notice, a
           id: "opencode",
           name: "OpenCode",
           models: {
-          "big-pickle": { id: "big-pickle", name: "Big Pickle", cost: { input: 0, output: 0 }, limit: { context: 200_000 } },
+            "big-pickle": {
+              id: "big-pickle",
+              name: "Big Pickle",
+              cost: { input: 0, output: 0 },
+              limit: { context: 200_000 },
+            },
           },
         },
         ...(state.authorized
@@ -161,7 +166,12 @@ test("the free usage limit opens the Go dialog once, leaves a readable notice, a
                 integrationID: "opencode-go",
                 name: "OpenCode Go",
                 models: {
-                  "glm-5-go": { id: "glm-5-go", name: "GLM-5 Go", cost: { input: 1, output: 1 }, limit: { context: 200_000 } },
+                  "glm-5-go": {
+                    id: "glm-5-go",
+                    name: "GLM-5 Go",
+                    cost: { input: 1, output: 1 },
+                    limit: { context: 200_000 },
+                  },
                 },
               },
             ]
@@ -175,7 +185,9 @@ test("the free usage limit opens the Go dialog once, leaves a readable notice, a
         id: "opencode",
         name: "OpenCode Console",
         methods: [{ id: "device", type: "oauth", label: "OpenCode Console account" }],
-        connections: state.authorized ? [{ type: "credential", id: "cred_console", label: "Anomaly", method: "oauth" }] : [],
+        connections: state.authorized
+          ? [{ type: "credential", id: "cred_console", label: "Anomaly", method: "oauth" }]
+          : [],
       },
       {
         id: "opencode-go",
@@ -357,7 +369,6 @@ test("a catalog refresh cannot replace an existing session's model", async ({ pa
     },
   ])
   await expect(control).toHaveText("OpenCode / Alpha")
-  await expect(page.getByRole("button", { name: "Choose model variant", exact: true })).toHaveText("high")
   await view.editor.press("Enter")
   await expect.poll(() => prompts.length).toBe(1)
   // The session already runs Alpha high, so the send has no switch to make.
@@ -515,7 +526,6 @@ test("an opened session in another Location names its model from a loaded catalo
     await page.locator(`[data-slot="vertical-tabs"] a[href="${sessionHref("ses_warm_there", SERVER)}"]`).click()
     await held.arrived
     await expect(control).toHaveText("OpenCode / Beta")
-    await expect(page.getByRole("button", { name: "Choose model variant" })).toHaveText("high")
     const painted = await control.elementHandle()
 
     const loaded = ["/api/agent", "/api/config"].map((path) =>
@@ -641,7 +651,9 @@ test("keeps a line added at the end of a scrolling prompt clear of the bottom fa
         const viewport = element.closest('[data-component="composer-scroll"]')!
         const range = document.createRange()
         range.selectNodeContents(element)
-        const line = Array.from(range.getClientRects()).reduce((last, rect) => (rect.bottom > last.bottom ? rect : last))
+        const line = Array.from(range.getClientRects()).reduce((last, rect) =>
+          rect.bottom > last.bottom ? rect : last,
+        )
         const fade = parseFloat(getComputedStyle(viewport).getPropertyValue("--composer-fade-bottom"))
 
         return Math.max(0, Math.round(line.bottom - (viewport.getBoundingClientRect().bottom - fade)))
@@ -961,61 +973,6 @@ test("marks a Console provider with its workspace only when it is also connected
   await expect(headings.filter({ hasText: /^OpenAI$/ })).toHaveCount(1)
   await expect(headings.filter({ hasText: /^OpenCode$/ })).toHaveCount(1)
   await expect(menu.getByText(/Anomaly \//)).toHaveCount(0)
-})
-
-test("shows thinking on hover or a non-default selection while preserving keyboard access", async ({ page }) => {
-  const { editor: input } = await openSession(page, {
-    name: "ComposerThinking",
-    provider: provider({ id: "thinking-model", name: "Thinking Model", variants: { high: {} } }),
-  })
-
-  const composer = page.locator('[data-component="composer"]')
-  const control = composer.getByRole("button", { name: "Choose model variant" })
-  const option = (name: string) => page.getByRole("menuitemradio", { name, exact: true })
-
-  await page.mouse.move(0, 0)
-  await expect(control).toHaveText("default")
-  await expect(control).toHaveCSS("opacity", "0")
-  await expect(control).toHaveCSS("pointer-events", "none")
-
-  await input.hover()
-  await expect(control).toHaveCSS("opacity", "1")
-
-  // The menu keeps the control visible after the pointer leaves.
-  await control.click()
-  await expect(option("high")).toBeVisible()
-  await page.mouse.move(0, 0)
-  await expect(control).toHaveAttribute("aria-expanded", "true")
-  await expect(control).toHaveCSS("opacity", "1")
-  await option("high").click()
-
-  await input.click()
-  await page.mouse.move(0, 0)
-  await expect(control).toHaveText("high")
-  await expect(control).toHaveCSS("opacity", "1")
-
-  await control.click()
-  await option("default").click()
-  await input.click()
-  await page.mouse.move(0, 0)
-  await expect(control).toHaveText("default")
-  await expect(control).toHaveCSS("opacity", "0")
-
-  // The single-agent fixture has only Add and Model before the thinking trigger.
-  await page.keyboard.press("Tab")
-  await expect(composer.getByRole("button", { name: "Add images and files" })).toBeFocused()
-  await page.keyboard.press("Tab")
-  await expect(composer.getByRole("button", { name: "Thinking Model" })).toBeFocused()
-  await page.keyboard.press("Tab")
-  await expect(control).toBeFocused()
-  await expect(control).toHaveCSS("opacity", "1")
-  await page.keyboard.press("Enter")
-  await expect(option("default")).toBeFocused()
-  await expect(control).toHaveCSS("opacity", "1")
-  await page.keyboard.press("Escape")
-  await expect(control).toBeFocused()
-  await page.keyboard.press("Tab")
-  await expect(control).toHaveCSS("opacity", "0")
 })
 
 test("pastes into the composer from the session view but not into other inputs", async ({ page }) => {

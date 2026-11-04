@@ -1,0 +1,25 @@
+/* A volume-style slider keeps a thin rail and a round handle, so the fill and the handle carry the
+   contrast instead of a full-height block. The handle stays white in both themes and relies on its
+   ring and shadow to separate from the rail. */
+[data-slot="composer-variant-slider"] {
+  --composer-variant-fill: var(--v2-system-accent);
+  --composer-variant-thumb: #ffffff;
+  --composer-variant-thumb-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.28);
+}
+
+[data-color-scheme="dark"] [data-slot="composer-variant-slider"] {
+  --composer-variant-thumb-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+[data-slot="composer-variant-rail"] {
+  background: var(--v2-background-bg-layer-03);
+}
+
+[data-slot="composer-variant-fill"] {
+  background: var(--composer-variant-fill);
+}
+
+[data-slot="composer-variant-thumb"] {
+  background: var(--composer-variant-thumb);
+  box-shadow: var(--composer-variant-thumb-shadow);
+}

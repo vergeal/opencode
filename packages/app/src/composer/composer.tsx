@@ -1,13 +1,17 @@
 import { Show, createEffect, createMemo, createSignal } from "solid-js"
+import { createStore } from "solid-js/store"
 import { Dynamic } from "solid-js/web"
 import { createMediaQuery } from "@solid-primitives/media"
 import { Button } from "@opencode/ui/button"
+import { Popover } from "@opencode/ui/popover"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Icon } from "@opencode/ui/icon"
 import { Keybind } from "@opencode/ui/keybind"
 import { Slash } from "@opencode/ui/slash"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { ComposerEditor } from "./editor/editor"
+import type { ComposerSelectControl } from "./editor/interaction"
+import { ComposerVariantSlider } from "./editor/variant-slider"
 import { DialogSelectModel, ModelSelectorDrawer } from "@/providers/models/select-dialog"
 import { DialogSelectModelNext, ModelSelectorDrawerNext } from "@/providers/models/select-dialog-next"
 import { useSettings } from "@/settings/model"
@@ -55,20 +59,22 @@ export function Composer(props: {
         alternateKeybind={[formatKeybind("mod", language.t), "↵"]}
         exitShellKeybind={[formatKeybind("esc", language.t)]}
         suggestionBoundary={props.suggestionBoundary}
-        modelControl={
+        modelControl={(variant) => (
           <ComposerModelControl
             loading={props.model.model.loading}
             preview={!!props.model.model.preview}
             paid={props.model.model.paid}
             title={language.t("command.model.choose")}
+            variantTitle={language.t("ui.promptInput.chooseVariant")}
             keybind={command.keybindParts("model.choose")}
             model={props.model.model.selection}
             providerName={props.model.model.preview?.provider ?? props.model.model.providerName}
             modelName={modelName()}
+            variant={variant}
             onClose={props.model.restoreFocus}
             onUnpaidClick={() => dialog.show(() => <DialogSelectModelUnpaid model={props.model.model.selection} />)}
           />
-        }
+        )}
       />
     </div>
   )
@@ -79,10 +85,12 @@ function ComposerModelControl(props: {
   preview: boolean
   paid: boolean
   title: string
+  variantTitle: string
   keybind: string[]
   model: ComposerModel["model"]["selection"]
   providerName?: string
   modelName: string
+  variant?: ComposerSelectControl
   onClose: () => void
   onUnpaidClick: () => void
 }) {
@@ -102,6 +110,16 @@ function ComposerModelControl(props: {
 
   // A previewed chip is visible before the catalog loads, so a click on it opens the dialog once loading finishes.
   const [deferred, setDeferred] = createSignal<number>()
+  const [store, setStore] = createStore({ open: false })
+  const hasVariant = () => !!props.variant && props.variant.options().length > 1
+  const variantLabel = () => {
+    const control = props.variant
+
+    if (!control || !hasVariant()) return
+    const option = control.options().find((item) => item.id === control.current())
+
+    return option?.label ?? control.current()
+  }
 
   createEffect(() => {
     const detail = deferred()
@@ -147,24 +165,64 @@ function ComposerModelControl(props: {
         <Show
           when={mobile() && !props.loading}
           fallback={
-            <Button
-              data-action="composer-model"
-              data-control-type="dialog"
-              variant="ghost-muted"
-              size="normal"
-              class="min-w-0 max-w-[60cqw] justify-start ![font-weight: 400]"
-              classList={{ "animate-in fade-in": shouldAnimate() }}
-              style={{ height: "24px" }}
-              onMouseDown={(event: MouseEvent) => event.preventDefault()}
-              onClick={(event: MouseEvent) => {
-                if (!props.loading) return open(event.detail)
-
-                // On mobile this inert chip stands in for the drawer trigger, so a click there is dropped.
-                if (!mobile()) setDeferred(event.detail)
+            <Popover
+              open={store.open}
+              onOpenChange={(next) => {
+                // A preview opens the dialog once the catalog loads, and a model without effort
+                // options keeps the old one-click dialog instead of a card with a single row.
+                if (next && (props.loading || !hasVariant())) return setDeferred(1)
+                setStore("open", next)
+              }}
+              placement="top-start"
+              gutter={6}
+              triggerAs={Button}
+              trigger={content()}
+              triggerProps={{
+                class: `min-w-0 max-w-[60cqw] justify-start ![font-weight: 400] ${
+                  shouldAnimate() ? "animate-in fade-in" : ""
+                }`,
+                style: { height: "24px" },
+                variant: "ghost-muted",
+                size: "normal",
+                "data-action": "composer-model",
+                "data-control-type": "popover",
+                "aria-label": props.title,
+                onMouseDown: (event: MouseEvent) => event.preventDefault(),
               }}
             >
-              {content()}
-            </Button>
+              <div class="flex w-[264px] flex-col gap-3 p-3">
+                <Show when={hasVariant()}>
+                  <span class="text-center text-[13px] font-[530] capitalize leading-5 text-v2-text-text-accent">
+                    {variantLabel()}
+                  </span>
+                </Show>
+                <button
+                  type="button"
+                  data-slot="composer-model-row"
+                  class="flex h-7 w-full items-center justify-between gap-2 rounded-[6px] px-1.5 text-start text-[13px] leading-5 transition-colors hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-border-border-focus"
+                  onClick={() => {
+                    setStore("open", false)
+                    open(1)
+                  }}
+                >
+                  <span class="flex min-w-0 items-center">
+                    <Show when={props.providerName}>
+                      {(name) => (
+                        <>
+                          <span class="shrink-0 text-v2-text-text-faint">{name()}</span>
+                          <Slash />
+                        </>
+                      )}
+                    </Show>
+                    <span class="truncate text-v2-text-text-base">{props.modelName}</span>
+                  </span>
+                  <Icon name="chevron-right" size="small" class="shrink-0 text-v2-icon-icon-muted" />
+                </button>
+                <Show when={hasVariant() && props.variant}>
+                  {(control) => <ComposerVariantSlider control={control()} label={props.variantTitle} />}
+                </Show>
+              </div>
+            </Popover>
           }
         >
           <Dynamic

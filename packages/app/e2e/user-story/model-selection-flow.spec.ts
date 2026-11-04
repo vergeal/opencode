@@ -100,8 +100,10 @@ test("creates a session in a new project and selects its model", async ({ page }
   await expectAppVisible(page.locator('[data-component="composer"]'))
 
   const modelControl = page.locator('[data-action="composer-model"]')
+  const modelRow = page.locator('[data-slot="composer-model-row"]')
   await expect(modelControl).toContainText("Go Model 1")
   await modelControl.click()
+  await modelRow.click()
   const modelSearch = page.getByPlaceholder("Search models", { exact: true })
   await expect(modelSearch).toBeFocused()
   await modelSearch.press("ArrowDown")
@@ -109,6 +111,7 @@ test("creates a session in a new project and selects its model", async ({ page }
   await expect(modelControl).toContainText("Free Model")
 
   await modelControl.click()
+  await modelRow.click()
   await expect(modelSearch).toBeFocused()
   await modelSearch.press("ArrowUp")
   await modelSearch.press("Enter")
@@ -139,29 +142,42 @@ test("restores each existing session's model and variant when switching tabs", a
   const hrefB = sessionHref(sessions[1]!.id)
   const composer = page.locator('[data-component="composer"]')
   const modelControl = composer.locator('[data-action="composer-model"]')
-  const variant = composer.getByRole("button", { name: "Choose model variant", exact: true })
+  const slider = composer.getByRole("slider")
+  const chooseVariant = async (label: string) => {
+    await modelControl.click()
+    await expect(slider).toBeVisible()
+    await slider.focus()
+    await slider.press("Home")
+    for (let step = 0; step < 12; step++) {
+      if ((await slider.getAttribute("aria-valuetext")) === label) break
+      await slider.press("ArrowRight")
+    }
+    await expect(slider).toHaveAttribute("aria-valuetext", label)
+    await page.keyboard.press("Escape")
+  }
+  const expectVariant = async (label: string) => {
+    await modelControl.click()
+    await expect(slider).toHaveAttribute("aria-valuetext", label)
+    await page.keyboard.press("Escape")
+  }
   await expect(modelControl).toHaveText("OpenCode / Model A")
-  await expect(variant).toHaveText("balanced")
-  await variant.click()
-  await page.getByRole("menuitemradio", { name: "high", exact: true }).click()
-  await expect(variant).toHaveText("high")
+  await expectVariant("balanced")
+  await chooseVariant("high")
 
   await page.locator(`[data-titlebar-tab-link][href="${hrefB}"]`).click()
   await expect(page).toHaveURL(hrefB)
   await expect(modelControl).toHaveText("OpenCode / Model B")
-  await expect(variant).toHaveText("balanced")
-  await variant.click()
-  await page.getByRole("menuitemradio", { name: "high", exact: true }).click()
-  await expect(variant).toHaveText("high")
+  await expectVariant("balanced")
+  await chooseVariant("high")
 
   // A new draft starts from the current session's non-default model and chosen variant.
   await page.getByRole("button", { name: "New session", exact: true }).click()
   await expect(page).toHaveURL(/\/new-session\?draftId=/)
   await expect(modelControl).toHaveText("OpenCode / Model B")
-  await expect(variant).toHaveText("high")
+  await expectVariant("high")
 
   await page.locator(`[data-titlebar-tab-link][href="${hrefA}"]`).click()
   await expect(page).toHaveURL(hrefA)
   await expect(modelControl).toHaveText("OpenCode / Model A")
-  await expect(variant).toHaveText("high")
+  await expectVariant("high")
 })
