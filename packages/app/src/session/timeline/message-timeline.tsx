@@ -87,7 +87,7 @@ type MessageTimelineProps = {
   onPin: () => void
   onUnpin: () => void
   onUserScroll: (target?: EventTarget | null) => void
-  onHistoryScroll: () => void
+  onHistoryScroll: (scrollTop: number, viewportHeight: number) => void
   onSelectionInteraction: (event: MouseEvent) => void
   pinned: boolean
   centered: boolean

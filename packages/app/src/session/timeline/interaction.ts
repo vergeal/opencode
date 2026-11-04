@@ -73,7 +73,6 @@ export function createSessionTimelineInteraction(session: SessionModel) {
   let scrollStateFrame: (() => void) | undefined
   let scrollStateTarget: HTMLDivElement | undefined
   let fillFrame: (() => void) | undefined
-  let historyContinuationFrame: number | undefined
   const historyRequests = new Set<string>()
   const visibleUserMessages = timeline.visibleUserMessages
   const anchor = (id: string) => `message-${id}`
@@ -126,9 +125,21 @@ export function createSessionTimelineInteraction(session: SessionModel) {
     return { overflow, jump: overflow && distance > jumpThreshold(element) }
   }
 
+  const applyScrollState = (next: { overflow: boolean; jump: boolean }) => {
+    if (state.scroll.overflow === next.overflow && state.scroll.jump === next.jump) return
+    setState("scroll", next)
+  }
+
   // Reads in the shared frame loop's read phase, before any frame's writes, so a panel resizing the timeline on
-  // every frame does not force an extra layout here.
-  const scheduleScrollState = (element: HTMLDivElement) => {
+  // every frame does not force an extra layout here. A scroll event can pass the geometry it already read instead,
+  // which keeps scrolling free of layout reads entirely.
+  const scheduleScrollState = (element: HTMLDivElement, measured?: { overflow: boolean; jump: boolean }) => {
+    if (measured) {
+      applyScrollState(measured)
+
+      return
+    }
+
     scrollStateTarget = element
 
     if (scrollStateFrame !== undefined) return
@@ -142,8 +153,8 @@ export function createSessionTimelineInteraction(session: SessionModel) {
       () => {
         scrollStateFrame = undefined
 
-        if (!next || (state.scroll.overflow === next.overflow && state.scroll.jump === next.jump)) return false
-        setState("scroll", next)
+        if (!next) return false
+        applyScrollState(next)
 
         return false
       },
@@ -230,39 +241,30 @@ export function createSessionTimelineInteraction(session: SessionModel) {
     fill()
   }
 
+  // Keep a couple of screens of history above the viewport. A page prepended while the reader is still further down
+  // lands above the range, so it costs nothing to mount; loading it only when the reader reaches the top instead
+  // froze the scroll for 200–350ms while the new rows rendered. Loading stays tied to the reader's own scrolling: a
+  // page load must never queue the next one, or holding a wheel at the boundary walks the whole history in one burst.
+  const historyScreens = 2
+
+  // Measures on the scroll event's own geometry. Reading layout here instead forced a layout and split the frame's
+  // style writes into several recalculations.
   async function loadOlder() {
     const owner = session.ownership.capture()
 
     if (timeline.history.loading() || historyRequests.has(owner.key)) return
     historyRequests.add(owner.key)
-    const before = timeline.messages().length
 
     try {
       await timeline.history.loadOlder()
     } finally {
       historyRequests.delete(owner.key)
     }
-
-    if (!owner.current() || timeline.messages().length <= before) return
-
-    if (pinned() || !scroller || scroller.scrollTop >= 200 || !timeline.history.more()) return
-
-    if (historyContinuationFrame !== undefined) cancelAnimationFrame(historyContinuationFrame)
-    historyContinuationFrame = requestAnimationFrame(() => {
-      historyContinuationFrame = undefined
-      owner.run(onHistoryScroll)
-    })
   }
 
-  const onHistoryScroll = () => {
-    if (
-      historyRequests.has(session.ownership.key()) ||
-      timeline.history.loading() ||
-      pinned() ||
-      !scroller ||
-      scroller.scrollTop >= 200
-    )
-      return
+  const onHistoryScroll = (scrollTop: number, viewportHeight: number) => {
+    if (historyRequests.has(session.ownership.key()) || timeline.history.loading() || pinned()) return
+    if (scrollTop >= viewportHeight * historyScreens) return
     void loadOlder()
   }
 
@@ -380,8 +382,6 @@ export function createSessionTimelineInteraction(session: SessionModel) {
     },
   )
   onCleanup(() => {
-    if (historyContinuationFrame !== undefined) cancelAnimationFrame(historyContinuationFrame)
-
     scrollStateFrame?.()
 
     fillFrame?.()
