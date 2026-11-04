@@ -501,6 +501,48 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.isComposing) return
 
+    // An empty fenced block has no text of its own, so backspace would step through its ticks one at a
+    // time. Delete the whole block in one go instead, restoring the source first so the range is plain
+    // text and the caret lands where the block started.
+    if ((event.key === "Backspace" || event.key === "Delete") && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const selection = window.getSelection()
+
+      if (selection?.rangeCount && selection.isCollapsed) {
+        const source = editor.textContent ?? ""
+
+        if (source.includes("```") || source.includes("~~~")) {
+          const removed = emptyFenceRange(collect(source))
+
+          if (removed) {
+            const caretRange = document.createRange()
+            caretRange.selectNodeContents(editor)
+            caretRange.setEnd(selection.anchorNode!, selection.anchorOffset)
+            const caret = caretRange.toString().length
+
+            if (caret >= removed.start && caret <= removed.end) {
+              event.preventDefault()
+              undecorate(false)
+              const nodes = textNodes(editor)
+              const start = point(nodes, removed.start)
+              const end = endPoint(nodes, removed.end)
+
+              if (start && end) {
+                const range = document.createRange()
+                range.setStart(start.node, start.offset)
+                range.setEnd(end.node, end.offset)
+                range.deleteContents()
+
+                const at = point(textNodes(editor), removed.start)
+                if (at) selection.setBaseAndExtent(at.node, at.offset, at.node, at.offset)
+              }
+
+              editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
+            }
+          }
+        }
+      }
+    }
+
     // A fenced block is its own box, so the browser's select-all stops inside it. Select the whole draft.
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
       event.preventDefault()
@@ -894,6 +936,18 @@ function touchesSyntax(previous: string, next: string) {
   const changed = previous.slice(start, previous.length - end) + next.slice(start, next.length - end)
 
   return /[`*_~\n]/.test(changed)
+}
+
+/** The source range of an empty fenced block: both fence lines and the blank body between them. */
+function emptyFenceRange(segments: Segment[]) {
+  const block = segments.find((segment) => segment.group === "codeblock" && segment.start === segment.end)
+  if (!block) return
+
+  const open = segments.find((segment) => segment.group === "marker" && segment.end === block.start)
+  const close = segments.find((segment) => segment.group === "marker" && segment.start === block.end)
+  if (!open || !close) return
+
+  return { start: open.start, end: close.end }
 }
 
 function collect(text: string): Segment[] {
