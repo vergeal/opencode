@@ -19,7 +19,8 @@ for (const entry of ["home", "session"] as const) {
     await page.goto(entry === "home" ? "/" : sessionHref(fixture.sourceID))
 
     if (entry === "session") await waitForStableTimeline(page, fixture.expected.sourceMessageIDs.at(-1)!)
-    const trigger = entry === "home" ? '[data-action="home-new-session"]' : 'button[aria-label="New session"]'
+    // The home header no longer creates a session, so both entries start from the tab strip's new-session button.
+    const trigger = 'button[aria-label="New session"]'
     await expect(page.locator(trigger)).toBeVisible()
     await expect(page.locator('[data-component="new-session"]')).toHaveCount(0)
     const writes: string[] = []

@@ -14,6 +14,7 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { ServerConnection } from "@/runtime/server/registry"
+import { useSettingsDialog } from "@/settings/command"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import { ArchivedSessionsDialog } from "@/shell/titlebar/inbox"
 import { sessionLabel } from "@/session/title"
@@ -114,6 +115,7 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
   const [rowUI, setRowUI] = createStore<HomeSessionRowUI>({ menu: undefined, editor: undefined })
   const [hover, setHover] = createStore<{ sessionID: string | undefined }>({ sessionID: undefined })
   const dialog = useDialog()
+  const openProjectSettings = useSettingsDialog("projects")
   const showLocations = createAltHold(props.desktop, props.onRevealLocations)
   // A list that arrives within the delay paints directly; slower loads show placeholder rows until it does, which stay
   // mounted while the list fades in over them.
@@ -159,18 +161,16 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
               onClick={() => void dialog.show(() => <ArchivedSessionsDialog />)}
             />
           </Tooltip>
-          <Show when={props.groups.length > 0 && props.canCreateSession}>
-            <Button
-              data-action="home-new-session"
-              variant="ghost-muted"
-              size="normal"
-              icon="edit"
-              class="pointer-events-auto h-7 px-2 [font-weight:530]"
-              onClick={props.onCreateSession}
-            >
-              {props.language.t("command.session.new")}
-            </Button>
-          </Show>
+          <Button
+            data-action="home-manage-projects"
+            variant="ghost-muted"
+            size="normal"
+            icon="folder"
+            class="pointer-events-auto h-7 px-2 [font-weight:530]"
+            onClick={openProjectSettings}
+          >
+            {props.language.t("home.projects.manage")}
+          </Button>
         </div>
       </div>
       <div class="pointer-events-none sticky top-[68px] z-40 h-0 -mr-3 md:top-[84px] lg:top-[108px]">

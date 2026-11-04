@@ -351,6 +351,7 @@ export const dict = {
 
   "home.title": "主页",
   "home.projects": "项目",
+  "home.projects.manage": "项目管理",
   "home.project.add": "添加项目",
   "home.recentlyClosed": "最近关闭",
   "home.server.collapse": "折叠服务器项目",

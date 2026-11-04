@@ -552,6 +552,7 @@ export const dict = {
   "home.title": "Home",
   "home.projects": "Projects",
   "home.projects.all": "All projects",
+  "home.projects.manage": "Manage projects",
   "home.project.add": "Add project",
   "home.project.missing.title": "Project folder not found",
   "home.project.missing.description": "The folder for {{name}} no longer exists.",
