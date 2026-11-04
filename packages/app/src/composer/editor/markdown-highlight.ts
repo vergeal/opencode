@@ -451,7 +451,10 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   // `font-size: 0` has been deleted, that leaves the draft transparent. Unwrap those copies so typed text
   // always inherits the editor's own style.
   const stripFormats = () => {
-    const wrappers = editor.querySelectorAll("font, span[style]")
+    // A mention carries an inline style of its own (bidi isolation), so it must survive this sweep.
+    const wrappers = Array.from(editor.querySelectorAll("font, span[style]")).filter(
+      (wrapper) => !(wrapper instanceof HTMLElement && wrapper.dataset.mention),
+    )
     if (wrappers.length === 0) return
 
     const caret = capture(editor)
@@ -707,6 +710,7 @@ function restore(editor: HTMLElement, caret: Caret) {
     const at = endPoint(nodes, caret.start) ?? point(nodes, caret.start)
     if (!at) return
     selection.setBaseAndExtent(at.node, at.offset, at.node, at.offset)
+    keepCaretOutsideMention(editor)
 
     return
   }
@@ -717,6 +721,26 @@ function restore(editor: HTMLElement, caret: Caret) {
   if (caret.direction === "forward")
     selection.setBaseAndExtent(entry.from.node, entry.from.offset, entry.to.node, entry.to.offset)
   else selection.setBaseAndExtent(entry.to.node, entry.to.offset, entry.from.node, entry.from.offset)
+  keepCaretOutsideMention(editor)
+}
+
+/**
+ * A mention is one atomic chip, but text offsets count its label, so a caret restored to that range
+ * lands inside the chip. Typing or backspacing there edits the label and drops the chip's colour, so
+ * the caret moves just past the whole mention instead.
+ */
+function keepCaretOutsideMention(editor: HTMLElement) {
+  const selection = window.getSelection()
+  const node = selection?.anchorNode
+  if (!node || !selection?.isCollapsed) return
+  const mention = (node instanceof Element ? node : node.parentElement)?.closest("[data-mention]")
+  if (!mention || !editor.contains(mention)) return
+
+  const range = document.createRange()
+  range.setStartAfter(mention)
+  range.collapse(true)
+  selection.removeAllRanges()
+  selection.addRange(range)
 }
 
 /** Offset of the first character inside an element, in the editor's text order. */
