@@ -355,12 +355,10 @@ export function createChildStoreManager(input: {
     const icon = patch.icon ? { ...previous.icon, ...patch.icon } : previous.icon
     const commands = patch.commands ? { ...previous.commands, ...patch.commands } : previous.commands
 
-    const next = {
-      ...previous,
-      ...patch,
-      icon,
-      commands,
-    }
+    // Callers send a patch, so a field they left out stays as it was instead of being cleared.
+    const next: ProjectMeta = { ...previous, icon, commands }
+
+    if (patch.name !== undefined) next.name = patch.name
 
     cached.setStore("value", next)
     setStore("projectMeta", next)

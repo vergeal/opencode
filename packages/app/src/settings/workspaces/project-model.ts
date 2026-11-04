@@ -1,5 +1,6 @@
 import { getFilename } from "@opencode/util/path"
 import type { ProjectUpdateInput } from "@opencode/client/promise"
+import { Project } from "@opencode/schema/project"
 import { createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useGlobal } from "@/runtime/server/runtime"
@@ -8,7 +9,7 @@ import type { LocalProject } from "@/shell/state/layout"
 import { ServerConnection } from "@/runtime/server/registry"
 import { showToast } from "@/shell/notifications/toast"
 
-type ProjectPatch = Pick<ProjectUpdateInput, "name" | "icon" | "commands">
+type ProjectPatch = Pick<ProjectUpdateInput, "name" | "icon" | "commands" | "prompt">
 
 export function createEditProjectModel(props: { project: LocalProject; server: ServerConnection.Any }) {
   const language = useLanguage()
@@ -22,6 +23,7 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
     color: props.project.icon?.color,
     iconOverride: props.project.icon?.override,
     startup: props.project.commands?.start ?? "",
+    prompt: props.project.prompt ?? "",
     dragOver: false,
     iconHover: false,
     saving: 0,
@@ -30,6 +32,7 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
   const saved = {
     name: props.project.name ?? "",
     startup: store.startup.trim(),
+    prompt: store.prompt.trim(),
     color: store.color,
     iconOverride: store.iconOverride,
   }
@@ -48,7 +51,11 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
           return
         }
 
-        serverCtx().sync.project.meta(props.project.worktree, patch)
+        serverCtx().sync.project.meta(props.project.worktree, {
+          name: patch.name,
+          icon: patch.icon,
+          commands: patch.commands,
+        })
       })
       .then(complete)
       .catch((error: unknown) => {
@@ -77,6 +84,30 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
     if (!store.saving && value === saved.startup) return
     persist({ commands: { start: value } }, () => {
       saved.startup = value
+    })
+  }
+
+  const savePrompt = () => {
+    // A Project without a root commit shares the `global` ID with every other such directory, so its
+    // instructions cannot be told apart on the server. The settings page does not offer the field there.
+    if (props.project.id === "global") return
+
+    const value = store.prompt.trim()
+
+    if (!store.saving && value === saved.prompt) return
+
+    if (Array.from(store.prompt).length > Project.PromptLimit) {
+      showToast({
+        variant: "error",
+        title: language.t("project.settings.prompt.tooLong.title"),
+        description: language.t("project.settings.prompt.tooLong.description", { limit: Project.PromptLimit }),
+      })
+
+      return
+    }
+
+    persist({ prompt: value }, () => {
+      saved.prompt = value
     })
   }
 
@@ -110,6 +141,7 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
     defaultName,
     saveName,
     saveStartup,
+    savePrompt,
     setColor(value: string | undefined) {
       setStore("color", value)
       saveIcon(value, store.iconOverride)

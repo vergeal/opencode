@@ -9,6 +9,7 @@ import { Select } from "@opencode/ui/select"
 import { Textarea } from "@opencode/ui/textarea"
 import { TextInput } from "@opencode/ui/text-input"
 import { For, Show, createMemo, type Component } from "solid-js"
+import { Project } from "@opencode/schema/project"
 import { useLanguage } from "@/runtime/i18n/language"
 import type { LocalProject } from "@/shell/state/layout"
 import { type ServerConnection, useServers } from "@/runtime/server/registry"
@@ -32,6 +33,7 @@ export const SettingsProjectGeneral: Component<{
   const model = createEditProjectModel(props)
   const servers = useSettingsServers()
   const registry = useServers()
+  const promptLength = createMemo(() => Array.from(model.store.prompt).length)
 
   return (
     <>
@@ -185,6 +187,37 @@ export const SettingsProjectGeneral: Component<{
               <span>{inlineVariables(language.t("project.settings.worktree.startup.hint.new"))}</span>
             </div>
           </div>
+
+          <Show when={props.project.id !== "global"}>
+            <div class="project-settings-prompt">
+              <div class="project-settings-prompt-copy">
+                <span class="project-settings-prompt-title">{language.t("project.settings.prompt.title")}</span>
+                <span class="project-settings-prompt-description">
+                  {language.t("project.settings.prompt.description", { limit: Project.PromptLimit })}
+                </span>
+              </div>
+              <Textarea
+                data-action="settings-project-prompt"
+                class="!w-full"
+                rows={6}
+                value={model.store.prompt}
+                placeholder={language.t("project.settings.prompt.placeholder")}
+                aria-label={language.t("project.settings.prompt.title")}
+                spellcheck={false}
+                onInput={(event) => model.setStore("prompt", event.currentTarget.value)}
+                onBlur={model.savePrompt}
+              />
+              <div
+                class="project-settings-prompt-count"
+                data-over-limit={promptLength() > Project.PromptLimit ? "" : undefined}
+              >
+                {language.t("project.settings.prompt.count", {
+                  count: promptLength(),
+                  limit: Project.PromptLimit,
+                })}
+              </div>
+            </div>
+          </Show>
         </SettingsList>
       </div>
     </>

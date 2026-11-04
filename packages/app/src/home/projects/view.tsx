@@ -574,6 +574,69 @@ function HomeProjectRow(
   const platform = usePlatform()
   const serverUnreachable = () => props.serverHealth(props.server)?.healthy === false
 
+  const items = () => [
+    {
+      id: "new-session",
+      label: props.language.t("command.session.new"),
+      onSelect: () => props.onOpenProjectNewSession(props.server, props.project.worktree),
+    },
+    ...(props.canImportSession
+      ? [
+          {
+            id: "import",
+            label: props.language.t("command.session.import"),
+            onSelect: () => props.onImportSession(props.server, props.project),
+          },
+        ]
+      : []),
+    {
+      id: "edit",
+      label: props.language.t("dialog.project.edit.title"),
+      onSelect: () => props.onEditProject(props.server, props.project),
+    },
+    ...(props.canRevealProject(props.server)
+      ? [
+          {
+            id: "reveal",
+            label: props.language.t(
+              fileManagerApp(platform.platform === "desktop" ? (platform.os ?? "unknown") : "unknown").actionLabel,
+            ),
+            onSelect: () => props.onRevealProject(props.server, props.project),
+          },
+        ]
+      : []),
+    {
+      id: "clear-notifications",
+      label: props.language.t("sidebar.project.clearNotifications"),
+      disabled: !props.unread,
+      onSelect: () => props.onClearNotifications(props.server, props.project),
+    },
+    {
+      id: "close",
+      label: props.language.t("common.close"),
+      separated: true,
+      onSelect: () => props.onHideProject(props.server, props.project),
+    },
+  ]
+
+  // Desktop draws the platform menu; only the web build needs the in-app one.
+  const showNativeMenu = async (position: { x: number; y: number }) => {
+    const show = platform.showContextMenu
+
+    if (!show) return
+    const menu = items()
+
+    const chosen = await show(
+      menu.flatMap((item) => [
+        ...(item.separated ? [{ type: "separator" as const }] : []),
+        { id: item.id, label: item.label, enabled: !item.disabled },
+      ]),
+      position,
+    )
+
+    menu.find((item) => item.id === chosen)?.onSelect()
+  }
+
   const contextMenuID = () => projectContextMenuID(props.server, props.project.worktree)
   onCleanup(() => {
     const id = contextMenuID()
@@ -589,6 +652,13 @@ function HomeProjectRow(
       data-selected={props.selected ? "" : undefined}
       onContextMenu={(event) => {
         event.preventDefault()
+
+        if (platform.showContextMenu) {
+          void showNativeMenu({ x: event.clientX, y: event.clientY })
+
+          return
+        }
+
         props.onSetContextMenuOpen(contextMenuID(), true)
       }}
     >
@@ -631,35 +701,14 @@ function HomeProjectRow(
           />
           <Menu.Portal>
             <Menu.Content>
-              <Menu.Item onSelect={() => props.onOpenProjectNewSession(props.server, props.project.worktree)}>
-                {props.language.t("command.session.new")}
-              </Menu.Item>
-              <Show when={props.canImportSession}>
-                <Menu.Item onSelect={() => props.onImportSession(props.server, props.project)}>
-                  {props.language.t("command.session.import")}
-                </Menu.Item>
-              </Show>
-              <Menu.Item onSelect={() => props.onEditProject(props.server, props.project)}>
-                {props.language.t("dialog.project.edit.title")}
-              </Menu.Item>
-              <Show when={props.canRevealProject(props.server)}>
-                <Menu.Item onSelect={() => props.onRevealProject(props.server, props.project)}>
-                  {props.language.t(
-                    fileManagerApp(platform.platform === "desktop" ? (platform.os ?? "unknown") : "unknown")
-                      .actionLabel,
-                  )}
-                </Menu.Item>
-              </Show>
-              <Menu.Item
-                disabled={!props.unread}
-                onSelect={() => props.onClearNotifications(props.server, props.project)}
-              >
-                {props.language.t("sidebar.project.clearNotifications")}
-              </Menu.Item>
-              <Menu.Separator />
-              <Menu.Item onSelect={() => props.onHideProject(props.server, props.project)}>
-                {props.language.t("common.close")}
-              </Menu.Item>
+              {items().map((item) => (
+                <>
+                  {item.separated ? <Menu.Separator /> : null}
+                  <Menu.Item disabled={item.disabled} onSelect={item.onSelect}>
+                    {item.label}
+                  </Menu.Item>
+                </>
+              ))}
             </Menu.Content>
           </Menu.Portal>
         </Menu>

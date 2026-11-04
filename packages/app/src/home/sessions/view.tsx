@@ -82,6 +82,7 @@ export type HomeSessionsViewProps = {
   onOpenSession: (session: SessionInfo, options?: OpenSessionOptions) => void
   onArchiveSession: (session: SessionInfo) => Promise<void>
   onRenameSession: (server: ServerConnection.Key, session: SessionInfo, title: string) => Promise<boolean>
+  onSessionSettings: (server: ServerConnection.Key, session: SessionInfo) => void
   onExportSession: (server: ServerConnection.Key, session: SessionInfo) => Promise<void>
   isPinned: (session: SessionInfo) => boolean
   onTogglePin: (session: SessionInfo) => void
@@ -658,6 +659,7 @@ function HomeSessionRow(
           label: props.isPinned(session) ? props.language.t("common.unpin") : props.language.t("common.pin"),
         },
         { id: "rename", label: props.language.t("common.rename") },
+        { id: "settings", label: `${props.language.t("session.settings.menu")}…` },
         { id: "export", label: `${props.language.t("common.export")}…` },
         { type: "separator" },
         { id: "delete", label: `${props.language.t("common.delete")}…` },
@@ -667,6 +669,7 @@ function HomeSessionRow(
 
     if (chosen === "pin") props.onTogglePin(session)
     else if (chosen === "rename") openEditor()
+    else if (chosen === "settings") props.onSessionSettings(props.server, session)
     else if (chosen === "export") void props.onExportSession(props.server, session)
     else if (chosen === "delete") props.onDeleteSession(props.server, session)
   }
@@ -909,6 +912,9 @@ function HomeSessionRow(
               {props.isPinned(props.record.session) ? props.language.t("common.unpin") : props.language.t("common.pin")}
             </Menu.Item>
             <Menu.Item onSelect={openEditor}>{props.language.t("common.rename")}</Menu.Item>
+            <Menu.Item onSelect={() => props.onSessionSettings(props.server, props.record.session)}>
+              {props.language.t("session.settings.menu")}…
+            </Menu.Item>
             <Menu.Item onSelect={() => void props.onExportSession(props.server, props.record.session)}>
               {props.language.t("common.export")}…
             </Menu.Item>

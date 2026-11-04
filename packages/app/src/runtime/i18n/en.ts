@@ -895,6 +895,13 @@ export const dict = {
   "project.settings.autoAccept.default.off": "Use default (Off)",
   "project.settings.autoAccept.on": "On",
   "project.settings.autoAccept.off": "Off",
+  "project.settings.prompt.title": "Project instructions",
+  "project.settings.prompt.description":
+    "Added to the system prompt of every session in this project, so they stay in effect however long the conversation gets. Up to {{limit}} characters.",
+  "project.settings.prompt.placeholder": "How should the agent work in this project?",
+  "project.settings.prompt.count": "{{count}} / {{limit}}",
+  "project.settings.prompt.tooLong.title": "Project instructions are too long",
+  "project.settings.prompt.tooLong.description": "Shorten them to {{limit}} characters or fewer.",
   "project.settings.name.title": "Project name",
   "project.settings.name.description": "The name shown for this project throughout OpenCode",
   "project.settings.icon.description": "Recommended: 128×128px. Click or drag to upload an image.",
@@ -1145,6 +1152,14 @@ export const dict = {
   "settings.permissions.tool.doom_loop.description": "Detect repeated tool calls with identical input",
 
   "session.delete.failed.title": "Failed to delete session",
+  "session.settings.title": "Session settings",
+  "session.settings.menu": "Session settings",
+  "session.settings.prompt.title": "Session instructions",
+  "session.settings.prompt.description":
+    "Added to the system prompt of this session only, so it stays in effect however long the conversation gets. Up to {{limit}} characters.",
+  "session.settings.prompt.placeholder": "How should the agent work in this session?",
+  "session.settings.prompt.count": "{{count}} / {{limit}}",
+  "session.settings.prompt.tooLong.title": "Session instructions are too long",
   "session.delete.title": "Delete session",
   "session.delete.confirm": 'Delete session "{{name}}"?',
   "session.delete.button": "Delete session",

@@ -3,6 +3,7 @@ import { createStore } from "solid-js/store"
 import { InlineInput } from "@opencode/ui/inline-input"
 import { getFilename } from "@opencode/util/path"
 import { useLanguage } from "@/runtime/i18n/language"
+import { usePlatform } from "@/runtime/platform/platform"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection } from "@/runtime/server/registry"
 import type { LocalProject } from "@/shell/state/layout"
@@ -20,6 +21,7 @@ export function SettingsProjectRow(props: {
 }) {
   const language = useLanguage()
   const global = useGlobal()
+  const platform = usePlatform()
 
   const [store, setStore] = createStore({
     menu: false,
@@ -95,88 +97,122 @@ export function SettingsProjectRow(props: {
     onDelete: deleteProject,
   })
 
-  return (
-    <ContextMenu>
-      <ContextMenu.Trigger class="settings-project-row-shell">
-        <div
-          role="listitem"
-          data-component="settings-project-card"
-          data-menu={store.menu ? "true" : undefined}
-          class="settings-project-card"
-        >
-          <Show
-            when={!store.editor}
-            fallback={
-              <div class="flex h-full min-w-0 flex-1 items-center gap-2">
-                <ProjectIcon project={props.project} class="shrink-0" />
-                <InlineInput
-                  ref={input}
-                  aria-label={language.t("common.rename")}
-                  dir="auto"
-                  value={store.editor?.draft ?? ""}
-                  disabled={store.editor?.saving}
-                  class="w-full text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base outline-none"
-                  style={{ "--inline-input-shadow": "none", "border-radius": "0", "text-align": "start" }}
-                  onInput={(event) => setStore("editor", "draft", event.currentTarget.value)}
-                  onKeyDown={(event) => {
-                    event.stopPropagation()
+  // Desktop draws the platform menu; only the web build needs the in-app one.
+  const showNativeMenu = async (position: { x: number; y: number }) => {
+    const show = platform.showContextMenu
 
-                    if (event.isComposing || event.keyCode === 229) return
+    if (!show) return
+    const menu = items()
 
-                    if (event.key === "Enter") {
-                      event.preventDefault()
-                      void saveEditor()
+    const chosen = await show(
+      menu.flatMap((item) => [
+        ...(item.separated ? [{ type: "separator" as const }] : []),
+        { id: item.id, label: item.label, enabled: !item.disabled },
+      ]),
+      position,
+    )
 
-                      return
-                    }
+    menu.find((item) => item.id === chosen)?.onSelect()
+  }
 
-                    if (event.key !== "Escape") return
-                    event.preventDefault()
-                    closeEditor()
-                    requestAnimationFrame(() => button?.focus())
-                  }}
-                  onBlur={closeEditor}
-                />
-              </div>
-            }
-          >
-            <button
-              ref={button}
-              type="button"
-              aria-label={displayName(props.project)}
-              title={props.project.worktree}
-              class="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[4px] bg-transparent text-start focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]"
-              onClick={() => props.onOpen(props.project)}
-            >
-              <ProjectIcon project={props.project} class="shrink-0" />
-              <bdi class="truncate text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base">
-                {displayName(props.project)}
-              </bdi>
-            </button>
-            <ProjectOptions
-              server={props.server}
-              project={props.project}
-              open={store.menu}
-              onOpenChange={(open) => setStore("menu", open)}
-              onEdit={() => props.onOpen(props.project)}
-              onRename={openEditor}
-              onDelete={deleteProject}
+  const row = () => (
+    <div
+      role="listitem"
+      data-component="settings-project-card"
+      data-menu={store.menu ? "true" : undefined}
+      class="settings-project-card"
+    >
+      <Show
+        when={!store.editor}
+        fallback={
+          <div class="flex h-full min-w-0 flex-1 items-center gap-2">
+            <ProjectIcon project={props.project} class="shrink-0" />
+            <InlineInput
+              ref={input}
+              aria-label={language.t("common.rename")}
+              dir="auto"
+              value={store.editor?.draft ?? ""}
+              disabled={store.editor?.saving}
+              class="w-full text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base outline-none"
+              style={{ "--inline-input-shadow": "none", "border-radius": "0", "text-align": "start" }}
+              onInput={(event) => setStore("editor", "draft", event.currentTarget.value)}
+              onKeyDown={(event) => {
+                event.stopPropagation()
+
+                if (event.isComposing || event.keyCode === 229) return
+
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  void saveEditor()
+
+                  return
+                }
+
+                if (event.key !== "Escape") return
+                event.preventDefault()
+                closeEditor()
+                requestAnimationFrame(() => button?.focus())
+              }}
+              onBlur={closeEditor}
             />
-          </Show>
+          </div>
+        }
+      >
+        <button
+          ref={button}
+          type="button"
+          aria-label={displayName(props.project)}
+          title={props.project.worktree}
+          class="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[4px] bg-transparent text-start focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]"
+          onClick={() => props.onOpen(props.project)}
+        >
+          <ProjectIcon project={props.project} class="shrink-0" />
+          <bdi class="truncate text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base">
+            {displayName(props.project)}
+          </bdi>
+        </button>
+        <ProjectOptions
+          server={props.server}
+          project={props.project}
+          open={store.menu}
+          onOpenChange={(open) => setStore("menu", open)}
+          onEdit={() => props.onOpen(props.project)}
+          onRename={openEditor}
+          onDelete={deleteProject}
+        />
+      </Show>
+    </div>
+  )
+
+  return (
+    <Show
+      when={!platform.showContextMenu}
+      fallback={
+        <div
+          onContextMenu={(event) => {
+            event.preventDefault()
+            void showNativeMenu({ x: event.clientX, y: event.clientY })
+          }}
+        >
+          {row()}
         </div>
-      </ContextMenu.Trigger>
-      <ContextMenu.Portal>
-        <ContextMenu.Content>
-          {items().map((item) => (
-            <>
-              {item.separated ? <ContextMenu.Separator /> : null}
-              <ContextMenu.Item disabled={item.disabled} onSelect={item.onSelect}>
-                <ContextMenu.ItemLabel>{item.label}</ContextMenu.ItemLabel>
-              </ContextMenu.Item>
-            </>
-          ))}
-        </ContextMenu.Content>
-      </ContextMenu.Portal>
-    </ContextMenu>
+      }
+    >
+      <ContextMenu>
+        <ContextMenu.Trigger class="settings-project-row-shell">{row()}</ContextMenu.Trigger>
+        <ContextMenu.Portal>
+          <ContextMenu.Content>
+            {items().map((item) => (
+              <>
+                {item.separated ? <ContextMenu.Separator /> : null}
+                <ContextMenu.Item disabled={item.disabled} onSelect={item.onSelect}>
+                  <ContextMenu.ItemLabel>{item.label}</ContextMenu.ItemLabel>
+                </ContextMenu.Item>
+              </>
+            ))}
+          </ContextMenu.Content>
+        </ContextMenu.Portal>
+      </ContextMenu>
+    </Show>
   )
 }

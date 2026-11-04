@@ -37,6 +37,7 @@ export function HomeSessions(props: {
           onOpenSession={props.sessions.session.open}
           onArchiveSession={props.sessions.session.archive}
           onRenameSession={props.sessions.session.rename}
+          onSessionSettings={props.sessions.session.settings}
           onExportSession={props.sessions.session.export}
           isPinned={props.sessions.session.pin.isPinned}
           onTogglePin={props.sessions.session.pin.toggle}
