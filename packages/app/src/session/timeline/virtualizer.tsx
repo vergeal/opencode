@@ -273,8 +273,8 @@ export function createTimelineVirtualizer(input: Input) {
 
       return observeElementOffsetReconnectAware(instance, reportOffset, () => {
         if (!active()) return
-        virtualContent?.querySelectorAll<HTMLDivElement>("[data-index]").forEach(virtualizer.measureElement)
-
+        // Rows are measured through their ref (ResizeObserver). Re-measuring every mounted row here forced
+        // a synchronous layout on each scroll event, which is what made scrolling stutter and blank out.
         if (input.pinned()) virtualizer.scrollToEnd()
         settleColdBottom()
       })
