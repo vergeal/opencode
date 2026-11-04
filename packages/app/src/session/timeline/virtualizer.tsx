@@ -181,7 +181,7 @@ export function createTimelineVirtualizer(input: Input) {
 
       const indexes = initialTail
         ? Array.from({ length: range.count - first }, (_, index) => first + index)
-        : defaultRangeExtractor({ ...range, overscan: 2 })
+        : defaultRangeExtractor({ ...range, overscan: 6 })
 
       return filterVirtualIndexes(
         [...new Set([...indexes, ...[active, anchored].filter((index) => index >= 0)])].sort((a, b) => a - b),
