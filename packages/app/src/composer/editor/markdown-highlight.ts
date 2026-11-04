@@ -862,7 +862,17 @@ function wrapRange(entry: ReturnType<typeof locate>, span: HTMLElement, expected
 
 /** Whether the draft has an unclosed inline fragment, whose boundary must follow ordinary typing. */
 function hasOpenFragment(text: string) {
+  let fenced = false
+
   for (const line of text.split("\n")) {
+    // A fenced block's rows are code, not inline markdown: its three ticks and any ticks inside it are
+    // not an open fragment, and treating them as one rebuilt every decoration on every keystroke.
+    if (/^[ \t]*(?:`{3,}|~{3,})/.test(line)) {
+      fenced = !fenced
+      continue
+    }
+    if (fenced) continue
+
     for (const mark of ["`", "~~", "**", "*", "_"]) {
       if (mark === "*" && line.includes("**")) continue
       if ((line.split(mark).length - 1) % 2 === 1) return true
