@@ -128,6 +128,7 @@ const layer = Layer.effect(
                         tools: selected.tools,
                         model,
                         initial: history.initial,
+                        project: selected.project,
                         messages: history.messages,
                       },
                     })
@@ -228,6 +229,8 @@ const layer = Layer.effect(
           model: loaded.model,
           tools: loaded.tools,
           initial: loaded.initial,
+          project: loaded.project,
+          sessionPrompt: loaded.session.prompt,
           messages: loaded.messages,
         })
         const prepared = yield* context.request

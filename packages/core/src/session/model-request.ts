@@ -94,15 +94,40 @@ export const baseTranscript = (input: {
   readonly model: SessionRunnerModel.Resolved
   readonly tools: Tool.Snapshot
   readonly initial: string
+  readonly project?: string
+  /** This Session's own instructions. They sit after the project's, since they are the most specific. */
+  readonly sessionPrompt?: string
   readonly messages: ReadonlyArray<SessionMessage.Info>
 }) => {
   const providerMetadataKey = input.model.model.route.providerMetadataKey ?? input.model.model.provider
   return {
     providerMetadataKey,
+    // The Project's instructions sit before the baseline: both are stable, while the baseline carries the date and
+    // environment that change and would otherwise invalidate the cached prefix behind them.
     system: [
       input.agent.system
         ? input.agent.system
         : SessionSystemPrompt.make(input.tools.definitions.map((tool) => tool.name)),
+      input.project
+        ? [
+            "# Project instructions",
+            "",
+            "The project owner wrote these instructions for every session in this project.",
+            "They apply on top of your own instructions for as long as this project is the working directory.",
+            "",
+            input.project,
+          ].join("\n")
+        : "",
+      input.sessionPrompt
+        ? [
+            "# Session instructions",
+            "",
+            "The user wrote these instructions for this session only.",
+            "They apply on top of the project's instructions for as long as this session runs.",
+            "",
+            input.sessionPrompt,
+          ].join("\n")
+        : "",
       input.initial,
     ]
       .filter((part) => part.length > 0)

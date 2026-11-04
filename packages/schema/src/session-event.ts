@@ -30,6 +30,16 @@ const Base = {
   sessionID: SessionID,
 }
 
+/** Session-level instructions are counted in characters, so an emoji counts like a CJK glyph. */
+export const PromptLimit = 2000
+export const Prompt = Schema.String.check(
+  Schema.makeFilter(
+    (value: string) => Array.from(value).length <= PromptLimit,
+    Schema.isMaxLength(PromptLimit).annotations,
+  ),
+).annotate({ identifier: "Session.Prompt" })
+export type Prompt = typeof Prompt.Type
+
 const options = {
   durable: {
     aggregate: "sessionID",
@@ -98,6 +108,17 @@ export const Renamed = Event.durable({
   },
 })
 export type Renamed = typeof Renamed.Type
+
+export const PromptUpdated = Event.durable({
+  type: "session.prompt.updated",
+  ...options,
+  schema: {
+    ...Base,
+    /** Empty clears the Session's instructions. */
+    prompt: Prompt,
+  },
+})
+export type PromptUpdated = typeof PromptUpdated.Type
 
 export const MetadataUpdated = Event.durable({
   type: "session.metadata.updated",
@@ -657,6 +678,7 @@ export const Definitions = Event.inventory(
   ModelSelected,
   Moved,
   Renamed,
+  PromptUpdated,
   MetadataUpdated,
   Permissions,
   Viewed,

@@ -22,6 +22,10 @@ export type ID = SessionID
 export const Metadata = SessionMetadata
 export type Metadata = SessionMetadata
 
+export const Prompt = SessionEvent.Prompt
+export type Prompt = typeof Prompt.Type
+export const PromptLimit = SessionEvent.PromptLimit
+
 export const Event = SessionEvent
 
 export { Revert }
@@ -56,6 +60,8 @@ export const Info = Schema.Struct({
   metadata: Metadata.pipe(optional),
   /** Evaluated after the agent's rules; the last matching rule wins. */
   permissions: Permission.Ruleset.pipe(optional),
+  /** Session-level instructions added to every request's system prompt, above the baseline. */
+  prompt: SessionEvent.Prompt.pipe(optional),
   revert: Revert.pipe(optional),
 }).annotate({ identifier: "Session.Info" })
 

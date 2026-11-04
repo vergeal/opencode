@@ -255,6 +255,10 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
             yield* session
               .setPermissions({ sessionID: ctx.params.sessionID, permissions: ctx.payload.permissions })
               .pipe(Effect.catchTag("Session.NotFoundError", missingSession))
+          if (ctx.payload.prompt !== undefined)
+            yield* session
+              .setPrompt({ sessionID: ctx.params.sessionID, prompt: ctx.payload.prompt })
+              .pipe(Effect.catchTag("Session.NotFoundError", missingSession))
           if (ctx.payload.archived !== undefined)
             yield* (ctx.payload.archived ? session.archive : session.unarchive)(ctx.params.sessionID).pipe(
               Effect.catchTag("Session.NotFoundError", missingSession),

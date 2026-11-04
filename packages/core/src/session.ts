@@ -206,6 +206,8 @@ export interface Interface {
     sessionID: SessionSchema.ID
     permissions: Permission.Ruleset
   }) => Effect.Effect<void, NotFoundError>
+  /** Replaces the Session's own system-prompt instructions; an empty string clears them. */
+  readonly setPrompt: (input: { sessionID: SessionSchema.ID; prompt: string }) => Effect.Effect<void, NotFoundError>
   readonly move: SessionMove.Interface["move"]
   readonly prompt: (
     input: Parameters<Session.Handle["prompt"]>[0] & { sessionID: SessionSchema.ID },
@@ -506,6 +508,7 @@ const layer = Layer.effect(
       unarchive: (sessionID) => sessions.forSession(sessionID).unarchive(),
       setMetadata: (input) => sessions.forSession(input.sessionID).setMetadata(input),
       setPermissions: (input) => sessions.forSession(input.sessionID).setPermissions(input),
+      setPrompt: (input) => sessions.forSession(input.sessionID).setPrompt(input),
       move: moves.move,
       compact: (input) => sessions.forSession(input.sessionID).compact(input),
       wait: (sessionID) => sessions.forSession(sessionID).wait(),

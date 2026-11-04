@@ -269,6 +269,7 @@ export type SessionUpdateInput = {
   readonly title?: string | undefined
   readonly metadata?: Session.Metadata | undefined
   readonly permissions?: Permission.Ruleset | undefined
+  readonly prompt?: Session.Prompt | undefined
   readonly archived?: boolean | undefined
 }
 export type SessionUpdateOutput = void
@@ -522,6 +523,17 @@ export type SessionLogOutput =
             | { readonly directory: AbsolutePath; readonly workspaceID?: Workspace.ID | undefined }
             | undefined
           readonly data: { readonly sessionID: Session.ID; readonly title: string }
+        }
+      | {
+          readonly id: Event.ID
+          readonly created: number
+          readonly metadata?: { readonly [x: string]: unknown } | undefined
+          readonly type: "session.prompt.updated"
+          readonly durable: { readonly aggregateID: string; readonly seq: Event.Seq; readonly version: Event.Version }
+          readonly location?:
+            | { readonly directory: AbsolutePath; readonly workspaceID?: Workspace.ID | undefined }
+            | undefined
+          readonly data: { readonly sessionID: Session.ID; readonly prompt: Session.Prompt }
         }
       | {
           readonly id: Event.ID
@@ -1769,6 +1781,7 @@ export type ProjectUpdateInput = {
   readonly name?: string | undefined
   readonly icon?: Project.Icon | undefined
   readonly commands?: Project.Commands | undefined
+  readonly prompt?: Project.Prompt | undefined
 }
 export type ProjectUpdateOutput = Project.Info
 export type ProjectUpdateOperation<E = never> = (input: ProjectUpdateInput) => Effect.Effect<ProjectUpdateOutput, E>
@@ -1946,6 +1959,7 @@ export type EventSubscribeInput = {
         | "session.model.selected"
         | "session.moved"
         | "session.renamed"
+        | "session.prompt.updated"
         | "session.metadata.updated"
         | "session.permissions"
         | "session.viewed"

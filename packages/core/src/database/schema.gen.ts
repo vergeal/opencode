@@ -113,7 +113,8 @@ const schema: Omit<DatabaseMigration.Migration, "id"> = {
           \`time_active\` integer DEFAULT 0 NOT NULL,
           \`time_archived\` integer,
           \`sandboxes\` text NOT NULL,
-          \`commands\` text
+          \`commands\` text,
+          \`prompt\` text
         );
       `)
       yield* tx.run(`
@@ -217,6 +218,7 @@ const schema: Omit<DatabaseMigration.Migration, "id"> = {
           \`tokens_cache_write\` integer DEFAULT 0 NOT NULL,
           \`revert\` text,
           \`permission\` text,
+          \`prompt\` text,
           \`agent\` text,
           \`model\` text,
           \`time_created\` integer NOT NULL,

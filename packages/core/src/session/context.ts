@@ -13,6 +13,7 @@ import { InstructionBuiltIns } from "../instructions/builtins.js"
 import { Location } from "../location.js"
 import { McpInstructions } from "../mcp/instructions.js"
 import { McpTool } from "../tool/mcp.js"
+import { Project } from "../project.js"
 import { ReferenceInstructions } from "../reference/instructions.js"
 import { SkillInstructions } from "../skill/instructions.js"
 import { Tool } from "../tool.js"
@@ -29,6 +30,8 @@ export interface Selection {
   readonly session: SessionSchema.Info
   readonly agent: Agent.Selection & { readonly info: Agent.Info }
   readonly instructions: Instructions.List
+  /** The Project's own instructions as of selection; `load` rereads them for every Step. */
+  readonly project?: string
   readonly tools: Tool.Snapshot
 }
 
@@ -37,6 +40,8 @@ export interface Loaded {
   readonly agent: Agent.Selection & { readonly info: Agent.Info }
   readonly model: SessionRunnerModel.Resolved
   readonly initial: string
+  /** The Project's own instructions, reread for every Step rather than frozen with the Session's baseline. */
+  readonly project?: string
   readonly messages: ReadonlyArray<SessionMessage.Info>
   readonly tools: Tool.Snapshot
 }
@@ -80,6 +85,7 @@ const layer = Layer.effect(
     const discovery = yield* InstructionDiscovery.Service
     const entries = yield* InstructionEntry.Service
     const location = yield* Location.Service
+    const project = yield* Project.Service
     const mcpInstructions = yield* McpInstructions.Service
     const mcpTools = yield* McpTool.Service
     const models = yield* SessionRunnerModel.Service
@@ -143,6 +149,7 @@ const layer = Layer.effect(
           references: referenceInstructions.load(),
           mcp: mcpInstructions.load(permissions),
           entries: entries.load(sessionID),
+          project: project.get(location.project.id),
         },
         { concurrency: "unbounded" },
       )
@@ -162,6 +169,7 @@ const layer = Layer.effect(
           loaded.entries,
         ]),
         tools: loaded.tools,
+        project: loaded.project?.prompt,
       }
     })
 
@@ -178,6 +186,8 @@ const layer = Layer.effect(
         agent: selection.agent,
         model,
         initial: history.initial,
+        // Reread on every Step so instructions written during a Session still reach its next request.
+        project: (yield* project.get(location.project.id))?.prompt,
         messages: history.entries.map((entry) => entry.message),
         tools: selection.tools,
       }
@@ -215,6 +225,7 @@ export const node = makeLocationNode({
     Location.node,
     McpInstructions.node,
     McpTool.node,
+    Project.node,
     ReferenceInstructions.node,
     SessionRunnerModel.node,
     SessionModelRequest.node,

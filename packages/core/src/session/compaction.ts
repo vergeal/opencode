@@ -974,6 +974,8 @@ const transcript = (context: SessionContext.Loaded, messages: ReadonlyArray<Sess
     model: context.model,
     tools: context.tools,
     initial: context.initial,
+    project: context.project,
+    sessionPrompt: context.session.prompt,
     messages,
   })
 

@@ -96,6 +96,10 @@ export const make = Effect.fn("Session.make")(function* () {
     yield* get(sessionID)
     yield* bus.publish(SessionEvent.Permissions, { sessionID, permissions: input.permissions })
   })
+  const setPrompt = Effect.fn("Session.setPrompt")(function* (sessionID: SessionSchema.ID, input: { prompt: string }) {
+    yield* get(sessionID)
+    yield* bus.publish(SessionEvent.PromptUpdated, { sessionID, prompt: input.prompt })
+  })
   const switchAgent = Effect.fn("Session.switchAgent")(function* (
     sessionID: SessionSchema.ID,
     input: { agent: Agent.ID },
@@ -365,6 +369,7 @@ export const make = Effect.fn("Session.make")(function* () {
     unarchive,
     setMetadata,
     setPermissions,
+    setPrompt,
     switchAgent,
     switchModel,
     inbox,
@@ -391,6 +396,7 @@ export const make = Effect.fn("Session.make")(function* () {
     const unarchive = operations.unarchive.bind(undefined, sessionID)
     const setMetadata = operations.setMetadata.bind(undefined, sessionID)
     const setPermissions = operations.setPermissions.bind(undefined, sessionID)
+    const setPrompt = operations.setPrompt.bind(undefined, sessionID)
     const switchAgent = operations.switchAgent.bind(undefined, sessionID)
     const switchModel = operations.switchModel.bind(undefined, sessionID)
     const inbox = operations.inbox.bind(undefined, sessionID)
@@ -420,6 +426,7 @@ export const make = Effect.fn("Session.make")(function* () {
       unarchive,
       setMetadata,
       setPermissions,
+      setPrompt,
       switchAgent,
       switchModel,
       inbox,

@@ -304,6 +304,9 @@ export const makeSessionGroup = <I extends HttpApiMiddleware.AnyId, S, FormI ext
           title: Schema.String.pipe(Schema.optional),
           metadata: Session.Metadata.pipe(Schema.optional),
           permissions: Permission.Ruleset.pipe(Schema.optional),
+          prompt: Session.Prompt.pipe(Schema.optional).annotate({
+            description: "Session-level instructions for the system prompt. An empty string clears them.",
+          }),
           archived: Schema.Boolean.pipe(Schema.optional).annotate({
             description:
               "Archive the session with true or restore it with false. Repeating the current state is a no-op.",

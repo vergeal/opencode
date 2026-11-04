@@ -1269,6 +1269,48 @@ describe("SessionRunnerLLM", () => {
     expect(instructionEvents[1]?.metadata).toBeUndefined()
   })
 
+  scenario("reads the project's instructions for each request", function* (s) {
+    yield* s.runPrompt("First")
+    expect(
+      s.requests
+        .at(-1)
+        ?.system.map((part) => part.text)
+        .some((text) => text.includes("# Project instructions")),
+    ).toBe(false)
+
+    // The fixture's directory resolves to its own Project ID, so set the prompt on every row it could read.
+    yield* s.db.update(ProjectTable).set({ prompt: "Prefer bun over npm." }).run().pipe(Effect.orDie)
+
+    yield* s.runPrompt("Second")
+    const texts = s.requests.at(-1)?.system.map((part) => part.text) ?? []
+    const project = texts.findIndex((text) => text.startsWith("# Project instructions"))
+
+    expect(project).toBeGreaterThan(-1)
+    expect(texts[project]).toContain("Prefer bun over npm.")
+    // Stable text sits ahead of the baseline, whose date and environment change and must not invalidate the cache.
+    expect(project).toBeLessThan(texts.findIndex((text) => text.includes(s.systemBaseline)))
+  })
+
+  scenario("reads the session's own instructions for each request", function* (s) {
+    const systemTexts = () => s.requests.at(-1)?.system.map((part) => part.text) ?? []
+    const sessionInstruction = () => systemTexts().findIndex((text) => text.startsWith("# Session instructions"))
+
+    yield* s.runPrompt("First")
+    expect(sessionInstruction()).toBe(-1)
+
+    yield* s.session.setPrompt({ sessionID, prompt: "Use the staging API." }).pipe(Effect.orDie)
+    yield* s.runPrompt("Second")
+
+    expect(sessionInstruction()).toBeGreaterThan(-1)
+    expect(systemTexts()[sessionInstruction()]).toContain("Use the staging API.")
+    // The baseline carries the date and environment, so it stays last.
+    expect(sessionInstruction()).toBeLessThan(systemTexts().findIndex((text) => text.includes(s.systemBaseline)))
+
+    yield* s.session.setPrompt({ sessionID, prompt: "" }).pipe(Effect.orDie)
+    yield* s.runPrompt("Third")
+    expect(sessionInstruction()).toBe(-1)
+  })
+
   scenario("retries the first request after system context becomes available", function* (s) {
     const messageID = SessionMessage.ID.create()
     s.systemUnavailable = true

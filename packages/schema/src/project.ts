@@ -29,6 +29,15 @@ export const Commands = Schema.Struct({
   ),
 }).annotate({ identifier: "Project.Commands" })
 export interface Commands extends Schema.Schema.Type<typeof Commands> {}
+/** Project instructions are counted in characters, not UTF-16 units, so an emoji counts like a CJK glyph. */
+export const PromptLimit = 528
+export const Prompt = Schema.String.check(
+  Schema.makeFilter(
+    (value: string) => Array.from(value).length <= PromptLimit,
+    Schema.isMaxLength(PromptLimit).annotations,
+  ),
+).annotate({ identifier: "Project.Prompt" })
+export type Prompt = typeof Prompt.Type
 export const Time = Schema.Struct({
   created: NonNegativeInt,
   updated: NonNegativeInt,
@@ -44,6 +53,8 @@ export const Info = Schema.Struct({
   name: optional(Schema.String),
   icon: optional(Icon),
   commands: optional(Commands),
+  /** Project instructions that every session in this project receives in its system prompt. */
+  prompt: optional(Prompt),
   time: Time,
   sandboxes: Schema.Array(Schema.String),
 }).annotate({ identifier: "Project" })
@@ -55,6 +66,7 @@ export const UpdateInput = Schema.Struct({
   name: optional(Schema.String),
   icon: optional(Icon),
   commands: optional(Commands),
+  prompt: optional(Prompt),
 }).annotate({ identifier: "Project.UpdateInput" })
 export interface UpdateInput extends Schema.Schema.Type<typeof UpdateInput> {}
 

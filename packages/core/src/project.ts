@@ -78,6 +78,8 @@ export interface ResolveOptions {
 
 export interface Interface {
   readonly list: (input?: ListInput) => Effect.Effect<ReadonlyArray<Info>>
+  /** Reads one Project without resolving a directory, for readers that already know the ID. */
+  readonly get: (projectID: ID) => Effect.Effect<Info | undefined>
   readonly update: (input: UpdateInput) => Effect.Effect<Info, NotFoundError>
   /** Records Project activity for recency ordering, at most once per minute per Project. */
   readonly activate: (projectID: ID) => Effect.Effect<void>
@@ -105,6 +107,7 @@ function fromRow(row: typeof ProjectTable.$inferSelect): Info {
     name: row.name ?? undefined,
     icon,
     commands: row.commands ?? undefined,
+    prompt: row.prompt ?? undefined,
     time: {
       created: row.time_created,
       updated: row.time_updated,
@@ -246,6 +249,11 @@ const layer = Layer.effect(
       return rows.map(fromRow)
     })
 
+    const get = Effect.fn("Project.get")(function* (projectID: ID) {
+      const row = yield* db.select().from(ProjectTable).where(eq(ProjectTable.id, projectID)).get().pipe(Effect.orDie)
+      return row ? fromRow(row) : undefined
+    })
+
     const update = Effect.fn("Project.update")(function* (input: UpdateInput) {
       const row = yield* db
         .update(ProjectTable)
@@ -260,6 +268,7 @@ const layer = Layer.effect(
               : input.commands.start
                 ? { start: input.commands.start }
                 : null,
+          prompt: input.prompt === undefined ? undefined : input.prompt.trim() || null,
           time_updated: Date.now(),
         })
         .where(eq(ProjectTable.id, input.projectID))
@@ -486,7 +495,7 @@ const layer = Layer.effect(
       )
     })
 
-    return Service.of({ list, update, activate, resolve, sweep })
+    return Service.of({ list, get, update, activate, resolve, sweep })
   }),
 )
 

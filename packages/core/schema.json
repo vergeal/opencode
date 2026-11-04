@@ -1,8 +1,8 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "44bd8ca5-689a-410e-a46a-958eb5accd97",
-  "prevIds": ["f1f14616-b6a1-483d-87b0-d5b7a9132580"],
+  "id": "656d9d14-4da5-419c-91ec-d6c255ae096e",
+  "prevIds": ["588aadba-a187-413d-bd45-29f111c92b0e"],
   "ddl": [
     {
       "name": "account_state",
@@ -746,6 +746,16 @@
     },
     {
       "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "prompt",
+      "entityType": "columns",
+      "table": "project"
+    },
+    {
+      "type": "text",
       "notNull": true,
       "autoincrement": false,
       "default": null,
@@ -1371,6 +1381,16 @@
       "default": null,
       "generated": null,
       "name": "permission",
+      "entityType": "columns",
+      "table": "session_v2"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "prompt",
       "entityType": "columns",
       "table": "session_v2"
     },

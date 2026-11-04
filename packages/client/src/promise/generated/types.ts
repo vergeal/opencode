@@ -64,6 +64,8 @@ export type RelativePath = string
 
 export type SessionMetadata = { [x: string]: JsonValue }
 
+export type SessionPrompt = string
+
 export type SnapshotID = string
 
 export type FileDiffInfo = {
@@ -283,6 +285,8 @@ export type ProjectVcs = string
 export type ProjectIcon = { url?: string; override?: string; color?: string }
 
 export type ProjectCommands = { start?: string }
+
+export type ProjectPrompt = string
 
 export type ProjectTime = { created: number; updated: number; active: number; archived?: number }
 
@@ -758,6 +762,7 @@ export type Project = {
   name?: string
   icon?: ProjectIcon
   commands?: ProjectCommands
+  prompt?: ProjectPrompt
   time: ProjectTime
   sandboxes: Array<string>
 }
@@ -1101,6 +1106,16 @@ export type SessionRenamed = {
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
   data: { sessionID: SessionID; title: string }
+}
+
+export type SessionPromptUpdated = {
+  id: EventID
+  created: number
+  metadata?: { [x: string]: any }
+  type: "session.prompt.updated"
+  durable: { aggregateID: string; seq: EventSeq; version: 1 }
+  location?: LocationRef
+  data: { sessionID: SessionID; prompt: SessionPrompt }
 }
 
 export type SessionMetadataUpdated = {
@@ -1746,6 +1761,7 @@ export type ProjectUpdated = {
     name?: string
     icon?: ProjectIcon
     commands?: ProjectCommands
+    prompt?: ProjectPrompt
     time: ProjectTime
     sandboxes: Array<string>
   }
@@ -2215,6 +2231,7 @@ export type SessionInfo = {
   subpath?: RelativePath
   metadata?: SessionMetadata
   permissions?: PermissionRuleset
+  prompt?: SessionPrompt
   revert?: SessionRevert
   location: LocationPublicRef
 }
@@ -2634,6 +2651,7 @@ export type SessionEventDurable =
   | SessionModelSelected
   | SessionMoved
   | SessionRenamed
+  | SessionPromptUpdated
   | SessionMetadataUpdated
   | SessionPermissions
   | SessionViewed
@@ -2699,6 +2717,7 @@ export type V2Event =
   | SessionModelSelected
   | SessionMoved
   | SessionRenamed
+  | SessionPromptUpdated
   | SessionMetadataUpdated
   | SessionPermissions
   | SessionViewed
@@ -3203,6 +3222,7 @@ export type SessionImportInput = {
       readonly resource: string
       readonly effect: "allow" | "deny" | "ask"
     }>
+    readonly prompt?: string
     readonly revert?: {
       readonly messageID: string
       readonly partID?: string
@@ -3260,6 +3280,7 @@ export type SessionUpdateInput = {
   readonly permissions?:
     | ReadonlyArray<{ readonly action: string; readonly resource: string; readonly effect: "allow" | "deny" | "ask" }>
     | undefined
+  readonly prompt?: string | undefined
   readonly archived?: boolean | undefined
 }
 
@@ -4025,6 +4046,7 @@ export type ProjectUpdateInput = {
   readonly name?: string | undefined
   readonly icon?: { readonly url?: string; readonly override?: string; readonly color?: string } | undefined
   readonly commands?: { readonly start?: string } | undefined
+  readonly prompt?: string | undefined
 }
 
 export type ProjectUpdateOutput = Project
@@ -4161,6 +4183,7 @@ export type EventSubscribeInput = {
         | "session.model.selected"
         | "session.moved"
         | "session.renamed"
+        | "session.prompt.updated"
         | "session.metadata.updated"
         | "session.permissions"
         | "session.viewed"

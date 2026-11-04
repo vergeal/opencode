@@ -97,13 +97,16 @@ describe("Project.update", () => {
           name: "Updated",
           icon: { color: "blue", override: "data:image/png;base64,test" },
           commands: { start: "bun install" },
+          prompt: "  Prefer bun over npm.  ",
         }),
       ).toMatchObject({
         id,
         name: "Updated",
         icon: { color: "blue", override: "data:image/png;base64,test" },
         commands: { start: "bun install" },
+        prompt: "Prefer bun over npm.",
       })
+      expect((yield* project.list()).find((item) => item.id === id)).toMatchObject({ prompt: "Prefer bun over npm." })
 
       expect(
         yield* project.update({
@@ -111,6 +114,7 @@ describe("Project.update", () => {
           name: "",
           icon: { color: "", override: "" },
           commands: { start: "" },
+          prompt: "",
         }),
       ).toMatchObject({ id })
       expect((yield* project.list())[0]).toEqual({

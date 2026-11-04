@@ -26,6 +26,7 @@ export const ProjectTable = sqliteTable("project", {
   time_archived: integer(),
   sandboxes: absoluteArrayColumn().notNull(),
   commands: text({ mode: "json" }).$type<{ start?: string }>(),
+  prompt: text(),
 })
 
 /** @deprecated Use WorktreeTable from worktree/sql instead. */

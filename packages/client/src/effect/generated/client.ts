@@ -522,6 +522,7 @@ const EndpointSessionUpdate = (raw: RawClient["server.session"]) => (input: Sess
         title: input["title"],
         metadata: input["metadata"],
         permissions: input["permissions"],
+        prompt: input["prompt"],
         archived: input["archived"],
       },
     }).pipe(Effect.mapError(mapClientError)),
@@ -1213,7 +1214,13 @@ const EndpointProjectUpdate = (raw: RawClient["server.project"]) => (input: Proj
   preserveEffect<ProjectUpdateOutput>()(
     raw["project.update"]({
       params: { projectID: input["projectID"] },
-      payload: { canonical: input["canonical"], name: input["name"], icon: input["icon"], commands: input["commands"] },
+      payload: {
+        canonical: input["canonical"],
+        name: input["name"],
+        icon: input["icon"],
+        commands: input["commands"],
+        prompt: input["prompt"],
+      },
     }).pipe(Effect.mapError(mapClientError)),
   )
 
