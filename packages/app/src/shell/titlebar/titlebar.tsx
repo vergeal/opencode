@@ -35,6 +35,8 @@ import { RecentlyClosedTabsMenu } from "./recently-closed-tabs-menu"
 import { useSettingsDialog } from "@/settings/command"
 import { rootSession } from "@/shell/routes/session"
 import { TitlebarItems, useTitlebarItems } from "@/runtime/plugin/titlebar-items"
+import { SessionSettingsDialog } from "@/session/settings-dialog"
+import type { SessionInfo } from "@opencode/client/promise"
 
 export const newTabCommand = { id: "tab.new", keybind: "mod+t,mod+n" }
 
@@ -71,6 +73,9 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
   const settings = useSettings()
   const openSettings = useSettingsDialog()
   const dialog = useDialog()
+
+  const openSessionSettings = (server: ServerConnection.Key, session: SessionInfo) =>
+    dialog.show(() => <SessionSettingsDialog server={server} session={session} />)
   const navigate = useNavigate()
   const location = useLocation()
   const mobile = createMediaQuery("(max-width: 767px)")
@@ -660,6 +665,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                               orientation="vertical"
                               tabs={tabsStore}
                               currentTab={currentTab()}
+                              onSessionSettings={openSessionSettings}
                               onNavigate={(tab) => {
                                 tabs.select(tab)
                                 setMobileTabs("open", false)
@@ -735,6 +741,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                         <TitlebarTabStrip
                           tabs={tabsStore}
                           currentTab={currentTab()}
+                          onSessionSettings={openSessionSettings}
                           onNavigate={(tab, el) => {
                             tabs.select(tab)
                             el?.scrollIntoView({ behavior: "instant" })
@@ -864,6 +871,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                     orientation="vertical"
                                     tabs={tabsStore}
                                     currentTab={currentTab()}
+                                    onSessionSettings={openSessionSettings}
                                     onNavigate={(tab, el) => {
                                       tabs.select(tab)
                                       el?.scrollIntoView({ behavior: "instant", block: "nearest" })

@@ -48,6 +48,7 @@ function SessionTabSlot(props: {
   fallbackDirectory?: string
   onRename: (title: string) => Promise<void>
   onDelete: () => void
+  onSessionSettings: () => void
   onNavigate: (element: HTMLDivElement) => void
   onClose: () => void
   onIntent: (hovered: boolean) => void
@@ -93,6 +94,7 @@ function SessionTabSlot(props: {
         fallbackDirectory={props.fallbackDirectory}
         onRename={props.onRename}
         onDelete={props.onDelete}
+        onSessionSettings={props.onSessionSettings}
         onNavigate={() => props.onNavigate(ref)}
         onClose={props.onClose}
         active={props.active}
@@ -113,6 +115,7 @@ function SessionTabEntry(props: {
   serverCtx: ServerCtx | undefined
   onVisibleChange: (visible: boolean) => void
   onUnreadChange: (unread: boolean) => void
+  onSessionSettings: (server: ServerConnection.Key, session: SessionInfo) => void
   onNavigate: (element: HTMLDivElement) => void
   onClose: () => void
 }) {
@@ -322,6 +325,11 @@ function SessionTabEntry(props: {
         fallbackDirectory={pending()?.draft.directory ?? persisted()?.directory}
         onRename={rename}
         onDelete={() => dialog.show(() => <DeleteDialog />)}
+        onSessionSettings={() => {
+          const value = session()
+
+          if (value) props.onSessionSettings(props.tab.server, value)
+        }}
         onNavigate={props.onNavigate}
         onClose={props.onClose}
         onIntent={hover}
@@ -384,6 +392,7 @@ export function TitlebarTabStrip(props: {
   orientation?: "horizontal" | "vertical"
   tabs: Tab[]
   currentTab: Tab | undefined
+  onSessionSettings: (server: ServerConnection.Key, session: SessionInfo) => void
   onNavigate: (tab: Tab, el?: HTMLDivElement) => void
   onClose: (tab: Tab) => void
   onReorder: (keys: string[]) => void
@@ -510,7 +519,9 @@ export function TitlebarTabStrip(props: {
                   : [new PointerActivationConstraints.Distance({ value: 4 })],
               preventActivation: (event) =>
                 event.target instanceof Element &&
-                !!event.target.closest('[data-slot="tab-close"], [contenteditable="true"], [contenteditable="plaintext-only"]'),
+                !!event.target.closest(
+                  '[data-slot="tab-close"], [contenteditable="true"], [contenteditable="plaintext-only"]',
+                ),
             }),
           ]}
           modifiers={[
@@ -589,6 +600,7 @@ export function TitlebarTabStrip(props: {
                       serverCtx={serverCtx()}
                       onVisibleChange={(visible) => setVisibility(id, visible)}
                       onUnreadChange={(value) => setUnread(id, value)}
+                      onSessionSettings={props.onSessionSettings}
                       onNavigate={(element) => {
                         ref = element
                         props.onNavigate(tab, element)

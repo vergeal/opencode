@@ -35,6 +35,7 @@ export function TabNavItem(props: {
   onRename: (title: string) => Promise<void>
   onClose: () => void
   onDelete: () => void
+  onSessionSettings?: () => void
   onNavigate: () => void
   active?: boolean
   suppressNavigation?: boolean
@@ -421,6 +422,9 @@ export function TabNavItem(props: {
           </Menu.Item>
           <Menu.Item disabled={!props.session} onSelect={() => setMenu("rename", true)}>
             {language.t("common.rename")}
+          </Menu.Item>
+          <Menu.Item disabled={!props.session} onSelect={() => props.onSessionSettings?.()}>
+            {language.t("session.settings.menu")}…
           </Menu.Item>
           <Menu.Item onSelect={props.onClose}>{language.t("common.closeTab")}</Menu.Item>
           <Menu.Separator />

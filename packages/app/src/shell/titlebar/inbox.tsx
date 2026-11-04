@@ -15,7 +15,8 @@ import { Menu } from "@opencode/ui/menu"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { displayName } from "@opencode/ui/project-avatar"
-import { useServers } from "@/runtime/server/registry"
+import { ServerConnection, useServers } from "@/runtime/server/registry"
+import { SessionSettingsDialog } from "@/session/settings-dialog"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { usePinnedSessions } from "@/session/pins"
@@ -498,6 +499,7 @@ function InboxRow(props: InboxRowProps) {
   const language = useLanguage()
   const servers = useServers()
   const platform = usePlatform()
+  const dialog = useDialog()
   const nativeMenu = () => !!platform.showContextMenu
   const project = createMemo(() => props.entry.ctx.projects.forSession(props.entry.session))
   const projectName = () => displayName(project() ?? { worktree: props.entry.session.location.directory })
@@ -546,6 +548,7 @@ function InboxRow(props: InboxRowProps) {
           id: props.archived ? "unarchive" : "archive",
           label: props.archived ? language.t("sidebar.inbox.unarchive") : language.t("common.archive"),
         },
+        { id: "settings", label: `${language.t("session.settings.menu")}…` },
         { type: "separator" },
         { id: "delete", label: `${language.t("common.delete")}…` },
       ],
@@ -555,6 +558,10 @@ function InboxRow(props: InboxRowProps) {
     if (chosen === "pin") props.onTogglePin()
     else if (chosen === "archive") props.onArchive()
     else if (chosen === "unarchive") props.onUnarchive()
+    else if (chosen === "settings")
+      dialog.show(() => (
+        <SessionSettingsDialog server={ServerConnection.key(props.entry.conn)} session={props.entry.session} />
+      ))
     else if (chosen === "delete") props.onDelete()
   }
 
@@ -679,6 +686,15 @@ function InboxRow(props: InboxRowProps) {
           >
             <Menu.Item onSelect={props.onUnarchive}>{language.t("sidebar.inbox.unarchive")}</Menu.Item>
           </Show>
+          <Menu.Item
+            onSelect={() =>
+              dialog.show(() => (
+                <SessionSettingsDialog server={ServerConnection.key(props.entry.conn)} session={props.entry.session} />
+              ))
+            }
+          >
+            {language.t("session.settings.menu")}…
+          </Menu.Item>
           <Menu.Separator />
           <Menu.Item onSelect={props.onDelete}>{language.t("common.delete")}…</Menu.Item>
         </Menu.Context.Content>
