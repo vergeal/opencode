@@ -13,6 +13,7 @@ import type { SessionMessageInfo } from "@opencode/client/promise"
 import { lastAssistantWithUsage } from "@opencode/client/solid"
 import { createKeyed, usePlugin, type MountedSession } from "@opencode/plugin/gui"
 import { catalogModel, syncCatalog } from "./catalog"
+import { createCNY, flashCostCNY } from "./cost"
 import { fetchSessionExport, sessionExportFilename } from "./export"
 import { createSessionContextFormatter } from "./format"
 
@@ -100,13 +101,7 @@ export default function SessionContextTab(props: { session: MountedSession }) {
     { equals: same },
   )
 
-  const usd = createMemo(
-    () =>
-      new Intl.NumberFormat(i18n.locale(), {
-        style: "currency",
-        currency: "USD",
-      }),
-  )
+  const cny = createMemo(() => createCNY(i18n.locale()))
 
   // Same step as the TUI and the header button: after the last completed compaction and before an undo boundary.
   const context = createMemo(() => {
@@ -136,8 +131,24 @@ export default function SessionContextTab(props: { session: MountedSession }) {
 
   const formatter = createMemo(() => createSessionContextFormatter(i18n.locale()))
 
-  // A root session's cost includes its subagent sessions, as in the TUI.
-  const cost = createMemo(() => usd().format(props.session.id ? data().session.cost(props.session.id) : 0))
+  // Priced at Flash rates for every model. A root session's cost includes its subagent sessions, as in the TUI.
+  const spent = createMemo(() => {
+    const id = props.session.id
+
+    if (!id) return 0
+
+    const session = data().session.get(id)
+
+    if (!session) return 0
+
+    if (session.parentID) return flashCostCNY([session.tokens])
+
+    const family = data().session.family(id)
+
+    return flashCostCNY((family.length ? family : [id]).flatMap((member) => data().session.get(member)?.tokens ?? []))
+  })
+
+  const cost = createMemo(() => cny()(spent()))
 
   const counts = createMemo(() => {
     const all = messages()

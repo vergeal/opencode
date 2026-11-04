@@ -6,6 +6,7 @@ import { useI18n } from "@opencode/ui/context/i18n"
 import { lastAssistantWithUsage } from "@opencode/client/solid"
 import { usePlugin, type MountedSession } from "@opencode/plugin/gui"
 import { catalogModel, syncCatalog } from "./catalog"
+import { createCNY, flashCostCNY } from "./cost"
 
 function ContextTooltipRow(props: { name: JSX.Element; value: JSX.Element }) {
   return (
@@ -32,13 +33,7 @@ export function SessionContextUsage(props: {
     props.session.id ? props.session.server.data.session.message.list(props.session.id) : [],
   )
 
-  const usd = createMemo(
-    () =>
-      new Intl.NumberFormat(i18n.locale(), {
-        style: "currency",
-        currency: "USD",
-      }),
-  )
+  const cny = createMemo(() => createCNY(i18n.locale()))
 
   const info = createMemo(() =>
     props.session.id ? props.session.server.data.session.get(props.session.id) : undefined,
@@ -70,21 +65,29 @@ export function SessionContextUsage(props: {
       .toLocaleLowerCase(i18n.locale()),
   )
 
-  // A root session's cost includes its subagent sessions, as in the TUI.
-  const spent = createMemo(() => (props.session.id ? props.session.server.data.session.cost(props.session.id) : 0))
+  // Priced at Flash rates for every model. A root session's cost includes its subagent sessions, as in the TUI.
+  const spent = createMemo(() => {
+    const id = props.session.id
 
-  const cost = createMemo(() => usd().format(spent()))
+    if (!id) return 0
 
-  // Spend anywhere in the family keeps the cost visible, even when this session's model is free.
-  const showCost = createMemo(() => {
-    if (spent() > 0) return true
-    const ref = info()?.model ?? messages().findLast((item) => item.type === "assistant")?.model
-    const model = ref ? catalogModel(props.session, ref)?.model : undefined
+    const session = props.session.server.data.session.get(id)
 
-    if (!model) return true
+    if (!session) return 0
 
-    return model.cost.some((cost) => cost.input > 0 || cost.output > 0 || cost.cache.read > 0 || cost.cache.write > 0)
+    if (session.parentID) return flashCostCNY([session.tokens])
+
+    const family = props.session.server.data.session.family(id)
+
+    return flashCostCNY(
+      (family.length ? family : [id]).flatMap((member) => props.session.server.data.session.get(member)?.tokens ?? []),
+    )
   })
+
+  const cost = createMemo(() => cny()(spent()))
+
+  // Every token has a Flash price, so any recorded usage carries a cost.
+  const showCost = createMemo(() => spent() > 0)
 
   const openContext = () => {
     if (!props.session.id) return
