@@ -10,11 +10,12 @@
   block-size: 44px;
 }
 
-/* The location reads as a quiet crumb above the title's weight, not as a second title. */
+/* The location reads as a quiet crumb above the title's weight, not as a second title. It keeps a
+   readable size next to the 13.5px title so the project and workspace are not squinted at. */
 .session-header-location [data-slot="session-location-trigger"] {
-  block-size: 24px;
-  font-size: 11px;
-  line-height: 14px;
+  block-size: 26px;
+  font-size: 13px;
+  line-height: 18px;
   letter-spacing: 0;
   color: var(--v2-text-text-faint);
 }
@@ -67,9 +68,9 @@
 
 /* The title carries the weight; its font utilities are unreliable inside the sticky header. */
 .session-header-title h1 {
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 20px;
   letter-spacing: -0.02em;
 }
 
@@ -87,9 +88,9 @@
   inline-size: max-content;
   padding-inline: 4px;
   white-space: nowrap;
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 20px;
   letter-spacing: -0.02em;
 }
 
@@ -112,7 +113,7 @@
   /* The neighbouring segments' own padding counts toward the gap; 0.5px is the text's side bearing. */
   margin-inline: calc(var(--separator-gap) - var(--separator-before) - 0.5px)
     calc(var(--separator-gap) - var(--separator-after) - 0.5px);
-  /* The crumb's segments are 11px text, and the slash takes their size. */
-  font-size: 11px;
-  line-height: 14px;
+  /* The crumb's segments are 13px text, and the slash takes their size. */
+  font-size: 13px;
+  line-height: 18px;
 }
