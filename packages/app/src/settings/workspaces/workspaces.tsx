@@ -652,7 +652,7 @@ function DialogDeleteWorkspace(props: {
                 <span class="text-11-regular text-v2-text-text-faint">
                   {language.t(status.isPending ? "workspace.status.checking" : "workspace.delete.location")}
                 </span>
-                <code class="block w-fit max-w-full rounded-[4px] bg-[color-mix(in_oklch,var(--v2-text-text-base)_8%,transparent)] px-1 py-0.5 font-mono text-xs font-medium leading-4 text-v2-text-text-base break-all">
+                <code class="block w-fit max-w-full rounded-[4px] bg-[color-mix(in_oklch,var(--v2-text-text-base)_8%,transparent)] px-1 py-0.5 font-mono text-xs font-normal leading-4 text-v2-text-text-base break-all">
                   {props.workspace.directory}
                 </code>
               </div>

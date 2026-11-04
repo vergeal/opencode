@@ -133,7 +133,7 @@ export function SettingsProjectRow(props: {
               dir="auto"
               value={store.editor?.draft ?? ""}
               disabled={store.editor?.saving}
-              class="w-full text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base outline-none"
+              class="w-full text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-base outline-none"
               style={{ "--inline-input-shadow": "none", "border-radius": "0", "text-align": "start" }}
               onInput={(event) => setStore("editor", "draft", event.currentTarget.value)}
               onKeyDown={(event) => {
@@ -167,7 +167,7 @@ export function SettingsProjectRow(props: {
           onClick={() => props.onOpen(props.project)}
         >
           <ProjectIcon project={props.project} class="shrink-0" />
-          <bdi class="truncate text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base">
+          <bdi class="truncate text-[15px] font-[400] leading-5 tracking-[-0.04px] text-v2-text-text-base">
             {displayName(props.project)}
           </bdi>
         </button>

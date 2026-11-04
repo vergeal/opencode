@@ -12,6 +12,18 @@
   --settings-card-radius: 10px;
 }
 
+/* Settings copy reads at regular weight; shared components keep their own emphasis outside settings. */
+:is(.settings-screen, [data-component="dialog-v2"][data-variant="settings"]) {
+  [data-component="button-v2"],
+  [data-slot="field-v2-label"],
+  [data-slot="dialog-title"],
+  [data-slot="dialog-header-title"],
+  [data-component="select-v2"][data-appearance="inline"] [data-slot="select-v2-value-text"],
+  [data-component="tag"] {
+    font-weight: 400;
+  }
+}
+
 [data-component="tabs-v2"][data-variant="settings"] {
   height: 100%;
 }
@@ -110,7 +122,7 @@
   gap: 8px;
   padding: 0 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: -0.04px;
 }
 
@@ -159,7 +171,7 @@
   border-radius: 6px;
   color: var(--v2-text-text-faint);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.02em;
   line-height: var(--line-height-compact);
 }
@@ -357,7 +369,7 @@
   justify-content: space-between;
   gap: 12px;
   color: var(--v2-text-text-base);
-  font-weight: 540;
+  font-weight: 400;
 }
 
 .settings-notice-heading span {
@@ -405,7 +417,7 @@
 .settings-crates h4 {
   margin-top: 8px;
   color: var(--v2-text-text-base);
-  font-weight: 540;
+  font-weight: 400;
 }
 
 .settings-crate-list {
@@ -443,7 +455,7 @@
 
 .settings-crate-heading strong {
   color: var(--v2-text-text-base);
-  font-weight: 540;
+  font-weight: 400;
 }
 
 .settings-crate p {
@@ -474,7 +486,7 @@
   color: var(--v2-text-text-muted);
   font: inherit;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   text-align: start;
   cursor: pointer;
@@ -689,7 +701,7 @@
 .settings-server-unavailable-title {
   color: var(--v2-text-text-base);
   font-size: 13px;
-  font-weight: 530;
+  font-weight: 400;
   line-height: var(--line-height-compact);
 }
 
@@ -739,7 +751,7 @@
 .settings-section-title {
   padding: 0;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);
 }
@@ -800,7 +812,7 @@
 [data-slot="settings-row-title"] {
   font-style: normal;
   font-size: 13px;
-  font-weight: 510;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
   color: var(--v2-text-text-base);
@@ -1166,7 +1178,7 @@
 
 .settings-provider-name {
   font-size: 13px;
-  font-weight: 530;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
@@ -1257,7 +1269,7 @@
   border: 0;
   background: transparent;
   font-size: 13px;
-  font-weight: 530;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-accent);
   cursor: pointer;
@@ -1484,7 +1496,7 @@
 
 .settings-models-group-title {
   font-size: 13px;
-  font-weight: 530;
+  font-weight: 400;
   line-height: var(--line-height-compact);
 }
 
@@ -1567,7 +1579,7 @@
   min-width: 0;
   overflow: hidden;
   font-size: 13px;
-  font-weight: 530;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1774,7 +1786,7 @@
 
 .settings-servers-name {
   font-size: 13px;
-  font-weight: 530;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
@@ -1951,7 +1963,7 @@
 
 .settings-workspaces-path-name {
   color: var(--v2-text-text-base);
-  font-weight: 530;
+  font-weight: 400;
 }
 
 .settings-workspaces-meta {
@@ -2034,7 +2046,7 @@
 
 .settings-workspaces-empty-title {
   color: var(--v2-text-text-base);
-  font-weight: 530;
+  font-weight: 400;
 }
 
 @media (max-width: 639px) {
@@ -2137,7 +2149,7 @@
 
 .settings-server-dialog-label {
   font-size: 13px;
-  font-weight: 530;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
@@ -2256,7 +2268,7 @@
 
 .settings-extension-name {
   font-size: 13px;
-  font-weight: 530;
+  font-weight: 400;
   line-height: var(--line-height-compact);
 }
 
