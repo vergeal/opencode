@@ -1,7 +1,8 @@
 [data-component="interface-mode"] {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  /* The three layouts always read as one row; only the copy inside each card wraps. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -12,9 +13,9 @@
     display: flex;
     min-width: 0;
     flex-direction: column;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 8px;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
     background-color: var(--v2-background-bg-layer-01);
     box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
     cursor: pointer;
@@ -52,10 +53,12 @@
 
   [data-slot="interface-mode-title"] {
     display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    font-weight: 530;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
     color: var(--v2-text-text-base);
@@ -79,18 +82,50 @@
     padding: 0 5px;
     border-radius: 4px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     color: var(--v2-text-text-muted);
     background-color: var(--v2-background-bg-layer-03);
   }
 
   [data-slot="interface-mode-description"] {
-    padding-inline-start: 22px;
-    font-size: 15px;
+    padding-inline-start: 20px;
+    font-size: 12px;
     font-weight: 400;
-    line-height: var(--line-height-base);
+    line-height: 18px;
     color: var(--v2-text-text-muted);
+  }
+}
+
+/* Narrow panels keep the row and tighten the card instead of stacking the modes. */
+@container settings-panel (max-width: 520px) {
+  [data-component="interface-mode"] {
+    gap: 8px;
+
+    [data-slot="interface-mode-option"] {
+      gap: 8px;
+      padding: 8px;
+    }
+
+    [data-slot="interface-mode-copy"] {
+      padding-inline: 0;
+    }
+
+    [data-slot="interface-mode-title"] {
+      gap: 4px;
+    }
+
+    [data-slot="interface-mode-description"] {
+      padding-inline-start: 18px;
+      font-size: 11px;
+      line-height: 15px;
+    }
+
+    [data-slot="interface-mode-badge"] {
+      padding: 0 4px;
+      font-size: 11px;
+      line-height: 15px;
+    }
   }
 }
 
