@@ -261,11 +261,17 @@
       background: var(--v2-background-bg-layer-03);
     }
 
+    /* The block's fill is an inline `background-color: var(--markdown-code-background)` on the pre, so
+       overriding `.highlights` never won. Lift the variable instead, two layers down from the bubble
+       surface so the block reads as a block even on a light page. */
+    [data-component="markdown"] {
+      --markdown-code-background: var(--v2-background-bg-layer-04);
+    }
+
     [data-component="markdown"] .highlights {
       padding: 12px 14px;
       border: 0;
       border-radius: 10px;
-      background: var(--v2-background-bg-layer-03);
     }
 
     [data-component="markdown"] [data-component="markdown-code"] {
