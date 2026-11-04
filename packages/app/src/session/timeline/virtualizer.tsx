@@ -75,12 +75,13 @@ type Input = {
   /** Height of the composer region floating over the timeline's bottom edge, where the timeline fades out. */
   bottomInset?: Accessor<number>
   setVisibleRef?: (element: HTMLDivElement | undefined) => void
-  onScheduleScrollState: (element: HTMLDivElement) => void
+  onScheduleScrollState: (element: HTMLDivElement, measured?: { overflow: boolean; jump: boolean }) => void
   onPin: () => void
   onUnpin: () => void
   onSelectionInteraction: (event: MouseEvent) => void
   onUserScroll: (target?: EventTarget | null) => void
-  onHistoryScroll: () => void
+  // Gets the geometry the scroll event already read, so asking whether history should load never re-reads layout.
+  onHistoryScroll: (scrollTop: number, viewportHeight: number) => void
   canRenderImmediately?: (
     row: TimelineRow.TimelineRow,
     disclosure: Readonly<Record<string, boolean | undefined>>,
@@ -152,6 +153,16 @@ export function createTimelineVirtualizer(input: Input) {
     return (index: number) => keys[index] ?? `removed:${index}`
   })
 
+  // The direction and rough speed of the current scroll gesture. The range extractor uses them to mount rows
+  // where the viewport is heading rather than evenly on both sides.
+  let scrollDirection = 0
+  let scrollLead = 0
+  // Rows mounted by the previous range, and how far outside the range one may stay mounted. A retained row costs
+  // nothing to keep, but mounting a fresh markdown row is the most expensive thing a scroll frame can do, so both
+  // bands stay small: a short blank at a flick's edge is far better than dropping frames.
+  const mountedIndexes = new Set<number>()
+  const retainedRows = 8
+
   const rangeExtractor = createMemo(() => {
     const id = input.projection.activeMessageID()
     const active = id ? (input.projection.messageLastRowIndex().get(id) ?? -1) : -1
@@ -181,12 +192,37 @@ export function createTimelineVirtualizer(input: Input) {
 
       const indexes = initialTail
         ? Array.from({ length: range.count - first }, (_, index) => first + index)
-        : defaultRangeExtractor({ ...range, overscan: 6 })
+        : defaultRangeExtractor({ ...range, overscan: 2 })
 
-      return filterVirtualIndexes(
+      // Mount at most a row or two ahead of the scroll direction. A flick that outruns this lands on an estimated
+      // row for one frame, which is cheaper than mounting a dozen markdown rows and freezing the whole timeline.
+      if (!initialTail && scrollLead > 0) {
+        const ahead =
+          scrollDirection > 0
+            ? Array.from({ length: scrollLead }, (_, index) => range.endIndex + 1 + index)
+            : Array.from({ length: scrollLead }, (_, index) => range.startIndex - 1 - index)
+
+        indexes.push(...ahead)
+      }
+
+      // Rows that just left the range stay mounted for a band around it. Re-rendering a markdown row costs far
+      // more than keeping its DOM, so scrolling back over content that was already read is free.
+      if (!initialTail) {
+        for (const index of mountedIndexes) {
+          if (index < range.startIndex - retainedRows || index > range.endIndex + retainedRows) continue
+          indexes.push(index)
+        }
+      }
+
+      const result = filterVirtualIndexes(
         [...new Set([...indexes, ...[active, anchored].filter((index) => index >= 0)])].sort((a, b) => a - b),
         range.count,
       )
+
+      mountedIndexes.clear()
+      for (const index of result) mountedIndexes.add(index)
+
+      return result
     }
   })
 
@@ -220,7 +256,12 @@ export function createTimelineVirtualizer(input: Input) {
   let reportRect: ((rect: { width: number; height: number }) => void) | undefined
   let batchingColdSizes = false
 
-  const [headerHeight, setHeaderHeight] = createSignal(48)
+  // The session header is a fixed 48px band and scroll padding leaves 16px under it for a revealed prompt.
+  // Nothing sets `--session-header-height`, so reading it per rect delivery only forced a style recalc.
+  const headerHeight = 48
+  // The last box the resize observer delivered. Re-reporting it when `bottomInset` changes must not re-read
+  // layout: the viewport itself did not move, only the part of it the composer covers.
+  let viewportSize = { width: 0, height: 0 }
 
   const virtualizer = createVirtualizer<HTMLDivElement, HTMLDivElement>({
     get count() {
@@ -231,14 +272,8 @@ export function createTimelineVirtualizer(input: Input) {
     // inset spacer below the rows keeps consistent with the native scroll range.
     observeElementRect: (instance, callback) => {
       reportRect = (rect) => {
-        const root = listRoot()
-        batch(() => {
-          // The container-responsive header can be 48px or 80px.
-          setHeaderHeight(
-            root ? parseFloat(getComputedStyle(root).getPropertyValue("--session-header-height")) || 48 : 48,
-          )
-          callback({ width: rect.width, height: Math.max(0, rect.height - bottomInset()) })
-        })
+        viewportSize = { width: rect.width, height: rect.height }
+        callback({ width: rect.width, height: Math.max(0, rect.height - bottomInset()) })
       }
 
       return observeElementRect(instance, (rect) => {
@@ -331,7 +366,7 @@ export function createTimelineVirtualizer(input: Input) {
     paddingEnd: tailSize,
     // Revealed prompts sit below the solid header and its 16px fade.
     get scrollPaddingStart() {
-      return input.showHeader() ? headerHeight() + 16 : 0
+      return input.showHeader() ? headerHeight + 16 : 0
     },
     get rangeExtractor() {
       return rangeExtractor()
@@ -598,9 +633,8 @@ export function createTimelineVirtualizer(input: Input) {
     on(
       bottomInset,
       () => {
-        const root = listRoot()
-
-        if (active() && root?.isConnected) reportRect?.({ width: root.offsetWidth, height: root.offsetHeight })
+        // Re-report the box the observer already delivered: only the covered part changed, not the viewport.
+        if (active() && viewportSize.height) reportRect?.(viewportSize)
       },
       { defer: true },
     ),
@@ -832,8 +866,15 @@ export function createTimelineVirtualizer(input: Input) {
     const root = event.currentTarget
     const previousTop = scrollTop
     const previousMaxScroll = maxScroll
+    const viewportHeight = root.clientHeight
     scrollTop = root.scrollTop
-    maxScroll = root.scrollHeight - root.clientHeight
+    maxScroll = root.scrollHeight - viewportHeight
+    const travelled = scrollTop - previousTop
+
+    if (Math.abs(travelled) > endEpsilon) {
+      scrollDirection = travelled > 0 ? 1 : -1
+      scrollLead = Math.min(2, Math.round(Math.abs(travelled) / 200))
+    }
     const atEnd = maxScroll - scrollTop <= endEpsilon
     const arrived = scrollTop > previousTop + endEpsilon || maxScroll < previousMaxScroll
 
@@ -841,8 +882,14 @@ export function createTimelineVirtualizer(input: Input) {
     if (maxScroll <= 1 || (atEnd && arrived && !rendering.anchor)) input.onPin()
     else if ((pointerHeld || touchScrolling) && scrollTop < previousTop - endEpsilon) input.onUnpin()
     settleColdBottom()
-    input.onScheduleScrollState(root)
-    input.onHistoryScroll()
+    // Hand over the geometry this event already read, so the jump pill does not re-read layout on the frame's
+    // read phase. A scroll event runs after layout, so these reads are free here.
+    const overflow = maxScroll > 1
+    input.onScheduleScrollState(root, {
+      overflow,
+      jump: overflow && maxScroll - scrollTop > Math.max(400, viewportHeight),
+    })
+    input.onHistoryScroll(scrollTop, viewportHeight)
   }
 
   function View(props: ViewProps) {
@@ -900,7 +947,13 @@ export function createTimelineVirtualizer(input: Input) {
               })
             }}
             data-index={item().index}
-            style={{ "min-height": ready() ? undefined : `${initialItem.size}px` }}
+            style={{
+              "min-height": ready() ? undefined : `${initialItem.size}px`,
+              // Contain each row's style, layout and paint. Without it, mounting or updating one row's markdown
+              // restyled the whole document: a scroll over fresh content spent most of its time in
+              // UpdateLayoutTree. The row already clips itself, so paint containment changes nothing visible.
+              contain: "layout style paint",
+            }}
           >
             {props.renderRow(row, () => {
               setReady(true)
