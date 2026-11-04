@@ -963,11 +963,8 @@ function collect(text: string): Segment[] {
   // begins, so a closed range further along the line keeps its own rendering.
   function unclosedEmphasis() {
     const marks: { token: string; group: Group }[] = [
-      { token: "~~", group: "strike" },
       { token: "**", group: "strong" },
       { token: "__", group: "strong" },
-      { token: "*", group: "em" },
-      { token: "_", group: "em" },
     ]
 
     let lineStart = 0
@@ -1032,9 +1029,8 @@ function collect(text: string): Segment[] {
 
       switch (token.type) {
         case "heading": {
-          add(start, end, "heading")
+          // Headings are not rendered in the composer: the hashes stay visible as typed text.
           const prefix = linePrefix(raw, /^[ \t]*#{1,6}[ \t]+/)
-          if (prefix) add(start, start + prefix, "marker")
           inline(token.tokens, start + prefix)
           break
         }
@@ -1111,16 +1107,14 @@ function collect(text: string): Segment[] {
         }
 
         case "em": {
+          // Italics stay literal in the composer, so the markers keep their own box and colour.
           const marker = raw.startsWith("_") ? "_" : "*"
-          add(start, end, "em", { start: start + marker.length, end: end - marker.length })
-          markers(start, end, marker)
           inline(token.tokens, start + marker.length)
           break
         }
 
         case "del": {
-          add(start, end, "strike")
-          markers(start, end, "~~")
+          // Strikethrough stays literal in the composer.
           inline(token.tokens, start + 2)
           break
         }
