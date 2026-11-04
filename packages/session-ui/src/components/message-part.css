@@ -254,10 +254,26 @@
       margin-top: 8px;
     }
 
+    /* A prompt bubble keeps the composer's code styling, so what the user typed reads the same
+       before and after sending. The bubble surface is already layer-02, so inline code and the block
+       sit one layer deeper to stay visible while keeping the same chip and block metrics. */
+    [data-component="markdown"] :not(pre) > code {
+      background: var(--v2-background-bg-layer-03);
+    }
+
+    [data-component="markdown"] .highlights {
+      padding: 12px 14px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--v2-background-bg-layer-03);
+    }
+
+    [data-component="markdown"] [data-component="markdown-code"] {
+      margin-block: 6px;
+    }
+
     [data-component="markdown"] pre {
       margin: 0;
-      /* The bubble already frames the block, so the inner code surface only tints it. */
-      --markdown-code-background: color-mix(in oklch, var(--v2-text-text-base) 6%, transparent);
       border-color: transparent;
     }
   }

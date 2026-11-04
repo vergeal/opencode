@@ -30,8 +30,7 @@
 [data-component="markdown"] {
   --markdown-inline-code-path-color: var(--v2-text-text-code-path);
   --markdown-inline-code-color: var(--v2-text-text-code-accent);
-  --markdown-inline-code-bg-mix: 8%;
-  --markdown-code-background: color-mix(in oklch, var(--v2-text-text-base) 4%, var(--v2-background-bg-base));
+  --markdown-code-background: var(--v2-background-bg-layer-02);
   --markdown-shell-code-background: var(--v2-background-bg-layer-02);
   --markdown-shell-code-border: var(--v2-border-border-muted);
   --markdown-shell-code-color: var(--v2-text-text-base);
@@ -277,14 +276,16 @@
     margin: 12px 0;
   }
 
+  /* The block matches the composer's fenced block: one soft layer, 12px/14px inside, and a 10px
+     radius without a hairline. */
   .highlights {
     background: var(--markdown-code-background);
     color: var(--v2-text-text-base);
     font-size: 13px;
     line-height: 20px;
     padding: 12px 14px;
-    border-radius: 8px;
-    border: 0.5px solid var(--v2-border-border-base);
+    border-radius: 10px;
+    border: 0;
   }
 
   [data-component="markdown-code"] {
@@ -392,10 +393,13 @@
     font-family: var(--font-family-mono);
     font-feature-settings: var(--font-family-mono--font-feature-settings);
     color: var(--v2-text-text-base);
-    font-weight: var(--font-weight-medium);
-    padding: 0;
+    font-weight: var(--font-weight-regular);
+    /* Match the composer's inline chip: a 4px side pad paid back by the negative margin, so the
+       tint widens outward without moving the surrounding text. */
+    padding: 0 4px;
+    margin-inline: -4px;
     border-radius: 4px;
-    background: color-mix(in oklch, var(--v2-text-text-base) var(--markdown-inline-code-bg-mix), transparent);
+    background: var(--v2-background-bg-layer-02);
   }
 
   :not(pre) > code[data-inline-code-kind="path"] {
