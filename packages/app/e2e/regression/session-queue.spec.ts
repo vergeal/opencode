@@ -221,7 +221,6 @@ test("follow-up preference controls Enter while Mod+Enter uses the alternate del
   const view = await openQueue(page, mock, "queue")
 
   await view.input.fill("queue this follow-up")
-  await expect(view.composer.locator('[data-action="composer-alternate-delivery"]')).toContainText("Steer")
   await view.input.press("Enter")
   await expect(view.rows.getByText("queue this follow-up", { exact: true })).toBeVisible()
 

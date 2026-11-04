@@ -457,7 +457,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
                   />
                 )}
               </Show>
-              <Show when={props.modelControlsVisible ?? true}>{props.modelControl?.(view.variant)}</Show>
               {/* The model chip owns the variant on desktop; touch layouts get the slider here. */}
               <Show when={mobile()}>
                 <Show when={view.variant} keyed>
@@ -476,12 +475,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             </div>
           </div>
           <div data-slot="composer-actions" class="flex shrink-0 items-center">
-            <Show when={state.mode === "normal"}>
-              <ComposerEditorAlternateDelivery
-                controller={props.controller}
-                keybind={props.alternateKeybind ?? ["Mod", "Enter"]}
-              />
-            </Show>
+            <Show when={props.modelControlsVisible ?? true}>{props.modelControl?.(view.variant)}</Show>
             <Show when={state.mode === "shell"}>
               <Button
                 data-action="composer-exit-shell"
@@ -1424,44 +1418,6 @@ function composerSuggestionMaxHeight(boundaryHeight: number, search: boolean, hi
 // delivery opposite to what plain Enter does. Visible only while the queue
 // exposes an alternate (turn running and composer holding a value), so it
 // disappears on its own when the current turn ends.
-function ComposerEditorAlternateDelivery(props: { controller: ComposerEditorModel; keybind: string[] }) {
-  const i18n = useI18n()
-  const view = props.controller.view
-
-  const action = createMemo(() => {
-    const queue = view.submit.queue
-
-    if (!queue || !props.controller.canSubmit()) return undefined
-
-    if (queue.editing()) return "steer" as const
-
-    return queue.alternate()
-  })
-
-  // Appears and leaves on the same frame as the placeholder, so typing never shows a fade.
-  return (
-    <Show when={action()} keyed>
-      {(delivery) => (
-        <Tooltip placement="top" inactive={delivery !== "steer"} value={i18n.t("ui.promptInput.steerHint")}>
-          <Button
-            data-action="composer-alternate-delivery"
-            type="button"
-            variant="ghost-faint"
-            size="small"
-            class="me-3 gap-1.5 px-1.5 ![font-weight:530]"
-            onClick={() => props.controller.submit({ alternate: true })}
-          >
-            {delivery === "steer" ? i18n.t("ui.promptInput.steer") : i18n.t("ui.promptInput.queue")}
-            <span class="hidden sm:block">
-              <Keybind keys={props.keybind} variant="neutral" />
-            </span>
-          </Button>
-        </Tooltip>
-      )}
-    </Show>
-  )
-}
-
 function ComposerEditorSubmitButton(props: {
   mode: ComposerMode
   stopping: boolean

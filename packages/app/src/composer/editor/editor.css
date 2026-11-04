@@ -27,17 +27,17 @@
   border-color: var(--v2-border-border-base);
 }
 
+/* The agent and model triggers read as plain text until hovered, then take a soft pill. */
 [data-component="composer"]
   [data-slot="composer-controls"]
-  :is([data-component="button-v2"], [data-component="icon-button-v2"]) {
+  :is([data-component="button-v2"], [data-component="icon-button-v2"]),
+[data-component="composer"] [data-slot="composer-actions"] [data-action="composer-model"] {
   height: 24px;
-  border-radius: 6px;
-  border: 1px solid var(--v2-border-border-muted);
-  background: var(--v2-background-bg-base);
-  font-size: 12px;
-  transition:
-    background-color 120ms ease,
-    border-color 120ms ease;
+  border-radius: 9999px;
+  border: 0;
+  background-color: transparent;
+  font-size: 14px;
+  transition: background-color 120ms ease;
 }
 
 [data-component="composer"]
@@ -46,9 +46,9 @@
     :hover,
     [data-state="hover"],
     [data-expanded]
-  ) {
-  border-color: var(--v2-border-border-base);
-  background: var(--v2-background-bg-layer-01);
+  ),
+[data-component="composer"] [data-slot="composer-actions"] [data-action="composer-model"]:is(:hover, [data-expanded]) {
+  background-color: var(--v2-overlay-simple-overlay-hover);
 }
 
 /* Markdown paints over the editable text, so the text model, caret and mentions stay untouched. */
