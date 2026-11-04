@@ -60,7 +60,10 @@ export function createComposerSubmit(input: ComposerSubmitInput) {
   const owner = getOwner()
   const [held, setHeld] = createSignal(false)
 
-  const submit = async (event: globalThis.Event, options?: { alternate?: boolean }): Promise<void> => {
+  const submit = async (
+    event: globalThis.Event,
+    options?: { alternate?: boolean; delivery?: ComposerDelivery },
+  ): Promise<void> => {
     event.preventDefault()
 
     if (held()) return
@@ -107,7 +110,7 @@ export function createComposerSubmit(input: ComposerSubmitInput) {
       }),
     })
 
-    const read = readSubmission(input, submission.prompt, submission.context, text, options?.alternate ?? false)
+    const read = readSubmission(input, submission.prompt, submission.context, text, options)
 
     // A cold Location lists its agents and models only after its plugins activate, so hold the send until then.
     if (read === "loading") {
@@ -316,7 +319,7 @@ function readSubmission(
   prompt: Prompt,
   context: ComposerSubmission["context"],
   text: string,
-  alternate: boolean,
+  options?: { alternate?: boolean; delivery?: ComposerDelivery },
 ): ComposerSubmission | "loading" | undefined {
   const mode = input.mode()
 
@@ -355,7 +358,7 @@ function readSubmission(
     text,
     images,
     selection,
-    delivery: input.delivery?.(alternate) ?? "steer",
+    delivery: options?.delivery ?? input.delivery?.(options?.alternate ?? false) ?? "steer",
   }
 }
 

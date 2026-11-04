@@ -23,7 +23,7 @@ import {
   type ComposerInteractionEvent,
 } from "../suggestions/machine"
 import { clonePrompt, isAttachment, promptLength } from "../prompt-parts"
-import type { ComposerQueue } from "../adapter"
+import type { ComposerDelivery, ComposerQueue } from "../adapter"
 import { isCommentItem } from "../state"
 import type { createComposerQuoteSource } from "../quote-source"
 
@@ -49,7 +49,7 @@ export type ComposerEditorView = {
     held?: Accessor<boolean>
     working?: Accessor<boolean>
     queue?: ComposerQueue
-    onSubmit: (options?: { alternate?: boolean }) => void
+    onSubmit: (options?: { alternate?: boolean; delivery?: ComposerDelivery }) => void
     onStop: () => void
   }
   shell?: {
@@ -650,7 +650,7 @@ export function createComposerEditor(input: {
     openShell() {
       dispatch({ type: "mode.shell" })
     },
-    submit(options?: { alternate?: boolean }) {
+    submit(options?: { alternate?: boolean; delivery?: ComposerDelivery }) {
       if (input.view.submit.available?.() === false) return
 
       if (input.view.draftOnly) return

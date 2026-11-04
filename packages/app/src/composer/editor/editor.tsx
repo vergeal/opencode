@@ -501,7 +501,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               disabled={!props.controller.canSubmit()}
               sendLabel={i18n.t("ui.promptInput.send")}
               stopLabel={i18n.t("ui.promptInput.stop")}
-              onSubmit={() => props.controller.submit()}
+              onSubmit={() => props.controller.submit(view.submit.working?.() ? { delivery: "queue" } : undefined)}
               onStop={props.controller.stop}
             />
           </div>
