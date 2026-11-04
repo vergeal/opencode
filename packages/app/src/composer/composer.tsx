@@ -178,7 +178,7 @@ function ComposerModelControl(props: {
               triggerAs={Button}
               trigger={content()}
               triggerProps={{
-                class: `me-1.5 min-w-0 max-w-[38cqw] justify-start ![font-weight: 400] ${
+                class: `me-1.5 min-w-0 max-w-[calc(100cqw-140px)] justify-start ![font-weight: 400] ${
                   shouldAnimate() ? "animate-in fade-in" : ""
                 }`,
                 style: { height: "24px" },
@@ -234,7 +234,7 @@ function ComposerModelControl(props: {
                 variant="ghost-muted"
                 size="normal"
                 style={{ height: "24px" }}
-                class="me-1.5 min-w-0 max-w-[38cqw] justify-start ![font-weight: 400]"
+                class="me-1.5 min-w-0 max-w-[calc(100cqw-140px)] justify-start ![font-weight: 400]"
                 classList={{ "animate-in fade-in": shouldAnimate() }}
                 data-action="composer-model"
                 data-control-type="drawer"
