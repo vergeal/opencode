@@ -21,7 +21,10 @@ export function createTimelineModel(input: { session: Pick<SessionModel, "identi
       if (!id) return
       const owner = input.session.ownership.capture()
       await Promise.all([data.session.message.sync(id), data.session.pending.sync(id)])
-      await enrichLeadingTurn({
+      // Enriching the leading turn pages serially with a pause between reads, which took up to ~600ms and
+      // held the whole timeline behind it. Let the already loaded tail render first and fill that turn in
+      // the background.
+      void enrichLeadingTurn({
         current: owner.current,
         messages: () => data.session.message.list(id),
         more: () => data.session.message.more(id),
