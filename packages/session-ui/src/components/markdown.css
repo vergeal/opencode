@@ -394,10 +394,9 @@
     font-feature-settings: var(--font-family-mono--font-feature-settings);
     color: var(--v2-text-text-base);
     font-weight: var(--font-weight-regular);
-    /* Match the composer's inline chip: a 4px side pad paid back by the negative margin, so the
-       tint widens outward without moving the surrounding text. */
+    /* A 4px side pad keeps the tint off the glyphs. It is not paid back by a negative margin: paying
+       it back pulled neighbouring text into the chip, which reads as letters touching. */
     padding: 0 4px;
-    margin-inline: -4px;
     border-radius: 4px;
     background: var(--v2-background-bg-layer-02);
   }

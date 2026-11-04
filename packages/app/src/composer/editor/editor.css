@@ -82,13 +82,18 @@
   pointer-events: none;
 }
 
-/* Inline code renders as a chip over the text. The padding is paid back by the negative margin, so the
-   rendered form keeps the same text position as the source it replaces. */
+/* Inline code renders as a chip over the text. The side pad stays in the flow: paying it back with a
+   negative margin made the tint overlap the neighbouring characters. */
 [data-component="composer-editor"] [data-md-code] {
   padding-inline: 4px;
-  margin-inline: -4px;
   border-radius: 4px;
   background: var(--v2-background-bg-layer-02);
+}
+
+/* A tick only paints the markdown; it must not occupy a character box or the draft reads as if the
+   code had a space around it. `contenteditable=false` keeps the caret out of the zero-width span. */
+[data-component="composer-editor"] [data-md-marker] {
+  font-size: 0;
 }
 
 /* Fenced code renders as one block: code font on a soft layer between two hidden fence lines. The block

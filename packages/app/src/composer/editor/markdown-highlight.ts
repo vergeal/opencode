@@ -146,12 +146,17 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     try {
       for (const segment of blocks.sort(firstToLast)) wrap(segment)
 
+      // Markers must collapse before the code chip is resolved: hiding a tick rewrites the text nodes,
+      // and a chip range read after that can swallow the following character.
+      for (const segment of markers.sort(firstToLast))
+        hide(
+          segment,
+          blocks.some((block) => segment.start === block.end || segment.end === block.start),
+        )
+
       for (const segment of codes.sort(firstToLast)) chip(segment)
       for (const segment of segments.filter((segment) => segment.group === "em" && segment.content).sort(firstToLast))
         emphasis(segment)
-
-      for (const segment of markers.sort(firstToLast))
-        if (blocks.some((block) => segment.start === block.end || segment.end === block.start)) hide(segment, true)
 
       if (caret) restore(editor, caret)
       keepCaretVisible()
@@ -236,6 +241,9 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       const span = document.createElement("span")
       if (block) span.dataset.mdMarkerBlock = ""
       else span.dataset.mdMarker = ""
+      // A tick is syntax, not content: collapse it and keep the caret out of it, so typing never lands
+      // inside the marker where the text would be invisible.
+      span.contentEditable = "false"
       wrapRange(entry, span, text.slice(segment.start, segment.end))
     }
   }
