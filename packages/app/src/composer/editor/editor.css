@@ -37,7 +37,17 @@
   border: 0;
   background-color: transparent;
   font-size: 14px;
-  transition: background-color 120ms ease;
+  transition:
+    background-color 120ms ease,
+    transform 90ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* A press should feel like the chip sinks under the cursor, then springs back. */
+[data-component="composer"]
+  [data-slot="composer-controls"]
+  :is([data-component="button-v2"], [data-component="icon-button-v2"]):active,
+[data-component="composer"] [data-slot="composer-actions"] [data-action="composer-model"]:active {
+  transform: scale(0.96);
 }
 
 [data-component="composer"]
@@ -252,4 +262,13 @@
   :is([data-component="composer"], [data-component="dock-prompt"], [data-component="session-websearch-dock"]) {
   background: transparent !important;
   box-shadow: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="composer"]
+    [data-slot="composer-controls"]
+    :is([data-component="button-v2"], [data-component="icon-button-v2"]):active,
+  [data-component="composer"] [data-slot="composer-actions"] [data-action="composer-model"]:active {
+    transform: none;
+  }
 }
