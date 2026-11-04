@@ -43,6 +43,7 @@ export type ComposerOption = {
   id: string
   label: string
   providerID?: string
+  icon?: string
 }
 
 export type ComposerSuggestion = {

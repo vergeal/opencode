@@ -1101,12 +1101,14 @@ function ComposerEditorSelect(props: {
     if (!mobile() && store.open) setOpen(false)
   })
 
+  const selected = () => props.options.find((option) => option.id === props.current)
+
   const content = () => (
     <>
-      {props.currentIcon}
-      <span class="truncate capitalize leading-5">
-        {props.options.find((option) => option.id === props.current)?.label ?? props.current}
-      </span>
+      {props.currentIcon ?? (
+        <Show when={selected()?.icon}>{(icon) => <Icon name={icon()} class="shrink-0 opacity-60" />}</Show>
+      )}
+      <span class="truncate capitalize leading-5">{selected()?.label ?? props.current}</span>
       <span class="-ms-0.5 -me-1 flex shrink-0">
         <Icon name="chevron-down" />
       </span>
@@ -1144,6 +1146,7 @@ function ComposerEditorSelect(props: {
                   <For each={props.options}>
                     {(option) => (
                       <Menu.RadioItem value={option.id} class="capitalize" closeOnSelect>
+                        <Show when={option.icon}>{(icon) => <Icon name={icon()} class="shrink-0 opacity-60" />}</Show>
                         {option.label}
                       </Menu.RadioItem>
                     )}
@@ -1190,6 +1193,7 @@ function ComposerEditorSelect(props: {
                         setOpen(false)
                       }}
                     >
+                      <Show when={option.icon}>{(icon) => <Icon name={icon()} />}</Show>
                       {option.label}
                       <Show when={props.current === option.id}>
                         <Icon name="check" class="ms-auto" />

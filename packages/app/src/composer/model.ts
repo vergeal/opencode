@@ -44,6 +44,11 @@ const sendFailedTitle = {
   prompt: "prompt.toast.promptSendFailed.title",
 } as const
 
+const agentIcons: Record<string, string> = {
+  build: "outline-console",
+  plan: "outline-text",
+}
+
 export function createComposerModel(adapter: ComposerAdapter, options?: { queue?: ComposerQueue }): ComposerModel {
   const sdk = useWorkspaceLocation()
   const data = useData()
@@ -507,7 +512,12 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
 
         return agents.visible && agents.options.length > 0
           ? {
-              options: () => adapter.controls().agents.options.map((name) => ({ id: name, label: name })),
+              options: () =>
+                adapter.controls().agents.options.map((name) => ({
+                  id: name,
+                  label: name,
+                  icon: agentIcons[name],
+                })),
               current: () => adapter.controls().agents.current,
               onSelect: (value: string) => adapter.controls().agents.select(value),
               keybind: () => command.keybindParts("agent.cycle"),
