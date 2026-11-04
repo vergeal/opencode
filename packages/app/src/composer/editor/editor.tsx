@@ -334,7 +334,12 @@ export function ComposerEditor(props: ComposerEditorProps) {
 
                 if (event instanceof InputEvent && event.isComposing) return
 
-                const completed = completeCodeFence(element)
+                // Expanding a lone fence belongs to typing. Running it after a delete re-opened the block
+                // the user just tried to remove, adding another fence on every backspace.
+                const completed =
+                  event instanceof InputEvent && event.inputType === "insertText"
+                    ? completeCodeFence(element)
+                    : undefined
                 sync(element, completed ?? composerCursor(element))
               }}
               // An IME reports its committed text in an input event that still carries `isComposing`, so the

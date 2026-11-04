@@ -148,10 +148,14 @@ export function createMarkdownHighlight(editor: HTMLElement) {
 
       // Markers must collapse before the code chip is resolved: hiding a tick rewrites the text nodes,
       // and a chip range read after that can swallow the following character.
+      // Only the ticks of an inline code chip are locked: they are syntax with no content, so a caret
+      // inside them would type into hidden text. A fence line stays editable, or a block could never be
+      // deleted once its markers collapsed.
       for (const segment of markers.sort(firstToLast))
         hide(
           segment,
           blocks.some((block) => segment.start === block.end || segment.end === block.start),
+          codes.some((code) => segment.start === code.start || segment.end === code.end),
         )
 
       for (const segment of codes.sort(firstToLast)) chip(segment)
@@ -224,7 +228,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       wrapRange(entry, span, text.slice(segment.content.start, segment.content.end))
     }
 
-    function hide(segment: Segment, block: boolean) {
+    function hide(segment: Segment, block: boolean, lock: boolean) {
       const entry = locate(textNodes(editor), segment.start, segment.end)
       if (!entry) return
       if (typeof window !== "undefined")
@@ -239,11 +243,12 @@ export function createMarkdownHighlight(editor: HTMLElement) {
         })
 
       const span = document.createElement("span")
-      if (block) span.dataset.mdMarkerBlock = ""
-      else span.dataset.mdMarker = ""
-      // A tick is syntax, not content: collapse it and keep the caret out of it, so typing never lands
-      // inside the marker where the text would be invisible.
-      span.contentEditable = "false"
+      if (block) {
+        span.dataset.mdMarkerBlock = ""
+      } else {
+        span.dataset.mdMarker = ""
+        if (lock) span.contentEditable = "false"
+      }
       wrapRange(entry, span, text.slice(segment.start, segment.end))
     }
   }

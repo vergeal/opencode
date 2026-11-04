@@ -90,9 +90,10 @@
   background: var(--v2-background-bg-layer-02);
 }
 
-/* A tick only paints the markdown; it must not occupy a character box or the draft reads as if the
-   code had a space around it. `contenteditable=false` keeps the caret out of the zero-width span. */
-[data-component="composer-editor"] [data-md-marker] {
+/* A code tick only paints the markdown; it must not occupy a character box or the draft reads as if
+   the code had a space around it. Fence markers stay editable and keep their box so a block can be
+   deleted. */
+[data-component="composer-editor"] [data-md-marker][contenteditable="false"] {
   font-size: 0;
 }
 
