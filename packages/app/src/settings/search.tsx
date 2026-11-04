@@ -221,7 +221,7 @@ export function SettingsSearch() {
             data-result-id={item().id}
             title={[item().owner, item().page].filter(Boolean).join(" › ")}
           >
-            <span class="flex min-w-0 items-center gap-2 text-[15px] font-[400] leading-text-compact tracking-[-0.04px]">
+            <span class="flex min-w-0 items-center gap-2 text-[13px] font-[400] leading-text-compact tracking-[-0.04px]">
               <Show when={iconGroups().has(category(item()))}>
                 <span class="flex size-4 shrink-0 items-center justify-center text-v2-icon-icon-muted">
                   <Show

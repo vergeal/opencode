@@ -6,6 +6,7 @@ import { ExternalLink } from "@/runtime/platform/external-link"
 import { SettingsList } from "@/settings/list"
 import { SettingsRow } from "@/settings/row"
 import { createAppearanceSettingsController, type AppearanceSettingsController } from "@/settings/general/controllers"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 const schemeOptions: ("system" | "light" | "dark")[] = ["system", "light", "dark"]
@@ -75,14 +76,10 @@ export const SettingsAppearance: Component = () => {
 
   return (
     <>
-      <div class="settings-tab-header">
-        <div class="settings-tab-header-row">
-          <div class="flex flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.general.section.appearance")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.appearance.description")}</span>
-          </div>
-        </div>
-      </div>
+      <SettingsPageHeader
+        title={language.t("settings.general.section.appearance")}
+        description={language.t("settings.appearance.description")}
+      />
 
       <div class="settings-tab-body">
         <div class="settings-section">

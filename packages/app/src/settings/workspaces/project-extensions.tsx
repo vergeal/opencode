@@ -24,6 +24,7 @@ import { ExternalLink } from "@/runtime/platform/external-link"
 import { ProjectFolderMissing } from "./project-folder-missing"
 import { configuredLanguageServers } from "./project-lsp"
 import { SettingsList } from "@/settings/list"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "./project.css"
 
 type SkillItem = {
@@ -317,16 +318,10 @@ export const ProjectSettingsExtensions: Component<{
 
   return (
     <>
-      <div class="settings-tab-header">
-        <div class="settings-tab-header-row">
-          <div class="flex flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.tab.extensions")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">
-              {language.t("project.settings.extensions.description")}
-            </span>
-          </div>
-        </div>
-      </div>
+      <SettingsPageHeader
+        title={language.t("settings.tab.extensions")}
+        description={language.t("project.settings.extensions.description")}
+      />
 
       <div class="settings-tab-body">
         <ProjectFolderMissing />

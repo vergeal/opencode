@@ -302,20 +302,20 @@ function RootSettings() {
       onBack={() => surface.close()}
       onChange={change}
     >
-      <Tabs.Content value="general" class="settings-panel">
+      <Tabs.Content value="general" class="settings-panel" data-scrollable>
         <SettingsGeneral />
       </Tabs.Content>
-      <Tabs.Content value="appearance" class="settings-panel">
+      <Tabs.Content value="appearance" class="settings-panel" data-scrollable>
         <SettingsAppearance />
       </Tabs.Content>
-      <Tabs.Content value="notifications" class="settings-panel">
+      <Tabs.Content value="notifications" class="settings-panel" data-scrollable>
         <SettingsNotifications />
       </Tabs.Content>
-      <Tabs.Content value="shortcuts" class="settings-panel">
+      <Tabs.Content value="shortcuts" class="settings-panel" data-scrollable>
         <SettingsKeybinds active={surface.view().tab === "shortcuts"} />
       </Tabs.Content>
       <PluginSettingsPages />
-      <Tabs.Content value="experimental" class="settings-panel">
+      <Tabs.Content value="experimental" class="settings-panel" data-scrollable>
         <SettingsExperimental />
       </Tabs.Content>
       <Tabs.Content value="about" class="settings-panel settings-about">
@@ -329,7 +329,7 @@ function RootSettings() {
             {(entry) => (
               <For each={serverTabs}>
                 {(item) => (
-                  <Tabs.Content value={item.value} class="settings-panel">
+                  <Tabs.Content value={item.value} class="settings-panel" data-scrollable>
                     <SettingsServerUnavailable
                       entry={entry()}
                       title={language.t(serverPages[item.value].title)}
@@ -347,7 +347,7 @@ function RootSettings() {
       >
         {(server) => (
           <SettingsServerDataScope server={server}>
-            <Tabs.Content value="providers" class="settings-panel">
+            <Tabs.Content value="providers" class="settings-panel" data-scrollable>
               <SettingsProviders
                 directory={undefined}
                 headerAction={<SettingsServerSwitcher />}
@@ -357,7 +357,7 @@ function RootSettings() {
                 }}
               />
             </Tabs.Content>
-            <Tabs.Content value="models" class="settings-panel">
+            <Tabs.Content value="models" class="settings-panel" data-scrollable>
               <SettingsModels
                 active={surface.view().tab === "models"}
                 provider={state.modelProvider}
@@ -365,7 +365,7 @@ function RootSettings() {
                 onReveal={() => setState("modelProvider", undefined)}
               />
             </Tabs.Content>
-            <Tabs.Content value="extensions" class="settings-panel">
+            <Tabs.Content value="extensions" class="settings-panel" data-scrollable>
               <SettingsExtensions
                 directory={activeDirectory()}
                 subtab={surface.view().subtab}
@@ -373,7 +373,7 @@ function RootSettings() {
                 onSubtab={(value) => surface.subtab(value)}
               />
             </Tabs.Content>
-            <Tabs.Content value="projects" class="settings-panel">
+            <Tabs.Content value="projects" class="settings-panel" data-scrollable>
               <SettingsProjects
                 server={server}
                 active={surface.view().tab === "projects"}
@@ -386,7 +386,7 @@ function RootSettings() {
                 }
               />
             </Tabs.Content>
-            <Tabs.Content value="workspaces" class="settings-panel">
+            <Tabs.Content value="workspaces" class="settings-panel" data-scrollable>
               <SettingsWorkspaces
                 activeDirectory={activeDirectory()}
                 resetProjectFilter={() => state.worktreeFilterReset}
@@ -396,7 +396,7 @@ function RootSettings() {
           </SettingsServerDataScope>
         )}
       </Show>
-      <Tabs.Content value="servers" class="settings-panel">
+      <Tabs.Content value="servers" class="settings-panel" data-scrollable>
         <Show
           when={multiple() ? undefined : inventory()[0]}
           fallback={
@@ -445,17 +445,17 @@ function ProjectSettings(props: { server: ServerConnection.Any; project: LocalPr
           onBack={() => surface.back()}
           onChange={(value) => surface.select(value)}
         >
-          <Tabs.Content value="general" class="settings-panel">
+          <Tabs.Content value="general" class="settings-panel" data-scrollable>
             <SettingsProjectGeneral
               server={props.server}
               project={props.project}
               onOpenServer={() => surface.openServers(ServerConnection.key(props.server))}
             />
           </Tabs.Content>
-          <Tabs.Content value="workspaces" class="settings-panel">
+          <Tabs.Content value="workspaces" class="settings-panel" data-scrollable>
             <SettingsWorkspaces projectID={props.project.id} activeDirectory={activeDirectory()} />
           </Tabs.Content>
-          <Tabs.Content value="extensions" class="settings-panel">
+          <Tabs.Content value="extensions" class="settings-panel" data-scrollable>
             <ProjectSettingsExtensions subtab={surface.view().subtab} onSubtab={(value) => surface.subtab(value)} />
           </Tabs.Content>
         </SettingsNavigation>

@@ -4,6 +4,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { SettingsList } from "@/settings/list"
 import { useSettings } from "@/settings/model"
 import { SettingsRow } from "@/settings/row"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 export const experimentalSettingsAvailable = true
@@ -14,16 +15,10 @@ export const SettingsExperimental: Component = () => {
 
   return (
     <>
-      <div class="settings-tab-header">
-        <div class="settings-tab-header-row">
-          <div class="flex flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.tab.experimental")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">
-              {language.t("settings.experimental.description")}
-            </span>
-          </div>
-        </div>
-      </div>
+      <SettingsPageHeader
+        title={language.t("settings.tab.experimental")}
+        description={language.t("settings.experimental.description")}
+      />
 
       <div class="settings-tab-body">
         <div class="settings-section">

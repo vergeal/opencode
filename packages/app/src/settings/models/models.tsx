@@ -15,6 +15,7 @@ import { CONSOLE_GROUP_KEY, consoleModelGroup, ProviderModelSections } from "@/p
 import { SettingsSearchEmpty } from "@/settings/search-empty"
 import { SettingsSearchField } from "@/settings/search-field"
 
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 type ModelItem = ReturnType<ReturnType<typeof useModels>["list"]>[number]
@@ -141,21 +142,19 @@ export const SettingsModels: Component<{
 
   return (
     <>
-      <div class="settings-tab-header settings-tab-header--stacked">
-        <div class="settings-tab-header-row">
-          <div class="flex min-w-0 flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.models.title")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.models.description")}</span>
-          </div>
-          <div class="settings-tab-header-actions">{props.headerAction}</div>
-        </div>
+      <SettingsPageHeader
+        stacked
+        title={language.t("settings.models.title")}
+        description={language.t("settings.models.description")}
+        actions={props.headerAction}
+      >
         <SettingsSearchField
           value={list.filter()}
           active={props.active ?? true}
           onInput={list.onInput}
           placeholder={language.t("dialog.model.search.placeholder")}
         />
-      </div>
+      </SettingsPageHeader>
 
       <div class="settings-tab-body settings-models">
         <Show

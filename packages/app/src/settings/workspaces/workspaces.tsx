@@ -38,6 +38,7 @@ import {
 import { listAllSessions } from "@/session/list"
 import type { ServerScope } from "@/runtime/server/scope"
 import { workspaceInventoryQuery } from "./queries"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 type Workspace = {
@@ -386,15 +387,12 @@ export const SettingsWorkspaces: Component<{
 
   return (
     <>
-      <div class="settings-tab-header settings-workspaces-header">
-        <div class="settings-tab-header-row">
-          <div class="flex min-w-0 flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.tab.workspaces")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.workspaces.description")}</span>
-          </div>
-          <div class="settings-tab-header-actions">{props.headerAction}</div>
-        </div>
-      </div>
+      <SettingsPageHeader
+        class="settings-workspaces-header"
+        title={language.t("settings.tab.workspaces")}
+        description={language.t("settings.workspaces.description")}
+        actions={props.headerAction}
+      />
 
       <div class="settings-tab-body settings-workspaces">
         <Show when={filtered().length > 0}>

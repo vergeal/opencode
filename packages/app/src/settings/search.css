@@ -21,14 +21,33 @@
 
 .settings-search [data-component="text-input-v2"] {
   width: 100%;
+  height: 28px;
   flex-shrink: 0;
-  background: transparent;
-  box-shadow: none;
+  border-radius: 7px;
+  background: var(--v2-background-bg-layer-01);
+  box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
+  transition:
+    background-color 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+
+.settings-search [data-component="text-input-v2"] [data-slot="text-input-v2-input"] {
+  font-size: 13px;
 }
 
 .settings-search [data-component="text-input-v2"]:is(:hover, :focus-within):not([data-disabled]),
 .settings-search [data-component="text-input-v2"]:has(input:not(:placeholder-shown)):not([data-disabled]) {
-  background: var(--v2-overlay-simple-overlay-hover);
+  background: var(--v2-background-bg-layer-01);
+}
+
+.settings-search [data-component="text-input-v2"]:focus-within:not([data-disabled]) {
+  box-shadow:
+    inset 0 0 0 0.5px var(--v2-border-border-focus),
+    0 0 0 3px var(--v2-focus-ring-color);
+}
+
+:root[data-motion="reduce"] .settings-search [data-component="text-input-v2"] {
+  transition: none;
 }
 
 :is(.settings-search, .settings-filter-search) [data-slot="text-input-v2-input"][data-overflow-start="true"] {
@@ -95,7 +114,7 @@
 
 .settings-search-empty,
 .settings-search-empty-measure {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 400;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;

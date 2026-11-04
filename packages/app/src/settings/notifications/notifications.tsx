@@ -10,6 +10,7 @@ import {
   soundOptions,
   type SoundSettingsController,
 } from "@/settings/general/controllers"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 const soundSettings = {
@@ -61,16 +62,10 @@ export const SettingsNotifications: Component = () => {
 
   return (
     <>
-      <div class="settings-tab-header">
-        <div class="settings-tab-header-row">
-          <div class="flex flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.tab.notifications")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">
-              {language.t("settings.notifications.description")}
-            </span>
-          </div>
-        </div>
-      </div>
+      <SettingsPageHeader
+        title={language.t("settings.tab.notifications")}
+        description={language.t("settings.notifications.description")}
+      />
 
       <div class="settings-tab-body settings-tab-body--sectioned">
         <div class="settings-section">

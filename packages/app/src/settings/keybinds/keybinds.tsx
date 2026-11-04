@@ -19,6 +19,7 @@ import { useSettings } from "@/settings/model"
 import { SettingsList } from "@/settings/list"
 import { SettingsSearchEmpty } from "@/settings/search-empty"
 import { SettingsSearchField } from "@/settings/search-field"
+import { SettingsPageHeader } from "@/settings/page-header"
 
 const IS_MAC = typeof navigator !== "undefined" && /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
 
@@ -466,23 +467,23 @@ function SettingsKeybindsView(props: {
 
   return (
     <>
-      <div class="settings-tab-header settings-tab-header--stacked">
-        <div class="settings-tab-header-row">
-          <div class="flex flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.shortcuts.title")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.shortcuts.description")}</span>
-          </div>
+      <SettingsPageHeader
+        stacked
+        title={language.t("settings.shortcuts.title")}
+        description={language.t("settings.shortcuts.description")}
+        actions={
           <Button variant="ghost" onClick={props.onReset} disabled={!props.hasOverrides}>
             {language.t("settings.shortcuts.reset.button")}
           </Button>
-        </div>
+        }
+      >
         <SettingsSearchField
           value={store.filter}
           active={props.visible ?? true}
           onInput={(value) => setStore("filter", value)}
           placeholder={language.t("settings.shortcuts.search.placeholder")}
         />
-      </div>
+      </SettingsPageHeader>
       <div class="settings-tab-body">
         <div class="settings-shortcuts settings-section-stack">
           <For each={props.groups}>

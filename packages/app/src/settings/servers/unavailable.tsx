@@ -8,6 +8,7 @@ import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection } from "@/runtime/server/registry"
 import { DialogServer } from "@/servers/connect/dialog"
 import { SettingsList } from "@/settings/list"
+import { SettingsPageHeader } from "@/settings/page-header"
 import type { SettingsServer } from "./inventory"
 import "@/settings/settings.css"
 
@@ -45,15 +46,7 @@ export function SettingsServerUnavailable(props: {
 
   return (
     <>
-      <div class="settings-tab-header">
-        <div class="settings-tab-header-row">
-          <div class="flex min-w-0 flex-col gap-1">
-            <h2 class="settings-tab-title">{props.title}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">{props.description}</span>
-          </div>
-          <div class="settings-tab-header-actions">{props.headerAction}</div>
-        </div>
-      </div>
+      <SettingsPageHeader title={props.title} description={props.description} actions={props.headerAction} />
       <div class="settings-tab-body">
         <SettingsList>
           <div class="settings-server-unavailable" role="status">
@@ -65,13 +58,7 @@ export function SettingsServerUnavailable(props: {
               {language.t("settings.server.unreachable.description", { server: props.entry.name })}
             </div>
             <div class="settings-server-unavailable-actions">
-              <Button
-                size="normal"
-                variant="neutral"
-                icon="refresh"
-                disabled={state.retrying}
-                onClick={retry}
-              >
+              <Button size="normal" variant="neutral" icon="refresh" disabled={state.retrying} onClick={retry}>
                 {language.t("settings.server.unreachable.retry")}
               </Button>
               <Button size="normal" variant="ghost-muted" onClick={edit}>

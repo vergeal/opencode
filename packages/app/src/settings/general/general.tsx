@@ -19,6 +19,7 @@ import { SettingsRow } from "@/settings/row"
 import { createShellOptions } from "./behavior"
 import type { ShellSettingsController } from "./controllers"
 import { InterfaceModeSetting } from "./interface-mode"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 const AutoApprovePermissionsSetting: Component = () => {
@@ -305,23 +306,17 @@ export const SettingsGeneral: Component = () => {
 
   return (
     <>
-      <div class="settings-tab-header">
-        <div class="settings-tab-header-row">
-          <div class="flex flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.tab.preferences")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">
-              {language.t("settings.preferences.description")}
-            </span>
-          </div>
-        </div>
-      </div>
+      <SettingsPageHeader
+        title={language.t("settings.tab.preferences")}
+        description={language.t("settings.preferences.description")}
+      />
       <div class="settings-tab-body settings-tab-body--sectioned">
         <GeneralSection />
 
         <section class="settings-section" aria-label={language.t("settings.timeline.title")}>
           <h3 class="settings-section-title">{language.t("settings.timeline.title")}</h3>
           <SettingsList>
-            <div class="border-b-[0.5px] border-v2-border-border-base py-5">
+            <div class="border-b-[0.5px] border-v2-border-border-base py-[10px]">
               <TimelineDetailControl
                 value={settings.general.timelineDetail()}
                 onChange={settings.general.setTimelineDetail}

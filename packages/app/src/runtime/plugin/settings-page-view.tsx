@@ -10,7 +10,7 @@ export function PluginSettingsPages() {
   return (
     <For each={surface.plugins.pages()}>
       {(item) => (
-        <Tabs.Content value={item.value.id} class="settings-panel">
+        <Tabs.Content value={item.value.id} class="settings-panel" data-scrollable>
           <Contribution plugin={item.plugin}>
             {() =>
               item.value.render({

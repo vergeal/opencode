@@ -21,6 +21,7 @@ import { SettingsList } from "@/settings/list"
 import { activeProviderAccount, providerAccounts, type ProviderAccount } from "./accounts"
 import { AccountNameInput } from "./account-name"
 import { useProviderAccountActions } from "./account-actions"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 type ProviderSource = "env" | "api" | "account" | "config" | "custom"
@@ -98,7 +99,8 @@ export const SettingsProviders: Component<{
           }}
         />
       ),
-      () => void accountActions
+      () =>
+        void accountActions
           .refresh()
           .catch(() => undefined)
           .finally(() => setState("held", undefined)),
@@ -268,7 +270,11 @@ export const SettingsProviders: Component<{
   const activate = async (provider: ProviderItem, providerName: string, account: ProviderAccount) => {
     if (activeProviderAccount(integration(provider))?.id === account.id) return
     setState({ credentialID: account.id, held: available() })
-    await accountActions.activate({ integrationID: provider.integrationID ?? provider.id, provider: providerName, account })
+    await accountActions.activate({
+      integrationID: provider.integrationID ?? provider.id,
+      provider: providerName,
+      account,
+    })
     setState({ credentialID: undefined, held: undefined })
   }
 
@@ -372,9 +378,7 @@ export const SettingsProviders: Component<{
           />
           <Menu.Portal>
             <Menu.Content onCloseAutoFocus={(event) => state.renaming && event.preventDefault()}>
-              <Menu.Item onSelect={() => setState("renaming", active()?.id)}>
-                {language.t("common.rename")}
-              </Menu.Item>
+              <Menu.Item onSelect={() => setState("renaming", active()?.id)}>{language.t("common.rename")}</Menu.Item>
               <Menu.Item
                 onSelect={() => {
                   const account = active()
@@ -393,15 +397,11 @@ export const SettingsProviders: Component<{
 
   return (
     <>
-      <div class="settings-tab-header">
-        <div class="settings-tab-header-row">
-          <div class="flex min-w-0 flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.providers.title")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.providers.description")}</span>
-          </div>
-          <div class="settings-tab-header-actions">{props.headerAction}</div>
-        </div>
-      </div>
+      <SettingsPageHeader
+        title={language.t("settings.providers.title")}
+        description={language.t("settings.providers.description")}
+        actions={props.headerAction}
+      />
 
       <div class="settings-tab-body settings-tab-body--sectioned settings-providers">
         <div class="settings-section" data-component="connected-providers-section">
@@ -424,9 +424,7 @@ export const SettingsProviders: Component<{
                             <ProviderModelIcon provider={item} class="settings-provider-icon shrink-0" />
 
                             <div class="settings-provider-main">
-                              <span class="settings-provider-name truncate">
-                                {item.name}
-                              </span>
+                              <span class="settings-provider-name truncate">{item.name}</span>
                               <Badge>{type(item)}</Badge>
                             </div>
                           </div>
@@ -551,9 +549,7 @@ export const SettingsProviders: Component<{
 
                     <div class="settings-provider-copy">
                       <div class="settings-provider-main">
-                        <span class="settings-provider-name">
-                          {item.name}
-                        </span>
+                        <span class="settings-provider-name">{item.name}</span>
                         <Show when={item.id === "opencode" || item.id === "opencode-go"}>
                           <Badge>{language.t("dialog.provider.tag.recommended")}</Badge>
                         </Show>

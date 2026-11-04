@@ -15,6 +15,7 @@ import { SettingsSearchEmpty } from "../search-empty"
 import { SettingsSearchField } from "../search-field"
 import { SettingsProjectRow } from "./project-row"
 import "@/settings/search.css"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 export const SettingsProjects: Component<{
@@ -58,21 +59,21 @@ export const SettingsProjects: Component<{
 
   return (
     <>
-      <div class="settings-tab-header" classList={{ "settings-tab-header--stacked": searchable() }}>
-        <div class="settings-tab-header-row">
-          <div class="flex min-w-0 flex-col gap-1">
-            <h2 class="settings-tab-title">{language.t("settings.projects.title")}</h2>
-            <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.projects.description")}</span>
-          </div>
-          <div class="settings-tab-header-actions">
+      <SettingsPageHeader
+        stacked={searchable()}
+        title={language.t("settings.projects.title")}
+        description={language.t("settings.projects.description")}
+        actions={
+          <>
             <Show when={projects().length > 0}>
               <Button variant="ghost-muted" icon="plus" onClick={addProject}>
                 {language.t("home.project.add")}
               </Button>
             </Show>
             {props.headerAction}
-          </div>
-        </div>
+          </>
+        }
+      >
         <Show when={searchable()}>
           <SettingsSearchField
             value={store.filter}
@@ -81,7 +82,7 @@ export const SettingsProjects: Component<{
             placeholder={language.t("settings.projects.search.placeholder")}
           />
         </Show>
-      </div>
+      </SettingsPageHeader>
 
       <div class="settings-tab-body">
         <Show

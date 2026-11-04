@@ -13,6 +13,7 @@ import { SettingsList } from "@/settings/list"
 import { ShellSetting } from "@/settings/general/general"
 import { createServerShellController } from "@/settings/general/controllers"
 import type { SettingsServer } from "./inventory"
+import { SettingsPageHeader } from "@/settings/page-header"
 import "@/settings/settings.css"
 
 /** The only server's connection and preferences. */
@@ -101,21 +102,18 @@ function SettingsServersHeader(props: { title: string; onAddServer: () => void }
   const language = useLanguage()
 
   return (
-    <div class="settings-tab-header">
-      <div class="settings-tab-header-row">
-        <div class="flex min-w-0 flex-col gap-1">
-          <h2 class="settings-tab-title">{props.title}</h2>
-          <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.servers.description")}</span>
-        </div>
-        <div class="settings-tab-header-actions">
-          <AddServerMenu onAddServer={props.onAddServer} />
-        </div>
-      </div>
-    </div>
+    <SettingsPageHeader
+      title={props.title}
+      description={language.t("settings.servers.description")}
+      actions={<AddServerMenu onAddServer={props.onAddServer} />}
+    />
   )
 }
 
-function ServerConnectionRow(props: { entry: SettingsServer; onServerChange?: (server: ServerConnection.Any) => void }) {
+function ServerConnectionRow(props: {
+  entry: SettingsServer
+  onServerChange?: (server: ServerConnection.Any) => void
+}) {
   const dialog = useDialog()
   const language = useLanguage()
   const controller = useServerCollectionController()
