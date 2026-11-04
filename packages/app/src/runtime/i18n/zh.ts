@@ -859,6 +859,7 @@ export const dict = {
   "settings.server.preferences.websearch.title": "第三方搜索",
   "settings.server.preferences.websearch.description": "选择代理用来在网络上搜索的搜索提供商",
   "settings.projects.search.placeholder": "搜索项目",
+  "settings.projects.delete": "删除项目",
   "project.settings.name.title": "项目名称",
   "project.settings.name.description": "在 OpenCode 中此项目显示的名称",
   "project.settings.icon.description": "建议：128×128 像素。点击或拖动上传图片。",

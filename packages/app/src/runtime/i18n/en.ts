@@ -882,6 +882,7 @@ export const dict = {
   "settings.projects.empty.title": "No projects yet",
   "settings.projects.empty.description": "Add a project to get started",
   "settings.projects.search.placeholder": "Search projects",
+  "settings.projects.delete": "Delete project",
   "settings.extensions.description": "Manage extensions available on this server",
   "settings.extensions.tab.mcps": "MCPs",
   "settings.extensions.tab.skills": "Skills",

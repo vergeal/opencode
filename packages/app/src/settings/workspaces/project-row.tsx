@@ -10,7 +10,8 @@ import { displayName } from "@opencode/ui/project-avatar"
 import { errorMessage } from "@/shell/layout/helpers"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { showToast } from "@/shell/notifications/toast"
-import { ProjectOptions } from "./project-options"
+import { ContextMenu } from "@opencode/ui/context-menu"
+import { ProjectOptions, projectMenuItems } from "./project-options"
 
 export function SettingsProjectRow(props: {
   project: LocalProject
@@ -56,11 +57,12 @@ export function SettingsProjectRow(props: {
     const context = global.ensureServerCtx(props.server)
     const value = name === getFilename(props.project.worktree) ? "" : name
 
-    const saved = await (props.project.id && props.project.id !== "global"
-      ? context.sdk.api.project
-          .update({ projectID: props.project.id, name: value })
-          .then((project) => context.sync.project.update(project))
-      : Promise.resolve(context.sync.project.meta(props.project.worktree, { name: value }))
+    const saved = await (
+      props.project.id && props.project.id !== "global"
+        ? context.sdk.api.project
+            .update({ projectID: props.project.id, name: value })
+            .then((project) => context.sync.project.update(project))
+        : Promise.resolve(context.sync.project.meta(props.project.worktree, { name: value }))
     )
       .then(() => true)
       .catch((cause: unknown) => {
@@ -83,73 +85,98 @@ export function SettingsProjectRow(props: {
     requestAnimationFrame(() => (saved ? button : input)?.focus())
   }
 
+  const deleteProject = () => global.ensureServerCtx(props.server).projects.hide(props.project)
+
+  const items = projectMenuItems({
+    server: props.server,
+    project: props.project,
+    onEdit: () => props.onOpen(props.project),
+    onRename: openEditor,
+    onDelete: deleteProject,
+  })
+
   return (
-    <div class="settings-project-row-shell">
-      <div
-        role="listitem"
-        data-component="settings-project-card"
-        data-menu={store.menu ? "true" : undefined}
-        class="settings-project-card"
-      >
-        <Show
-          when={!store.editor}
-          fallback={
-            <div class="flex h-full min-w-0 flex-1 items-center gap-2">
-              <ProjectIcon project={props.project} class="shrink-0" />
-              <InlineInput
-                ref={input}
-                aria-label={language.t("common.rename")}
-                dir="auto"
-                value={store.editor?.draft ?? ""}
-                disabled={store.editor?.saving}
-                class="w-full text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base outline-none"
-                style={{ "--inline-input-shadow": "none", "border-radius": "0", "text-align": "start" }}
-                onInput={(event) => setStore("editor", "draft", event.currentTarget.value)}
-                onKeyDown={(event) => {
-                  event.stopPropagation()
-
-                  if (event.isComposing || event.keyCode === 229) return
-
-                  if (event.key === "Enter") {
-                    event.preventDefault()
-                    void saveEditor()
-
-                    return
-                  }
-
-                  if (event.key !== "Escape") return
-                  event.preventDefault()
-                  closeEditor()
-                  requestAnimationFrame(() => button?.focus())
-                }}
-                onBlur={closeEditor}
-              />
-            </div>
-          }
+    <ContextMenu>
+      <ContextMenu.Trigger class="settings-project-row-shell">
+        <div
+          role="listitem"
+          data-component="settings-project-card"
+          data-menu={store.menu ? "true" : undefined}
+          class="settings-project-card"
         >
-          <button
-            ref={button}
-            type="button"
-            aria-label={displayName(props.project)}
-            title={props.project.worktree}
-            class="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[4px] bg-transparent text-start focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]"
-            onClick={() => props.onOpen(props.project)}
+          <Show
+            when={!store.editor}
+            fallback={
+              <div class="flex h-full min-w-0 flex-1 items-center gap-2">
+                <ProjectIcon project={props.project} class="shrink-0" />
+                <InlineInput
+                  ref={input}
+                  aria-label={language.t("common.rename")}
+                  dir="auto"
+                  value={store.editor?.draft ?? ""}
+                  disabled={store.editor?.saving}
+                  class="w-full text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base outline-none"
+                  style={{ "--inline-input-shadow": "none", "border-radius": "0", "text-align": "start" }}
+                  onInput={(event) => setStore("editor", "draft", event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    event.stopPropagation()
+
+                    if (event.isComposing || event.keyCode === 229) return
+
+                    if (event.key === "Enter") {
+                      event.preventDefault()
+                      void saveEditor()
+
+                      return
+                    }
+
+                    if (event.key !== "Escape") return
+                    event.preventDefault()
+                    closeEditor()
+                    requestAnimationFrame(() => button?.focus())
+                  }}
+                  onBlur={closeEditor}
+                />
+              </div>
+            }
           >
-            <ProjectIcon project={props.project} class="shrink-0" />
-            <bdi class="truncate text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base">
-              {displayName(props.project)}
-            </bdi>
-          </button>
-          <ProjectOptions
-            server={props.server}
-            project={props.project}
-            open={store.menu}
-            onOpenChange={(open) => setStore("menu", open)}
-            onEdit={() => props.onOpen(props.project)}
-            onRename={openEditor}
-          />
-        </Show>
-      </div>
-    </div>
+            <button
+              ref={button}
+              type="button"
+              aria-label={displayName(props.project)}
+              title={props.project.worktree}
+              class="flex h-full min-w-0 flex-1 items-center gap-2 rounded-[4px] bg-transparent text-start focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]"
+              onClick={() => props.onOpen(props.project)}
+            >
+              <ProjectIcon project={props.project} class="shrink-0" />
+              <bdi class="truncate text-[15px] font-[530] leading-5 tracking-[-0.04px] text-v2-text-text-base">
+                {displayName(props.project)}
+              </bdi>
+            </button>
+            <ProjectOptions
+              server={props.server}
+              project={props.project}
+              open={store.menu}
+              onOpenChange={(open) => setStore("menu", open)}
+              onEdit={() => props.onOpen(props.project)}
+              onRename={openEditor}
+              onDelete={deleteProject}
+            />
+          </Show>
+        </div>
+      </ContextMenu.Trigger>
+      <ContextMenu.Portal>
+        <ContextMenu.Content>
+          {items().map((item) => (
+            <>
+              {item.separated ? <ContextMenu.Separator /> : null}
+              <ContextMenu.Item disabled={item.disabled} onSelect={item.onSelect}>
+                <ContextMenu.ItemLabel>{item.label}</ContextMenu.ItemLabel>
+              </ContextMenu.Item>
+            </>
+          ))}
+        </ContextMenu.Content>
+      </ContextMenu.Portal>
+    </ContextMenu>
   )
 }

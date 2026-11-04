@@ -28,7 +28,8 @@ export const SettingsProjects: Component<{
   const pickDirectory = useDirectoryPicker()
   const [store, setStore] = createStore({ filter: "" })
   const context = createMemo(() => global.ensureServerCtx(props.server))
-  const projects = createMemo(() => context().projects.list())
+  // This client's projects: the same list Home shows, so removing one here removes it everywhere it is listed.
+  const projects = createMemo(() => context().projects.used())
   const searchable = createMemo(() => projects().length > 7)
 
   const filtered = createMemo(() => {
@@ -108,9 +109,7 @@ export const SettingsProjects: Component<{
                 class="settings-project-empty-card flex flex-col items-center gap-2 py-24 text-center"
               >
                 <Icon name="folder" size="large" class="mb-2 text-v2-icon-icon-muted" />
-                <div class="text-13-medium text-v2-text-text-base">
-                  {language.t("settings.projects.empty.title")}
-                </div>
+                <div class="text-13-medium text-v2-text-text-base">{language.t("settings.projects.empty.title")}</div>
                 <div class="text-13-regular text-v2-text-text-muted">
                   {language.t("settings.projects.empty.description")}
                 </div>
