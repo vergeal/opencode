@@ -251,6 +251,7 @@ export function createTimelineVirtualizer(input: Input) {
       )
 
       mountedIndexes.clear()
+
       for (const index of result) mountedIndexes.add(index)
 
       return result
@@ -344,6 +345,7 @@ export function createTimelineVirtualizer(input: Input) {
 
       return observeElementOffsetReconnectAware(instance, reportOffset, () => {
         if (!active()) return
+
         // Rows are measured through their ref (ResizeObserver). Re-measuring every mounted row here forced
         // a synchronous layout on each scroll event, which is what made scrolling stutter and blank out.
         if (input.follow.following()) virtualizer.scrollToEnd()
@@ -412,7 +414,7 @@ export function createTimelineVirtualizer(input: Input) {
   })
 
   const resizeItem = virtualizer.resizeItem
-  const pendingSizes = new Map<number, { key: string; size: number }>()
+  const pendingSizes = new Map<string, { index: number; size: number }>()
   let resizeScheduled = false
   // Read the whole measurement delivery before committing reactive row sizes.
   // Otherwise each row can render and force layout before the next is measured.
@@ -424,12 +426,12 @@ export function createTimelineVirtualizer(input: Input) {
     const key = TimelineRow.key(row)
 
     if ((virtualizer.itemSizeCache.get(key) ?? fallbackItemSize) === size) {
-      pendingSizes.delete(index)
+      pendingSizes.delete(key)
 
       return
     }
 
-    pendingSizes.set(index, { key, size })
+    pendingSizes.set(key, { index, size })
 
     if (resizeScheduled) return
     resizeScheduled = true
@@ -441,15 +443,29 @@ export function createTimelineVirtualizer(input: Input) {
       pendingSizes.clear()
 
       if (!active()) return
+      // Rows can shift index while a batch waits for this microtask, since a streaming turn regroups its parts and
+      // a history prepend inserts rows above. The index that delivered a measurement may then name a different row,
+      // so fall back to the key. Dropping that correction left the row clipped at its estimate until a refresh.
+      let indexByKey: Map<string, number> | undefined
+
+      const resolveIndex = (key: string, delivered: number) => {
+        const row = rows()[delivered]
+
+        if (row && TimelineRow.key(row) === key) return delivered
+        indexByKey ??= new Map(rows().map((row, index) => [TimelineRow.key(row), index] as const))
+
+        return indexByKey.get(key)
+      }
+
       // The hidden pinned mount needs one bottom write after the whole batch,
       // not a layout-forcing scroll adjustment for every measured row.
       dispatchCold(SIZES_FLUSHING)
       batch(() => {
-        sizes.forEach(([index, value]) => {
-          const row = rows()[index]
+        sizes.forEach(([key, pending]) => {
+          const index = resolveIndex(key, pending.index)
 
-          if (!row || TimelineRow.key(row) !== value.key) return
-          resizeItem(index, value.size)
+          if (index === undefined) return
+          resizeItem(index, pending.size)
 
           // TanStack recalculates its range after each resize. Advance the
           // logical fold before deciding whether the next row needs anchoring.
