@@ -168,6 +168,10 @@ export function createTimelineVirtualizer(input: Input) {
     equals: (previous, next) => previous.length === next.length && previous.every((key, index) => key === next[index]),
   })
 
+  // Row identity to index, rebuilt only when the key list itself changes. A streaming turn can
+  // regrow a row's content without adding or removing keys, so this stays a cheap read per delivery.
+  const rowIndexByKey = createMemo(() => new Map(rowKeys().map((key, index) => [key, index] as const)))
+
   const knownKeys = new Set(rowKeys())
   const addedKeys = new Set<string>()
 
@@ -488,6 +492,29 @@ export function createTimelineVirtualizer(input: Input) {
     })
   }
 
+  // TanStack's observer drops deliveries while it is scrolling and only tracks elements it
+  // registered when they mounted. A row whose registration was rejected, or whose delivery was
+  // skipped mid-scroll, then kept its estimate forever: the clipped row hid a long reply and the
+  // underestimated total blanked the viewport near the end of a session. Watch every mounted row
+  // directly and route its real border box through the same size cache, keyed by row identity
+  // instead of a `data-index` that a concurrent regroup can make stale.
+  const rowObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const node = entry.target
+
+      if (!(node instanceof HTMLElement) || !node.isConnected) continue
+      const key = node.parentElement?.getAttribute("data-timeline-key")
+
+      if (!key) continue
+      const index = rowIndexByKey().get(key)
+
+      if (index === undefined) continue
+      const size = Math.round(entry.borderBoxSize[0]?.blockSize ?? node.offsetHeight)
+
+      if (size > 0) virtualizer.resizeItem(index, size)
+    }
+  })
+
   // TanStack skips ResizeObserver deliveries while it is scrolling, and a row measured
   // before its content settled keeps that size until something remeasures it. Read every
   // mounted row back once the scroll stops and when the timeline becomes active again.
@@ -500,12 +527,19 @@ export function createTimelineVirtualizer(input: Input) {
       remeasureFrame = undefined
 
       if (!active()) return
-      virtualizer.elementsCache.forEach((element) => {
-        if (!element.isConnected) return
-        const index = virtualizer.indexFromElement(element)
+      const indexes = rowIndexByKey()
 
-        if (index < 0) return
-        virtualizer.resizeItem(index, element.offsetHeight)
+      rowLayer?.querySelectorAll<HTMLElement>("[data-timeline-key]").forEach((outer) => {
+        const key = outer.getAttribute("data-timeline-key")
+
+        if (!key) return
+        const index = indexes.get(key)
+
+        if (index === undefined) return
+        const node = outer.firstElementChild
+
+        if (!(node instanceof HTMLElement) || !node.isConnected) return
+        virtualizer.resizeItem(index, node.offsetHeight)
       })
     })
   }
@@ -530,6 +564,7 @@ export function createTimelineVirtualizer(input: Input) {
 
   onCleanup(() => {
     pendingSizes.clear()
+    rowObserver.disconnect()
 
     if (remeasureFrame !== undefined) cancelAnimationFrame(remeasureFrame)
   })
@@ -1086,10 +1121,15 @@ export function createTimelineVirtualizer(input: Input) {
       const [ready, setReady] = createSignal(initialItem.size <= fallbackItemSize || !props.deferred(initialRow))
       let contentMeasureFrame: number | undefined
 
-      onMount(() => virtualizer.measureElement(element))
+      onMount(() => {
+        virtualizer.measureElement(element)
+        rowObserver.observe(element)
+      })
       // Prepending history changes data-index, not the keyed element's identity.
       // Its observer reads the current index and delivers any actual size change.
       onCleanup(() => {
+        rowObserver.unobserve(element)
+
         if (contentMeasureFrame !== undefined) cancelAnimationFrame(contentMeasureFrame)
         queueMicrotask(() => virtualizer.measureElement(null))
       })
