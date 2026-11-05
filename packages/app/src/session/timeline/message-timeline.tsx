@@ -15,13 +15,16 @@ import { PluginSlot } from "@/runtime/plugin/render"
 import { usePluginHost } from "@/runtime/plugin/host"
 import { usePluginAttachment } from "@/runtime/plugin/attachment"
 import { useLanguage } from "@/runtime/i18n/language"
+import { useSettings } from "@/settings/model"
 import { useServer } from "@/runtime/server/current"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { Timeline, TimelineRow } from "@opencode/session-ui/timeline/projection"
 import { createSessionTimelineRowRenderer } from "@opencode/session-ui/timeline/row"
 import { getReadyMarkdown, preloadMarkdown } from "@opencode/session-ui/markdown-cache"
 import { createTimelineController, type TimelineController, type TimelineSessionSource } from "./controller"
+import type { TimelineFollow } from "./follow"
 import { createTimelineVirtualizer } from "./virtualizer"
+import { createSelectedEffect } from "./selected-effect"
 import { containsDirectory } from "@opencode/util/path"
 import { isWorkspaceDirectory } from "@/workspaces/paths"
 import { parseCommentNote, readPromptPresentation } from "@/composer/comment-note"
@@ -84,28 +87,26 @@ type MessageTimelineProps = {
   onResumeScroll: (behavior?: ScrollBehavior) => void
   setScrollRef: (el: HTMLDivElement | undefined) => void
   onScheduleScrollState: (el: HTMLDivElement) => void
-  onPin: () => void
-  onUnpin: () => void
+  follow: TimelineFollow
   onUserScroll: (target?: EventTarget | null) => void
-  onHistoryScroll: (scrollTop: number, viewportHeight: number) => void
-  onSelectionInteraction: (event: MouseEvent) => void
-  pinned: boolean
+  onHistoryScroll: () => void
   centered: boolean
   reserveReviewToggle: boolean
-  setContentRef: (el: HTMLDivElement) => void
+  onContentResize: () => void
   bottomInset?: number
   setVisibleRef?: (el: HTMLDivElement | undefined) => void
   anchor: (id: string) => string
   setRevealMessage?: (fn: (id: string, partID?: string) => void) => void
   setRevealPart?: (fn: (target: string) => boolean) => void
   setScrollToEnd?: (fn: (behavior?: ScrollBehavior) => void) => void
+  setPage?: (fn: (direction: 1 | -1) => void) => void
   reveal?: { target: () => string | undefined; done: () => void }
   search?: JSX.Element
 }
 
 export function MessageTimeline(props: MessageTimelineProps) {
-  const controller = createTimelineController({ session: props.session })
-  const tail = props.pinned ? controller.data.projection.rows().at(-1) : undefined
+  const controller = createTimelineController({ session: props.session, active: () => props.active !== false })
+  const tail = props.follow.following() ? controller.data.projection.rows().at(-1) : undefined
 
   if (tail?._tag === "AssistantPart" && tail.group.type === "part") {
     const message = controller.data.projection.messageByID().get(tail.group.ref.messageID)
@@ -170,15 +171,18 @@ function MessageTimelineView(
     return server.ctx.projects.forSession(session)
   })
 
-  createEffect(() => {
-    const directory = project()?.worktree
+  createSelectedEffect(
+    project,
+    () => props.active !== false,
+    (project) => {
+      const directory = project?.worktree
 
-    if (!directory) return
-    void data.location.vcs.sync({ directory }).catch(() => undefined)
-  })
+      if (!directory) return
+      void data.location.vcs.sync({ directory }).catch(() => undefined)
+    },
+  )
   const turnPadding = () => "px-4 md:px-6"
   const showHeader = createMemo(() => !props.hideHeader && (props.data.showHeader() || workspaceSession()))
-  const pinned = createMemo(() => props.pinned)
   const messageByID = projection.messageByID
 
   const virtualized = createTimelineVirtualizer({
@@ -187,17 +191,14 @@ function MessageTimelineView(
     presentationKey: () => JSON.stringify(props.data.timelineDetail()),
     projection,
     showHeader,
-    pinned,
+    follow: props.follow,
     scroll: () => props.scroll,
     onResumeScroll: props.onResumeScroll,
     setScrollRef: props.setScrollRef,
-    setContentRef: props.setContentRef,
+    onContentResize: props.onContentResize,
     bottomInset: () => props.bottomInset ?? 0,
     setVisibleRef: props.setVisibleRef,
     onScheduleScrollState: props.onScheduleScrollState,
-    onPin: props.onPin,
-    onUnpin: props.onUnpin,
-    onSelectionInteraction: props.onSelectionInteraction,
     onUserScroll: props.onUserScroll,
     onHistoryScroll: props.onHistoryScroll,
     canRenderImmediately: (row, disclosure) => {
@@ -251,6 +252,7 @@ function MessageTimelineView(
     setRevealMessage: props.setRevealMessage,
     setRevealPart: props.setRevealPart,
     setScrollToEnd: props.setScrollToEnd,
+    setPage: props.setPage,
     reveal: props.reveal,
   })
 
@@ -332,7 +334,10 @@ function MessageTimelineView(
     setTitle({ draft: "", editing: false, menuOpen: false, pendingRename: false })
   })
 
+  const settings = useSettings()
+
   const rowRenderer = createSessionTimelineRowRenderer({
+    foldUserMessages: settings.general.foldUserMessages,
     sessionID: () => sessionID()!,
     status: sessionStatus,
     projection,
@@ -745,7 +750,7 @@ function MessageTimelineView(
                   </Show>
                 </>
               }
-              actions={
+              actions={(fit) => (
                 <Show when={sessionID()} keyed>
                   {(_id) => (
                     <>
@@ -762,13 +767,16 @@ function MessageTimelineView(
                           get active() {
                             return props.active !== false
                           },
+                          get compact() {
+                            return fit.compact
+                          },
                         }}
                       />
                       <SessionHeaderSpacer visible={props.reserveReviewToggle} />
                     </>
                   )}
                 </Show>
-              }
+              )}
             >
               <Show when={parentID() && childTitle()}>
                 {(value) => (

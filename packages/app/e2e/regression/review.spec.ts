@@ -10,6 +10,33 @@ import { readFile } from "node:fs/promises"
 
 test.use({ viewport: { width: 1440, height: 900 } })
 
+test("review toggle shows its tooltip with the side panel open or closed", async ({ page }) => {
+  await openSession(page, {
+    name: "ReviewTooltip",
+    seed: { panes: { ses_reviewtooltip: { review: true } } },
+  })
+  const toggle = page.getByRole("button", { name: "Toggle review", exact: true })
+  const tooltip = page.getByRole("tooltip", { name: /Toggle review/ })
+  await expect(toggle).toHaveAttribute("aria-expanded", "true")
+  await expect(page.locator("#review-panel")).toHaveAttribute("aria-hidden", "false")
+  await toggle.hover()
+  await expect(tooltip).toBeVisible()
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute("aria-expanded", "false")
+  await page.locator("[data-session-title]").hover()
+  await expect(tooltip).toBeHidden()
+  await toggle.hover()
+  await expect(tooltip).toBeVisible()
+
+  await toggle.click()
+  await expect(toggle).toHaveAttribute("aria-expanded", "true")
+  await page.locator("[data-session-title]").hover()
+  await expect(tooltip).toBeHidden()
+  await toggle.hover()
+  await expect(tooltip).toBeVisible()
+})
+
 for (const view of ["desktop", "mobile"] as const) {
   test(`offers Git initialization for a project without VCS (${view})`, async ({ page }) => {
     if (view === "mobile") await page.setViewportSize({ width: 390, height: 844 })
@@ -122,6 +149,27 @@ test("a rejected Git init releases its session's button without showing an error
   await page.locator("[data-titlebar-tab-slot]", { hasText: "Initialize Alpha" }).click()
   await expectSessionTitle(page, "Initialize Alpha")
   await expect(init).toBeEnabled()
+})
+
+test("opens file picker launchers when randomUUID is unavailable on insecure HTTP origins", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(globalThis, "isSecureContext", { configurable: true, value: false })
+    Object.defineProperty(globalThis.crypto, "randomUUID", { configurable: true, value: undefined })
+  })
+
+  await openSession(page, {
+    name: "ReviewOpenFileInsecure",
+    seed: { panes: { ses_reviewopenfileinsecure: { review: true } } },
+  })
+
+  const panel = page.locator("#review-panel")
+  const tab = panel.getByRole("tab", { name: "Open file", exact: true })
+  await openFileLauncher(panel)
+  await expect(tab).toHaveAttribute("aria-selected", "true")
+  await expect(panel.getByRole("combobox", { name: "Filter files" })).toBeFocused()
+
+  await openFileLauncher(panel)
+  await expect(tab).toHaveCount(2)
 })
 
 test("open file tab browses, searches, and tracks missing files", async ({ page }) => {
@@ -474,6 +522,7 @@ test("file tree expands Windows paths and scrolls long names in both directions"
     fileList: (path) => {
       if (path === "frontend\\" || path === "frontend") {
         return [
+          fileNode(directory, "frontend/nested", "directory"),
           { ...fileNode(directory, "frontend/app.ts"), path: "frontend\\app.ts" },
           { ...fileNode(directory, longPath), path: `frontend\\${longFilename}` },
           // Short rows below the long one, so it can scroll out of view.
@@ -484,6 +533,8 @@ test("file tree expands Windows paths and scrolls long names in both directions"
           }),
         ]
       }
+
+      if (path === "frontend/nested") return [fileNode(directory, "frontend/nested/child.ts")]
 
       if (path) return []
 
@@ -509,6 +560,36 @@ test("file tree expands Windows paths and scrolls long names in both directions"
   await expect(frontend).toHaveAttribute("aria-expanded", "false")
   await frontend.click()
   await expect(frontend).toHaveAttribute("aria-expanded", "true")
+
+  const nested = panel.locator('[data-type="item"][data-item-path="frontend/nested/"]')
+  await nested.click()
+  const child = panel.locator('[data-type="item"][data-item-path="frontend/nested/child.ts"]')
+  await expect(child).toBeVisible()
+  await expect(child.locator('[data-item-section="spacing-item"]')).toHaveCount(2)
+
+  // Every ancestor guide runs through its folder's chevron, not just the first indentation level.
+  const guideOffset = () =>
+    child.evaluate((element) => {
+      const root = element.getRootNode()
+
+      if (!(root instanceof ShadowRoot)) throw new Error("Expected the file tree's shadow root")
+
+      return Math.max(
+        ...Array.from(element.querySelectorAll<HTMLElement>('[data-item-section="spacing-item"]'), (guide) => {
+          const folder = Array.from(root.querySelectorAll<HTMLElement>('[data-type="item"]')).find(
+            (row) => row.dataset.itemPath === guide.dataset.ancestorPath,
+          )!
+
+          const icon = folder.querySelector('[data-item-section="icon"]')!.getBoundingClientRect()
+          const line = guide.getBoundingClientRect()
+          const center = getComputedStyle(guide).direction === "rtl" ? line.right - 0.5 : line.left + 0.5
+
+          return Math.abs(center - (icon.left + icon.width / 2))
+        }),
+      )
+    })
+
+  await expect.poll(guideOffset).toBeLessThanOrEqual(0.5)
 
   const viewport = sidebar.locator('[data-slot="session-review-v2-sidebar-viewport"]')
   const longRow = panel.locator(`[data-type="item"][data-item-path="${longPath}"]`)
@@ -553,6 +634,7 @@ test("file tree expands Windows paths and scrolls long names in both directions"
   await expect.poll(async () => (await scrollTree({})).left).toBeGreaterThan(0)
   await scrollTree({ left: 0, top: 0 })
   await viewport.evaluate((element) => element.setAttribute("dir", "rtl"))
+  await expect.poll(guideOffset).toBeLessThanOrEqual(0.5)
   await expect.poll(() => statusInset(status, "left")).toBeLessThanOrEqual(24)
   await frontend.focus()
   await page.keyboard.press("ArrowRight")
@@ -657,7 +739,7 @@ test("rereads a file each time an artifact link opens it", async ({ page }) => {
   await expect(panel.getByText("second draft", { exact: true })).toHaveCount(0)
 
   // A restored file tab whose file was deleted shows its inline not-found state without a toast; clicking a broken link
-  // when no tab is open for it shows the toast.
+  // when no tab is open for it shows one toast.
   await page.route("**/api/fs/read/shopping.txt*", (route) =>
     route.fulfill({
       status: 404,
@@ -673,11 +755,73 @@ test("rereads a file each time an artifact link opens it", async ({ page }) => {
   await expect(panel.getByText("File not found: shopping.txt", { exact: true })).toBeVisible()
   await expect(page.getByText("Failed to load file", { exact: true })).toHaveCount(0)
 
+  // Behind another tab, the deleted file's tab is what its link selects: the click never does nothing.
+  await page.getByRole("button", { name: "Toggle session context" }).click()
+  await expect(missingTab).toHaveAttribute("aria-selected", "false")
+  await link.click()
+  await expect(missingTab).toHaveAttribute("aria-selected", "true")
+  await expect(page.getByText("Failed to load file", { exact: true })).toHaveCount(0)
+
   await missingTab.locator("..").getByRole("button", { name: "Close tab" }).click()
   await expect(missingTab).toHaveCount(0)
   await link.click()
   await expect(page.getByText("Failed to load file", { exact: true })).toBeVisible()
   await expect(missingTab).toHaveCount(0)
+})
+
+// A change reported while a file's read is in flight used to join that read, so the tab kept the bytes from before the
+// change until the next change.
+test("a file changed during its read shows the change", async ({ page }) => {
+  const reads: string[] = []
+  const arrived = Promise.withResolvers<void>()
+  const held = Promise.withResolvers<void>()
+
+  const messages = [
+    { id: "msg_prompt", type: "user", text: "Update the lists", time: { created: 1 } },
+    {
+      id: "msg_reply",
+      type: "assistant",
+      agent: "build",
+      model: { id: "test", providerID: "opencode" },
+      content: [{ type: "text", text: "Updated [notes.txt](notes.txt) and [shopping.txt](shopping.txt)." }],
+      time: { created: 2, completed: 3 },
+    },
+  ] satisfies SessionMessageInfo[]
+
+  const workspace = await openSession(page, {
+    name: "FileReadRace",
+    fileList: () => [],
+    fileContent: async (path) => {
+      reads.push(path)
+
+      if (path !== "shopping.txt") return `contents:${path}`
+
+      if (reads.filter((item) => item === path).length > 1) return "after change"
+      arrived.resolve()
+      await held.promise
+
+      return "before change"
+    },
+    pageMessages: () => ({ items: messages }),
+  })
+
+  const panel = page.locator("#review-panel")
+  await page.getByRole("link", { name: "notes.txt", exact: true }).click()
+  await expect(panel.getByText("contents:notes.txt", { exact: true })).toBeVisible()
+
+  await page.getByRole("link", { name: "shopping.txt", exact: true }).click()
+  await arrived.promise
+  // Events arrive in order, so the reread of notes.txt shows that the change to shopping.txt was handled before it.
+  await workspace.push([
+    filesystemEvent(workspace.directory, "shopping.txt", "change"),
+    filesystemEvent(workspace.directory, "notes.txt", "change"),
+  ])
+  await expect.poll(() => reads.filter((item) => item === "notes.txt").length).toBe(2)
+  held.resolve()
+
+  await expect(panel.getByRole("tab", { name: "shopping.txt" })).toHaveAttribute("aria-selected", "true")
+  await expect(panel.getByText("after change", { exact: true })).toBeVisible()
+  await expect(panel.getByText("before change", { exact: true })).toHaveCount(0)
 })
 
 test("artifact actions copy and download content, switch source, and follow the selected file's capabilities", async ({
@@ -688,6 +832,29 @@ test("artifact actions copy and download content, switch source, and follow the 
   const source = '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"><rect width="120" height="80"/></svg>'
   const table = 'name,role\n"Jensen, Oliver",Researcher\nIsabella,Support'
 
+  const notes = [
+    "---",
+    "description: Release checklist",
+    "mode: primary",
+    "model: opencode/test",
+    "temperature: 0.2",
+    "steps: 12",
+    "color: accent",
+    "hidden: false",
+    'title: "Release"',
+    "tools:",
+    "  write: false",
+    "---",
+    "",
+    "# Notes",
+    "",
+    "A document with a visible top edge.",
+    "",
+    "---",
+    "",
+    "Trailing section.",
+  ].join("\n")
+
   const workspace = await openSession(page, {
     name: "ArtifactActions",
     fileList: () => [],
@@ -696,7 +863,7 @@ test("artifact actions copy and download content, switch source, and follow the 
 
       if (path === "data.csv") return { content: table }
 
-      if (path === "notes.md") return { content: "# Notes\n\nA document with a visible top edge." }
+      if (path === "notes.md") return { content: notes }
 
       return { type: "binary", content: "AAEC", encoding: "base64" }
     },
@@ -708,7 +875,10 @@ test("artifact actions copy and download content, switch source, and follow the 
           agent: "build",
           model: { id: "test", providerID: "opencode" },
           content: [
-            { type: "text", text: "[Vector](vector.svg) [Table](data.csv) [Notes](notes.md) [Binary](sample.bin)" },
+            {
+              type: "text",
+              text: "---\ndescription: Chat heading\n---\n\n[Vector](vector.svg) [Table](data.csv) [Notes](notes.md) [Binary](sample.bin)",
+            },
           ],
           time: { created: 1, completed: 2 },
         },
@@ -784,9 +954,38 @@ test("artifact actions copy and download content, switch source, and follow the 
   expect(download.suggestedFilename()).toBe("data.csv")
   expect(await readFile((await download.path())!, "utf8")).toBe(table)
 
+  await expect(page.getByRole("heading", { name: "description: Chat heading", exact: true })).toBeVisible()
   await page.getByRole("link", { name: "Notes", exact: true }).click()
   await expect(panel.getByRole("heading", { name: "Notes", exact: true })).toBeVisible()
   const paper = panel.locator('[data-slot="artifact-markdown-page"]')
+  await expect(paper.getByRole("heading")).toHaveText(["Notes"])
+  await expect(paper.locator("code.language-yaml")).toHaveCount(0)
+  await expect(paper.locator("hr")).toHaveCount(1)
+  const terms = paper.getByRole("term")
+  await expect(terms).toHaveText(["description", "mode", "model", "temperature", "steps", "color"])
+  await paper.getByRole("button", { name: "Show all 9 properties", exact: true }).click()
+  await expect(terms).toHaveText([
+    "description",
+    "mode",
+    "model",
+    "temperature",
+    "steps",
+    "color",
+    "hidden",
+    "title",
+    "tools",
+  ])
+  await expect(paper.getByRole("definition")).toHaveText([
+    "Release checklist",
+    "primary",
+    "opencode/test",
+    "0.2",
+    "12",
+    "accent",
+    "false",
+    "Release",
+    "write: false",
+  ])
   await expect(paper).toHaveCSS("border-radius", "8px")
   await expect(paper).toHaveAttribute("data-component", "document-surface")
   expect(await paper.evaluate((element) => getComputedStyle(element, "::after").borderTopStyle)).toBe("solid")
@@ -794,6 +993,16 @@ test("artifact actions copy and download content, switch source, and follow the 
   const bar = (await toolbar.boundingBox())!
   expect(surface.y - bar.y - bar.height).toBe(1)
   await expect(panel.getByRole("group", { name: "Preview controls", exact: true })).toHaveCount(0)
+  await copy.click()
+  // Chromium writes CRLF to the Windows clipboard.
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()).then((text) => text.replace(/\r\n/g, "\n")))
+    .toBe(notes)
+  await page.getByRole("button", { name: "Dismiss", exact: true }).click()
+  await sourceAction.click()
+  await expect(paper).toHaveCount(0)
+  await expect(panel.locator('diffs-container [data-line="1"]')).toHaveText("---")
+  await expect(panel.locator('diffs-container [data-line="2"]')).toContainText("description: Release checklist")
 
   await page.getByRole("link", { name: "Binary", exact: true }).click()
   await expect(panel.getByText(/Binary file/)).toBeVisible()
@@ -898,7 +1107,9 @@ test("Markdown and DOCX sheets stay aligned when switching at wide and narrow pr
     await expect(markdown.getByRole("heading", { name: "Document spacing", exact: true })).toBeVisible()
     await expect.poll(() => edges(markdown)).toEqual(reference)
     await expect.poll(() => toolbar.boundingBox()).toEqual(header)
-    expect(await canvas!.evaluate((element) => element.isConnected && Number(element.getAttribute("width")) > 0)).toBe(true)
+    expect(await canvas!.evaluate((element) => element.isConnected && Number(element.getAttribute("width")) > 0)).toBe(
+      true,
+    )
     await panel.getByRole("tab", { name: "other.docx", exact: true }).click()
     await expect(word).toHaveAttribute("data-e2e-probe", "other-warm")
     await panel.getByRole("tab", { name: "notes.md", exact: true }).click()
@@ -1290,6 +1501,49 @@ test("video files stream into the viewer behind a loading state, open into the p
   expect(await page.evaluate(() => document.fullscreenElement)).toBeNull()
 })
 
+test("review file navigation focuses the arrow for the keyboard direction", async ({ page }) => {
+  await openSession(page, {
+    name: "ReviewArrowFocus",
+    vcsDiff: [fileDiff("src/alpha.ts"), fileDiff("src/beta.ts"), fileDiff("src/gamma.ts")],
+    seed: {
+      panes: { ses_reviewarrowfocus: { review: true } },
+      storage: {
+        ...reviewTabs("C:/OpenCode/ReviewArrowFocus", "ses_reviewarrowfocus"),
+        "opencode.global.dat:review-panel-v2": { sidebarOpened: false },
+      },
+    },
+  })
+
+  const panel = page.locator("#review-panel")
+  const file = panel.locator('[data-slot="session-review-v2-file-name"]')
+  const previous = panel.getByRole("button", { name: "Previous file", exact: true })
+  const next = panel.getByRole("button", { name: "Next file", exact: true })
+
+  await expect(file).toHaveText("alpha.ts")
+  await previous.click()
+  await expect(file).toHaveText("gamma.ts")
+  await page.keyboard.press("ArrowRight")
+  await expect(file).toHaveText("alpha.ts")
+  await expect(next).toBeFocused()
+  await page.keyboard.press("Enter")
+  await expect(file).toHaveText("beta.ts")
+  await page.keyboard.press("ArrowLeft")
+  await expect(file).toHaveText("alpha.ts")
+  await expect(previous).toBeFocused()
+  await next.click()
+  await expect(file).toHaveText("beta.ts")
+  await expect(next).toBeFocused()
+
+  const home = page.getByRole("button", { name: "Home", exact: true })
+  await home.focus()
+  await page.keyboard.press("ArrowRight")
+  await expect(file).toHaveText("gamma.ts")
+  await expect(home).toBeFocused()
+  await page.keyboard.press("ArrowLeft")
+  await expect(file).toHaveText("beta.ts")
+  await expect(home).toBeFocused()
+})
+
 test("restores review state and the side-panel tab per session", async ({ page }) => {
   const sessions = [
     { id: "ses_review_state_a", title: "Alpha review state" },
@@ -1532,6 +1786,29 @@ test("desktop review waits for the session's stored mode before it loads changes
   expect(working).toEqual([])
 })
 
+// A failed request used to settle like an empty one, so the review claimed the working tree was clean.
+test("a failed diff request offers a retry instead of a clean working tree", async ({ page }) => {
+  await openSession(page, { name: "ReviewDiffFailure", vcsDiff: [fileDiff("src/alpha.ts")] })
+  const changes = { failing: true }
+  await page.route(/\/api\/vcs\/diff\?/, (route) => {
+    if (!changes.failing || new URL(route.request().url()).searchParams.get("untracked") !== "folders")
+      return route.fallback()
+
+    return route.fulfill({ status: 500, headers: { "access-control-allow-origin": "*" }, json: {} })
+  })
+  const panel = page.locator("#review-panel")
+  const failure = panel.getByRole("alert")
+
+  await page.getByRole("button", { name: "Toggle review", exact: true }).click()
+  await openReviewLauncher(panel)
+  await expect(failure.getByText("Couldn't load changes", { exact: true })).toBeVisible()
+  await expect(panel.locator('[data-slot="session-review-v2-empty-changes"]')).toHaveCount(0)
+  changes.failing = false
+  await failure.getByRole("button", { name: "Try again", exact: true }).click()
+  await expect(panel.locator('[data-slot="session-review-v2-file-name"]')).toHaveText("alpha.ts")
+  await expect(failure).toHaveCount(0)
+})
+
 test("a chosen mode the session stops offering shows as Git, and comes back when it is offered again", async ({
   page,
 }) => {
@@ -1621,8 +1898,9 @@ test("Review from a new tab keeps the file browser and preview open", async ({ p
 
   await openFileLauncher(panel)
   await expect(tab("Open file")).toHaveAttribute("aria-selected", "true")
+  // The empty panel's own New tab stays beside the one the file browser replaced, so the added one is the last.
   await panel.getByRole("button", { name: "Add tab", exact: true }).click()
-  await expect(tab("New tab")).toHaveAttribute("aria-selected", "true")
+  await expect(tab("New tab").last()).toHaveAttribute("aria-selected", "true")
   await panel.getByRole("button", { name: /^Review/ }).click()
   await expect(tab("Review")).toHaveAttribute("aria-selected", "true")
   await expect(tab("Open file")).toHaveAttribute("aria-selected", "false")
@@ -1637,7 +1915,7 @@ test("Review from a new tab keeps the file browser and preview open", async ({ p
 
   // Choosing Review also leaves a single-click file preview open beside it.
   await panel.getByRole("button", { name: "Add tab", exact: true }).click()
-  await expect(tab("New tab")).toHaveAttribute("aria-selected", "true")
+  await expect(tab("New tab").last()).toHaveAttribute("aria-selected", "true")
   await panel.getByRole("button", { name: /^Review/ }).click()
   await expect(panel.locator("#session-side-panel-review-tab")).toHaveAttribute("aria-selected", "true")
   await expect(tab("README.md")).toHaveCount(1)

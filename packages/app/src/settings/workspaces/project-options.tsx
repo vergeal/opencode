@@ -9,6 +9,7 @@ import { ServerConnection } from "@/runtime/server/registry"
 import type { LocalProject } from "@/shell/state/layout"
 import { fileManagerApp } from "@/home/projects/file-manager"
 import { useRevealProject } from "@/home/projects/reveal"
+import { pathKey } from "@/workspaces/path-key"
 
 export type ProjectMenuItem = {
   id: string
@@ -24,6 +25,8 @@ export type ProjectMenuItem = {
 export function projectMenuItems(input: {
   server: ServerConnection.Any
   project: LocalProject
+  /** Added only when the project is not in this client's list yet. */
+  onAdd?: () => void
   onEdit?: () => void
   onRename?: () => void
   /** Omit to leave the project in place; the page that owns the row decides whether it can be removed. */
@@ -33,14 +36,25 @@ export function projectMenuItems(input: {
   const global = useGlobal()
   const platform = usePlatform()
   const revealProject = useRevealProject()
-  const context = () => global.ensureServerCtx(input.server)
+  const context = () => global.serverCtx(ServerConnection.key(input.server))
   const directories = () => [input.project.worktree, ...(input.project.sandboxes ?? [])]
-  const hasUnread = () => directories().some((directory) => context().notification.project.hasUnread(directory))
+  const added = () =>
+    (context()?.projects.used() ?? []).some(
+      (project) => pathKey(project.worktree) === pathKey(input.project.worktree),
+    )
+  const hasUnread = () =>
+    directories().some((directory) => context()?.notification.project.hasUnread(directory) ?? false)
 
   const clearNotifications = () =>
-    directories().forEach((directory) => context().notification.project.markViewed(directory))
+    directories().forEach((directory) => context()?.notification.project.markViewed(directory))
+
+  const addProject = () => {
+    input.onAdd?.()
+    context()?.projects.touch(input.project.worktree)
+  }
 
   return (): ProjectMenuItem[] => [
+    ...(input.onAdd && !added() ? [{ id: "add", label: language.t("home.project.add"), onSelect: addProject }] : []),
     ...(input.onEdit ? [{ id: "edit", label: language.t("common.edit"), onSelect: input.onEdit }] : []),
     ...(input.onRename ? [{ id: "rename", label: language.t("common.rename"), onSelect: input.onRename }] : []),
     ...(revealProject.available(input.server)
@@ -52,12 +66,16 @@ export function projectMenuItems(input: {
           },
         ]
       : []),
-    {
-      id: "clear-notifications",
-      label: language.t("sidebar.project.clearNotifications"),
-      disabled: !hasUnread(),
-      onSelect: clearNotifications,
-    },
+    ...(added()
+      ? [
+          {
+            id: "clear-notifications",
+            label: language.t("sidebar.project.clearNotifications"),
+            disabled: !hasUnread(),
+            onSelect: clearNotifications,
+          },
+        ]
+      : []),
     ...(input.onDelete
       ? [
           {
@@ -76,6 +94,7 @@ export const ProjectOptions: Component<{
   project: LocalProject
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onAdd?: () => void
   onEdit?: () => void
   onRename?: () => void
   onDelete?: () => void

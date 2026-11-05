@@ -39,7 +39,7 @@ export interface Loaded {
   readonly session: SessionSchema.Info
   readonly agent: Agent.Selection & { readonly info: Agent.Info }
   readonly model: SessionRunnerModel.Resolved
-  readonly initial: string
+  readonly initial: ReadonlyArray<Instructions.Rendered>
   /** The Project's own instructions, reread for every Step rather than frozen with the Session's baseline. */
   readonly project?: string
   readonly messages: ReadonlyArray<SessionMessage.Info>

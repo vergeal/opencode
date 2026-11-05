@@ -59,16 +59,22 @@ test("mention a session by title, send its stable token, and open its own tab", 
     sessions: [
       { id: "ses_mentions_source", title: "Review the plan" },
       { id: target, title: "Auth middleware" },
+      { id: "ses_0123456789authtokensabcdef", title: "Auth tokens" },
+      { id: "ses_0123456789authreviewabcdef", title: "Auth review" },
+      { id: "ses_0123456789authloggingabcde", title: "Auth logging" },
+      { id: "ses_0123456789authsessionsabcd", title: "Auth sessions" },
+      { id: "ses_0123456789authscopesabcdef", title: "Auth scopes" },
     ],
     seed: { tabs: ["ses_mentions_source"] },
     onPrompt: (input) => void prompts.push(input.body),
   })
 
+  const suggestions = page.locator('[data-component="composer-suggestions"]')
+
   await view.editor.fill("Compare with @Auth")
-  await page
-    .locator('[data-component="composer-suggestions"]')
-    .getByRole("button", { name: /Auth middleware/ })
-    .click()
+  await expect(suggestions.locator('[data-suggestion-id^="session:"]')).toHaveCount(5)
+  await view.editor.pressSequentially(" mid")
+  await suggestions.getByRole("button", { name: /Auth middleware/ }).click()
   await expect(view.editor.locator('[data-mention="session"]')).toHaveText("@Auth middleware")
   await view.editor.press("Enter")
   await expect.poll(() => prompts.length).toBe(1)
@@ -93,6 +99,14 @@ test("a bare @ lists sessions, and a multi-word title matches while file search 
       { id: "ses_mention_search_source", title: "Review the plan" },
       { id: "ses_0123456789homesessionabcde", title: "HOME" },
       { id: target, title: "OPENCODE CONSOLE" },
+      { id: "ses_0123456789backhomeabcdefgh", title: "Back home", created: T0 + 2 },
+      {
+        id: "ses_0123456789otherprojecthome",
+        title: "HOME elsewhere",
+        projectID: "proj_other",
+        directory: "C:/OpenCode/Other",
+        created: T0 + 3,
+      },
     ],
     seed: { tabs: ["ses_mention_search_source"] },
     onPrompt: (input) => void prompts.push(input.body),
@@ -101,9 +115,23 @@ test("a bare @ lists sessions, and a multi-word title matches while file search 
   const suggestions = page.locator('[data-component="composer-suggestions"]')
   const files = await holdRoute(page, (url) => url.pathname === "/api/fs/find")
 
+  // A bare @ offers only this project's sessions.
   await view.editor.pressSequentially("Compare with @")
   await expect(suggestions.getByRole("button", { name: /HOME/ })).toBeVisible()
   await expect(suggestions.getByRole("button", { name: /OPENCODE CONSOLE/ })).toBeVisible()
+  await expect(suggestions.getByRole("button", { name: /HOME elsewhere/ })).toHaveCount(0)
+
+  // Typed matches rank this project first, then the exact title, a title start and a later word, ahead of recency.
+  await view.editor.pressSequentially("home")
+  await expect(suggestions.locator('[data-suggestion-id^="session:"]')).toContainText([
+    /HOME(?! elsewhere)/,
+    "Back home",
+    "HOME elsewhere",
+  ])
+  await view.editor.press("Backspace")
+  await view.editor.press("Backspace")
+  await view.editor.press("Backspace")
+  await view.editor.press("Backspace")
 
   await view.editor.pressSequentially("open")
   await files.arrived
@@ -123,7 +151,7 @@ test("a bare @ lists sessions, and a multi-word title matches while file search 
 
   // A space after a full title ends a typed mention, so the rest stays prose.
   await view.editor.pressSequentially("@home")
-  await expect(suggestions.getByRole("button", { name: /HOME/ })).toBeVisible()
+  await expect(suggestions.getByRole("button", { name: /^HOME SessionMentionSearch$/ })).toBeVisible()
   await view.editor.pressSequentially(" now")
   await expect(suggestions).toBeHidden()
   await view.editor.press("Enter")
@@ -317,6 +345,165 @@ test("the free usage limit opens the Go dialog once, leaves a readable notice, a
   await expect(view.editor).toHaveText("")
 })
 
+for (const action of ["tray", "picker"] as const) {
+  test(`the Go usage limit restores the prompt and dismisses the tray when switching models through the ${action}`, async ({
+    page,
+    context,
+  }) => {
+    await page.clock.setFixedTime(T0)
+    await context.route("https://opencode.ai/**", (route) => route.fulfill({ body: "Go" }))
+    const sessionID = "ses_go_limit"
+    const model = { id: "glm-5-go", providerID: "opencode-go" }
+
+    const view = await openSession(page, {
+      name: "GoLimit",
+      sessions: [{ id: sessionID, agent: "build", model }],
+      onFileWrite: () => undefined,
+      provider: () => ({
+        all: [
+          {
+            id: "opencode",
+            name: "OpenCode",
+            models: {
+              "big-pickle": {
+                id: "big-pickle",
+                name: "Big Pickle",
+                cost: { input: 0, output: 0 },
+                limit: { context: 200_000 },
+              },
+            },
+          },
+          {
+            id: "opencode-go",
+            name: "OpenCode Go",
+            models: {
+              "glm-5-go": {
+                id: "glm-5-go",
+                name: "GLM-5 Go",
+                cost: { input: 1, output: 1 },
+                limit: { context: 200_000 },
+              },
+            },
+          },
+        ],
+        connected: ["opencode", "opencode-go"],
+        default: { build: "opencode-go/glm-5-go" },
+      }),
+      pageMessages: () => ({
+        items: [
+          { id: "msg_go_user", type: "user", text: "Refactor the parser", time: { created: T0 } },
+          { id: "msg_go_assistant", type: "assistant", agent: "build", model, content: [], time: { created: T0 + 1 } },
+        ],
+      }),
+    })
+
+    await expect(page.getByText("Refactor the parser", { exact: true })).toBeVisible()
+
+    // The refusal OpenCode Console sends a Go subscriber at a limit, as core records it.
+    const body = {
+      type: "error",
+      error: { type: "GoUsageLimitError", message: "Go usage limit exceeded" },
+      metadata: { workspace: "wrk_go_limit", limitName: "5 hour" },
+    }
+
+    await view.push([
+      {
+        id: "evt_go_limit_1",
+        created: T0 + 2,
+        type: "session.step.failed",
+        location: { directory: view.directory },
+        durable: { aggregateID: sessionID, seq: 1, version: 1 },
+        data: {
+          sessionID,
+          assistantMessageID: "msg_go_assistant",
+          error: {
+            type: "provider.go-limit",
+            message: "OpenCode Go 5 hour usage limit reached.",
+            status: 429,
+            response: { body: JSON.stringify(body) },
+            retryAfterMs: 3_600_000,
+          },
+        },
+      },
+    ])
+
+    const tray = page.locator('[data-component="session-go-limit-tray"]')
+    await expect(tray).toContainText(/Go 5 hour usage limit reached\. It resets at .+?\./)
+    await expect(
+      page.getByRole("status").filter({ hasText: /^You've reached your OpenCode Go usage limit\. It resets at / }),
+    ).toBeVisible()
+    await expect(view.editor).toHaveText("Refactor the parser")
+    await expect(page.getByText("OpenCode Go 5 hour usage limit reached.")).toHaveCount(0)
+    await expect(page.getByRole("dialog")).toHaveCount(0)
+
+    // Extra Usage is turned on from the workspace's Go page in OpenCode Console.
+    const popup = page.waitForEvent("popup")
+    await tray.getByRole("button", { name: "Turn on Extra Usage", exact: true }).click()
+    await expect(await popup).toHaveURL("https://opencode.ai/console/wrk_go_limit/go")
+
+    if (action === "tray") await tray.getByRole("button", { name: "Switch to a free model", exact: true }).click()
+
+    if (action === "picker") {
+      await page.locator('[data-action="composer-model"]').click()
+      const picker = page.getByRole("dialog", { name: "Select model", exact: true })
+      await picker.getByRole("combobox", { name: "Search models", exact: true }).fill("Big Pickle")
+      await picker.getByRole("option", { name: /Big Pickle/ }).click()
+    }
+
+    await expect(page.locator('[data-action="composer-model"]')).toContainText("Big Pickle")
+    await expect(tray).toHaveCount(0)
+    await expect(view.editor).toHaveText("Refactor the parser")
+  })
+}
+
+test("ChatGPT's usage limit opens the ChatGPT usage dialog", async ({ page }) => {
+  await page.clock.setFixedTime(T0)
+  const sessionID = "ses_chatgpt_limit"
+  const model = { id: "gpt-5.5", providerID: "openai" }
+
+  const view = await openSession(page, {
+    name: "ChatGPTLimit",
+    sessions: [{ id: sessionID, agent: "build", model }],
+    onFileWrite: () => undefined,
+    pageMessages: () => ({
+      items: [
+        { id: "msg_chatgpt_user", type: "user", text: "Refactor the parser", time: { created: T0 } },
+        {
+          id: "msg_chatgpt_assistant",
+          type: "assistant",
+          agent: "build",
+          model,
+          content: [],
+          time: { created: T0 + 1 },
+        },
+      ],
+    }),
+  })
+
+  await expect(page.getByText("Refactor the parser", { exact: true })).toBeVisible()
+
+  await view.push([
+    {
+      id: "evt_chatgpt_limit_1",
+      created: T0 + 2,
+      type: "session.step.failed",
+      location: { directory: view.directory },
+      durable: { aggregateID: sessionID, seq: 1, version: 1 },
+      data: {
+        sessionID,
+        assistantMessageID: "msg_chatgpt_assistant",
+        error: {
+          type: "provider.chatgpt-limit",
+          message: "ChatGPT usage limit reached. Check ChatGPT Settings → Usage for details.",
+          status: 429,
+        },
+      },
+    },
+  ])
+
+  await expect(page.getByRole("dialog", { name: "ChatGPT usage limit reached" })).toBeVisible()
+})
+
 test("a catalog refresh cannot replace an existing session's model", async ({ page }) => {
   const alpha = { id: "alpha", name: "Alpha", variants: { high: {} } }
   const beta = { id: "beta", name: "Beta" }
@@ -338,7 +525,7 @@ test("a catalog refresh cannot replace an existing session's model", async ({ pa
   })
 
   const control = page.locator('[data-action="composer-model"]')
-  await expect(control).toHaveText("OpenCode / Alpha")
+  await expect(control).toHaveText("Alpha")
   await view.editor.fill("Keep my selected model")
 
   catalog.current = provider(beta)
@@ -351,7 +538,7 @@ test("a catalog refresh cannot replace an existing session's model", async ({ pa
       data: {},
     },
   ])
-  await expect(control).toHaveText("OpenCode / alpha (unavailable)")
+  await expect(control).toHaveText("alpha (unavailable)")
   await view.editor.press("Enter")
   await expect(page.getByText("Select an agent and model", { exact: true })).toBeVisible()
   await expect(view.editor).toHaveText("Keep my selected model")
@@ -384,13 +571,13 @@ test("a catalog refresh cannot replace an existing session's model", async ({ pa
       data: {},
     },
   ])
-  await expect(control).toHaveText("OpenCode / alpha (unavailable)")
+  await expect(control).toHaveText("alpha (unavailable)")
   await control.click()
   await page
     .getByRole("dialog", { name: "Select model" })
     .getByRole("button", { name: "Beta Free", exact: true })
     .click()
-  await expect(control).toHaveText("OpenCode / Beta")
+  await expect(control).toHaveText("Beta")
   await view.editor.fill("Use the replacement I chose")
   await view.editor.press("Enter")
   await expect.poll(() => prompts.length).toBe(2)
@@ -442,8 +629,8 @@ test("an existing session's model never shows a fallback while its agent loads",
   const agentLoaded = page.waitForResponse((response) => new URL(response.url()).pathname === "/api/agent")
   agents.resolve()
   await agentLoaded
-  await expect(control).toHaveText("OpenCode / Alpha")
-  expect(await page.evaluate(() => [...(window.__chipTexts ?? [])])).toEqual(["OpenCode / Alpha"])
+  await expect(control).toHaveText("Alpha")
+  expect(await page.evaluate(() => [...(window.__chipTexts ?? [])])).toEqual(["Alpha"])
 })
 
 test("a send pressed while the Location's plugins activate waits, Esc cancels it, and it sends once catalogs load", async ({
@@ -514,7 +701,7 @@ test("an opened session in another Location names its model from a loaded catalo
 
   const control = page.locator('[data-action="composer-model"]')
   await page.goto(sessionHref("ses_warm_here"))
-  await expect(control).toHaveText("OpenCode / Alpha")
+  await expect(control).toHaveText("Alpha")
 
   const held = await holdRoute(
     page,
@@ -542,7 +729,7 @@ test("an opened session in another Location names its model from a loaded catalo
     await Promise.all(loaded)
     await expect(page.getByRole("dialog")).toBeVisible()
     // The loaded selection keeps the same chip instead of replacing it.
-    await expect(control).toHaveText("OpenCode / Beta")
+    await expect(control).toHaveText("Beta")
     expect(await painted?.evaluate((element) => element.isConnected)).toBe(true)
   } finally {
     held.release()
@@ -555,33 +742,120 @@ declare global {
   }
 }
 
-test("names a Console-managed provider without its workspace unless a direct connection shares it", async ({
+test("a managed composer label follows direct connections, not picker filtering or model identity", async ({
   page,
 }) => {
-  const sessions = [
-    { id: "ses_managed_root", model: { id: "alpha", providerID: "opencode" } },
-    { id: "ses_managed_openai", model: { id: "gpt", providerID: "console-openai" } },
-  ]
+  const sessionID = "ses_managed_provider"
+  const connected = { direct: false }
+  const switches: unknown[] = []
+  const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === `/api/session/${sessionID}/model`)
+      switches.push(request.postDataJSON())
+  })
 
-  const managed = { integrationID: "opencode" }
-  await openSession(page, {
+  const view = await openSession(page, {
     name: "ManagedProvider",
-    sessions: sessions.map((session) => ({ ...session, agent: "build" })),
-    provider: {
+    sessions: [{ id: sessionID, agent: "build", model: { id: "gpt", providerID: "console-openai" } }],
+    provider: () => ({
       all: [
-        { ...managed, id: "opencode", name: "Anomaly / OpenCode", models: { alpha: { id: "alpha", name: "Alpha" } } },
-        { ...managed, id: "console-openai", name: "Anomaly / OpenAI", models: { gpt: { id: "gpt", name: "GPT" } } },
-        { id: "openai", name: "OpenAI", models: { gpt: { id: "gpt", name: "GPT" } } },
+        {
+          id: "opencode",
+          integrationID: "opencode",
+          name: "Anomaly / OpenCode",
+          models: {},
+        },
+        {
+          id: "console-openai",
+          canonical: "openai",
+          integrationID: "opencode",
+          name: "Anomaly / OpenAI",
+          models: { gpt: { id: "gpt", name: "GPT" } },
+        },
+        ...(connected.direct
+          ? [
+              {
+                id: "openai",
+                name: "OpenAI",
+                models: { "direct-model": { id: "direct-model", name: "Direct Model" } },
+              },
+            ]
+          : []),
       ],
-      connected: ["opencode", "console-openai", "openai"],
+      connected: ["opencode", "console-openai", ...(connected.direct ? ["openai"] : [])],
       default: {},
+    }),
+    onPrompt: (input) => void prompts.push(input.body),
+    seed: {
+      storage: {
+        "opencode.global.dat:model": {
+          user: [
+            { providerID: "console-openai", modelID: "gpt", visibility: "show" },
+            { providerID: "openai", modelID: "direct-model", visibility: "show" },
+          ],
+        },
+      },
     },
   })
 
   const control = page.locator('[data-action="composer-model"]')
-  await expect(control).toHaveText("OpenCode / Alpha")
-  await page.goto(sessionHref(sessions[1]!.id))
-  await expect(control).toHaveText("Anomaly / OpenAI / GPT")
+  const picker = page.getByRole("dialog", { name: "Select model", exact: true })
+  const selected = picker.locator('[data-option-key="console-openai:gpt"]')
+  await expect(control).toHaveText("OpenAI / GPT")
+
+  connected.direct = true
+  await view.push([
+    {
+      id: "evt_direct_connected",
+      created: T0 + 1,
+      type: "provider.updated",
+      location: { directory: view.directory },
+      data: {},
+    },
+    {
+      id: "evt_direct_models_connected",
+      created: T0 + 2,
+      type: "model.updated",
+      location: { directory: view.directory },
+      data: {},
+    },
+  ])
+  await expect(control).toHaveText("OpenCode / OpenAI / GPT")
+  await expect(control).toHaveAccessibleName("OpenCode / OpenAI / GPT")
+  await control.click()
+  const search = picker.getByRole("combobox", { name: "Search models", exact: true })
+  await expect(picker.locator('[data-option-key="openai:direct-model"]')).toBeVisible()
+  await search.fill("GPT")
+  await expect(picker.locator('[data-option-key="openai:direct-model"]')).toHaveCount(0)
+  await expect(selected).toHaveAttribute("aria-current", "true")
+  await expect(control).toHaveText("OpenCode / OpenAI / GPT")
+  await search.press("Escape")
+  await expect(picker).toBeHidden()
+
+  connected.direct = false
+  await view.push([
+    {
+      id: "evt_direct_disconnected",
+      created: T0 + 3,
+      type: "provider.updated",
+      location: { directory: view.directory },
+      data: {},
+    },
+    {
+      id: "evt_direct_models_disconnected",
+      created: T0 + 4,
+      type: "model.updated",
+      location: { directory: view.directory },
+      data: {},
+    },
+  ])
+  await expect(control).toHaveText("OpenAI / GPT")
+
+  await view.editor.fill("Keep the managed provider selected")
+  await view.editor.press("Enter")
+  await expect.poll(() => prompts.length).toBe(1)
+  expect(prompts[0]).toMatchObject({ text: "Keep the managed provider selected" })
+  expect(switches).toEqual([])
 })
 
 async function draft(page: Page) {
@@ -660,6 +934,115 @@ test("keeps a line added at the end of a scrolling prompt clear of the bottom fa
       }),
     )
     .toBe(0)
+})
+
+test("Enter that confirms an IME candidate never sends, even after Safari's early compositionend", async ({ page }) => {
+  const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
+  const view = await openSession(page, { name: "ComposerImeEnter", onPrompt: (input) => void prompts.push(input.body) })
+
+  const enter = (keyCode: number) =>
+    view.editor.evaluate(
+      (element, keyCode) =>
+        element.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", keyCode, bubbles: true, cancelable: true })),
+      keyCode,
+    )
+
+  await view.editor.fill("にほん")
+  // Safari delivers the confirming Enter after compositionend, so isComposing is false and only keyCode marks it.
+  await enter(229)
+  await expect(view.editor).toHaveText("にほん")
+  await enter(13)
+  await expect.poll(() => prompts.map((body) => body.text)).toEqual(["にほん"])
+})
+
+test.describe("touch keyboard", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+  test("Return only adds a line, even over suggestions; the touch bar and Cmd+Return send", async ({ page }) => {
+    const prompts: Parameters<NonNullable<MockServerConfig["onPrompt"]>>[0]["body"][] = []
+
+    const view = await openSession(page, {
+      name: "ComposerTouchReturn",
+      onPrompt: (input) => void prompts.push(input.body),
+    })
+
+    const bar = page.locator('[data-slot="composer-touch-bar"]')
+
+    await expect(bar).toBeVisible()
+    await expect(page.locator('[data-action="composer-attach"]')).toHaveCount(0)
+    await expect(view.editor).toHaveAttribute("enterkeyhint", "enter")
+
+    await view.editor.fill("/model")
+    await expect(page.locator('[data-suggestion-id="model.choose"]')).toHaveAttribute("data-active", "")
+    await view.editor.press("Enter")
+    await expect(page.locator('[data-component="composer-suggestions"]')).toBeHidden()
+    await expect.poll(() => view.editor.innerText()).toMatch(/^\/model\n/)
+    await expect(page.getByRole("dialog", { name: "Select model", exact: true })).toBeHidden()
+
+    await view.editor.fill("first line")
+    await view.editor.press("Enter")
+    await view.editor.pressSequentially("second line")
+    await expect.poll(() => view.editor.innerText()).toBe("first line\nsecond line")
+    expect(prompts).toEqual([])
+
+    await bar.getByRole("button", { name: "Send", exact: true }).tap()
+    await expect.poll(() => prompts.map((body) => body.text)).toEqual(["first line\nsecond line"])
+    await expect(view.editor).toBeEmpty()
+
+    // A hardware keyboard, as on an iPad, still sends with Cmd+Return.
+    await view.editor.fill("from the iPad keyboard")
+    await view.editor.press("ControlOrMeta+Enter")
+    await expect
+      .poll(() => prompts.map((body) => body.text))
+      .toEqual(["first line\nsecond line", "from the iPad keyboard"])
+  })
+
+  test("the / and @ keys toggle their lists, and Backspace or typing in the editor closes them", async ({ page }) => {
+    const view = await openSession(page, { name: "ComposerTouchSlash" })
+    const suggestions = page.locator('[data-component="composer-suggestions"]')
+    const slash = page.locator('[data-slot="composer-touch-bar"] [data-action="composer-commands"]')
+
+    await slash.tap()
+    await expect(suggestions).toBeVisible()
+    await expect(view.editor).toHaveText("/")
+    await slash.tap()
+    await expect(suggestions).toBeHidden()
+    await expect(view.editor).toBeEmpty()
+
+    await slash.tap()
+    await expect(suggestions).toBeVisible()
+    await page.keyboard.press("Backspace")
+    await expect(suggestions).toBeHidden()
+
+    // With a draft, / opens the searchable menu instead. Backspace backs out of it and keeps the draft, from the editor
+    // as well: iOS keeps the keyboard there rather than moving it to the menu's search.
+    await view.editor.fill("keep me")
+    await slash.tap()
+    await expect(suggestions).toBeVisible()
+    await view.editor.press("Backspace")
+    await expect(suggestions).toBeHidden()
+    await expect(view.editor).toHaveText("keep me")
+
+    await slash.tap()
+    await expect(suggestions).toBeVisible()
+    // Focusing the editor programmatically leaves the caret wherever the browser puts it, so move it to the end first.
+    await expect(suggestions.getByRole("textbox", { name: "Commands", exact: true })).toBeFocused()
+    await view.editor.focus()
+    await page.keyboard.press("End")
+    await page.keyboard.type(" now")
+    await expect(suggestions).toBeHidden()
+    await expect(view.editor).toHaveText("keep me now")
+
+    // @ toggles the same way, taking back only the @ it typed.
+    const at = page.locator('[data-slot="composer-touch-bar"] [data-action="composer-context"]')
+    await view.editor.pressSequentially(" ")
+    await at.tap()
+    await expect(suggestions).toBeVisible()
+    await expect(view.editor).toHaveText("keep me now @")
+    await at.tap()
+    await expect(suggestions).toBeHidden()
+    await expect(view.editor).toHaveText("keep me now ")
+  })
 })
 
 test("a key-up never moves the caret back after later navigation", async ({ page }) => {
@@ -799,6 +1182,50 @@ test("shows the dropzone and attaches a dropped file", async ({ page }) => {
   await expect(page.locator('[data-component="composer-attachments"]')).toContainText("dropzone.txt")
 })
 
+test("keeps one dropzone while a file drag crosses the composer, and none for a text drag", async ({ page }) => {
+  const editor = await draft(page)
+  await page.keyboard.type("worktree off the latest dev")
+  const surface = page.locator('[data-component="new-session"]')
+  const dropzone = page.locator('[data-component="session-dropzone"]')
+
+  const text = await page.evaluateHandle(() => {
+    const value = new DataTransfer()
+    value.setData("text/plain", "worktree off the latest dev")
+
+    return value
+  })
+
+  await editor.dispatchEvent("dragenter", { dataTransfer: text })
+  await editor.dispatchEvent("dragover", { dataTransfer: text })
+  await expect(page.locator("[data-slot='session-dropzone-blur']")).toHaveAttribute("data-visible", "false")
+  await expect(dropzone).toHaveCount(0)
+
+  const files = await page.evaluateHandle(() => {
+    const value = new DataTransfer()
+    value.items.add(new File(["Dropzone fixture"], "dropzone.txt", { type: "text/plain" }))
+
+    return value
+  })
+
+  await surface.dispatchEvent("dragover", { dataTransfer: files })
+  await expect(dropzone).toHaveAttribute("data-visible", "true")
+  const shown = await dropzone.elementHandle()
+
+  // Moving onto the editor's own text fires dragleave on the editor before the next dragover.
+  await editor.evaluate((element, dataTransfer) => {
+    const inner = element.firstElementChild ?? element
+
+    const fire = (type: string, target: Element, relatedTarget: Element) =>
+      target.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer, relatedTarget }))
+
+    fire("dragenter", inner, element)
+    fire("dragleave", element, inner)
+    fire("dragover", inner, element)
+  }, files)
+  await expect.poll(() => shown?.evaluate((element) => element.isConnected)).toBe(true)
+  await expect(dropzone).toHaveAttribute("data-visible", "true")
+})
+
 test("keeps a narrow session composer contained when invoking a built-in", async ({ page }) => {
   await page.setViewportSize({ width: 800, height: 600 })
   const { editor } = await openSession(page, { name: "ComposerCommand", provider: NO_PROVIDER })
@@ -858,6 +1285,25 @@ test("keeps focus in a dialog that replaces the model dialog and returns it to t
   await expect(editor).toHaveText("keep, me")
 })
 
+test("lists OpenCode's free models in the model picker however old they are", async ({ page }) => {
+  await page.clock.setFixedTime(T0)
+  const year = { released: T0 - 365 * 24 * 60 * 60 * 1000 }
+  await openSession(page, {
+    name: "ComposerFreeModels",
+    provider: provider(
+      { id: "new-paid", name: "New Paid", cost: { input: 1, output: 1 }, time: { released: T0 } },
+      { id: "old-paid", name: "Old Paid", cost: { input: 1, output: 1 }, time: year },
+      { id: "big-pickle", name: "Big Pickle", cost: { input: 0, output: 0 }, time: year },
+    ),
+  })
+
+  await page.locator('[data-component="composer"] [data-action="composer-model"]').click()
+  const models = page.getByRole("dialog", { name: "Select model", exact: true })
+  await expect(models.locator('[data-option-key="opencode:new-paid"]')).toBeVisible()
+  await expect(models.locator('[data-option-key="opencode:big-pickle"]')).toBeVisible()
+  await expect(models.locator('[data-option-key="opencode:old-paid"]')).toHaveCount(0)
+})
+
 test("lists slash commands in their built-in order", async ({ page }) => {
   const { editor } = await openSession(page, {
     name: "ComposerSlash",
@@ -884,11 +1330,66 @@ test("lists slash commands in their built-in order", async ({ page }) => {
     "/mcp",
     "/model",
     "/connect",
+    "/reload",
     "/btw",
   ])
 })
 
+test("/reload reloads the server's configuration once and reports it", async ({ page }) => {
+  const { editor } = await openSession(page, { name: "ComposerReload", provider: NO_PROVIDER })
+  const reloaded = Promise.withResolvers<void>()
+  let reloads = 0
+  await page.route(/\/api\/location\/reload$/, async (route) => {
+    reloads++
+    await reloaded.promise
+    await route.fulfill({ status: 204 })
+  })
+
+  await editor.fill("/reload")
+  await expect(page.locator('[data-suggestion-id="config.reload"]')).toHaveAttribute("data-active", "")
+  await editor.press("Enter")
+  await expect(page.getByText("Reloading configuration…", { exact: true })).toBeVisible()
+  reloaded.resolve()
+  await expect(page.getByText("Configuration reloaded", { exact: true })).toBeVisible()
+  await expect(page.getByText("Reloading configuration…", { exact: true })).toBeHidden()
+  await expect(editor).toBeEmpty()
+  expect(reloads).toBe(1)
+})
+
 const followUp = "Add follow-up, / for commands, @ for context…"
+
+test("the shell shortcut toggles modes and keeps explicit bindings", async ({ page }) => {
+  const view = await openDraft(page, {
+    name: "ShellToggle",
+    seed: {
+      settings: {
+        keybinds: { "prompt.mode.shell": "mod+alt+s", "prompt.mode.normal": "mod+alt+e" },
+      },
+    },
+  })
+
+  const modifier = await page.evaluate(() => (/Mac/i.test(navigator.platform) ? "Meta" : "Control"))
+
+  const exit = page.getByRole("button", { name: /^Exit/ })
+
+  await view.editor.fill("echo hello")
+  await view.editor.press(`${modifier}+Shift+x`)
+  await expect(exit).toBeVisible()
+  await expect(view.editor).toHaveText("echo hello")
+  await view.editor.press(`${modifier}+Shift+x`)
+  await expect(exit).toHaveCount(0)
+  await expect(view.editor).toHaveText("echo hello")
+  await view.editor.press(`${modifier}+Shift+x`)
+  await expect(exit).toBeVisible()
+  await view.editor.press("Escape")
+  await expect(exit).toHaveCount(0)
+  await expect(view.editor).toBeFocused()
+  await view.editor.press(`${modifier}+Alt+s`)
+  await expect(exit).toBeVisible()
+  await view.editor.press(`${modifier}+Alt+e`)
+  await expect(exit).toHaveCount(0)
+  await expect(view.editor).toHaveText("echo hello")
+})
 
 for (const row of [
   { state: "an idle", copy: "Ask anything, / for commands, @ for context…" },

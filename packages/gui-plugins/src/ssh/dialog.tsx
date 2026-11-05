@@ -3,11 +3,12 @@ import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from "@op
 import { Divider } from "@opencode/ui/divider"
 import { TextInput } from "@opencode/ui/text-input"
 import { useDialog } from "@opencode/ui/context/dialog"
+import { uuid } from "@opencode/util/uuid"
 import { createMemo, createSignal, on, onCleanup, onMount, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createKeyed, usePlugin } from "@opencode/plugin/gui"
 import type { SshConfig, SshItem } from "./contract"
-import { isSshConnecting, sshName } from "./name"
+import { sshName } from "./name"
 import type { SshController } from "./state"
 
 export { default as css } from "./ssh.css?inline"
@@ -26,7 +27,7 @@ export function DialogSsh(props: {
   const ssh = props.ssh
   // Entry-point behavior is fixed for the lifetime of this dialog.
   const openProject = props.onOpenProject
-  const id = props.config?.id ?? crypto.randomUUID()
+  const id = props.config?.id ?? uuid()
   let cancelButton: HTMLButtonElement | undefined
 
   const [state, setState] = createStore({
@@ -48,7 +49,7 @@ export function DialogSsh(props: {
   })
 
   const busy = createMemo(
-    () => ssh.submitting(id) || (state.started && !ssh.error(id) && isSshConnecting(item()?.stage ?? "connecting")),
+    () => ssh.submitting(id) || (state.started && !ssh.error(id) && (item()?.stage ?? "connecting") === "connecting"),
   )
 
   const prompt = createMemo<SshItem["prompt"]>((previous) => item()?.prompt ?? (busy() ? previous : undefined))

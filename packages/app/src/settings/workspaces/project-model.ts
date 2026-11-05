@@ -3,7 +3,7 @@ import type { ProjectUpdateInput } from "@opencode/client/promise"
 import { Project } from "@opencode/schema/project"
 import { createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
-import { useGlobal } from "@/runtime/server/runtime"
+import { useServer } from "@/runtime/server/current"
 import { useLanguage } from "@/runtime/i18n/language"
 import type { LocalProject } from "@/shell/state/layout"
 import { ServerConnection } from "@/runtime/server/registry"
@@ -13,8 +13,7 @@ type ProjectPatch = Pick<ProjectUpdateInput, "name" | "icon" | "commands" | "pro
 
 export function createEditProjectModel(props: { project: LocalProject; server: ServerConnection.Any }) {
   const language = useLanguage()
-  const global = useGlobal()
-  const serverCtx = createMemo(() => global.ensureServerCtx(props.server))
+  const serverCtx = useServer().ctx
   const folderName = createMemo(() => getFilename(props.project.worktree))
   const defaultName = createMemo(() => props.project.name || folderName())
 
@@ -45,24 +44,20 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
     queue = queue
       .then(async () => {
         if (props.project.id && props.project.id !== "global") {
-          const project = await serverCtx().sdk.api.project.update({ projectID: props.project.id, ...patch })
-          serverCtx().sync.project.update(project)
+          const project = await serverCtx.sdk.api.project.update({ projectID: props.project.id, ...patch })
+          serverCtx.sync.project.update(project)
 
           return
         }
 
-        serverCtx().sync.project.meta(props.project.worktree, {
-          name: patch.name,
-          icon: patch.icon,
-          commands: patch.commands,
-        })
+        serverCtx.sync.project.meta(props.project.worktree, patch)
       })
       .then(complete)
-      .catch((error: unknown) => {
+      .catch((cause: unknown) => {
         showToast({
           variant: "error",
           title: language.t("common.requestFailed"),
-          description: error instanceof Error ? error.message : language.t("common.requestFailed"),
+          description: cause instanceof Error ? cause.message : language.t("common.requestFailed"),
         })
       })
       .finally(() => setStore("saving", (value) => value - 1))
@@ -122,10 +117,10 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
   function selectFile(file: File) {
     if (!file.type.startsWith("image/")) return
     const reader = new FileReader()
-    reader.onload = (event) => {
-      const result = event.target?.result
+    reader.onload = () => {
+      const result = reader.result
 
-      if (typeof result !== "string") return
+      if (!result || result instanceof ArrayBuffer) return
       setStore("iconOverride", result)
       setStore("iconHover", false)
       saveIcon(store.color, result)

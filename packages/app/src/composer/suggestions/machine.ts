@@ -5,10 +5,10 @@ export type ComposerInteractionState = {
   mode: "normal" | "shell"
   popover:
     | { type: "closed" }
-    | { type: "context"; query: string; activeID?: string }
-    | { type: "command-inline"; query: string; activeID?: string }
-    | { type: "command-menu"; query: string; activeID?: string }
-    | { type: "history"; query: string; activeID?: string }
+    | { type: "context"; query: string; activeID?: string; chosen?: boolean }
+    | { type: "command-inline"; query: string; activeID?: string; chosen?: boolean }
+    | { type: "command-menu"; query: string; activeID?: string; chosen?: boolean }
+    | { type: "history"; query: string; activeID?: string; chosen?: boolean }
   drag: "idle" | "active"
   focus: "editor" | "command-search" | "history-search" | "external"
   activeContextID?: string
@@ -36,6 +36,7 @@ export type ComposerInteractionEvent =
 export type ComposerInteractionCommand =
   | { type: "draft.setText"; value: string }
   | { type: "draft.addText"; value: string }
+  | { type: "draft.removeTextBefore"; value: string }
   | { type: "mention.add"; item: ComposerSuggestion; range?: { start: number; end: number } }
   | { type: "popover.filter"; popover: "command" | "context"; query: string }
   | { type: "suggestion.select"; id: string }
@@ -143,13 +144,21 @@ function inputChanged(
     ])
   }
 
-  return changed(
-    { ...state, popover: state.popover.type === "command-menu" ? state.popover : { type: "closed" }, focus: "editor" },
-    setText,
-  )
+  // Typing in the editor leaves the command menu, whose own search field takes its input.
+  return changed({ ...state, popover: { type: "closed" }, focus: "editor" }, setText)
 }
 
 function openCommands(state: ComposerInteractionState, persisted: ComposerPersistedState): ComposerEditorTransition {
+  // A second press closes the commands, taking back the slash the first one typed.
+  if (state.popover.type === "command-inline" || state.popover.type === "command-menu") {
+    const typed = state.popover.type === "command-inline" && promptText(persisted) === "/"
+
+    return changed({ ...state, popover: { type: "closed" }, focus: "editor" }, [
+      ...(typed ? [{ type: "draft.setText" as const, value: "" }] : []),
+      { type: "focus.editor" },
+    ])
+  }
+
   if (!populated(persisted)) {
     return changed({ ...state, popover: { type: "command-inline", query: "" }, focus: "editor" }, [
       { type: "draft.addText", value: "/" },
@@ -165,6 +174,14 @@ function openCommands(state: ComposerInteractionState, persisted: ComposerPersis
 }
 
 function openContext(state: ComposerInteractionState): ComposerEditorTransition {
+  // A second press closes the context list, taking back the @ it typed when nothing follows it yet.
+  if (state.popover.type === "context") {
+    return changed({ ...state, popover: { type: "closed" }, focus: "editor" }, [
+      ...(state.popover.query ? [] : [{ type: "draft.removeTextBefore" as const, value: "@" }]),
+      { type: "focus.editor" },
+    ])
+  }
+
   return changed({ ...state, popover: { type: "context", query: "" }, focus: "editor" }, [
     { type: "draft.addText", value: "@" },
     { type: "popover.filter", popover: "context", query: "" },
@@ -176,11 +193,11 @@ function queryChanged(state: ComposerInteractionState, query: string): ComposerE
   if (state.popover.type === "closed") return unchanged(state)
 
   if (state.popover.type === "history")
-    return changed({ ...state, popover: { ...state.popover, query, activeID: undefined } })
+    return changed({ ...state, popover: { ...state.popover, query, activeID: undefined, chosen: undefined } })
 
   const popover = state.popover.type === "context" ? "context" : "command"
 
-  return changed({ ...state, popover: { ...state.popover, query, activeID: undefined } }, [
+  return changed({ ...state, popover: { ...state.popover, query, activeID: undefined, chosen: undefined } }, [
     { type: "popover.filter", popover, query },
   ])
 }
@@ -188,21 +205,28 @@ function queryChanged(state: ComposerInteractionState, query: string): ComposerE
 function resultsChanged(state: ComposerInteractionState, ids: string[]): ComposerEditorTransition {
   if (state.popover.type === "closed") return unchanged(state)
 
-  const activeID = state.popover.activeID && ids.includes(state.popover.activeID) ? state.popover.activeID : ids[0]
+  // Until the user picks a row, the highlight follows the first row as results arrive and reorder.
+  const kept =
+    !!state.popover.activeID &&
+    ids.includes(state.popover.activeID) &&
+    (state.popover.chosen || state.popover.type === "history")
+
+  const activeID = kept ? state.popover.activeID : ids[0]
 
   if (activeID === state.popover.activeID) return unchanged(state)
 
   return changed(
-    { ...state, popover: { ...state.popover, activeID } },
+    { ...state, popover: { ...state.popover, activeID, chosen: kept && state.popover.chosen } },
     state.popover.type === "history" && activeID ? [{ type: "history.preview", id: activeID }] : [],
   )
 }
 
 function activeChanged(state: ComposerInteractionState, id: string): ComposerEditorTransition {
-  if (state.popover.type === "closed" || state.popover.activeID === id) return unchanged(state)
+  if (state.popover.type === "closed" || (state.popover.activeID === id && state.popover.chosen))
+    return unchanged(state)
 
   return changed(
-    { ...state, popover: { ...state.popover, activeID: id } },
+    { ...state, popover: { ...state.popover, activeID: id, chosen: true } },
     state.popover.type === "history" ? [{ type: "history.preview", id }] : [],
   )
 }
@@ -263,6 +287,13 @@ function keyDown(
     return unchanged(state)
   }
 
+  // Backspace on an empty search backs out of the command menu, as it closes inline commands by deleting their slash.
+  // iOS does not move the keyboard to the search field the menu focuses, so the key can arrive from the editor; it is
+  // handled there too, so backing out never also deletes from the draft.
+  if (event.key === "Backspace" && state.popover.type === "command-menu" && !state.popover.query) {
+    return changed({ ...state, popover: { type: "closed" }, focus: "editor" }, [{ type: "focus.editor" }], true)
+  }
+
   if (event.key === "Escape" || (state.popover.type === "history" && event.key === "Tab")) {
     return changed({ ...state, popover: { type: "closed" }, focus: "editor" }, [{ type: "focus.editor" }], true)
   }
@@ -296,7 +327,7 @@ function keyDown(
       : index
 
   return changed(
-    { ...state, popover: { ...state.popover, activeID: event.ids[next] } },
+    { ...state, popover: { ...state.popover, activeID: event.ids[next], chosen: true } },
     state.popover.type === "history" ? [{ type: "history.preview", id: event.ids[next] }] : [],
     true,
   )

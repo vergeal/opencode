@@ -28,6 +28,7 @@ import type { ComposerStateValue } from "@/composer/state"
 import { useLocal } from "@/providers/models/selection"
 import { useServer } from "@/runtime/server/current"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
+import { isServerIncompatible } from "@/runtime/server/health-machine"
 import { sessionInWorkspace, sessionProject, type SessionModel } from "@/session/model"
 import { useFile } from "@/workspaces/files/model"
 import { useWorkspaceLocation } from "@/workspaces/location"
@@ -68,7 +69,7 @@ export function createMountedSession(session: SessionModel) {
       return server.ctx.sdk.url
     },
     get password() {
-      return server.conn.http.password
+      return server.ctx.sdk.http.password
     },
     get client() {
       return server.ctx.sdk.api
@@ -83,7 +84,7 @@ export function createMountedSession(session: SessionModel) {
       return ServerConnection.builtin(server.conn)
     },
     get compatible() {
-      return !server.health?.incompatible
+      return !isServerIncompatible(server.health)
     },
     get connected() {
       return server.ctx.sdk.connection.status() === "connected"
@@ -229,12 +230,12 @@ export function createMountedSession(session: SessionModel) {
     },
     attach: (part) => write((draft) => draft.context.add(part)),
     quotable: () => !!prompt()?.quotable(),
-    focus(commentID) {
+    focus(commentID, options) {
       if (commentID === undefined) return prompt()?.focus()
 
       const item = composer.context.items().find((entry) => entry.type === "quote" && entry.commentID === commentID)
 
-      if (item) composer.capture().quoteComment.set(item.key)
+      if (item) composer.capture().quoteComment.set(item.key, options?.anchor)
     },
     update: (id, patch) => write((draft) => draft.context.updateComment(id, patch)),
     detach: (id) => write((draft) => draft.context.removeComment(id)),

@@ -11,7 +11,7 @@ import { ResizeHandle } from "@opencode/ui/resize-handle"
 import { TextInput } from "@opencode/ui/text-input"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform, type KnowledgeDiscard, type KnowledgeDiscardReason } from "@/runtime/platform/platform"
-import { useServers } from "@/runtime/server/registry"
+import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
 import { PageHeader } from "@/shell/page"
 import { importKnowledge, pickKnowledgeSources } from "./import"
@@ -308,9 +308,10 @@ export function KnowledgeScreen() {
         const connection = servers.list[0]
         // One small call covers both: the description of the library and the documents that do not
         // fit the description the user wrote when creating it.
-        const review = connection
+        const api = connection ? global.serverCtx(ServerConnection.key(connection))?.sdk.api : undefined
+        const review = api
           ? await reviewLibrary({
-              api: global.ensureServerCtx(connection).sdk.api,
+              api,
               name: library.name,
               description: library.description ?? "",
               excerpts: imported.excerpts,

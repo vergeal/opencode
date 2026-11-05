@@ -37,7 +37,7 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
   const save = () => {
     if (store.saving || tooLong()) return
     const conn = servers.visible.find((item) => ServerConnection.key(item) === props.server)
-    const ctx = conn ? global.ensureServerCtx(conn) : undefined
+    const ctx = conn ? global.serverCtx(ServerConnection.key(conn)) : undefined
 
     if (!conn || !ctx) return
     const value = store.prompt.trim()
@@ -55,7 +55,7 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
         )
         dialog.close()
       })
-      .catch((cause) =>
+      .catch((cause: unknown) =>
         showToast({
           title: language.t("common.requestFailed"),
           description: errorMessage(cause, language.t("common.requestFailed")),
