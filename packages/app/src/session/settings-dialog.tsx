@@ -5,12 +5,14 @@ import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from
 import { Textarea } from "@opencode/ui/textarea"
 import { Session } from "@opencode/schema/session"
 import { useQueryClient } from "@tanstack/solid-query"
+import { Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { errorMessage } from "@/shell/layout/helpers"
 import { showToast } from "@/shell/notifications/toast"
+import "./settings-dialog.css"
 
 export function SessionSettingsDialog(props: { server: ServerConnection.Key; session: SessionInfo }) {
   const dialog = useDialog()
@@ -53,32 +55,38 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
   }
 
   return (
-    <Dialog fit>
+    <Dialog fit containerClass="session-settings-dialog">
       <DialogHeader>
         <DialogTitleGroup
           title={language.t("session.settings.title")}
           description={language.t("session.settings.prompt.description", { limit: Session.PromptLimit })}
         />
       </DialogHeader>
-      <DialogBody class="flex flex-col gap-2">
+      <DialogBody class="session-settings-body">
+        <div data-slot="session-settings-meta">
+          <label data-slot="session-settings-label" for="session-settings-prompt">
+            {language.t("session.settings.prompt.title")}
+          </label>
+          <span data-slot="session-settings-count" data-over={tooLong() ? "" : undefined}>
+            {language.t("session.settings.prompt.count", { count: length(), limit: Session.PromptLimit })}
+          </span>
+        </div>
         <Textarea
+          id="session-settings-prompt"
           data-action="session-settings-prompt"
-          class="!w-full"
-          rows={8}
+          rows={7}
           autofocus
           spellcheck={false}
+          invalid={tooLong()}
           value={store.prompt}
           placeholder={language.t("session.settings.prompt.placeholder")}
-          aria-label={language.t("session.settings.prompt.title")}
           onInput={(event) => setStore("prompt", event.currentTarget.value)}
         />
-        <div
-          class="flex items-center justify-between gap-3 text-[13px] tabular-nums"
-          classList={{ "text-[var(--v2-state-fg-danger)]": tooLong(), "text-v2-text-text-muted": !tooLong() }}
-        >
-          <span>{tooLong() ? language.t("session.settings.prompt.tooLong.title") : ""}</span>
-          <span>{language.t("session.settings.prompt.count", { count: length(), limit: Session.PromptLimit })}</span>
-        </div>
+        <Show when={tooLong()}>
+          <p data-slot="session-settings-error" role="alert">
+            {language.t("session.settings.prompt.tooLong.title")}
+          </p>
+        </Show>
       </DialogBody>
       <DialogFooter>
         <Button variant="neutral" onClick={() => dialog.close()}>

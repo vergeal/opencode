@@ -1,0 +1,120 @@
+/* Session settings is a prompt editor, not a form: one labelled field fills the sheet, the character budget sits on
+   the label's line, and the dialog's glass actions close it. The copy is deliberately smaller than the dialog
+   defaults so the editor, not the prose, carries the weight.
+
+   The dialog styles are unlayered and nested several levels deep, so these overrides repeat the container scope and
+   win on specificity instead of depending on stylesheet order. */
+[data-component="dialog-v2"] [data-slot="dialog-container"].session-settings-dialog {
+  width: 520px;
+  max-width: calc(100vw - 32px);
+}
+
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].session-settings-dialog
+  [data-slot="dialog-content"]
+  [data-slot="dialog-header"] {
+  padding: 20px 20px 14px;
+}
+
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].session-settings-dialog
+  [data-slot="dialog-content"]
+  [data-slot="dialog-header"]
+  [data-slot="dialog-title"] {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].session-settings-dialog
+  [data-slot="dialog-content"]
+  [data-slot="dialog-header"]
+  [data-slot="dialog-description"] {
+  font-size: 12px;
+  line-height: 17px;
+  letter-spacing: 0;
+}
+
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].session-settings-dialog
+  [data-slot="dialog-content"]
+  [data-slot="dialog-body"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 20px;
+}
+
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].session-settings-dialog
+  [data-slot="dialog-content"]
+  [data-slot="dialog-footer"] {
+  padding: 16px 20px 20px;
+}
+
+.session-settings-body [data-slot="session-settings-meta"] {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.session-settings-body [data-slot="session-settings-label"] {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--v2-text-text-muted);
+}
+
+.session-settings-body [data-slot="session-settings-count"] {
+  font-size: 11px;
+  line-height: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--v2-text-text-faint);
+}
+
+.session-settings-body [data-slot="session-settings-count"][data-over] {
+  color: var(--v2-state-fg-danger);
+}
+
+/* The field is the sheet's one surface: a rounded page that holds the prompt, with the focus ring as the only change
+   on focus. */
+.session-settings-body [data-component="textarea-v2"] {
+  width: 100%;
+  min-height: 176px;
+  padding: 0;
+  border-radius: 10px;
+  background: var(--v2-background-bg-layer-02);
+  box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
+}
+
+.session-settings-body [data-component="textarea-v2"] [data-slot="textarea-v2-textarea"] {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 20px;
+  resize: none;
+}
+
+/* Over budget, only the count, the ring and the hint turn red: the prompt keeps its reading colours. */
+.session-settings-body
+  [data-component="textarea-v2"][data-invalid]:not([data-disabled])
+  [data-slot="textarea-v2-textarea"] {
+  color: var(--v2-text-text-base);
+  caret-color: var(--v2-text-text-base);
+}
+
+.session-settings-body
+  [data-component="textarea-v2"][data-invalid]:not([data-disabled])
+  [data-slot="textarea-v2-textarea"]::placeholder {
+  color: var(--v2-text-text-faint);
+  opacity: 1;
+}
+
+.session-settings-body [data-slot="session-settings-error"] {
+  margin: 0;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--v2-state-fg-danger);
+}
