@@ -258,7 +258,6 @@ export function createTimelineVirtualizer(input: Input) {
     }
   })
 
-  const measuredElements = new WeakSet<Element>()
   let touchStart: number | undefined
   let touchTarget: EventTarget | null = null
   let touchAdjustment = 0
@@ -339,6 +338,7 @@ export function createTimelineVirtualizer(input: Input) {
           input.follow.dispatch(
             root && needsEndProbe(input.follow.peek()) && atReachableEnd(root) ? settledAtEndEvent : settledEvent,
           )
+          remeasureMounted()
         })
         dispatchCold(CHECK_REQUESTED)
       }
@@ -356,25 +356,18 @@ export function createTimelineVirtualizer(input: Input) {
     initialMeasurementsCache: initialMeasurements,
     estimateSize: () => fallbackItemSize,
     // A newly observed element gets a real ResizeObserver box before paint. Reuse
-    // its snapshot on attachment, but later explicit measurements must read layout
-    // so deferred/rewrapped content cannot keep stale, clipped heights (TanStack/virtual#1183).
+    // its snapshot on attachment, but every explicit measurement reads layout: a
+    // restored snapshot and an estimate are not measurements, and trusting one on
+    // attachment leaves the row clipped at a stale height (TanStack/virtual#1183).
     measureElement: (element, entry, instance) => {
       if (!active() || !element.isConnected)
         return (
           instance.itemSizeCache.get(instance.options.getItemKey(instance.indexFromElement(element))) ??
           fallbackItemSize
         )
-      const initial = !measuredElements.has(element)
-      measuredElements.add(element)
       const box = entry?.borderBoxSize[0]
 
       if (box) return Math.round(box.blockSize)
-
-      if (initial) {
-        const size = instance.itemSizeCache.get(instance.options.getItemKey(instance.indexFromElement(element)))
-
-        if (size !== undefined || untrack(coldHidden)) return size ?? fallbackItemSize
-      }
 
       return element.offsetHeight
     },
@@ -419,11 +412,9 @@ export function createTimelineVirtualizer(input: Input) {
   // Read the whole measurement delivery before committing reactive row sizes.
   // Otherwise each row can render and force layout before the next is measured.
   virtualizer.resizeItem = (index, size) => {
-    if (!active()) return
-    const row = rows()[index]
-
-    if (!row) return
-    const key = TimelineRow.key(row)
+    // Key off TanStack's own index mapping: a streaming turn can regroup rows between
+    // the delivery and this call, so `rows()[index]` may already name a different row.
+    const key = String(virtualizer.options.getItemKey(index))
 
     if ((virtualizer.itemSizeCache.get(key) ?? fallbackItemSize) === size) {
       pendingSizes.delete(key)
@@ -442,10 +433,9 @@ export function createTimelineVirtualizer(input: Input) {
       const sizes = [...pendingSizes]
       pendingSizes.clear()
 
-      if (!active()) return
       // Rows can shift index while a batch waits for this microtask, since a streaming turn regroups its parts and
       // a history prepend inserts rows above. The index that delivered a measurement may then name a different row,
-      // so fall back to the key. Dropping that correction left the row clipped at its estimate until a refresh.
+      // so fall back to the key.
       let indexByKey: Map<string, number> | undefined
 
       const resolveIndex = (key: string, delivered: number) => {
@@ -457,19 +447,24 @@ export function createTimelineVirtualizer(input: Input) {
         return indexByKey.get(key)
       }
 
+      const viewportActive = active()
+
       // The hidden pinned mount needs one bottom write after the whole batch,
       // not a layout-forcing scroll adjustment for every measured row.
-      dispatchCold(SIZES_FLUSHING)
+      if (viewportActive) dispatchCold(SIZES_FLUSHING)
       batch(() => {
         sizes.forEach(([key, pending]) => {
           const index = resolveIndex(key, pending.index)
 
           if (index === undefined) return
+          // Record the size even while detached: dropping it here left the row clipped at
+          // its estimate until a remount, which is what blanked the timeline and cut long
+          // replies in half.
           resizeItem(index, pending.size)
 
+          if (!viewportActive || !touchAdjustment) return
           // TanStack recalculates its range after each resize. Advance the
           // logical fold before deciding whether the next row needs anchoring.
-          if (!touchAdjustment) return
           setRendering("scrollAdjustment", (value) => value + touchAdjustment)
           touchAdjustment = 0
           const root = listRoot()
@@ -477,6 +472,8 @@ export function createTimelineVirtualizer(input: Input) {
           if (root) reportOffset?.(root.scrollTop, virtualizer.isScrolling)
         })
       })
+
+      if (!viewportActive) return
       dispatchCold(SIZES_FLUSHED)
       pinAnchor()
 
@@ -491,8 +488,55 @@ export function createTimelineVirtualizer(input: Input) {
     })
   }
 
-  onCleanup(() => pendingSizes.clear())
+  // TanStack skips ResizeObserver deliveries while it is scrolling, and a row measured
+  // before its content settled keeps that size until something remeasures it. Read every
+  // mounted row back once the scroll stops and when the timeline becomes active again.
+  // The rAF gate keeps a burst of settled callbacks from reading layout more than once per frame.
+  let remeasureFrame: number | undefined
+
+  function remeasureMounted() {
+    if (remeasureFrame !== undefined) return
+    remeasureFrame = requestAnimationFrame(() => {
+      remeasureFrame = undefined
+
+      if (!active()) return
+      virtualizer.elementsCache.forEach((element) => {
+        if (!element.isConnected) return
+        const index = virtualizer.indexFromElement(element)
+
+        if (index < 0) return
+        virtualizer.resizeItem(index, element.offsetHeight)
+      })
+    })
+  }
+
+  // A detached timeline can miss ResizeObserver deliveries it is not allowed to act on.
+  // Re-measure every mounted row when it becomes active again, so no row keeps a size
+  // recorded before it was last detached.
+  createEffect(
+    on(
+      active,
+      (isActive) => {
+        if (!isActive) return
+
+        queueMicrotask(() => {
+          if (!active()) return
+          remeasureMounted()
+        })
+      },
+      { defer: true },
+    ),
+  )
+
+  onCleanup(() => {
+    pendingSizes.clear()
+
+    if (remeasureFrame !== undefined) cancelAnimationFrame(remeasureFrame)
+  })
+
   virtualizer.shouldAdjustScrollPositionOnItemSizeChange = (item, delta, instance) => {
+    // A detached timeline has no viewport to compensate; recording the new size is enough.
+    if (!active()) return false
     // Prepended rows can resize more than once as deferred content mounts. Keep
     // compensating while they remain entirely above the visible content fold.
     const first = instance.range?.startIndex
