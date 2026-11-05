@@ -270,7 +270,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
         ref={composer}
         data-component="composer"
         data-dock-border-underlay={props.borderUnderlay ? "true" : undefined}
-        class="group/composer relative w-full overflow-clip rounded-[20px] bg-v2-background-bg-base"
+        class="group/composer relative w-full overflow-clip"
         style={{ height: historyLayout.height === undefined ? undefined : `${historyLayout.height}px` }}
         classList={{
           "flex flex-col": historyLayout.height !== undefined,
@@ -344,7 +344,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               spellcheck={state.mode === "normal"}
               // @ts-expect-error
               autocomplete="off"
-              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-4 pe-[var(--composer-scroll-end)] pt-3 pb-2 text-[15px] font-[400] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-primitive"
+              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-3 pe-[var(--composer-scroll-end)] pt-3 pb-2 text-[15px] font-[400] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-primitive"
               classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell", "opacity-50": props.disabled }}
               style={{
                 "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -428,7 +428,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             <Show when={empty()}>
               <div
                 dir={state.mode === "normal" ? "auto" : "ltr"}
-                class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[var(--composer-scroll-end)] pt-3 text-[15px] font-[400] leading-5 text-v2-text-text-faint"
+                class="pointer-events-none absolute inset-x-0 top-0 ps-3 pe-[var(--composer-scroll-end)] pt-3 text-[15px] font-[400] leading-5 text-v2-text-text-muted"
                 classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell" }}
                 style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
               >
@@ -441,7 +441,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           </div>
         </div>
 
-        <div class="flex h-10 shrink-0 items-center border-t border-v2-border-border-muted px-2">
+        <div class="flex h-10 shrink-0 items-center px-3">
           <div
             class="flex shrink-0 items-center"
             aria-hidden={state.mode === "shell"}
@@ -803,7 +803,7 @@ function ComposerAttachments(props: {
       <div data-component="composer-attachments" data-slot="composer-attachments" class="relative">
         <div
           data-slot="composer-attachments-scroll"
-          class="flex flex-nowrap gap-2 overflow-x-auto no-scrollbar px-2 pt-2 pb-1"
+          class="flex flex-nowrap gap-2 overflow-x-auto no-scrollbar px-3 pt-3 pb-1"
         >
           <For each={props.comments ?? []}>
             {(comment) => (
@@ -951,11 +951,11 @@ function ComposerAttachments(props: {
         </div>
         <div
           data-slot="composer-attachments-fade-left"
-          class="pointer-events-none absolute inset-y-0 start-0 z-10 w-6 bg-[linear-gradient(to_right,var(--v2-background-bg-base),transparent)] rtl:bg-[linear-gradient(to_left,var(--v2-background-bg-base),transparent)]"
+          class="pointer-events-none absolute inset-y-0 start-0 z-10 w-6 bg-[linear-gradient(to_right,var(--v2-background-bg-layer-01),transparent)] rtl:bg-[linear-gradient(to_left,var(--v2-background-bg-layer-01),transparent)]"
         />
         <div
           data-slot="composer-attachments-fade-right"
-          class="pointer-events-none absolute inset-y-0 end-0 z-10 w-6 bg-[linear-gradient(to_left,var(--v2-background-bg-base),transparent)] rtl:bg-[linear-gradient(to_right,var(--v2-background-bg-base),transparent)]"
+          class="pointer-events-none absolute inset-y-0 end-0 z-10 w-6 bg-[linear-gradient(to_left,var(--v2-background-bg-layer-01),transparent)] rtl:bg-[linear-gradient(to_right,var(--v2-background-bg-layer-01),transparent)]"
         />
         <Show when={editing()} keyed>
           {(current) => (
@@ -1473,11 +1473,25 @@ function ComposerEditorSubmitButton(props: {
         disabled={!props.stopping && props.disabled}
         tabIndex={props.mode === "normal" ? undefined : -1}
         icon={
-          props.held && !props.stopping ? (
-            <Loader class="size-4" />
-          ) : (
-            <Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "arrow-up"} />
-          )
+          <span
+            data-slot="composer-submit-glyphs"
+            data-mode={props.mode === "shell" ? "shell" : "normal"}
+            data-stopping={props.stopping ? "" : undefined}
+            data-held={props.held && !props.stopping ? "" : undefined}
+          >
+            <span data-slot="composer-submit-glyph" data-glyph="loader">
+              <Loader class="size-4" />
+            </span>
+            <span data-slot="composer-submit-glyph" data-glyph="send">
+              <Icon name="arrow-up" />
+            </span>
+            <span data-slot="composer-submit-glyph" data-glyph="undo">
+              <Icon name="arrow-undo-down" />
+            </span>
+            <span data-slot="composer-submit-glyph" data-glyph="stop">
+              <Icon name="stop" />
+            </span>
+          </span>
         }
         aria-busy={props.held && !props.stopping}
         variant="submit"

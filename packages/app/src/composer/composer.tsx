@@ -181,7 +181,7 @@ function ComposerModelControl(props: {
                 class: `me-1.5 min-w-0 max-w-[calc(100cqw-140px)] justify-start ![font-weight: 400] ${
                   shouldAnimate() ? "animate-in fade-in" : ""
                 }`,
-                style: { height: "24px" },
+                style: { height: "28px" },
                 variant: "ghost-muted",
                 size: "normal",
                 "data-action": "composer-model",
@@ -233,7 +233,7 @@ function ComposerModelControl(props: {
                 {...triggerProps}
                 variant="ghost-muted"
                 size="normal"
-                style={{ height: "24px" }}
+                style={{ height: "28px" }}
                 class="me-1.5 min-w-0 max-w-[calc(100cqw-140px)] justify-start ![font-weight: 400]"
                 classList={{ "animate-in fade-in": shouldAnimate() }}
                 data-action="composer-model"
