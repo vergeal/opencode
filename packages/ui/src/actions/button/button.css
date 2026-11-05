@@ -336,49 +336,34 @@
     cursor: not-allowed;
   }
 
-  /* Dialog actions read as liquid glass: a cancel/confirm pair belongs to the dialog's material instead of sitting
-     on it as solid fills. Each button keeps the shared capsule radius and only swaps its surface for one translucent
-     pane with a bright inner edge and a soft shadow. Variants keep their own text colour, so a destructive confirm
-     still reads as destructive. */
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"]) {
-    /* The same fill, edge and shadow as a selected sidebar row, so every glass surface in the product matches. */
-    --dialog-action-glass-fill: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--v2-grey-50) 96%, transparent) 0%,
-      color-mix(in srgb, var(--v2-grey-50) 78%, transparent) 100%
-    );
-    --dialog-action-glass-edge:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 0 rgba(255, 255, 255, 0.45),
-      inset 0 0 0 0.5px rgba(255, 255, 255, 0.7);
-    --dialog-action-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.07);
-  }
-
-  [data-color-scheme="dark"]
-    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"]) {
-    --dialog-action-glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.09) 100%);
-    --dialog-action-glass-edge:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
-      inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
-    --dialog-action-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-  }
-
+  /* Dialog actions follow macOS controls rather than glass: the secondary key is a flat neutral capsule, the
+     primary key takes the system accent, and a destructive confirm keeps only its red label. The shared capsule
+     radius already supplies the platform shape, so no gradient, highlight or drop shadow is needed. */
   :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
     [data-component="button-v2"] {
     background-color: transparent;
-    background-image: var(--dialog-action-glass-fill);
-    -webkit-backdrop-filter: var(--v2-material-blur-regular);
-    backdrop-filter: var(--v2-material-blur-regular);
+    background-image: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     color: var(--v2-text-text-base);
     text-shadow: none;
-    box-shadow: var(--dialog-action-glass-edge), var(--dialog-action-glass-shadow);
+    box-shadow: none;
+    /* Dialog keys sit at the same 13px as the sidebar, list rows and form labels; the shared 15px baseline is for
+       standalone page actions, which read oversized inside a 28px capsule. */
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 18px;
   }
 
-  /* The shared submit and contrast variants light their text for a solid dark fill; on glass the dialog's own text
-     colour keeps the label legible. */
-  [data-color-scheme="dark"]
-    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
-    [data-component="button-v2"] {
-    color: var(--v2-text-text-base);
+  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    [data-component="button-v2"][data-variant="neutral"] {
+    background-color: color-mix(in srgb, var(--v2-text-text-base) 12%, transparent);
+  }
+
+  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]) {
+    background-color: var(--v2-grey-1000);
+    color: var(--v2-grey-50);
   }
 
   :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
@@ -386,39 +371,75 @@
     color: var(--v2-state-fg-danger);
   }
 
-  /* The pair's primary action is the brighter pane: a more opaque glass than the cancel beside it, so the confirm
-     still leads without turning back into a solid fill. */
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
-    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]) {
-    --dialog-action-glass-fill: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--v2-grey-50) 100%, transparent) 0%,
-      color-mix(in srgb, var(--v2-grey-100) 88%, transparent) 100%
-    );
-    --dialog-action-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
-  }
-
-  [data-color-scheme="dark"]
-    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
-    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]) {
-    --dialog-action-glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.18) 100%);
-    --dialog-action-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  }
-
   @media (hover: hover) {
     :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
-      [data-component="button-v2"]:is(:hover, [data-state="hover"]):not(:disabled) {
-      background-image:
-        linear-gradient(var(--v2-overlay-simple-overlay-hover), var(--v2-overlay-simple-overlay-hover)),
-        var(--dialog-action-glass-fill);
+      [data-component="button-v2"][data-variant="neutral"]:is(:hover, [data-state="hover"]):not(:disabled) {
+      background-image: linear-gradient(var(--v2-overlay-simple-overlay-hover), var(--v2-overlay-simple-overlay-hover));
+    }
+
+    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+      [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
+        :hover,
+        [data-state="hover"]
+      ):not(:disabled) {
+      background-color: color-mix(in srgb, var(--v2-grey-1000) 86%, var(--v2-grey-50));
+      background-image: none;
+    }
+
+    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+      [data-component="button-v2"][data-variant="danger"]:is(:hover, [data-state="hover"]):not(:disabled) {
+      background-color: color-mix(in srgb, var(--v2-state-fg-danger) 14%, transparent);
     }
   }
 
   :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
     [data-component="button-v2"]:is(:active, [data-state="pressed"]):not(:disabled) {
-    background-image:
-      linear-gradient(var(--v2-overlay-simple-overlay-pressed), var(--v2-overlay-simple-overlay-pressed)),
-      var(--dialog-action-glass-fill);
+    background-image: none;
+  }
+
+  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    [data-component="button-v2"][data-variant="neutral"]:is(:active, [data-state="pressed"]):not(:disabled) {
+    background-image: linear-gradient(
+      var(--v2-overlay-simple-overlay-pressed),
+      var(--v2-overlay-simple-overlay-pressed)
+    );
+  }
+
+  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
+      :active,
+      [data-state="pressed"]
+    ):not(:disabled) {
+    background-color: color-mix(in srgb, var(--v2-grey-1000) 78%, var(--v2-grey-50));
+  }
+
+  /* A black key on a dark panel loses its edges, so the pair flips: paper fill, ink label. The relationship stays
+     the same - the confirm key is the only surface at full contrast. */
+  [data-color-scheme="dark"]
+    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]) {
+    background-color: var(--v2-grey-50);
+    color: var(--v2-grey-1000);
+  }
+
+  @media (hover: hover) {
+    [data-color-scheme="dark"]
+      :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+      [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
+        :hover,
+        [data-state="hover"]
+      ):not(:disabled) {
+      background-color: color-mix(in srgb, var(--v2-grey-50) 90%, var(--v2-grey-1000));
+    }
+  }
+
+  [data-color-scheme="dark"]
+    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
+      :active,
+      [data-state="pressed"]
+    ):not(:disabled) {
+    background-color: color-mix(in srgb, var(--v2-grey-50) 82%, var(--v2-grey-1000));
   }
 }
 
