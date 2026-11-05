@@ -20,7 +20,7 @@ import {
 } from "solid-js"
 import { DiffChanges } from "@opencode/ui/diff-changes"
 import { Icon } from "@opencode/ui/icon"
-import { Spring, frameLoop, prefersReducedMotion } from "@opencode/ui/motion"
+import { enter, Spring, frameLoop, prefersReducedMotion } from "@opencode/ui/motion"
 import { springStyle } from "@opencode/ui/motion/solid"
 import { Dynamic } from "solid-js/web"
 import type { SessionUserActions, SessionUserAttachmentReference, SessionUserComment } from "../actions"
@@ -157,27 +157,31 @@ export function createSessionTimelineRowRenderer(input: {
 
   // A steer sent while the timeline is open grows in. Messages already there when a session loads, and rows the
   // virtualizer remounts, appear as they are.
-  const seen = { sessionID: "", ids: new Set<string>() }
+  const seen = { sessionID: "", ids: new Set<string>(), count: 0 }
 
   const arrivals = createMemo(() => {
     const sessionID = input.sessionID()
+    const rows = input.projection.rows()
     const loaded = seen.sessionID === sessionID && seen.ids.size > 0
+    // A message the user just sent or the queue just delivered lands past the previous end. Paging older
+    // history prepends rows instead, and those must not animate in.
+    const appended = seen.sessionID === sessionID && rows.length > seen.count
     const arrived = new Set<string>()
 
     if (seen.sessionID !== sessionID) seen.ids.clear()
     seen.sessionID = sessionID
-    input.projection.rows().forEach((row) => {
+    seen.count = rows.length
+    rows.forEach((row, index) => {
       if (!Predicate.isTagged(row, "UserMessage") || seen.ids.has(row.userMessageID)) return
       seen.ids.add(row.userMessageID)
 
-      if (loaded) arrived.add(row.userMessageID)
+      if (loaded && appended && index >= rows.length - 4) arrived.add(row.userMessageID)
     })
 
     return arrived
   })
 
-  // The input's pending status lands after its row, so a message sent while the session works counts as a steer.
-  const arriving = (messageID: string) => untrack(() => arrivals().delete(messageID) && input.status().type !== "idle")
+  const arriving = (messageID: string) => untrack(() => arrivals().delete(messageID))
 
   const run = (messageID: string) =>
     createMemo(() => runs().get(messageID), undefined, {
@@ -1299,15 +1303,20 @@ function outcomeNoticeKey(state: string | undefined) {
   return "ui.sessionTimeline.notice.finished"
 }
 
-/** Grows a row from nothing to its natural height, clipping its content on the way. Rows below follow its edge. */
+/** Brings a freshly sent or auto-delivered prompt in: the row grows from nothing while its content eases up into
+    place and fades in, so a message joins the timeline instead of appearing. */
 function growIn(el: HTMLElement) {
   if (prefersReducedMotion()) return
-  const spring = Spring.fromDuration(0, { duration: 0.2, bounce: 0 })
+  const spring = Spring.fromDuration(0, { duration: 0.24, bounce: 0 })
   const content = el.firstElementChild
   let natural = 0
   el.style.height = "0px"
   el.style.overflow = "clip"
   el.toggleAttribute("data-timeline-grow", true)
+
+  // The slide eases in with the height rather than racing it, so the text lands as the row finishes opening
+  // instead of fading up inside a clipped edge.
+  if (content instanceof HTMLElement) enter(content, { y: 6, duration: 260, easing: "cubic-bezier(0.4, 0, 0.2, 1)" })
 
   const remove = frameLoop.addMeasured(
     () => {
