@@ -1,8 +1,11 @@
+import { Popover } from "@kobalte/core/popover"
 import { createMemo, on, onCleanup, onMount, For, Show } from "solid-js"
 import type { JSX } from "solid-js"
 import { checksum } from "@opencode/util/encode"
 import { Icon } from "@opencode/ui/icon"
+import { IconButton } from "@opencode/ui/icon-button"
 import { Button } from "@opencode/ui/button"
+import { Tooltip } from "@opencode/ui/tooltip"
 import { Accordion } from "@opencode/ui/accordion"
 import { StickyAccordionHeader } from "@opencode/ui/sticky-accordion-header"
 import { showToast } from "@opencode/ui/toast"
@@ -13,7 +16,7 @@ import type { SessionMessageInfo } from "@opencode/client/promise"
 import { lastAssistantWithUsage } from "@opencode/client/solid"
 import { createKeyed, usePlugin, type MountedSession } from "@opencode/plugin/gui"
 import { catalogModel, syncCatalog } from "./catalog"
-import { createCNY, flashCostCNY } from "./cost"
+import { createCNY, flashCostBreakdown, flashPrice } from "./cost"
 import { fetchSessionExport, sessionExportFilename } from "./export"
 import { createSessionContextFormatter } from "./format"
 
@@ -23,6 +26,80 @@ function Stat(props: { label: string; value: JSX.Element }) {
       <div class="text-12-regular text-text-weak">{props.label}</div>
       <div class="text-12-medium text-text-strong">{props.value}</div>
     </div>
+  )
+}
+
+// The estimate behind the total cost, as the three lines a Flash invoice has.
+function PriceDetails(props: {
+  breakdown: () => ReturnType<typeof flashCostBreakdown> | undefined
+  cost: () => string
+}) {
+  const ctx = usePlugin()
+  const i18n = useI18n()
+  const cny = createMemo(() => createCNY(i18n.locale()))
+  const number = createMemo(() => new Intl.NumberFormat(i18n.locale()))
+
+  const priceRow = (label: string, line: { tokens: number; amount: number }, price: number) => (
+    <div class="flex flex-col gap-0.5">
+      <div class="flex items-baseline justify-between gap-3">
+        <span class="text-[12px] leading-4 text-v2-text-text-muted">{label}</span>
+        <span class="text-[12px] leading-4 tabular-nums text-v2-text-text-base">{cny()(line.amount)}</span>
+      </div>
+      <span class="text-[11px] leading-4 tabular-nums text-v2-text-text-faint">
+        {ctx.t("usage.breakdown.rate", { tokens: number().format(line.tokens), price: number().format(price) })}
+      </span>
+    </div>
+  )
+
+  return (
+    <Popover placement="bottom-end" gutter={6}>
+      <Tooltip value={ctx.t("usage.breakdown.open")} placement="top">
+        <Popover.Trigger
+          as={IconButton}
+          variant="ghost-muted"
+          size="small"
+          icon={<Icon name="circle-exclamation" class="size-3.5" />}
+          style={{ width: "16px", height: "16px", color: "var(--v2-text-text-faint)" }}
+          aria-label={ctx.t("usage.breakdown.open")}
+        />
+      </Tooltip>
+      <Popover.Portal>
+        <Popover.Content
+          class="z-50 w-[268px] max-w-[calc(100vw-16px)] rounded-[10px] p-3 outline-none"
+          style={{
+            background: "var(--v2-background-bg-layer-01)",
+            "box-shadow": "var(--v2-elevation-floating)",
+          }}
+          aria-label={ctx.t("usage.breakdown")}
+        >
+          <div class="flex flex-col gap-3">
+            <div class="flex flex-col gap-0.5">
+              <span class="text-[13px] font-[530] leading-[18px] text-v2-text-text-base">
+                {ctx.t("usage.breakdown")}
+              </span>
+              <span class="text-[11px] leading-4 text-v2-text-text-faint">{ctx.t("usage.breakdown.source")}</span>
+            </div>
+            <div class="flex flex-col gap-2">
+              <Show when={props.breakdown()}>
+                {(breakdown) => (
+                  <>
+                    {priceRow(ctx.t("usage.breakdown.input"), breakdown().input, flashPrice.input)}
+                    {priceRow(ctx.t("usage.breakdown.cacheRead"), breakdown().cacheRead, flashPrice.cacheRead)}
+                    {priceRow(ctx.t("usage.breakdown.output"), breakdown().output, flashPrice.output)}
+                  </>
+                )}
+              </Show>
+            </div>
+            <div class="h-px bg-v2-border-border-muted" />
+            <div class="flex items-baseline justify-between gap-3">
+              <span class="text-[13px] font-[530] text-v2-text-text-base">{ctx.t("usage.breakdown.total")}</span>
+              <span class="text-[13px] font-[530] tabular-nums text-v2-text-text-base">{props.cost()}</span>
+            </div>
+            <p class="text-[11px] leading-4 text-v2-text-text-faint">{ctx.t("usage.breakdown.offPeak")}</p>
+          </div>
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover>
   )
 }
 
@@ -132,23 +209,25 @@ export default function SessionContextTab(props: { session: MountedSession }) {
   const formatter = createMemo(() => createSessionContextFormatter(i18n.locale()))
 
   // Priced at Flash rates for every model. A root session's cost includes its subagent sessions, as in the TUI.
-  const spent = createMemo(() => {
+  const breakdown = createMemo(() => {
     const id = props.session.id
 
-    if (!id) return 0
+    if (!id) return
 
     const session = data().session.get(id)
 
-    if (!session) return 0
+    if (!session) return
 
-    if (session.parentID) return flashCostCNY([session.tokens])
+    if (session.parentID) return flashCostBreakdown([session.tokens])
 
     const family = data().session.family(id)
 
-    return flashCostCNY((family.length ? family : [id]).flatMap((member) => data().session.get(member)?.tokens ?? []))
+    return flashCostBreakdown(
+      (family.length ? family : [id]).flatMap((member) => data().session.get(member)?.tokens ?? []),
+    )
   })
 
-  const cost = createMemo(() => cny()(spent()))
+  const cost = createMemo(() => cny()(breakdown()?.total ?? 0))
 
   const counts = createMemo(() => {
     const all = messages()
@@ -207,7 +286,15 @@ export default function SessionContextTab(props: { session: MountedSession }) {
     },
     { label: "stats.userMessages", value: () => counts().user.toLocaleString(i18n.locale()) },
     { label: "stats.assistantMessages", value: () => counts().assistant.toLocaleString(i18n.locale()) },
-    { label: "stats.totalCost", value: cost },
+    {
+      label: "stats.totalCost",
+      value: () => (
+        <span class="inline-flex items-center gap-1">
+          {cost()}
+          <PriceDetails breakdown={breakdown} cost={cost} />
+        </span>
+      ),
+    },
     { label: "stats.sessionCreated", value: () => formatter().time(info()?.time.created) },
     { label: "stats.lastActivity", value: () => formatter().time(context()?.message.time.created) },
   ] satisfies { label: string; value: () => JSX.Element }[]
