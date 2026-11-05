@@ -168,31 +168,8 @@
   gap: 2px;
 }
 
-/* Selected rows in the sidebar read as white liquid glass: a translucent white fill over the
-   column material, a blurred backdrop and a bright inner edge. The variables keep the fill,
-   edge and shadow identical for session rows, tabs and navigation actions. */
-[data-slot="vertical-tabs-sidebar"] {
-  --sidebar-glass-fill: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--v2-grey-50) 96%, transparent) 0%,
-    color-mix(in srgb, var(--v2-grey-50) 78%, transparent) 100%
-  );
-  --sidebar-glass-edge:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 0 rgba(255, 255, 255, 0.45),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.7);
-  --sidebar-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.07);
-}
-
-[data-color-scheme="dark"] [data-slot="vertical-tabs-sidebar"] {
-  --sidebar-glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.09) 100%);
-  --sidebar-glass-edge:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.1);
-  --sidebar-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
-}
-
 /* The workbench sidebar is a compact list: 30px rows at 14px, one line per session, and the
-   active row reads as a raised white card on the soft sidebar surface. */
+   active row sits on the same neutral grey the session rows use. */
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab],
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action] {
   height: 30px;
@@ -208,12 +185,11 @@
   color: var(--v2-text-text-muted);
 }
 
+/* Home, the inbox and the active tab share one selected surface: the same pressed-overlay grey as a
+   selected session row, with no glass pane. The shorthand also replaces the base gradient fill. */
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab][data-active="true"],
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action][data-state="pressed"] {
-  background: var(--sidebar-glass-fill);
-  -webkit-backdrop-filter: var(--v2-material-blur-regular);
-  backdrop-filter: var(--v2-material-blur-regular);
-  box-shadow: var(--sidebar-glass-edge), var(--sidebar-glass-shadow);
+  background: var(--v2-overlay-simple-overlay-pressed);
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab][data-active="true"] [data-slot="tab-link"] {
