@@ -1,6 +1,6 @@
 ---
 name: rtl-aware-development
-description: OpenCode Desktop should be RTL-aware. Use when implementing or reviewing RTL/LTR behavior in the web app, desktop app, CSS, menus, scrolling, resizing, icons, mixed-direction text, or Electron title bars.
+description: OpenCode Desktop 应支持 RTL。在实现或审查 Web 应用、桌面应用、CSS、菜单、滚动、缩放、图标、双向混排文本或 Electron 标题栏的 RTL/LTR 行为时使用。
 ---
 
 # RTL-Aware Development

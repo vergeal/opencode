@@ -1,5 +1,5 @@
 ---
-description: Extract non-obvious learnings from session to AGENTS.md files to build codebase understanding
+description: 从会话中提炼不明显的经验并写入 AGENTS.md，沉淀对代码库的理解
 ---
 
 Analyze this session and extract non-obvious learnings to add to AGENTS.md files.

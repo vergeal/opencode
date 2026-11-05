@@ -1,6 +1,6 @@
 ---
 name: tui-tests
-description: Use when writing, fixing, or reviewing tests that render OpenTUI (testRender, createTestRenderer, createAppFixture) in packages/tui or packages/cli. Covers frame waits (waitForFrame, waitFor, waitForVisualIdle, flush), started vs non-started renderers, injected clocks, mock keyboard and mouse input, terminal sizes, cleanup and shared paths, and the 30s budget. Also use when a TUI test fails with "Timed out waiting for frame predicate after N passes", or when a tui test file is slow. For cli subprocess and service tests, use the unit-tests skill.
+description: 在编写、修复或审查 packages/tui 或 packages/cli 中渲染 OpenTUI（testRender、createTestRenderer、createAppFixture）的测试时使用。涵盖帧等待（waitForFrame、waitFor、waitForVisualIdle、flush）、已启动与未启动的渲染器、注入时钟、模拟键盘与鼠标输入、终端尺寸、清理与共享路径，以及 30 秒预算。TUI 测试报 "Timed out waiting for frame predicate after N passes"，或某个 tui 测试文件很慢时也使用。CLI 子进程与服务测试请使用 unit-tests 技能。
 ---
 
 # TUI tests

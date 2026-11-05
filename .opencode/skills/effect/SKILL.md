@@ -1,6 +1,6 @@
 ---
 name: effect
-description: Work with Effect v4 TypeScript code in this repo
+description: 在本仓库中编写 Effect v4 TypeScript 代码时使用
 ---
 
 # Effect

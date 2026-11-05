@@ -1,6 +1,6 @@
 ---
 name: component-tests
-description: Use when writing, changing, debugging, or reviewing the Playwright component tests that mount stories. That covers specs in packages/app/component-tests or packages/session-ui/component-tests, `*.fixture.tsx` files there or beside source (such as packages/gui-plugins/src/browser/panel.fixture.tsx), the stories they mount, and the shared harness in packages/stories (playwright/config.ts, playwright/story.ts, vite.config.ts, src/frame.tsx, src/index-plugin.ts, mocks). Also use when a component test is flaky, passed on retry, or fails with "Execution context was destroyed", "Failed to fetch dynamically imported module", or `#story-root` hidden. Covers mount args, source modules imported by URL, Vite dependency pre-bundling and reloads, a cold vs warm story server, mobile drawers, geometry, and checks before pushing.
+description: 在编写、修改、调试或审查挂载 story 的 Playwright 组件测试时使用。涵盖 packages/app/component-tests 或 packages/session-ui/component-tests 下的 spec、这些目录里或源码旁的 `*.fixture.tsx`（例如 packages/gui-plugins/src/browser/panel.fixture.tsx）、它们挂载的 story，以及 packages/stories 中的共享测试装置（playwright/config.ts、playwright/story.ts、vite.config.ts、src/frame.tsx、src/index-plugin.ts、mocks）。组件测试偶发失败、重试才通过，或报 "Execution context was destroyed"、"Failed to fetch dynamically imported module"、`#story-root` 被隐藏时也使用。涵盖挂载参数、按 URL 导入的源码模块、Vite 依赖预构建与重载、冷/热 story 服务器、移动端抽屉、几何测量，以及推送前的检查。
 ---
 
 # Component tests

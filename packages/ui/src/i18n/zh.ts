@@ -116,6 +116,9 @@ export const dict = {
 
   "ui.promptInput.noMatchingItems": "没有匹配项",
   "ui.promptInput.commands": "命令",
+  "ui.promptInput.history": "提示历史",
+  "ui.promptInput.history.search": "搜索提示历史…",
+  "ui.promptInput.history.contextOnly": "带上下文的提示",
   "ui.promptInput.dropFiles": "拖放文件以添加附件",
   "ui.promptInput.removeAttachment": "移除附件",
   "ui.promptInput.cancelUpload": "取消上传",

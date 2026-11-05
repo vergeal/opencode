@@ -1,6 +1,6 @@
 ---
 name: app-e2e-tests
-description: Use when writing, changing, reviewing, or debugging Playwright e2e tests in packages/app/e2e (regression keepers and user stories). Covers the mocked opencode server harness and the Bun static server, per-test isolation, page-load and route cost, the suite-wide service-worker block, races with first mount, hover, measurement, clock, dialogs and shortcuts, projects, shards and worker scheduling, rehearsing Windows timing locally, and diagnosing a CI flake from its artifacts. Not for component tests (stories mounted on packages/stories) or the strobe benchmarks in packages/app/perf.
+description: 在编写、修改、审查或调试 packages/app/e2e 下的 Playwright e2e 测试（回归守护与用户故事）时使用。涵盖 mock 的 opencode 服务器测试装置与 Bun 静态服务器、单个测试的隔离、页面加载与路由开销、整个测试套件的 service worker 屏蔽、与首次挂载竞态的 hover、测量、时钟、对话框与快捷键、项目、分片与 worker 调度、在本地复现 Windows 时序，以及根据产出物诊断 CI 偶发失败。不适用于组件测试（挂载 packages/stories 中的 story）或 packages/app/perf 下的 strobe 基准。
 ---
 
 # App e2e tests

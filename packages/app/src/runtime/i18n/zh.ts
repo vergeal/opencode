@@ -91,20 +91,41 @@ export const dict = {
   "command.project.open": "打开项目",
 
   "command.provider.connect": "连接提供商",
+  "command.provider.connect.description": "登录 OpenCode Go、OpenCode Console 或其他模型提供商",
+
+  "command.config.reload": "重新加载配置",
+  "command.config.reload.description": "从配置重新加载智能体、命令、技能、MCP 服务器和插件",
+  "command.config.reload.pending": "正在重新加载配置…",
+  "command.config.reload.done": "配置已重新加载",
+  "command.config.reload.failed": "无法重新加载配置",
 
   "command.settings.open": "打开设置",
 
   "command.session.location.cycle": "依次切换会话位置",
 
   "command.palette": "命令面板",
+  "command.commands.search": "搜索命令",
 
   "command.session.new": "新建会话",
   "command.session.import": "导入会话",
+  "command.session.search": "搜索会话",
+  "command.session.rename": "重命名会话",
+  "command.session.delete": "删除会话",
+  "command.session.clear": "清屏",
+  "command.session.clear.description": "清空当前可见对话，保留上下文",
+  "command.session.previous": "上一个会话",
+  "command.session.previous.unseen": "上一个未读会话",
+  "command.session.next": "下一个会话",
+  "command.session.next.unseen": "下一个未读会话",
+  "command.session.branch.choose": "选择基础分支",
 
   "command.file.open": "打开文件",
 
   "command.tab.close": "关闭标签页",
   "command.tab.reopenClosed": "重新打开已关闭的标签页",
+  "command.sidebar.toggle": "切换侧边栏",
+  "command.sidebar.toggle.unread": "切换侧边栏（含未读会话）",
+  "command.bottom.toggle": "切换底部面板",
 
   "command.context.addSelection": "将所选内容添加到上下文",
   "command.context.addSelection.description": "添加当前文件中选中的行",
@@ -132,11 +153,16 @@ export const dict = {
   "command.model.variant.cycle": "切换思考强度",
   "command.model.variant.cycle.description": "切换到下一个强度等级",
 
+  "command.usage.view": "查看用量",
+  "command.usage.view.description": "查看 OpenCode Go 额度与 Console 预算",
+
   "command.prompt.mode.shell": "Shell",
   "command.prompt.mode.normal": "Prompt",
+  "command.prompt.mode.toggle": "切换 shell 模式",
 
   "command.permissions.autoaccept.enable": "自动接受权限",
   "command.permissions.autoaccept.disable": "停止自动接受权限",
+  "command.permissions.autoaccept.project": "自动接受此项目的权限请求",
 
   "command.session.undo": "撤销",
   "command.session.undo.description": "撤销上一条消息",

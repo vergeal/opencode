@@ -1,6 +1,6 @@
 ---
 name: opencode-dev
-description: Use when interactively running, debugging, or verifying opencode's own CLI/TUI or server during development in this repo — starting the dev TUI, driving it with termctrl, hitting the server/API directly, reading log files, or attaching Bun's inspector.
+description: 在开发本仓库时以交互方式运行、调试或验证 opencode 自身的 CLI/TUI 或服务器时使用——启动开发版 TUI、用 termctrl 驱动它、直接请求服务器/API、读取日志文件，或附加 Bun 调试器。
 ---
 
 # Debugging opencode itself

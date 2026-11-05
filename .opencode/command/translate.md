@@ -1,5 +1,5 @@
 ---
-description: translate English to other languages
+description: 把英文翻译成其他语言
 model: opencode/gpt-5.6-sol
 ---
 

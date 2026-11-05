@@ -1,6 +1,6 @@
 ---
 name: sample-skill
-description: Use when the user says sample skill, skill demo, or asks how an opencode SKILL.md should be structured; demonstrates a tiny project-local skill with practical assistant workflow guidance.
+description: 当用户提到 sample skill、技能演示，或询问 opencode 的 SKILL.md 应如何组织时使用；展示一个很小的项目内技能，附带实用的助手工作流建议。
 ---
 
 # Sample Skill

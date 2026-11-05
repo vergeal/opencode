@@ -1,6 +1,6 @@
 ---
 name: unit-tests
-description: Use when writing, reviewing, speeding up, or fixing a flaky `bun test` unit test in any package (core, cli, server, ai, codemode, util, client, sdk, plugin, http-recorder, merman, app src and test-browser, desktop, gui-plugins, ui, session-ui, latex, ...), except OpenTUI renderer tests (see tui-tests). Also use when a test "timed out after 5000ms" on Windows CI, fails only on Windows, when the unit job is slow, when adding cli subprocess or service tests, or when adding a package's test task to turbo.json. Covers controlling time instead of sleeping, per-test timeouts, process and git spawn cost on Windows, Windows-only failures, temp dirs and process state, leaks between files, and reading CI timeouts.
+description: 在编写、审查、加速或修复任意包（core、cli、server、ai、codemode、util、client、sdk、plugin、http-recorder、merman、app src 与 test-browser、desktop、gui-plugins、ui、session-ui、latex 等）中偶发失败的 `bun test` 单元测试时使用，OpenTUI 渲染器测试除外（见 tui-tests）。测试在 Windows CI 上 "timed out after 5000ms"、只在 Windows 上失败、unit job 很慢、新增 CLI 子进程与服务测试，或为某个包在 turbo.json 里添加 test task 时也使用。涵盖用控制时间代替 sleep、单测试超时、Windows 上的进程与 git 启动开销、仅 Windows 的失败、临时目录与进程状态、文件间的泄漏，以及理解 CI 超时。
 ---
 
 # Fast, Reliable Unit Tests
