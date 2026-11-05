@@ -83,7 +83,6 @@ export type ComposerEditorProps = {
   modelControlsVisible?: boolean
   attachKeybind?: string[]
   attachShortcut?: string
-  alternateKeybind?: string[]
   exitShellKeybind?: string[]
   suggestionBoundary?: () => HTMLElement | undefined
 }
@@ -175,15 +174,20 @@ export function ComposerEditor(props: ComposerEditorProps) {
     if (caretFrame !== undefined) return
     caretFrame = requestAnimationFrame(() => {
       caretFrame = undefined
+
       if (!editor || !viewport) return
       const selection = window.getSelection()
+
       if (!selection?.rangeCount || !selection.isCollapsed) return
       const range = selection.getRangeAt(0)
+
       if (!editor.contains(range.startContainer)) return
       const caret = range.getBoundingClientRect()
+
       if (!caret.height) return
       const bounds = viewport.getBoundingClientRect()
       // Matches the viewport's 16px scroll-padding, which keeps the caret clear of the fades.
+
       if (caret.bottom > bounds.bottom - 16) viewport.scrollTop += caret.bottom - bounds.bottom + 16
       else if (caret.top < bounds.top + 16) viewport.scrollTop -= bounds.top + 16 - caret.top
     })
@@ -203,6 +207,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       ...part,
       content: part.content.replaceAll("\u200B", ""),
     }))
+
     const attachments = props.controller.parts().filter(isAttachment)
     localInput = true
     props.controller.onInput(prompt.map((part) => part.content).join(""), [...prompt, ...attachments], cursor)
@@ -372,6 +377,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                   event instanceof InputEvent && event.inputType === "insertText" && event.data?.includes("`")
                     ? completeCodeFence(element)
                     : undefined
+
                 sync(element, completed ?? composerCursor(element))
                 keepCaretInView()
               }}
@@ -537,12 +543,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
           <Show when={!touch()}>
             <div data-slot="composer-actions" class="flex shrink-0 items-center">
               <Show when={props.modelControlsVisible ?? true}>{props.modelControl?.(view.variant)}</Show>
-              <Show when={state.mode === "normal"}>
-                <ComposerEditorAlternateDelivery
-                  controller={props.controller}
-                  keybind={props.alternateKeybind ?? ["Mod", "Enter"]}
-                />
-              </Show>
               <Show when={state.mode === "shell"}>
                 <Button
                   data-action="composer-exit-shell"
@@ -770,13 +770,17 @@ function composerCursor(editor: HTMLDivElement) {
  */
 function completeCodeFence(editor: HTMLDivElement) {
   const selection = window.getSelection()
+
   if (!selection?.rangeCount || !selection.isCollapsed) return
+
   if (!selection.anchorNode || !editor.contains(selection.anchorNode)) return
 
   const text = editor.textContent ?? ""
   const cursor = composerCursor(editor)
   const lineStart = text.lastIndexOf("\n", cursor - 1) + 1
+
   if (!/^[ \t]*```$/.test(text.slice(lineStart, cursor))) return
+
   if (text.slice(cursor).split("\n")[0].trim() !== "") return
 
   // Inside an open fence the user is closing it, not opening another one.
@@ -784,6 +788,7 @@ function completeCodeFence(editor: HTMLDivElement) {
     .slice(0, lineStart)
     .split("\n")
     .filter((line) => /^[ \t]*```/.test(line)).length
+
   if (fences % 2 === 1) return
 
   const body = document.createTextNode("\n\n```")
@@ -1521,48 +1526,6 @@ function composerSuggestionMaxHeight(boundaryHeight: number, search: boolean, hi
   if (limit < chrome + row + peek) return limit
 
   return chrome + Math.floor((limit - chrome - peek) / row) * row + peek
-}
-
-// "Steer ⌘⏎" / "Queue ⌘⏎" hint next to the submit button: submits with the
-// delivery opposite to what plain Enter does. Visible only while the queue
-// exposes an alternate (turn running and composer holding a value), so it
-// disappears on its own when the current turn ends.
-function ComposerEditorAlternateDelivery(props: { controller: ComposerEditorModel; keybind: string[] }) {
-  const i18n = useI18n()
-  const view = props.controller.view
-
-  const action = createMemo(() => {
-    const queue = view.submit.queue
-
-    if (!queue || !props.controller.canSubmit()) return undefined
-
-    if (queue.editing()) return "steer" as const
-
-    return queue.alternate()
-  })
-
-  // Appears and leaves on the same frame as the placeholder, so typing never shows a fade.
-  return (
-    <Show when={action()} keyed>
-      {(delivery) => (
-        <Tooltip placement="top" inactive={delivery !== "steer"} value={i18n.t("ui.promptInput.steerHint")}>
-          <Button
-            data-action="composer-alternate-delivery"
-            type="button"
-            variant="ghost-faint"
-            size="small"
-            class="me-3 gap-1.5 px-1.5 ![font-weight:530]"
-            onClick={() => props.controller.submit({ alternate: true })}
-          >
-            {delivery === "steer" ? i18n.t("ui.promptInput.steer") : i18n.t("ui.promptInput.queue")}
-            <span class="hidden sm:block">
-              <Keybind keys={props.keybind} variant="neutral" />
-            </span>
-          </Button>
-        </Tooltip>
-      )}
-    </Show>
-  )
 }
 
 function ComposerEditorSubmitButton(props: {

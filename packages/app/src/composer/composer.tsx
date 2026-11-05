@@ -63,7 +63,6 @@ export function Composer(props: {
         modelControlsVisible={!props.model.model.loading || !!props.model.model.preview}
         attachKeybind={command.keybindParts("file.attach")}
         attachShortcut={command.keybind("file.attach")}
-        alternateKeybind={[formatKeybind("mod", language.t), "↵"]}
         exitShellKeybind={[formatKeybind("esc", language.t)]}
         suggestionBoundary={props.suggestionBoundary}
         modelControl={(variant) => (
@@ -115,6 +114,7 @@ function ComposerModelControl(props: {
   const [deferred, setDeferred] = createSignal<number>()
   const [store, setStore] = createStore({ open: false })
   const hasVariant = () => !!props.variant && props.variant.options().length > 1
+
   const variantLabel = () => {
     const control = props.variant
 
