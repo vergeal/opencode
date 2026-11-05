@@ -611,11 +611,10 @@
   }
 }
 
+/* A selected session keeps the sidebar's capsule shape and simply sits on a neutral grey surface, matching the
+   sidebar's own material in either colour scheme instead of adding a glass pane on top of it. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"] {
-  background: var(--sidebar-glass-fill);
-  -webkit-backdrop-filter: var(--v2-material-blur-regular);
-  backdrop-filter: var(--v2-material-blur-regular);
-  box-shadow: var(--sidebar-glass-edge), var(--sidebar-glass-shadow);
+  background-color: var(--v2-overlay-simple-overlay-pressed);
 }
 
 [data-slot="vertical-tabs-sidebar"]
@@ -624,14 +623,18 @@
   font-weight: 500;
 }
 
-/* The row's own transparent background would otherwise win over the option's hover utility, so
-   the hover surface is set here, and the selected row keeps its tint while hovered. */
+/* The row's own transparent background would otherwise win over the option's hover utility, so the hover surface is
+   set here, and the selected row holds its grey while hovered. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"]:hover {
-  background: var(--v2-overlay-simple-overlay-hover);
+  background-color: var(--v2-overlay-simple-overlay-hover);
 }
 
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"]:hover {
-  background: var(--sidebar-glass-fill);
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"]:is(:hover, :focus-visible)[data-state="active"] {
+  background-color: var(--v2-overlay-simple-overlay-pressed);
+}
+
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"]:focus-visible {
+  background-color: var(--v2-overlay-simple-overlay-hover);
 }
 
 /* The archive reads as a macOS panel: a compact title block over a hairline, then a padded list.

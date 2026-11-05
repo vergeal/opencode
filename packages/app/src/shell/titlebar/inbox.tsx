@@ -547,7 +547,7 @@ function InboxRow(props: InboxRowProps) {
         data-slot="sidebar-inbox-item"
         data-status={status()}
         data-state={props.selected ? "active" : undefined}
-        class="group grid h-[30px] w-full shrink-0 grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 rounded-full ps-2 pe-2 text-start hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover data-[state=active]:bg-v2-background-bg-layer-03"
+        class="group grid h-[30px] w-full shrink-0 grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 rounded-full ps-2 pe-2 text-start focus-visible:outline-none"
         classList={{
           "transition-opacity hover:opacity-100 focus-visible:opacity-100": !props.selected,
           "opacity-70": status() === "working" && !props.selected,
