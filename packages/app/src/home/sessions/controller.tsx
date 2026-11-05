@@ -93,6 +93,7 @@ export function createHomeSessionsController(home: HomeController) {
     const list = allRecords()
     const pinned = new Set(pinnedIDs())
     // Pinned rows survive the limit and keep the order they were pinned in.
+
     const promoted = pinnedIDs().flatMap((id) => {
       const record = list.find((item) => item.session.id === id)
 
@@ -101,6 +102,7 @@ export function createHomeSessionsController(home: HomeController) {
 
     return [...promoted, ...list.filter((record) => !pinned.has(record.session.id))].slice(0, HOME_SESSION_LIMIT)
   })
+
   const groups = createMemo(() => groupSessions(records(), pinnedIDs(), language))
   const prefetched = new Set<string>()
 
@@ -296,7 +298,7 @@ export function createHomeSessionsController(home: HomeController) {
           />
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" autofocus onClick={() => dialog.close()}>
+          <Button variant="neutral" autofocus onClick={() => dialog.close()}>
             {language.t("common.cancel")}
           </Button>
           <Button variant="danger" onClick={confirm}>
@@ -427,6 +429,7 @@ function animateHomeRowsUp(tops: Map<string | undefined, number>) {
   document.querySelectorAll<HTMLElement>(HOME_ROW_SELECTOR).forEach((row) => {
     const before = tops.get(row.dataset.sessionId)
     const delta = before === undefined ? 0 : before - row.getBoundingClientRect().top
+
     if (delta === 0) return
     row.animate([{ transform: `translateY(${delta}px)` }, { transform: "translateY(0)" }], {
       duration: 180,
@@ -455,8 +458,10 @@ function groupSessions(
   const now = new Date()
   const today = localDay(now)
   const yesterday = localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1))
+
   const day = (record: HomeSessionRecord) =>
     localDay(new Date(record.session.time.updated ?? record.session.time.created))
+
   const todaySessions = remaining.filter((record) => day(record) === today)
   const yesterdaySessions = remaining.filter((record) => day(record) === yesterday)
   const olderSessions = remaining.filter((record) => day(record) !== today && day(record) !== yesterday)

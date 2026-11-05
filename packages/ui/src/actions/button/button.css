@@ -339,7 +339,12 @@
   /* Dialog actions follow macOS controls rather than glass: the secondary key is a flat neutral capsule, the
      primary key takes the system accent, and a destructive confirm keeps only its red label. The shared capsule
      radius already supplies the platform shape, so no gradient, highlight or drop shadow is needed. */
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+  :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"] {
     background-color: transparent;
     background-image: none;
@@ -355,29 +360,54 @@
     line-height: 18px;
   }
 
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+  :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"][data-variant="neutral"] {
     background-color: color-mix(in srgb, var(--v2-text-text-base) 12%, transparent);
   }
 
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+  :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]) {
     background-color: var(--v2-grey-1000);
     color: var(--v2-grey-50);
   }
 
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+  :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"][data-variant="danger"] {
     color: var(--v2-state-fg-danger);
   }
 
   @media (hover: hover) {
-    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    :is(
+        [data-slot="dialog-footer"],
+        [data-slot="permission-footer-actions"],
+        [data-slot="question-footer"],
+        [data-slot="websearch-actions"]
+      )
       [data-component="button-v2"][data-variant="neutral"]:is(:hover, [data-state="hover"]):not(:disabled) {
       background-image: linear-gradient(var(--v2-overlay-simple-overlay-hover), var(--v2-overlay-simple-overlay-hover));
     }
 
-    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    :is(
+        [data-slot="dialog-footer"],
+        [data-slot="permission-footer-actions"],
+        [data-slot="question-footer"],
+        [data-slot="websearch-actions"]
+      )
       [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
         :hover,
         [data-state="hover"]
@@ -386,18 +416,33 @@
       background-image: none;
     }
 
-    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    :is(
+        [data-slot="dialog-footer"],
+        [data-slot="permission-footer-actions"],
+        [data-slot="question-footer"],
+        [data-slot="websearch-actions"]
+      )
       [data-component="button-v2"][data-variant="danger"]:is(:hover, [data-state="hover"]):not(:disabled) {
       background-color: color-mix(in srgb, var(--v2-state-fg-danger) 14%, transparent);
     }
   }
 
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+  :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"]:is(:active, [data-state="pressed"]):not(:disabled) {
     background-image: none;
   }
 
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+  :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"][data-variant="neutral"]:is(:active, [data-state="pressed"]):not(:disabled) {
     background-image: linear-gradient(
       var(--v2-overlay-simple-overlay-pressed),
@@ -405,7 +450,12 @@
     );
   }
 
-  :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+  :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
       :active,
       [data-state="pressed"]
@@ -416,7 +466,12 @@
   /* A black key on a dark panel loses its edges, so the pair flips: paper fill, ink label. The relationship stays
      the same - the confirm key is the only surface at full contrast. */
   [data-color-scheme="dark"]
-    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]) {
     background-color: var(--v2-grey-50);
     color: var(--v2-grey-1000);
@@ -424,7 +479,12 @@
 
   @media (hover: hover) {
     [data-color-scheme="dark"]
-      :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+      :is(
+        [data-slot="dialog-footer"],
+        [data-slot="permission-footer-actions"],
+        [data-slot="question-footer"],
+        [data-slot="websearch-actions"]
+      )
       [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
         :hover,
         [data-state="hover"]
@@ -434,7 +494,12 @@
   }
 
   [data-color-scheme="dark"]
-    :is([data-slot="dialog-footer"], [data-slot="permission-footer-actions"], [data-slot="websearch-actions"])
+    :is(
+      [data-slot="dialog-footer"],
+      [data-slot="permission-footer-actions"],
+      [data-slot="question-footer"],
+      [data-slot="websearch-actions"]
+    )
     [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
       :active,
       [data-state="pressed"]

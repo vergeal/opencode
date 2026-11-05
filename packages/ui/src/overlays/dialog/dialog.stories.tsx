@@ -162,7 +162,7 @@ export const WithFooter = {
           {dialogHeader("Save changes", "Your changes will be lost if you don't save them.")}
           <DialogFooter>
             <Button variant="neutral">Cancel</Button>
-            <Button variant="contrast">Save</Button>
+            <Button variant="submit">Save</Button>
           </DialogFooter>
         </Dialog>
       )}
@@ -178,10 +178,10 @@ export const WithFooterThreeButtons = {
           {dialogHeader("Unsaved changes", "You have unsaved changes. What would you like to do?")}
           <DialogFooter>
             <span style={{ "margin-right": "auto" }}>
-              <Button variant="ghost">Remind me later</Button>
+              <Button variant="neutral">Remind me later</Button>
             </span>
             <Button variant="neutral">Cancel</Button>
-            <Button variant="contrast">Save</Button>
+            <Button variant="submit">Save</Button>
           </DialogFooter>
         </Dialog>
       )}

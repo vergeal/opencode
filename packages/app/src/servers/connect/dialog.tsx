@@ -235,7 +235,7 @@ export const DialogServer: Component<{
           <Button variant="neutral" disabled={view().disabled} onClick={() => dialog.close()}>
             {language.t("common.cancel")}
           </Button>
-          <Button variant="contrast" disabled={view().disabled} onClick={submit}>
+          <Button variant="submit" disabled={view().disabled} onClick={submit}>
             {submitLabel()}
           </Button>
         </DialogFooter>

@@ -127,7 +127,7 @@ export function DialogAddWslServer(props: DialogWslServerProps) {
                     {language.t("common.cancel")}
                   </Button>
                   <Button
-                    variant={model().installingCatalogDistro ? "loading" : "contrast"}
+                    variant={model().installingCatalogDistro ? "loading" : "submit"}
                     disabled={!model().installingCatalogDistro && (model().busy || !model().catalogTarget)}
                     style={{ width: "99px" }}
                     onClick={controller.installCatalogDistro}

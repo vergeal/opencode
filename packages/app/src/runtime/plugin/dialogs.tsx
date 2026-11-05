@@ -23,11 +23,11 @@ export function PluginConfirmDialog(props: { options: ConfirmOptions; done: (con
         <DialogTitleGroup title={props.options.title} description={props.options.description} />
       </DialogHeader>
       <DialogFooter>
-        <Button variant="ghost" autofocus={!!props.options.danger} onClick={() => props.done(false)}>
+        <Button variant="neutral" autofocus={!!props.options.danger} onClick={() => props.done(false)}>
           {props.options.cancel ?? language.t("common.cancel")}
         </Button>
         <Button
-          variant={props.options.danger ? "danger" : "contrast"}
+          variant={props.options.danger ? "danger" : "submit"}
           autofocus={!props.options.danger}
           onClick={() => props.done(true)}
         >
@@ -47,7 +47,7 @@ export function PluginAlertDialog(props: { options: AlertOptions; done: () => vo
         <DialogTitleGroup title={props.options.title} description={props.options.description} />
       </DialogHeader>
       <DialogFooter>
-        <Button variant="contrast" autofocus onClick={() => props.done()}>
+        <Button variant="submit" autofocus onClick={() => props.done()}>
           {props.options.ok ?? language.t("common.ok")}
         </Button>
       </DialogFooter>
@@ -94,10 +94,10 @@ export function PluginPromptDialog(props: { options: PromptOptions; done: (value
           />
         </DialogBody>
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={() => props.done(undefined)}>
+          <Button type="button" variant="neutral" onClick={() => props.done(undefined)}>
             {language.t("common.cancel")}
           </Button>
-          <Button type="submit" variant="contrast" disabled={!store.value}>
+          <Button type="submit" variant="submit" disabled={!store.value}>
             {props.options.submit ?? language.t("common.submit")}
           </Button>
         </DialogFooter>

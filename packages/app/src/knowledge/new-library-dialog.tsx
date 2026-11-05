@@ -15,6 +15,7 @@ export function NewLibraryDialog(props: { onCreate: (name: string, description: 
 
   const create = () => {
     const value = name().trim()
+
     if (!value) return
     // Close first, so the caller can reveal the new library without stacking dialogs.
     dialog.close()
@@ -53,10 +54,10 @@ export function NewLibraryDialog(props: { onCreate: (name: string, description: 
         </p>
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" onClick={() => dialog.close()}>
+        <Button variant="neutral" onClick={() => dialog.close()}>
           {language.t("common.cancel")}
         </Button>
-        <Button variant="contrast" disabled={!name().trim()} onClick={create}>
+        <Button variant="submit" disabled={!name().trim()} onClick={create}>
           {language.t("knowledge.create")}
         </Button>
       </DialogFooter>

@@ -693,7 +693,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
         }
         footer={
           <>
-            <Button variant="ghost" size="large" disabled={sending()} onClick={reject} aria-keyshortcuts="Escape">
+            <Button variant="neutral" size="large" disabled={sending()} onClick={reject} aria-keyshortcuts="Escape">
               {language.t("ui.common.dismiss")}
             </Button>
             <div data-slot="question-footer-actions">
@@ -728,7 +728,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
                 }
               >
                 <Button
-                  variant={last() ? "contrast" : "neutral"}
+                  variant={last() ? "submit" : "neutral"}
                   size="large"
                   disabled={sending()}
                   onClick={next}

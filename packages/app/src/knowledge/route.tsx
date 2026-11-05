@@ -69,6 +69,8 @@ export function KnowledgeScreen() {
   const global = useGlobal()
   const dialog = useDialog()
   const libraries = useKnowledgeLibraries()
+
+  // SAFETY: an empty array literal has no element to infer from, and every write below stores a knowledge-file path.
   const [state, setState] = createStore({
     selected: "",
     query: "",
@@ -102,6 +104,7 @@ export function KnowledgeScreen() {
       const slash = file.path.lastIndexOf("/")
       const directory = slash === -1 ? "" : file.path.slice(0, slash)
       const files = groups.get(directory)
+
       if (files) files.push(file)
       else groups.set(directory, [file])
     }
@@ -156,6 +159,7 @@ export function KnowledgeScreen() {
       .knowledgeImportStatus?.(library.id)
       .then((result) => {
         if (!result) return
+
         if (!result.progress || result.progress.stage === "done") {
           knowledgeImports.end(library.id)
 
@@ -174,7 +178,9 @@ export function KnowledgeScreen() {
   /** The chip counts what the detail list can show, so the number and the list always agree. */
   const skipCount = (library: KnowledgeLibrary, group: DiscardGroup) => {
     if (library.discards?.length) return discardsOf(library, group).length
+
     if (group === "duplicate") return library.stats?.duplicates ?? 0
+
     if (group === "similar") return library.stats?.similar ?? 0
 
     return library.stats?.skipped ?? 0
@@ -184,6 +190,7 @@ export function KnowledgeScreen() {
 
   const openDiscards = (library: KnowledgeLibrary, group: DiscardGroup) => {
     const discards = library.discards ?? []
+
     if (!discards.some((discard) => discardGroup(discard.reason) === group)) return
 
     void dialog.show(() => <DiscardsDialog discards={discards} initial={group} />)
@@ -192,6 +199,7 @@ export function KnowledgeScreen() {
   /** Library content lives in desktop storage; dropping it must never touch the imported folder. */
   const forgetFiles = (library: KnowledgeLibrary, paths: ReadonlyArray<string>) => {
     const remove = platform.deleteKnowledgeFiles
+
     if (platform.platform !== "desktop" || !remove) return
     void remove(library.id, [...paths]).catch(() => undefined)
   }
@@ -206,6 +214,7 @@ export function KnowledgeScreen() {
         onRemove={() => {
           forgetFiles(library, [file.path])
           libraries.removeFiles(library.id, [file.path])
+
           if (state.fileName === file.path) setState({ fileName: "", fileText: "" })
         }}
       />
@@ -257,6 +266,7 @@ export function KnowledgeScreen() {
   /** One action for everything the library marked, instead of deleting them one by one. */
   const confirmRemoveFlagged = (library: KnowledgeLibrary) => {
     const paths = flaggedPaths(library)
+
     if (!paths.length) return
 
     void dialog.show(() => (
@@ -276,8 +286,10 @@ export function KnowledgeScreen() {
   /** One entry point: the picker accepts folders and files together, several at a time. */
   const runImport = async () => {
     const library = selected()
+
     if (!library || importing()) return
     const paths = await pickKnowledgeSources(platform)
+
     if (!paths.length) return
 
     setState("importError", "")
@@ -285,6 +297,7 @@ export function KnowledgeScreen() {
 
     try {
       const imported = await importKnowledge({ platform, libraryID: library.id, paths })
+
       if (!imported) return
 
       libraries.addImported(library.id, {
@@ -297,6 +310,7 @@ export function KnowledgeScreen() {
       // The main process owns the stored files, so reading them back also recovers an earlier run
       // whose result never reached this window.
       const stored = await platform.listKnowledgeFiles?.({ libraryID: library.id }).catch(() => undefined)
+
       if (stored) libraries.setFiles(library.id, stored.files)
 
       setState({ fileName: "", fileText: "", selectedFiles: [] })
@@ -309,6 +323,7 @@ export function KnowledgeScreen() {
         // One small call covers both: the description of the library and the documents that do not
         // fit the description the user wrote when creating it.
         const api = connection ? global.serverCtx(ServerConnection.key(connection))?.sdk.api : undefined
+
         const review = api
           ? await reviewLibrary({
               api,
@@ -317,12 +332,14 @@ export function KnowledgeScreen() {
               excerpts: imported.excerpts,
             })
           : undefined
+
         const total = stored?.files.length ?? library.files.length + imported.files.length
 
         libraries.setSummary(
           library.id,
           review?.summary ?? language.plural("knowledge.summary.fallback", total, { count: total }),
         )
+
         if (review?.irrelevant.length) libraries.setFlags(library.id, review.irrelevant)
       }
     } catch (error) {
@@ -353,6 +370,7 @@ export function KnowledgeScreen() {
 
   const removeSelectedFiles = (library: KnowledgeLibrary) => {
     const paths = [...state.selectedFiles]
+
     if (!paths.length) return
 
     forgetFiles(library, paths)
@@ -366,6 +384,7 @@ export function KnowledgeScreen() {
 
   const confirmRemoveFiles = (library: KnowledgeLibrary) => {
     const count = state.selectedFiles.length
+
     if (!count) return
 
     void dialog.show(() => <RemoveFilesDialog count={count} onConfirm={() => removeSelectedFiles(library)} />)
@@ -865,8 +884,10 @@ function ImportPanel(props: { job: KnowledgeImportJob }) {
   const language = useLanguage()
   const stage = () => (props.job.stage === "done" ? "scan" : props.job.stage)
   const stageLabel = (id: ImportStage) => language.t(`knowledge.import.stage.${id}`)
+
   const share = () => {
     const total = props.job.total
+
     if (!total) return undefined
 
     return Math.min(1, props.job.processed / total)
@@ -957,7 +978,9 @@ function ImportPanel(props: { job: KnowledgeImportJob }) {
 /** Only ignored kinds carry a reason label; duplicates explain the document they matched instead. */
 function ignoredReasonKey(reason: KnowledgeDiscardReason) {
   if (reason === "unsupported") return "knowledge.discards.reason.unsupported" as const
+
   if (reason === "noise") return "knowledge.discards.reason.noise" as const
+
   if (reason === "tooLarge") return "knowledge.discards.reason.tooLarge" as const
 
   return "knowledge.discards.reason.empty" as const
@@ -965,6 +988,7 @@ function ignoredReasonKey(reason: KnowledgeDiscardReason) {
 
 function discardCountKey(group: DiscardGroup) {
   if (group === "duplicate") return "knowledge.import.duplicates" as const
+
   if (group === "similar") return "knowledge.import.similar" as const
 
   return "knowledge.import.ignored" as const
@@ -1065,7 +1089,7 @@ function DiscardsDialog(props: { discards: ReadonlyArray<KnowledgeDiscard>; init
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" autofocus onClick={() => dialog.close()}>
+        <Button variant="neutral" autofocus onClick={() => dialog.close()}>
           {language.t("common.close")}
         </Button>
       </DialogFooter>
@@ -1091,7 +1115,7 @@ function RemoveFilesDialog(props: { count: number; flagged?: boolean; onConfirm:
         />
       </DialogHeader>
       <DialogFooter>
-        <Button variant="ghost" autofocus onClick={() => dialog.close()}>
+        <Button variant="neutral" autofocus onClick={() => dialog.close()}>
           {language.t("common.cancel")}
         </Button>
         <Button
@@ -1131,7 +1155,7 @@ function FlaggedFileDialog(props: { name: string; reason: string; onKeep: () => 
       </DialogBody>
       <DialogFooter>
         <Button
-          variant="ghost"
+          variant="neutral"
           autofocus
           onClick={() => {
             dialog.close()

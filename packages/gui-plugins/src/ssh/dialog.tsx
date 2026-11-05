@@ -243,7 +243,7 @@ export function DialogSsh(props: {
           when={prompt()}
           fallback={
             <Button
-              variant="contrast"
+              variant="submit"
               disabled={busy() || !state.target.trim()}
               onClick={() => start(item()?.stage === "incompatible")}
             >
@@ -258,7 +258,7 @@ export function DialogSsh(props: {
           }
         >
           {(prompt) => (
-            <Button variant="contrast" disabled={waiting() || (!prompt().confirm && !response())} onClick={respond}>
+            <Button variant="submit" disabled={waiting() || (!prompt().confirm && !response())} onClick={respond}>
               {waiting() ? plugin.t("stage.connecting") : plugin.t(prompt().confirm ? "trust" : "continue")}
             </Button>
           )}

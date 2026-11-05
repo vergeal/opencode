@@ -98,11 +98,11 @@ export function DialogBetaNotes(props: {
       </DialogBody>
       <DialogFooter>
         <Show when={props.notes.more}>
-          <Button type="button" variant="ghost" class="-ms-2.5 me-auto" onClick={() => props.viewAll()}>
+          <Button type="button" variant="neutral" class="-ms-2.5 me-auto" onClick={() => props.viewAll()}>
             {ctx.t("beta.viewAll")}
           </Button>
         </Show>
-        <Button type="button" variant="contrast" autofocus onClick={() => props.dialog.close()}>
+        <Button type="button" variant="submit" autofocus onClick={() => props.dialog.close()}>
           {ctx.t("beta.done")}
         </Button>
       </DialogFooter>

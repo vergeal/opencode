@@ -148,7 +148,7 @@ export function SessionElicitationDock(props: {
         }
         footer={
           <>
-            <Button variant="ghost" size="large" disabled={sending()} onClick={() => cancel.mutate()}>
+            <Button variant="neutral" size="large" disabled={sending()} onClick={() => cancel.mutate()}>
               {language.t("ui.common.dismiss")}
             </Button>
             <div data-slot="question-footer-actions">

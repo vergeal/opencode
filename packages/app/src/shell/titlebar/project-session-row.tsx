@@ -112,7 +112,7 @@ export function ProjectSessionRow(props: {
           />
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" autofocus onClick={() => dialog.close()}>
+          <Button variant="neutral" autofocus onClick={() => dialog.close()}>
             {language.t("common.cancel")}
           </Button>
           <Button variant="danger" onClick={confirm}>
@@ -231,10 +231,10 @@ function RenameDialog(props: { title: string; onRename: (title: string) => Promi
           />
         </DialogBody>
         <DialogFooter>
-          <Button variant="ghost" disabled={state.saving} onClick={() => dialog.close()}>
+          <Button variant="neutral" disabled={state.saving} onClick={() => dialog.close()}>
             {language.t("common.cancel")}
           </Button>
-          <Button type="submit" variant="contrast" disabled={!state.title.trim() || state.saving}>
+          <Button type="submit" variant="submit" disabled={!state.title.trim() || state.saving}>
             {language.t("common.save")}
           </Button>
         </DialogFooter>

@@ -216,7 +216,7 @@ function SessionTabEntry(
           />
         </DialogHeader>
         <DialogFooter>
-          <Button variant="ghost" autofocus onClick={() => dialog.close()}>
+          <Button variant="neutral" autofocus onClick={() => dialog.close()}>
             {language.t("common.cancel")}
           </Button>
           <Button variant="danger" onClick={confirm}>
@@ -435,6 +435,7 @@ export function TitlebarTabStrip(props: {
   const [visibility, setVisibility] = createStore<Record<string, boolean>>({})
   const [unread, setUnread] = createStore<Record<string, boolean>>({})
   const pins = usePinnedSessions()
+
   const visibleTabs = createMemo(() => {
     const items = props.tabs.filter((tab) => tab.type === "draft" || visibility[tabKey(tab)])
 
@@ -446,6 +447,7 @@ export function TitlebarTabStrip(props: {
 
     return [...items.filter(isPinned), ...items.filter((tab) => !isPinned(tab))]
   })
+
   const visibleTabIds = () => visibleTabs().map(tabKey)
 
   // Tells the closed sidebar's toggle whether any row here shows its unread dot, which the current tab never does.

@@ -1223,7 +1223,7 @@ export const SessionQuestionDockExperimental: Component<{ request: FormInfo; onS
         }
         footer={
           <>
-            <Button variant="ghost" size="large" disabled={sending()} onClick={reject} aria-keyshortcuts="Escape">
+            <Button variant="neutral" size="large" disabled={sending()} onClick={reject} aria-keyshortcuts="Escape">
               {language.t("ui.common.dismiss")}
             </Button>
             <div data-slot="question-footer-actions">

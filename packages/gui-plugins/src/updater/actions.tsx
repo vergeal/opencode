@@ -98,7 +98,7 @@ function DialogStableDownload(props: {
         <Button type="button" variant="neutral" onClick={() => props.dialog.close()}>
           {ctx.t("common.cancel")}
         </Button>
-        <Button type="button" variant="contrast" autofocus onClick={download}>
+        <Button type="button" variant="submit" autofocus onClick={download}>
           {ctx.t("action.download")}
         </Button>
       </DialogFooter>

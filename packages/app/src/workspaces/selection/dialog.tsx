@@ -116,10 +116,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
     { initialValue: undefined },
   )
 
-  const home = createMemo(
-    () =>
-      sync.data.path.home || inferHomeDirectory(props.location?.directory ?? ""),
-  )
+  const home = createMemo(() => sync.data.path.home || inferHomeDirectory(props.location?.directory ?? ""))
 
   const subtitle = createMemo(() => (servers.local(props.server) ? undefined : serverName(props.server)))
 
@@ -131,11 +128,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
 
   const start = createMemo(
     () =>
-      props.start ||
-      home() ||
-      props.location?.directory ||
-      sync.data.path.directory ||
-      fallbackPath.latest?.directory,
+      props.start || home() || props.location?.directory || sync.data.path.directory || fallbackPath.latest?.directory,
   )
 
   const recentProjects = createMemo(() => {
@@ -827,7 +820,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
         <Button variant="neutral" onClick={() => dialog.close()}>
           {language.t("common.cancel")}
         </Button>
-        <Button variant="contrast" disabled={!resolvedResult()} onClick={resolve}>
+        <Button variant="submit" disabled={!resolvedResult()} onClick={resolve}>
           {action[policy.action]}
         </Button>
       </DialogFooter>

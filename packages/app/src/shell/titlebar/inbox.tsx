@@ -44,9 +44,13 @@ import { createSessionInbox, inboxArchived, inboxBusy, type InboxEntry, type Inb
 
 // Drop containers: a session reorders inside its own container and changes sections by landing in another one.
 const PINNED = "pinned"
+
 const NEEDS = "needs"
+
 const WORKING = "working"
+
 const RECENT = "recent"
+
 const projectContainer = (key: string) => `project:${key}`
 
 const InboxNavigation = createContext<Accessor<string | undefined>>()
@@ -88,17 +92,21 @@ export function SidebarInbox() {
   const sections = createMemo(() => {
     const list = inbox.entries()
     const pinnedIDs = new Set(pins.ids())
+
     const pinned = pins.ids().flatMap((id) => {
       const entry = list.find((item) => item.session.id === id)
 
       return entry ? [entry] : []
     })
+
     const rest = list.filter((entry) => !pinnedIDs.has(entry.session.id))
     // Everything that is not waiting on the person and not archived belongs in the Recent list.
+
     const settled = rest
       .filter((entry) => !inboxBusy(entry.status) && !inboxArchived(entry))
       .toSorted((a, b) => (b.session.time.idle ?? 0) - (a.session.time.idle ?? 0))
     // The most recently finished session comes first.
+
     const finished = rest
       .filter((entry) => {
         const since = state.since
@@ -191,7 +199,9 @@ export function SidebarInbox() {
     const group = groupedInbox().find((item) => projectContainer(item.key) === to)
 
     if (!group) return
+
     if (inboxArchived(entry)) await inbox.unarchive(entry)
+
     if (pathKey(group.directory) === pathKey(entry.session.location.directory)) return
 
     await inbox.relocate(entry, { directory: group.directory, projectID: group.project?.id })
@@ -207,6 +217,7 @@ export function SidebarInbox() {
     if (!entry) return
     const from = String(source.initialGroup ?? "")
     const target = event.operation.target
+    // SAFETY: only `InboxRowSlot`'s sortable publishes `data`, and it always publishes `{ container: string }`.
     const to = (target?.data as { container?: string } | undefined)?.container
 
     if (!to) return
@@ -244,13 +255,7 @@ export function SidebarInbox() {
   createEffect(() => {
     const visible = sections()
 
-    inbox.loadBranches([
-      ...visible.pinned,
-      ...visible.needs,
-      ...visible.recent,
-      ...visible.inbox,
-      ...visible.working,
-    ])
+    inbox.loadBranches([...visible.pinned, ...visible.needs, ...visible.recent, ...visible.inbox, ...visible.working])
   })
 
   // The inbox starts empty and fills as sessions finish runs.
@@ -539,8 +544,11 @@ function InboxRow(props: InboxRowProps) {
     ]
       .filter(Boolean)
       .join("\n")
+
   const status = () => props.entry.status
   const unread = () => status() !== "ready" && status() !== "working"
+  // SAFETY: this label renders only inside `<Show when={status() !== "ready"}>`, so "ready" never reaches it.
+  const statusLabel = () => language.t(`sidebar.inbox.status.${status() as Exclude<InboxStatus, "ready">}`)
 
   const compact = (seconds: number) => {
     if (seconds < 3600) return language.plural("sidebar.inbox.elapsed.minutes", Math.floor(seconds / 60))
@@ -570,6 +578,7 @@ function InboxRow(props: InboxRowProps) {
     const show = platform.showContextMenu
 
     if (!show) return
+
     const chosen = await show(
       [
         { id: "pin", label: props.pinned ? language.t("common.unpin") : language.t("common.pin") },
@@ -644,10 +653,7 @@ function InboxRow(props: InboxRowProps) {
                 "text-v2-state-fg-success": status() === "done",
               }}
             >
-              <Show
-                when={status() === "working"}
-                fallback={language.t(`sidebar.inbox.status.${status() as Exclude<InboxStatus, "ready">}`)}
-              >
+              <Show when={status() === "working"} fallback={statusLabel()}>
                 {/* Announce only the status: the ticking duration would be re-read every second. */}
                 <span class="sr-only">{language.t("sidebar.inbox.status.working")}</span>
                 {/* The label is short, so the shared sweep covers all of it at once. A narrower, faster
@@ -696,6 +702,7 @@ export function ArchivedSessionsDialog() {
   const pins = usePinnedSessions()
   // Newest archive first; older sessions only have a settled timestamp.
   const archivedAt = (entry: InboxEntry) => entry.session.time.archived ?? entry.session.time.idle ?? 0
+
   const archived = createMemo(() =>
     inbox
       .entries()
@@ -783,7 +790,7 @@ function DeleteDialog(props: { entry: InboxEntry; onConfirm: () => Promise<void>
         />
       </DialogHeader>
       <DialogFooter>
-        <Button variant="ghost" autofocus onClick={() => dialog.close()}>
+        <Button variant="neutral" autofocus onClick={() => dialog.close()}>
           {language.t("common.cancel")}
         </Button>
         <Button variant="danger" onClick={confirm}>
