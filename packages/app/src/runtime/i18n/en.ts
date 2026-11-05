@@ -1154,6 +1154,7 @@ export const dict = {
   "session.delete.failed.title": "Failed to delete session",
   "session.settings.title": "Session settings",
   "session.settings.menu": "Session settings",
+  "session.settings.identity.untitled": "Untitled session",
   "session.settings.prompt.title": "Session instructions",
   "session.settings.prompt.description":
     "Added to the system prompt of this session only, so it stays in effect however long the conversation gets. Up to {{limit}} characters.",

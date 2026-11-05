@@ -1,11 +1,11 @@
-/* Session settings is a prompt editor, not a form: one labelled field fills the sheet, the character budget sits on
-   the label's line, and the dialog's glass actions close it. The copy is deliberately smaller than the dialog
-   defaults so the editor, not the prose, carries the weight.
+/* Session settings is an inspector sheet, not a blank form: the sheet title names the surface, the identity block
+   says which conversation is being edited, and the prompt field is the one large surface between that context and
+   the actions. Everything else is a caption set around the field on one 8px rhythm with 24px sheet gutters.
 
    The dialog styles are unlayered and nested several levels deep, so these overrides repeat the container scope and
    win on specificity instead of depending on stylesheet order. */
 [data-component="dialog-v2"] [data-slot="dialog-container"].session-settings-dialog {
-  width: 520px;
+  width: 560px;
   max-width: calc(100vw - 32px);
 }
 
@@ -13,7 +13,7 @@
   [data-slot="dialog-container"].session-settings-dialog
   [data-slot="dialog-content"]
   [data-slot="dialog-header"] {
-  padding: 20px 20px 14px;
+  padding: 24px 24px 16px;
 }
 
 [data-component="dialog-v2"]
@@ -22,18 +22,8 @@
   [data-slot="dialog-header"]
   [data-slot="dialog-title"] {
   font-size: 15px;
-  line-height: 20px;
   font-weight: 600;
-}
-
-[data-component="dialog-v2"]
-  [data-slot="dialog-container"].session-settings-dialog
-  [data-slot="dialog-content"]
-  [data-slot="dialog-header"]
-  [data-slot="dialog-description"] {
-  font-size: 12px;
-  line-height: 17px;
-  letter-spacing: 0;
+  line-height: 20px;
 }
 
 [data-component="dialog-v2"]
@@ -42,18 +32,80 @@
   [data-slot="dialog-body"] {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 20px;
+  gap: 24px;
+  padding: 0 24px;
 }
 
 [data-component="dialog-v2"]
   [data-slot="dialog-container"].session-settings-dialog
   [data-slot="dialog-content"]
   [data-slot="dialog-footer"] {
-  padding: 16px 20px 20px;
+  padding: 16px 24px 24px;
 }
 
-.session-settings-body [data-slot="session-settings-meta"] {
+/* Two quiet lines answer "which session": a real title in reading colour, then the folder and model as captions.
+   The block sits flush with the field below it instead of nested in a card. */
+.session-settings-body [data-slot="session-settings-identity"] {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.session-settings-body [data-slot="session-settings-identity-title"] {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-base);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-settings-body [data-slot="session-settings-identity-meta"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
+}
+
+.session-settings-body
+  [data-slot="session-settings-identity-meta"]
+  > :is([data-slot="session-settings-identity-project"], [data-slot="session-settings-identity-model"]) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Paths read as paths. */
+.session-settings-body [data-slot="session-settings-identity-project"] {
+  font-family: var(--v2-font-family-code);
+}
+
+.session-settings-body [data-slot="session-settings-identity-separator"] {
+  flex: none;
+  width: 2px;
+  height: 2px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+/* The field block: label and budget share a line, then the editor, then one caption slot. */
+.session-settings-body [data-slot="session-settings-field"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.session-settings-body [data-slot="session-settings-field-meta"] {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -61,43 +113,61 @@
 }
 
 .session-settings-body [data-slot="session-settings-label"] {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 16px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);
 }
 
 .session-settings-body [data-slot="session-settings-count"] {
-  font-size: 11px;
-  line-height: 14px;
+  flex: none;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
-  color: var(--v2-text-text-faint);
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
 }
 
 .session-settings-body [data-slot="session-settings-count"][data-over] {
   color: var(--v2-state-fg-danger);
 }
 
-/* The field is the sheet's one surface: a rounded page that holds the prompt, with the focus ring as the only change
-   on focus. */
+/* The editor is the sheet's one surface: a quiet page with a hairline at rest and the accent ring on focus. */
 .session-settings-body [data-component="textarea-v2"] {
   width: 100%;
-  min-height: 176px;
+  height: 200px;
+  min-height: 0;
   padding: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--v2-background-bg-layer-02);
   box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
 }
 
+/* Hold the surface still on hover and focus; only the ring answers. */
+.session-settings-body [data-component="textarea-v2"]:is(:hover, :focus-within):not([data-disabled], [data-invalid]) {
+  background: var(--v2-background-bg-layer-02);
+  box-shadow: inset 0 0 0 0.5px var(--v2-border-border-base);
+}
+
+.session-settings-body [data-component="textarea-v2"]:focus-within:not([data-disabled], [data-invalid]) {
+  outline-color: var(--v2-border-border-focus);
+}
+
 .session-settings-body [data-component="textarea-v2"] [data-slot="textarea-v2-textarea"] {
   flex: 1;
-  padding: 10px 12px;
-  font-size: 13px;
-  line-height: 20px;
+  padding: 12px 16px;
+  font-size: 15px;
+  line-height: var(--line-height-base);
+  letter-spacing: 0;
   resize: none;
 }
 
-/* Over budget, only the count, the ring and the hint turn red: the prompt keeps its reading colours. */
+/* Over budget, the count, the ring, the caption and the save button agree; the prompt keeps its reading colours. */
+.session-settings-body [data-component="textarea-v2"][data-invalid]:not([data-disabled]) {
+  outline-color: var(--v2-state-fg-danger);
+  box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
+}
+
 .session-settings-body
   [data-component="textarea-v2"][data-invalid]:not([data-disabled])
   [data-slot="textarea-v2-textarea"] {
@@ -112,9 +182,17 @@
   opacity: 1;
 }
 
-.session-settings-body [data-slot="session-settings-error"] {
+/* One caption slot: the scope note at rest, the limit error when over. Reserving both lines keeps the sheet from
+   resizing as the state flips. */
+.session-settings-body [data-slot="session-settings-note"] {
+  min-height: calc(var(--line-height-compact) * 2);
   margin: 0;
-  font-size: 11px;
-  line-height: 15px;
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
+  text-wrap: pretty;
+}
+
+.session-settings-body [data-slot="session-settings-note"][data-over] {
   color: var(--v2-state-fg-danger);
 }

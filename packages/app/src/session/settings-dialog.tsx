@@ -4,12 +4,14 @@ import { Button } from "@opencode/ui/button"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { Textarea } from "@opencode/ui/textarea"
 import { Session } from "@opencode/schema/session"
+import { getFilename } from "@opencode/util/path"
 import { useQueryClient } from "@tanstack/solid-query"
 import { Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
+import { sessionTitle } from "@/session/title"
 import { errorMessage } from "@/shell/layout/helpers"
 import { showToast } from "@/shell/notifications/toast"
 import "./settings-dialog.css"
@@ -23,6 +25,14 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
   const [store, setStore] = createStore({ prompt: props.session.prompt ?? "", saving: false })
   const length = () => Array.from(store.prompt).length
   const tooLong = () => length() > Session.PromptLimit
+  const identity = () => sessionTitle(props.session.title) || language.t("session.settings.identity.untitled")
+  const project = () => getFilename(props.session.location.directory)
+
+  const model = () => {
+    const value = props.session.model
+
+    return value ? `${value.providerID}/${value.id}` : undefined
+  }
 
   const save = () => {
     if (store.saving || tooLong()) return
@@ -57,36 +67,67 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
   return (
     <Dialog fit containerClass="session-settings-dialog">
       <DialogHeader>
-        <DialogTitleGroup
-          title={language.t("session.settings.title")}
-          description={language.t("session.settings.prompt.description", { limit: Session.PromptLimit })}
-        />
+        <DialogTitleGroup title={language.t("session.settings.title")} />
       </DialogHeader>
       <DialogBody class="session-settings-body">
-        <div data-slot="session-settings-meta">
-          <label data-slot="session-settings-label" for="session-settings-prompt">
-            {language.t("session.settings.prompt.title")}
-          </label>
-          <span data-slot="session-settings-count" data-over={tooLong() ? "" : undefined}>
-            {language.t("session.settings.prompt.count", { count: length(), limit: Session.PromptLimit })}
-          </span>
+        <div data-slot="session-settings-identity">
+          <bdi data-slot="session-settings-identity-title" dir="auto">
+            {identity()}
+          </bdi>
+          <div data-slot="session-settings-identity-meta">
+            <Show when={project()}>
+              {(value) => (
+                <bdi data-slot="session-settings-identity-project" dir="auto" title={props.session.location.directory}>
+                  {value()}
+                </bdi>
+              )}
+            </Show>
+            <Show when={project() && model()}>
+              <span data-slot="session-settings-identity-separator" aria-hidden="true" />
+            </Show>
+            <Show when={model()}>
+              {(value) => (
+                <bdi data-slot="session-settings-identity-model" dir="ltr">
+                  {value()}
+                </bdi>
+              )}
+            </Show>
+          </div>
         </div>
-        <Textarea
-          id="session-settings-prompt"
-          data-action="session-settings-prompt"
-          rows={7}
-          autofocus
-          spellcheck={false}
-          invalid={tooLong()}
-          value={store.prompt}
-          placeholder={language.t("session.settings.prompt.placeholder")}
-          onInput={(event) => setStore("prompt", event.currentTarget.value)}
-        />
-        <Show when={tooLong()}>
-          <p data-slot="session-settings-error" role="alert">
-            {language.t("session.settings.prompt.tooLong.title")}
-          </p>
-        </Show>
+        <div data-slot="session-settings-field">
+          <div data-slot="session-settings-field-meta">
+            <label data-slot="session-settings-label" for="session-settings-prompt">
+              {language.t("session.settings.prompt.title")}
+            </label>
+            <span data-slot="session-settings-count" data-over={tooLong() ? "" : undefined}>
+              {language.t("session.settings.prompt.count", { count: length(), limit: Session.PromptLimit })}
+            </span>
+          </div>
+          <Textarea
+            id="session-settings-prompt"
+            data-action="session-settings-prompt"
+            aria-describedby="session-settings-prompt-note"
+            rows={7}
+            autofocus
+            spellcheck={false}
+            invalid={tooLong()}
+            value={store.prompt}
+            placeholder={language.t("session.settings.prompt.placeholder")}
+            onInput={(event) => setStore("prompt", event.currentTarget.value)}
+          />
+          <Show
+            when={tooLong()}
+            fallback={
+              <p data-slot="session-settings-note" id="session-settings-prompt-note">
+                {language.t("session.settings.prompt.description", { limit: Session.PromptLimit })}
+              </p>
+            }
+          >
+            <p data-slot="session-settings-note" data-over="" role="alert" id="session-settings-prompt-note">
+              {language.t("session.settings.prompt.tooLong.title")}
+            </p>
+          </Show>
+        </div>
       </DialogBody>
       <DialogFooter>
         <Button variant="neutral" onClick={() => dialog.close()}>

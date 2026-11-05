@@ -581,6 +581,7 @@ export const dict = {
   "session.delete.failed.title": "删除会话失败",
   "session.settings.title": "会话设置",
   "session.settings.menu": "会话设置",
+  "session.settings.identity.untitled": "未命名会话",
   "session.settings.prompt.title": "会话提示词",
   "session.settings.prompt.description": "只加入这个会话的系统提示词，因此无论对话多长都不会失效。最多 {{limit}} 字。",
   "session.settings.prompt.placeholder": "希望智能体在这个会话里如何工作？",
