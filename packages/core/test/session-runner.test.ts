@@ -475,6 +475,7 @@ const layer = Layer.unwrap(
       LayerNode.group([
         Database.node,
         Bus.node,
+        Project.node,
         Form.node,
         SessionProjector.node,
         SessionStore.node,
@@ -573,9 +574,11 @@ const setup = Effect.gen(function* () {
   const requests = yield* LLMRequests
   const admit = (text: string) => session.prompt({ sessionID, text, resume: false })
   const resume = session.resume(sessionID)
+  const project = yield* Project.Service
   return Object.assign(state, {
     db,
     bus,
+    project,
     sessionInbox,
     session,
     llm,
@@ -1492,7 +1495,9 @@ describe("SessionRunnerLLM", () => {
         .some((text) => text.includes("# Project instructions")),
     ).toBe(false)
 
-    // The fixture's directory resolves to its own Project ID, so set the prompt on every row it could read.
+    // The fixture directory is virtual, so Location resolves it without persisting a row. Persist it here to model a
+    // real Project, then set the prompt on every row the test could read.
+    yield* s.project.resolve(AbsolutePath.make("/project"), { persist: true })
     yield* s.db.update(ProjectTable).set({ prompt: "Prefer bun over npm." }).run().pipe(Effect.orDie)
 
     yield* s.runPrompt("Second")

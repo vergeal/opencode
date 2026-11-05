@@ -113,26 +113,21 @@ export const baseTranscript = (input: {
   readonly messages: ReadonlyArray<SessionMessage.Info>
 }) => {
   const providerMetadataKey = input.model.model.route.providerMetadataKey ?? input.model.model.provider
-  // Project and session instructions sit before the baseline: they are stable, while the baseline carries the date
-  // and environment that change and would otherwise invalidate the cached prefix behind them.
-  const instructions: ReadonlyArray<Instructions.Rendered> = [
-    ...(input.project ? [{ key: Instructions.Key.make("local/project"), text: projectBlock(input.project) }] : []),
-    ...(input.sessionPrompt
-      ? [{ key: Instructions.Key.make("local/session"), text: sessionBlock(input.sessionPrompt) }]
-      : []),
-    ...input.initial,
-  ]
   return {
     providerMetadataKey,
+    // The Project's and Session's instructions sit before the baseline: both are stable, while the baseline carries
+    // the date and environment that change and would otherwise invalidate the cached prefix behind them.
     system: [
       SystemPart.make(
         input.agent.system
           ? input.agent.system
           : SessionSystemPrompt.make(input.tools.definitions.map((tool) => tool.name)),
       ),
+      ...(input.project ? [SystemPart.make(projectBlock(input.project))] : []),
+      ...(input.sessionPrompt ? [SystemPart.make(sessionBlock(input.sessionPrompt))] : []),
       {
-        ...SystemPart.make(Instructions.join(instructions)),
-        metadata: { experimental: { instructions } },
+        ...SystemPart.make(Instructions.join(input.initial)),
+        metadata: { experimental: { instructions: input.initial } },
       },
     ].filter((part) => part.text.length > 0),
     messages: toLLMMessages(input.messages, input.model.ref, providerMetadataKey),
