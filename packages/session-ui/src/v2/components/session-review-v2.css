@@ -335,7 +335,7 @@
   height: 28px;
   min-width: 36px;
   min-height: 28px;
-  border-radius: 6px;
+  border-radius: 9999px;
   color: var(--v2-icon-icon-base);
 }
 

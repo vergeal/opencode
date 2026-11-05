@@ -196,7 +196,7 @@
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab],
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab-action] {
   height: 30px;
-  border-radius: 7px;
+  border-radius: 9999px;
   font-size: 14px;
   line-height: 20px;
 }
@@ -244,7 +244,7 @@
 [data-slot="vertical-tabs-sidebar"] [data-titlebar-tab] {
   --tab-hit-before: 0px;
   --tab-hit-after: 0px;
-  --tab-link-inset: 6px;
+  --tab-link-inset: 8px;
   overflow: visible;
   padding-inline: 0;
 }
@@ -552,7 +552,7 @@
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-nav"] [data-titlebar-tab-action] {
   gap: 8px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 9999px;
   padding-inline: 8px;
   font-size: 13px;
   line-height: var(--line-height-compact);
@@ -578,38 +578,37 @@
   text-transform: uppercase;
 }
 
-/* Sidebar sessions keep the product's two-line row: the avatar and title sit on the first line,
-   and the workspace, branch and server meta on the second, so the list stays readable at a glance. */
+/* Sidebar sessions are one macOS-style line: the project mark, the title, and the run's state at the end. The
+   project, path and server stay in the row's tooltip, so the list stays dense and the mark shares the navigation's
+   icon column: an 8px inset and an 8px gap put both on one line, clear of the 30px capsule's end cap. */
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
-  height: auto;
-  padding: 4px 8px;
-  border-radius: 6px;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  height: 30px;
+  padding-block: 0;
+  padding-inline: 8px;
+  border-radius: 9999px;
   background: transparent;
   /* The fill follows the cursor instead of appearing row by row. */
   transition: background-color 110ms ease;
 }
 
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child {
-  height: 16px;
-}
-
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:nth-child(2) {
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] [data-slot="inbox-row-title"] {
   font-size: 13px;
   line-height: 16px;
 }
 
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span:first-child > span:last-child {
+[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] [data-slot="inbox-row-status"] {
   font-size: 11px;
   line-height: 14px;
 }
 
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] > span + span {
-  height: 14px;
-  font-size: 11px;
-  line-height: 14px;
+/* Touch keeps a full-size target even though the pointer rows are compact. */
+@media (pointer: coarse) {
+  [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"] {
+    min-height: 44px;
+  }
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-inbox-item"][data-state="active"] {
@@ -621,8 +620,7 @@
 
 [data-slot="vertical-tabs-sidebar"]
   [data-slot="sidebar-inbox-item"][data-state="active"]
-  > span:first-child
-  > span:nth-child(2) {
+  [data-slot="inbox-row-title"] {
   font-weight: 500;
 }
 

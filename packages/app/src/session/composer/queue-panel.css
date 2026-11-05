@@ -8,3 +8,9 @@
   :is([data-component="button-v2"], [data-component="icon-button-v2"]):is(:focus-visible, [data-state="focus"]) {
   outline-offset: -2px;
 }
+
+/* The steer action reads as a compact pill chip: a 13px label with a capsule fill when hovered or pressed. */
+[data-component="session-queue-panel"] [data-component="button-v2"][data-action="session-queue-steer"] {
+  border-radius: 9999px;
+  font-size: 13px;
+}

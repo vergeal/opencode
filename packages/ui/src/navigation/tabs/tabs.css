@@ -1,7 +1,7 @@
 [data-component="tabs"] {
   --tabs-bar-height: 48px;
   --tabs-compact-pill-height: 24px;
-  --tabs-compact-pill-radius: 6px;
+  --tabs-compact-pill-radius: 9999px;
   --tabs-compact-pill-padding-x: 4px;
 
   width: 100%;

@@ -28,6 +28,26 @@
   --question-pick: 120ms;
   --question-settle: 300ms;
 
+  /* The submit action reads as liquid glass, like a selected sidebar row: a translucent surface with a bright
+     inner edge, so the dock's own material shows through instead of a solid contrast fill. */
+  --question-glass-fill: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--v2-grey-50) 96%, transparent) 0%,
+    color-mix(in srgb, var(--v2-grey-200) 82%, transparent) 100%
+  );
+  --question-glass-edge:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.95), inset 0 -1px 0 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --question-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.07);
+
+  [data-color-scheme="dark"] & {
+    --question-glass-fill: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
+    --question-glass-edge:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.26), inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
+      inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+    --question-glass-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
   max-block-size: var(--question-prompt-max-height, 100dvh);
   font-family: var(--v2-font-family-sans);
 
@@ -506,6 +526,29 @@
   [data-slot="question-advance"] {
     position: relative;
     display: flex;
+
+    /* Glass keeps the shape and weight of the shared submit control, and only swaps its surface. */
+    [data-variant="submit"] {
+      background-color: transparent;
+      background-image: var(--question-glass-fill);
+      -webkit-backdrop-filter: var(--v2-material-blur-regular);
+      backdrop-filter: var(--v2-material-blur-regular);
+      color: var(--v2-text-text-base);
+      text-shadow: none;
+      box-shadow: var(--question-glass-edge), var(--question-glass-shadow);
+
+      &:is(:hover, [data-state="hover"]):not(:disabled) {
+        background-image:
+          linear-gradient(var(--v2-overlay-simple-overlay-hover), var(--v2-overlay-simple-overlay-hover)),
+          var(--question-glass-fill);
+      }
+
+      &:is(:active, [data-state="pressed"]):not(:disabled) {
+        background-image:
+          linear-gradient(var(--v2-overlay-simple-overlay-pressed), var(--v2-overlay-simple-overlay-pressed)),
+          var(--question-glass-fill);
+      }
+    }
   }
 
   [data-slot="question-advance-face"] {

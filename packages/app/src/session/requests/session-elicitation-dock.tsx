@@ -149,9 +149,11 @@ export function SessionElicitationDock(props: {
               {language.t("ui.common.dismiss")}
             </Button>
             <div data-slot="question-footer-actions">
-              <Button variant="submit" size="large" disabled={sending()} onClick={submit}>
-                {language.t("ui.common.submit")}
-              </Button>
+              <div data-slot="question-advance">
+                <Button variant="submit" size="large" disabled={sending()} onClick={submit}>
+                  {language.t("ui.common.submit")}
+                </Button>
+              </div>
             </div>
           </>
         }

@@ -66,7 +66,10 @@ export function SessionQueuePanel(props: { queue: SessionQueueView; hidden?: boo
         if (!now || was !== false || step <= 0 || prefersReducedMotion()) return
         queueMicrotask(() => {
           if (!open()) return
-          stopCascade = cascade([...listRef.querySelectorAll<HTMLElement>('[data-component="session-queue-row"]')], step)
+          stopCascade = cascade(
+            [...listRef.querySelectorAll<HTMLElement>('[data-component="session-queue-row"]')],
+            step,
+          )
         })
       },
       { defer: true },
@@ -187,7 +190,7 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
           data-component={leaving() ? undefined : "session-queue-row"}
           data-leaving={leaving() || undefined}
           aria-busy={leaving() ? undefined : entry.pending}
-          class="group/queue-row mb-px flex h-8 shrink-0 items-center justify-between gap-2 rounded-md py-1 ps-0.5 pe-2"
+          class="group/queue-row mb-px flex h-8 shrink-0 items-center justify-between gap-2 rounded-full py-1 ps-0.5 pe-2"
           classList={{
             "bg-v2-overlay-simple-overlay-hover": editing(),
             "opacity-60": sortable.isDragSource(),

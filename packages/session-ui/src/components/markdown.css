@@ -31,6 +31,9 @@
   --markdown-inline-code-path-color: var(--v2-text-text-code-path);
   --markdown-inline-code-color: var(--v2-text-text-code-accent);
   --markdown-code-background: var(--v2-background-bg-layer-02);
+  /* The layer-02 fill sat within 1.1:1 of a white message surface, so inline chips read as bare text.
+     Mixing the text colour keeps the chip visible on light surfaces and matches layer-02 in dark themes. */
+  --markdown-inline-code-background: color-mix(in oklch, var(--v2-text-text-base) 14%, transparent);
   --markdown-shell-code-background: var(--v2-background-bg-layer-02);
   --markdown-shell-code-border: var(--v2-border-border-muted);
   --markdown-shell-code-color: var(--v2-text-text-base);
@@ -398,7 +401,7 @@
        it back pulled neighbouring text into the chip, which reads as letters touching. */
     padding: 0 4px;
     border-radius: 4px;
-    background: var(--v2-background-bg-layer-02);
+    background: var(--markdown-inline-code-background);
   }
 
   :not(pre) > code[data-inline-code-kind="path"] {

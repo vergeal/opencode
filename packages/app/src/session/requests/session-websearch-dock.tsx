@@ -68,7 +68,7 @@ export function SessionWebSearchDock(props: { model: WebSearchRequestModel; onSu
             </Button>
           </Show>
         </div>
-        <div class="websearch-actions">
+        <div data-slot="websearch-actions" class="websearch-actions">
           <Show when={!props.model.specific()}>
             <Button variant="ghost" size="small" onClick={() => submit(false)} disabled={busy()}>
               {language.t("session.websearch.disable")}

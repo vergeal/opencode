@@ -256,7 +256,9 @@
   flex: none;
 }
 
+/* Options are compact chips, so the highlight reads as a capsule rather than a card corner. */
 [data-slot="select-v2-listbox"] [data-component="menu-v2-item"] {
+  border-radius: 9999px;
   --menu-v2-fg: var(--v2-text-text-base);
   --menu-v2-fg-muted: var(--v2-text-text-faint);
   --menu-v2-fg-subtle: var(--v2-text-text-muted);

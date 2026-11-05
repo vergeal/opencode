@@ -7,7 +7,7 @@
   --settings-content-max: 720px;
   --settings-content-inset: 32px;
   --settings-nav-item-height: 30px;
-  --settings-nav-item-radius: 7px;
+  --settings-nav-item-radius: 9999px;
   --settings-row-min-height: 44px;
   --settings-card-radius: 10px;
 }
@@ -481,7 +481,7 @@
   gap: 6px;
   padding-inline: 8px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 9999px;
   background: transparent;
   color: var(--v2-text-text-muted);
   font: inherit;
@@ -1041,7 +1041,7 @@
   gap: 2px;
   padding-inline: 4px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 9999px;
   background: transparent;
   color: var(--v2-text-text-muted);
   font-size: 13px;
@@ -1087,7 +1087,7 @@
   gap: 2px;
   padding-inline: 10px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 9999px;
   background: transparent;
   color: var(--v2-text-text-base);
   font-size: 13px;

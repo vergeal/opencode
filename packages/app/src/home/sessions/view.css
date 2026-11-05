@@ -7,6 +7,12 @@
     padding-block: 0;
   }
 
+  /* A 48px two-line row has a 24px cap, so the 16px avatar needs a 16px inset to sit centered in it. */
+  [data-component="home-session-row-container"][data-project-name="true"] [data-component="home-session-row"],
+  [data-component="home-session-row-container"][data-project-name="true"] [data-slot="home-session-editor"] {
+    padding-inline-start: 16px;
+  }
+
   [data-project-name="true"] [data-slot="home-session-labels"] {
     display: flex;
     min-width: 0;

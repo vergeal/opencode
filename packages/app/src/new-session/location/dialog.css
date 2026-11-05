@@ -81,7 +81,7 @@
 
 .new-session-location-back {
   border: 0;
-  border-radius: 2px;
+  border-radius: 9999px;
   background: transparent;
   font: inherit;
   font-size: 15px;

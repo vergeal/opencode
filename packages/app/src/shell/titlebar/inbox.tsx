@@ -13,7 +13,6 @@ import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from
 import { Icon } from "@opencode/ui/icon"
 import { Menu } from "@opencode/ui/menu"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
-import { Tooltip } from "@opencode/ui/tooltip"
 import { displayName } from "@opencode/ui/project-avatar"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { SessionSettingsDialog } from "@/session/settings-dialog"
@@ -37,7 +36,6 @@ const projectContainer = (key: string) => `project:${key}`
 // `since` is when the inbox was first used; Recent only lists sessions that finished a run after it.
 const InboxState = Persistence.struct({
   workingExpanded: Schema.Boolean,
-  expandedProjects: Schema.Array(Schema.String),
   // Manually dragged order per container. Containers without an entry keep their derived order.
   order: Persistence.record(Persistence.array(Schema.String)),
   since: Persistence.optional(Schema.Number),
@@ -66,12 +64,8 @@ export function SidebarInbox() {
 
   const [state, setState, , ready] = persisted(Persist.global("sidebar.inbox"), InboxState, {
     workingExpanded: true,
-    expandedProjects: [],
     order: {},
   })
-
-  // Projects behave like folders: every one starts collapsed and remembers being opened.
-  const projectExpanded = (key: string) => state.expandedProjects.includes(key)
 
   const sections = createMemo(() => {
     const list = inbox.entries()
@@ -233,15 +227,6 @@ export function SidebarInbox() {
     if (ready() && state.since === undefined) setState("since", Date.now())
   })
 
-  // Git info is not stored on the session, so eagerly load it for every shown row. Folded folders and collapsed
-  // sections are skipped until the person opens them, since each lookup runs git on the server.
-  createEffect(() => {
-    const visible = sections()
-    const expanded = (list: InboxEntry[]) => list.filter((entry) => projectExpanded(projectKey(entry)))
-
-    inbox.loadBranches([...visible.pinned, ...visible.needs, ...visible.working, ...expanded(visible.inbox)])
-  })
-
   const deleteDialog = (entry: InboxEntry) =>
     dialog.show(() => (
       <DeleteDialog
@@ -253,11 +238,7 @@ export function SidebarInbox() {
       />
     ))
 
-  const rows = (
-    list: InboxEntry[],
-    container: string,
-    options: { showProjectName?: boolean; disabled?: boolean } = {},
-  ) => (
+  const rows = (list: InboxEntry[], container: string, options: { disabled?: boolean } = {}) => (
     <For each={list.map((entry) => entry.key)}>
       {(key, index) => (
         <Show when={inbox.byKey().get(key)}>
@@ -269,12 +250,8 @@ export function SidebarInbox() {
               disabled={options.disabled ?? false}
               selected={inbox.selected(entry())}
               now={inbox.now()}
-              branchLoading={inbox.branchLoading(entry())}
-              branch={inbox.branch(entry())}
-              worktree={inbox.inWorktree(entry())}
               archived={inboxArchived(entry())}
               pinned={pins.isPinned(entry().session.id)}
-              showProjectName={options.showProjectName ?? true}
               onTogglePin={() => pins.toggle(entry().session.id)}
               onOpen={() => inbox.open(entry())}
               onArchive={() => void inbox.archive(entry())}
@@ -298,12 +275,8 @@ export function SidebarInbox() {
               entry={entry()}
               selected={inbox.selected(entry())}
               now={inbox.now()}
-              branchLoading={inbox.branchLoading(entry())}
-              branch={inbox.branch(entry())}
-              worktree={inbox.inWorktree(entry())}
               archived={inboxArchived(entry())}
               pinned={pins.isPinned(entry().session.id)}
-              showProjectName
               onTogglePin={() => pins.toggle(entry().session.id)}
               onOpen={() => inbox.open(entry())}
               onArchive={() => void inbox.archive(entry())}
@@ -436,7 +409,7 @@ function SectionHeader(props: { label: string; count?: number; expanded?: boolea
           type="button"
           data-slot="sidebar-section-label"
           aria-expanded={props.expanded}
-          class="flex w-full shrink-0 items-center gap-1.5 rounded-[6px] text-start text-v2-text-text-faint hover:text-v2-text-text-base focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover"
+          class="flex w-full shrink-0 items-center gap-1.5 rounded-full text-start text-v2-text-text-faint hover:text-v2-text-text-base focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover"
           onClick={toggle()}
         >
           {content()}
@@ -450,12 +423,8 @@ type InboxRowProps = {
   entry: InboxEntry
   selected: boolean
   now: number
-  branchLoading: boolean
-  branch: string | undefined
-  worktree: boolean
   archived: boolean
   pinned: boolean
-  showProjectName: boolean
   onOpen: () => void
   onTogglePin: () => void
   onArchive: () => void
@@ -497,21 +466,26 @@ function InboxRowSlot(props: InboxRowProps & { container: string; index: number;
 
 function InboxRow(props: InboxRowProps) {
   const language = useLanguage()
-  const servers = useServers()
   const platform = usePlatform()
   const dialog = useDialog()
   const nativeMenu = () => !!platform.showContextMenu
   const project = createMemo(() => props.entry.ctx.projects.forSession(props.entry.session))
-  const projectName = () => displayName(project() ?? { worktree: props.entry.session.location.directory })
+  const servers = useServers()
   const title = () => sessionTabTitle(props.entry.session.title, language.t("session.tab.session"))
+
+  // One line keeps the list scannable, so the untruncated title, project, server and path live in the row's tooltip.
+  const detail = () =>
+    [
+      title(),
+      [displayName(project() ?? { worktree: props.entry.session.location.directory }), servers.tag(props.entry.conn)]
+        .filter(Boolean)
+        .join(" · "),
+      props.entry.session.location.directory,
+    ]
+      .filter(Boolean)
+      .join("\n")
   const status = () => props.entry.status
   const unread = () => status() !== "ready" && status() !== "working"
-  const showLocation = () => props.branchLoading || !!props.branch || props.worktree
-  // A project header above the row already names the project, so the row only adds its branch.
-  const showSecondary = () => props.showProjectName || showLocation() || !!servers.tag(props.entry.conn)
-
-  // Sessions on the current server are not marked.
-  const tag = () => servers.tag(props.entry.conn)
 
   const compact = (seconds: number) => {
     if (seconds < 3600) return language.plural("sidebar.inbox.elapsed.minutes", Math.floor(seconds / 60))
@@ -573,11 +547,12 @@ function InboxRow(props: InboxRowProps) {
         data-slot="sidebar-inbox-item"
         data-status={status()}
         data-state={props.selected ? "active" : undefined}
-        class="group flex w-full shrink-0 flex-col gap-[2px] rounded-[6px] px-2 py-1 text-start hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover data-[state=active]:bg-v2-background-bg-layer-03"
+        class="group grid h-[30px] w-full shrink-0 grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 rounded-full ps-2 pe-2 text-start hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:bg-v2-overlay-simple-overlay-hover data-[state=active]:bg-v2-background-bg-layer-03"
         classList={{
           "transition-opacity hover:opacity-100 focus-visible:opacity-100": !props.selected,
           "opacity-70": status() === "working" && !props.selected,
         }}
+        title={detail()}
         onContextMenu={(event) => {
           if (!nativeMenu()) return
           event.preventDefault()
@@ -585,95 +560,50 @@ function InboxRow(props: InboxRowProps) {
         }}
         onClick={props.onOpen}
       >
-        <span class="flex h-4 w-full min-w-0 items-center gap-1.5">
-          <span class="flex size-4 shrink-0 items-center justify-center">
-            <SessionTabAvatarView
-              project={project()}
-              directory={props.entry.session.location.directory}
-              unread={false}
-            />
-          </span>
-          <span
-            dir="auto"
-            title={title()}
-            class="min-w-0 flex-1 truncate text-[13px] leading-4"
-            // Rows recede once read so unread results stand out.
-            classList={{
-              "font-medium text-v2-text-text-base": unread(),
-              "text-v2-text-text-muted": !unread(),
-            }}
-          >
-            {title()}
-          </span>
-          <span
-            class="shrink-0 text-[11px] leading-[14px] tabular-nums text-v2-text-text-faint"
-            role={status() === "ready" ? undefined : "status"}
-          >
-            <Show when={status() !== "ready"} fallback={age()}>
-              <span
-                classList={{
-                  "text-v2-state-fg-warning": status() === "approval" || status() === "input",
-                  "text-v2-state-fg-info": status() === "working",
-                  "text-v2-state-fg-danger": status() === "failed",
-                  "text-v2-state-fg-success": status() === "done",
-                }}
-              >
-                <Show
-                  when={status() === "working"}
-                  fallback={language.t(`sidebar.inbox.status.${status() as Exclude<InboxStatus, "ready">}`)}
-                >
-                  {/* Announce only the status: the ticking duration would be re-read every second. */}
-                  <span class="sr-only">{language.t("sidebar.inbox.status.working")}</span>
-                  {/* The label is short, so the shared sweep covers all of it at once. A narrower, faster
-                      sweep in the status colour makes the row's activity read at a glance. */}
-                  <span aria-hidden="true" data-slot="sidebar-inbox-working-status">
-                    <TextShimmer text={language.t("sidebar.inbox.status.workingFor", { duration: elapsed() })} active />
-                  </span>
-                </Show>
-              </span>
-            </Show>
-          </span>
+        <span data-slot="inbox-row-avatar" class="flex size-4 shrink-0 items-center justify-center">
+          <SessionTabAvatarView project={project()} directory={props.entry.session.location.directory} unread={false} />
         </span>
-        <Show when={showSecondary()}>
-          <span class="flex h-3.5 w-full min-w-0 items-center gap-1.5 text-[11px] leading-[14px] text-v2-text-text-faint">
-            <Show when={props.showProjectName}>
-              <span class="min-w-0 max-w-[46%] truncate" title={projectName()}>
-                {projectName()}
-              </span>
-            </Show>
-            <Show when={props.branchLoading}>
-              <span
-                aria-hidden="true"
-                class="h-2 w-16 max-w-full animate-pulse rounded-full bg-v2-background-bg-layer-03"
-              />
-            </Show>
-            <Show when={!props.branchLoading && (props.branch || props.worktree)}>
-              <Show when={props.showProjectName}>
-                <span aria-hidden="true" class="shrink-0">
-                  ·
+        <span
+          dir="auto"
+          data-slot="inbox-row-title"
+          class="min-w-0 truncate text-[13px] leading-4"
+          // Rows recede once read so unread results stand out.
+          classList={{
+            "font-medium text-v2-text-text-base": unread(),
+            "text-v2-text-text-muted": !unread(),
+          }}
+        >
+          {title()}
+        </span>
+        <span
+          data-slot="inbox-row-status"
+          class="shrink-0 text-[11px] leading-[14px] tabular-nums text-v2-text-text-faint"
+          role={status() === "ready" ? undefined : "status"}
+        >
+          <Show when={status() !== "ready"} fallback={age()}>
+            <span
+              classList={{
+                "text-v2-state-fg-warning": status() === "approval" || status() === "input",
+                "text-v2-state-fg-info": status() === "working",
+                "text-v2-state-fg-danger": status() === "failed",
+                "text-v2-state-fg-success": status() === "done",
+              }}
+            >
+              <Show
+                when={status() === "working"}
+                fallback={language.t(`sidebar.inbox.status.${status() as Exclude<InboxStatus, "ready">}`)}
+              >
+                {/* Announce only the status: the ticking duration would be re-read every second. */}
+                <span class="sr-only">{language.t("sidebar.inbox.status.working")}</span>
+                {/* The label is short, so the shared sweep covers all of it at once. A narrower, faster
+                    sweep in the status colour makes the row's activity read at a glance. */}
+                <span aria-hidden="true" data-slot="sidebar-inbox-working-status">
+                  <TextShimmer text={language.t("sidebar.inbox.status.workingFor", { duration: elapsed() })} active />
                 </span>
               </Show>
-              <span class="flex min-w-0 items-center gap-1">
-                {/* The worktree icon stands in for the branch icon to mark sessions outside the project checkout. */}
-                <Icon name={props.worktree ? "outline-worktree" : "branch"} size="small" class="shrink-0" />
-                <Show when={props.branch}>
-                  {(name) => (
-                    <span dir="ltr" class="min-w-0 truncate">
-                      {name()}
-                    </span>
-                  )}
-                </Show>
-              </span>
-            </Show>
-            <Show when={tag()}>
-              {(name) => (
-                <Tooltip placement="right" value={name()} class="ms-auto flex shrink-0">
-                  <Icon name="server" size="small" aria-label={name()} />
-                </Tooltip>
-              )}
-            </Show>
-          </span>
-        </Show>
+            </span>
+          </Show>
+        </span>
       </Menu.Context.Trigger>
       <Menu.Context.Portal>
         <Menu.Context.Content>
@@ -718,8 +648,6 @@ export function ArchivedSessionsDialog() {
       .toSorted((a, b) => archivedAt(b) - archivedAt(a)),
   )
 
-  createEffect(() => inbox.loadBranches(archived()))
-
   return (
     <Dialog
       fit
@@ -748,12 +676,8 @@ export function ArchivedSessionsDialog() {
                   entry={entry}
                   selected={false}
                   now={inbox.now()}
-                  branchLoading={inbox.branchLoading(entry)}
-                  branch={inbox.branch(entry)}
-                  worktree={inbox.inWorktree(entry)}
                   archived
                   pinned={pins.isPinned(entry.session.id)}
-                  showProjectName
                   onTogglePin={() => pins.toggle(entry.session.id)}
                   onOpen={() => {
                     dialog.close()
