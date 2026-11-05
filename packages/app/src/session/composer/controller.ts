@@ -51,7 +51,7 @@ export function createSessionComposerController(input: {
     },
   })
 
-  const composer = createComposerModel(adapter, { queue })
+  const composer = createComposerModel(adapter, { queue, sessionID: input.sessionID })
   // This controller is recreated when a session becomes active. Wait for its draft and
   // the editor's DOM commit, without reacting to subsequent cursor or message updates.
   createEffect(

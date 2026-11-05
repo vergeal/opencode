@@ -46,15 +46,15 @@ function createComposerHistoryStore(
   }
 }
 
-export function createComposerHistory() {
+export function createComposerHistory(scope: { directory: string; sessionID?: string }) {
   const [normal, setNormal, normalInit] = persisted(
-    Persist.prompt(Persist.global("prompt-history")),
+    Persist.prompt(Persist.scoped(scope.directory, scope.sessionID, "prompt-history")),
     PromptHistoryState,
     { entries: [] },
   )
 
   const [shell, setShell, shellInit] = persisted(
-    Persist.prompt(Persist.global("prompt-history-shell")),
+    Persist.prompt(Persist.scoped(scope.directory, scope.sessionID, "prompt-history-shell")),
     PromptHistoryState,
     { entries: [] },
   )

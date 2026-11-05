@@ -1,10 +1,20 @@
-import { base64Encode } from "@opencode/util/encode"
+import { base64Encode, checksum } from "@opencode/util/encode"
 import type { Page } from "@playwright/test"
 import { sessionHref } from "../../e2e/utils/app"
 import { mockOpenCodeServer } from "../../e2e/utils/mock-server"
+import { pathKey } from "../../src/workspaces/path-key"
 import { fixture } from "../../e2e/utils/session-fixture"
 
 const sessionID = "ses_perf_composer"
+
+// Mirrors the app's workspace storage name so the seeded history lands where a new session's
+// composer reads it. Kept in step with `workspaceStorage` in runtime/persistence/storage.ts.
+function workspaceStorage(dir: string) {
+  const head = (dir.slice(0, 12) || "workspace").replace(/[^a-zA-Z0-9._-]/g, "-")
+  const sum = checksum(dir) ?? "0"
+
+  return `opencode.workspace.${head}.${sum}.dat`
+}
 
 /** The large draft's last words: the caret starts after them. */
 export const draftEnd = "Implementation notes:"
@@ -87,83 +97,86 @@ export const recalled = "Review the retry policy in src/network/request-0.ts."
  */
 export async function seedHistory(page: Page, origin: string) {
   await page.goto(new URL("/favicon.svg", origin).href)
-  await page.evaluate(async () => {
-    const normal = Array.from({ length: 100 }, (_, index) => {
-      const content =
-        `Review the retry policy in src/network/request-${index}.ts. Preserve cancellation and the existing error messages.\n\n` +
-        `The request should stop after three attempts. Add coverage for a 429 response, a connection reset, and a successful retry. Verify that only idempotent requests are retried.\n\n` +
-        `Report ${index}:\n\`\`\`ts\nexport async function request(input: Request) {\n  const response = await fetch(input)\n  if (!response.ok) throw new Error(response.statusText)\n  return response.json()\n}\n\`\`\``
+  const storage = workspaceStorage(pathKey(fixture.directory))
 
-      return {
-        prompt: [
-          { type: "text", content, start: 0, end: content.length },
-          ...(index % 2 === 0
-            ? [
-                {
-                  type: "image",
-                  id: `attachment-${index}`,
-                  filename: `request-${index}.png`,
-                  mime: "image/png",
-                  blob: { id: `screenshot-${index % 10}` },
-                },
-              ]
-            : []),
-        ],
-        comments: [],
-      }
-    })
+  await page.evaluate(
+    async ({ normalKey, shellKey }) => {
+      const normal = Array.from({ length: 100 }, (_, index) => {
+        const content =
+          `Review the retry policy in src/network/request-${index}.ts. Preserve cancellation and the existing error messages.\n\n` +
+          `The request should stop after three attempts. Add coverage for a 429 response, a connection reset, and a successful retry. Verify that only idempotent requests are retried.\n\n` +
+          `Report ${index}:\n\`\`\`ts\nexport async function request(input: Request) {\n  const response = await fetch(input)\n  if (!response.ok) throw new Error(response.statusText)\n  return response.json()\n}\n\`\`\``
 
-    const shell = Array.from({ length: 100 }, (_, index) => {
-      const content = `bun test src/network/request-${index}.test.ts --timeout 30000`
-
-      return { prompt: [{ type: "text", content, start: 0, end: content.length }], comments: [] }
-    })
-
-    const screenshots = await Promise.all(
-      [0, 2, 4, 6, 8].map(async (index) => {
-        const id = `screenshot-${index}`
-        const canvas = new OffscreenCanvas(1440, 900)
-        const context = canvas.getContext("2d")!
-        context.fillStyle = "#15191f"
-        context.fillRect(0, 0, 1440, 900)
-        context.font = "16px monospace"
-        context.fillStyle = "#b8c8d8"
-        context.fillText(`request.ts - ${id}`, 30, 35)
-
-        for (let line = 0; line < 38; line++) {
-          context.fillStyle = line % 3 ? "#a8c7ba" : "#d4a882"
-          context.fillText(
-            `${String(line + 1).padStart(3)}  const response${line} = await fetch('/api/request/${id}/${line}', { signal, headers });`,
-            30,
-            70 + line * 20,
-          )
+        return {
+          prompt: [
+            { type: "text", content, start: 0, end: content.length },
+            ...(index % 2 === 0
+              ? [
+                  {
+                    type: "image",
+                    id: `attachment-${index}`,
+                    filename: `request-${index}.png`,
+                    mime: "image/png",
+                    blob: { id: `screenshot-${index % 10}` },
+                  },
+                ]
+              : []),
+          ],
+          comments: [],
         }
+      })
 
-        return { id, blob: await canvas.convertToBlob({ type: "image/png" }) }
-      }),
-    )
+      const shell = Array.from({ length: 100 }, (_, index) => {
+        const content = `bun test src/network/request-${index}.test.ts --timeout 30000`
 
-    const open = indexedDB.open("opencode-drafts", 1)
-    open.onupgradeneeded = () => {
-      open.result.createObjectStore("documents")
-      open.result.createObjectStore("blobs")
-    }
+        return { prompt: [{ type: "text", content, start: 0, end: content.length }], comments: [] }
+      })
 
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      open.onsuccess = () => resolve(open.result)
-      open.onerror = () => reject(open.error)
-    })
+      const screenshots = await Promise.all(
+        [0, 2, 4, 6, 8].map(async (index) => {
+          const id = `screenshot-${index}`
+          const canvas = new OffscreenCanvas(1440, 900)
+          const context = canvas.getContext("2d")!
+          context.fillStyle = "#15191f"
+          context.fillRect(0, 0, 1440, 900)
+          context.font = "16px monospace"
+          context.fillStyle = "#b8c8d8"
+          context.fillText(`request.ts - ${id}`, 30, 35)
 
-    const transaction = db.transaction(["documents", "blobs"], "readwrite")
-    transaction.objectStore("documents").put(JSON.stringify({ entries: normal }), "opencode.global.dat:prompt-history")
-    transaction
-      .objectStore("documents")
-      .put(JSON.stringify({ entries: shell }), "opencode.global.dat:prompt-history-shell")
-    screenshots.forEach((screenshot) => transaction.objectStore("blobs").put(screenshot.blob, screenshot.id))
-    await new Promise<void>((resolve, reject) => {
-      transaction.oncomplete = () => resolve()
-      transaction.onerror = () => reject(transaction.error)
-    })
-    db.close()
-  })
+          for (let line = 0; line < 38; line++) {
+            context.fillStyle = line % 3 ? "#a8c7ba" : "#d4a882"
+            context.fillText(
+              `${String(line + 1).padStart(3)}  const response${line} = await fetch('/api/request/${id}/${line}', { signal, headers });`,
+              30,
+              70 + line * 20,
+            )
+          }
+
+          return { id, blob: await canvas.convertToBlob({ type: "image/png" }) }
+        }),
+      )
+
+      const open = indexedDB.open("opencode-drafts", 1)
+      open.onupgradeneeded = () => {
+        open.result.createObjectStore("documents")
+        open.result.createObjectStore("blobs")
+      }
+
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        open.onsuccess = () => resolve(open.result)
+        open.onerror = () => reject(open.error)
+      })
+
+      const transaction = db.transaction(["documents", "blobs"], "readwrite")
+      transaction.objectStore("documents").put(JSON.stringify({ entries: normal }), normalKey)
+      transaction.objectStore("documents").put(JSON.stringify({ entries: shell }), shellKey)
+      screenshots.forEach((screenshot) => transaction.objectStore("blobs").put(screenshot.blob, screenshot.id))
+      await new Promise<void>((resolve, reject) => {
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+      })
+      db.close()
+    },
+    { normalKey: `${storage}:workspace:prompt-history`, shellKey: `${storage}:workspace:prompt-history-shell` },
+  )
 }

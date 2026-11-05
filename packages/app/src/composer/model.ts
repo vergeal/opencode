@@ -53,7 +53,10 @@ const agentIcon = (name: string) => {
   return undefined
 }
 
-export function createComposerModel(adapter: ComposerAdapter, options?: { queue?: ComposerQueue }): ComposerModel {
+export function createComposerModel(
+  adapter: ComposerAdapter,
+  options?: { queue?: ComposerQueue; sessionID?: string },
+): ComposerModel {
   const sdk = useWorkspaceLocation()
   const data = useData()
   const server = useServer()
@@ -100,7 +103,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
     ),
   )
   const mode = () => interaction[0].mode
-  const history = createComposerHistory()
+  const history = createComposerHistory({ directory: sdk().directory, sessionID: options?.sessionID })
 
   const recent = createMemo(() => {
     const all = plugins.files.opened()
