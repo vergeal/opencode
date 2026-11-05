@@ -19,7 +19,6 @@ import { useServerSDK } from "@/runtime/server/client"
 import { readLocalImage } from "@/runtime/server/image"
 import { showToast } from "@/shell/notifications/toast"
 import { formatServerError } from "@/runtime/server/errors"
-import { Skill } from "@opencode/schema/skill"
 import { Session } from "@opencode/schema/session"
 import { abort } from "@opencode/util/abort"
 import { parseSessionMention } from "@opencode/util/session-mention"
@@ -46,9 +45,12 @@ const sendFailedTitle = {
   prompt: "prompt.toast.promptSendFailed.title",
 } as const
 
-const agentIcons: Record<string, string> = {
-  build: "outline-console",
-  plan: "outline-text",
+const agentIcon = (name: string) => {
+  if (name === "build") return "outline-console"
+
+  if (name === "plan") return "outline-text"
+
+  return undefined
 }
 
 export function createComposerModel(adapter: ComposerAdapter, options?: { queue?: ComposerQueue }): ComposerModel {
@@ -215,8 +217,6 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
       })),
   )
 
-  const skills = createMemo(() => data.location.skill.list({ directory: sdk().directory }) ?? [])
-
   let sessionSearch: string | undefined
   const [sessionSearched, setSessionSearched] = createSignal<string>()
 
@@ -244,20 +244,6 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
 
   const context = createMemo<ComposerSuggestion[]>(() => [
     ...references(),
-    ...skills().map((skill) => ({
-      id: `skill:${skill.id}`,
-      kind: "skill" as const,
-      label: `@${skill.id}`,
-      description: skill.description,
-      mention: {
-        type: "skill" as const,
-        id: Skill.ID.make(skill.id),
-        name: Skill.Name.make(skill.name),
-        content: `@${skill.id}`,
-        start: 0,
-        end: 0,
-      },
-    })),
     ...adapter
       .controls()
       .agents.available.filter((agent) => !agent.hidden && agent.mode !== "primary")
@@ -540,7 +526,7 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
                 adapter.controls().agents.options.map((name) => ({
                   id: name,
                   label: name,
-                  icon: agentIcons[name],
+                  icon: agentIcon(name),
                 })),
               current: () => adapter.controls().agents.current,
               onSelect: (value: string) => adapter.controls().agents.select(value),
