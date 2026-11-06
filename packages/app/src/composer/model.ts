@@ -19,6 +19,7 @@ import { useServerSDK } from "@/runtime/server/client"
 import { readLocalImage } from "@/runtime/server/image"
 import { showToast } from "@/shell/notifications/toast"
 import { formatServerError } from "@/runtime/server/errors"
+import { Skill } from "@opencode/schema/skill"
 import { Session } from "@opencode/schema/session"
 import { abort } from "@opencode/util/abort"
 import { parseSessionMention } from "@opencode/util/session-mention"
@@ -220,6 +221,8 @@ export function createComposerModel(
       })),
   )
 
+  const skills = createMemo(() => data.location.skill.list({ directory: sdk().directory }) ?? [])
+
   let sessionSearch: string | undefined
   const [sessionSearched, setSessionSearched] = createSignal<string>()
 
@@ -247,6 +250,20 @@ export function createComposerModel(
 
   const context = createMemo<ComposerSuggestion[]>(() => [
     ...references(),
+    ...skills().map((skill) => ({
+      id: `skill:${skill.id}`,
+      kind: "skill" as const,
+      label: `@${skill.id}`,
+      description: skill.description,
+      mention: {
+        type: "skill" as const,
+        id: Skill.ID.make(skill.id),
+        name: Skill.Name.make(skill.name),
+        content: `@${skill.id}`,
+        start: 0,
+        end: 0,
+      },
+    })),
     ...adapter
       .controls()
       .agents.available.filter((agent) => !agent.hidden && agent.mode !== "primary")
