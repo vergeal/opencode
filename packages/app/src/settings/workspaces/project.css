@@ -321,18 +321,6 @@
   line-height: 18px;
 }
 
-.project-settings-prompt-count {
-  color: var(--v2-text-text-muted);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  font-weight: 400;
-  text-align: end;
-}
-
-.project-settings-prompt-count[data-over-limit] {
-  color: var(--v2-state-fg-danger);
-}
-
 .project-settings-startup-hint code {
   padding-inline: 4px;
   border-radius: 4px;

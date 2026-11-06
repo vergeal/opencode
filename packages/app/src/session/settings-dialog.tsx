@@ -3,7 +3,6 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { Button } from "@opencode/ui/button"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { Textarea } from "@opencode/ui/textarea"
-import { Session } from "@opencode/schema/session"
 import { getFilename } from "@opencode/util/path"
 import { useQueryClient } from "@tanstack/solid-query"
 import { Show } from "solid-js"
@@ -23,8 +22,6 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
   const servers = useServers()
   const queryClient = useQueryClient()
   const [store, setStore] = createStore({ prompt: props.session.prompt ?? "", saving: false })
-  const length = () => Array.from(store.prompt).length
-  const tooLong = () => length() > Session.PromptLimit
   const identity = () => sessionTitle(props.session.title) || language.t("session.settings.identity.untitled")
   const project = () => getFilename(props.session.location.directory)
 
@@ -35,7 +32,7 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
   }
 
   const save = () => {
-    if (store.saving || tooLong()) return
+    if (store.saving) return
     const conn = servers.visible.find((item) => ServerConnection.key(item) === props.server)
     const ctx = conn ? global.serverCtx(ServerConnection.key(conn)) : undefined
 
@@ -99,9 +96,6 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
             <label data-slot="session-settings-label" for="session-settings-prompt">
               {language.t("session.settings.prompt.title")}
             </label>
-            <span data-slot="session-settings-count" data-over={tooLong() ? "" : undefined}>
-              {language.t("session.settings.prompt.count", { count: length(), limit: Session.PromptLimit })}
-            </span>
           </div>
           <Textarea
             id="session-settings-prompt"
@@ -110,30 +104,20 @@ export function SessionSettingsDialog(props: { server: ServerConnection.Key; ses
             rows={7}
             autofocus
             spellcheck={false}
-            invalid={tooLong()}
             value={store.prompt}
             placeholder={language.t("session.settings.prompt.placeholder")}
             onInput={(event) => setStore("prompt", event.currentTarget.value)}
           />
-          <Show
-            when={tooLong()}
-            fallback={
-              <p data-slot="session-settings-note" id="session-settings-prompt-note">
-                {language.t("session.settings.prompt.description", { limit: Session.PromptLimit })}
-              </p>
-            }
-          >
-            <p data-slot="session-settings-note" data-over="" role="alert" id="session-settings-prompt-note">
-              {language.t("session.settings.prompt.tooLong.title")}
-            </p>
-          </Show>
+          <p data-slot="session-settings-note" id="session-settings-prompt-note">
+            {language.t("session.settings.prompt.description")}
+          </p>
         </div>
       </DialogBody>
       <DialogFooter>
         <Button variant="neutral" onClick={() => dialog.close()}>
           {language.t("common.cancel")}
         </Button>
-        <Button variant="submit" disabled={store.saving || tooLong()} onClick={save}>
+        <Button variant="submit" disabled={store.saving} onClick={save}>
           {language.t("common.save")}
         </Button>
       </DialogFooter>

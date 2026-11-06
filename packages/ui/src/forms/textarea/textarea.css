@@ -72,6 +72,11 @@
   color: var(--v2-text-text-faint);
 }
 
+/* The field owns its height when it grows with the content, so the manual grip would fight it. */
+[data-component="textarea-v2"][data-auto-resize] [data-slot="textarea-v2-textarea"] {
+  resize: none;
+}
+
 [data-component="textarea-v2"][data-invalid]:not([data-disabled]) [data-slot="textarea-v2-textarea"] {
   color: var(--v2-state-fg-danger);
   caret-color: var(--v2-state-fg-danger);

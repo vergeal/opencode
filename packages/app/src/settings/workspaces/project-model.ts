@@ -1,6 +1,5 @@
 import { getFilename } from "@opencode/util/path"
 import type { ProjectUpdateInput } from "@opencode/client/promise"
-import { Project } from "@opencode/schema/project"
 import { createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useServer } from "@/runtime/server/current"
@@ -90,16 +89,6 @@ export function createEditProjectModel(props: { project: LocalProject; server: S
     const value = store.prompt.trim()
 
     if (!store.saving && value === saved.prompt) return
-
-    if (Array.from(store.prompt).length > Project.PromptLimit) {
-      showToast({
-        variant: "error",
-        title: language.t("project.settings.prompt.tooLong.title"),
-        description: language.t("project.settings.prompt.tooLong.description", { limit: Project.PromptLimit }),
-      })
-
-      return
-    }
 
     persist({ prompt: value }, () => {
       saved.prompt = value

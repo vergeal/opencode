@@ -120,18 +120,6 @@
   color: var(--v2-text-text-muted);
 }
 
-.session-settings-body [data-slot="session-settings-count"] {
-  flex: none;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  line-height: var(--line-height-compact);
-  color: var(--v2-text-text-muted);
-}
-
-.session-settings-body [data-slot="session-settings-count"][data-over] {
-  color: var(--v2-state-fg-danger);
-}
-
 /* The editor is the sheet's one surface: a quiet page with a hairline at rest and the accent ring on focus. */
 .session-settings-body [data-component="textarea-v2"] {
   width: 100%;
@@ -182,8 +170,7 @@
   opacity: 1;
 }
 
-/* One caption slot: the scope note at rest, the limit error when over. Reserving both lines keeps the sheet from
-   resizing as the state flips. */
+/* The scope note under the editor. It keeps a two-line slot so the sheet does not resize while the note wraps. */
 .session-settings-body [data-slot="session-settings-note"] {
   min-height: calc(var(--line-height-compact) * 2);
   margin: 0;
@@ -191,8 +178,4 @@
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);
   text-wrap: pretty;
-}
-
-.session-settings-body [data-slot="session-settings-note"][data-over] {
-  color: var(--v2-state-fg-danger);
 }
