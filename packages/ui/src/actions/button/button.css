@@ -11,7 +11,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    border-radius: 7px;
+    border-radius: 9999px;
     font-style: normal;
     font-weight: var(--font-weight-regular);
     font-size: 12.5px;
@@ -336,170 +336,35 @@
     cursor: not-allowed;
   }
 
-  /* Dialog actions follow macOS controls rather than glass: the secondary key is a flat neutral fill, the primary
-     key takes the system accent, and a destructive confirm keeps only its red label. The shared 7px radius already
-     supplies the control shape, so no gradient, highlight or drop shadow is needed. */
-  :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"] {
-    background-color: transparent;
+  /* Every key is one pill: a paper fill with an ink label. Variants keep their meaning in copy and confirmation,
+     not in colour, so toolbars, dialogs and row actions share one control shape. */
+  [data-component="button-v2"][data-variant] {
+    background-color: var(--v2-grey-100);
     background-image: none;
+    color: var(--v2-grey-1000);
+    text-shadow: none;
+    box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    color: var(--v2-text-text-base);
-    text-shadow: none;
-    box-shadow: none;
   }
 
-  :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"][data-variant="neutral"] {
-    background-color: color-mix(in srgb, var(--v2-text-text-base) 12%, transparent);
-  }
-
-  :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]) {
-    background-color: var(--v2-grey-1000);
-    color: var(--v2-grey-50);
-  }
-
-  :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"][data-variant="danger"] {
-    color: var(--v2-state-fg-danger);
+  [data-component="button-v2"][data-variant] [data-slot="icon-svg"] {
+    color: currentColor;
   }
 
   @media (hover: hover) {
-    :is(
-        [data-slot="dialog-footer"],
-        [data-slot="permission-footer-actions"],
-        [data-slot="question-footer"],
-        [data-slot="websearch-actions"]
-      )
-      [data-component="button-v2"][data-variant="neutral"]:is(:hover, [data-state="hover"]):not(:disabled) {
-      background-image: linear-gradient(var(--v2-overlay-simple-overlay-hover), var(--v2-overlay-simple-overlay-hover));
-    }
-
-    :is(
-        [data-slot="dialog-footer"],
-        [data-slot="permission-footer-actions"],
-        [data-slot="question-footer"],
-        [data-slot="websearch-actions"]
-      )
-      [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
-        :hover,
-        [data-state="hover"]
-      ):not(:disabled) {
-      background-color: color-mix(in srgb, var(--v2-grey-1000) 86%, var(--v2-grey-50));
-      background-image: none;
-    }
-
-    :is(
-        [data-slot="dialog-footer"],
-        [data-slot="permission-footer-actions"],
-        [data-slot="question-footer"],
-        [data-slot="websearch-actions"]
-      )
-      [data-component="button-v2"][data-variant="danger"]:is(:hover, [data-state="hover"]):not(:disabled) {
-      background-color: color-mix(in srgb, var(--v2-state-fg-danger) 14%, transparent);
+    [data-component="button-v2"][data-variant]:is(:hover, [data-state="hover"]):not(:disabled) {
+      background-color: color-mix(in srgb, var(--v2-grey-100) 88%, var(--v2-grey-1000));
     }
   }
 
-  :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"]:is(:active, [data-state="pressed"]):not(:disabled) {
-    background-image: none;
+  [data-component="button-v2"][data-variant]:is(:active, [data-state="pressed"]):not(:disabled) {
+    background-color: color-mix(in srgb, var(--v2-grey-100) 78%, var(--v2-grey-1000));
   }
 
-  :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"][data-variant="neutral"]:is(:active, [data-state="pressed"]):not(:disabled) {
-    background-image: linear-gradient(
-      var(--v2-overlay-simple-overlay-pressed),
-      var(--v2-overlay-simple-overlay-pressed)
-    );
-  }
-
-  :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
-      :active,
-      [data-state="pressed"]
-    ):not(:disabled) {
-    background-color: color-mix(in srgb, var(--v2-grey-1000) 78%, var(--v2-grey-50));
-  }
-
-  /* A black key on a dark panel loses its edges, so the pair flips: paper fill, ink label. The relationship stays
-     the same - the confirm key is the only surface at full contrast. */
-  [data-color-scheme="dark"]
-    :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]) {
-    background-color: var(--v2-grey-50);
-    color: var(--v2-grey-1000);
-  }
-
-  @media (hover: hover) {
-    [data-color-scheme="dark"]
-      :is(
-        [data-slot="dialog-footer"],
-        [data-slot="permission-footer-actions"],
-        [data-slot="question-footer"],
-        [data-slot="websearch-actions"]
-      )
-      [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
-        :hover,
-        [data-state="hover"]
-      ):not(:disabled) {
-      background-color: color-mix(in srgb, var(--v2-grey-50) 90%, var(--v2-grey-1000));
-    }
-  }
-
-  [data-color-scheme="dark"]
-    :is(
-      [data-slot="dialog-footer"],
-      [data-slot="permission-footer-actions"],
-      [data-slot="question-footer"],
-      [data-slot="websearch-actions"]
-    )
-    [data-component="button-v2"]:is([data-variant="submit"], [data-variant="contrast"]):is(
-      :active,
-      [data-state="pressed"]
-    ):not(:disabled) {
-    background-color: color-mix(in srgb, var(--v2-grey-50) 82%, var(--v2-grey-1000));
+  [data-component="button-v2"][data-variant]:is(:disabled, [data-state="disabled"]) {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 
