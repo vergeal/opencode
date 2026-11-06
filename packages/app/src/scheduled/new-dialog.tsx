@@ -5,12 +5,11 @@ import { Icon } from "@opencode/ui/icon"
 import { Loader } from "@opencode/ui/loader"
 import { TextInput } from "@opencode/ui/text-input"
 import { Textarea } from "@opencode/ui/textarea"
-import { getFilename } from "@opencode/util/path"
-import { For, Show, createEffect, createMemo } from "solid-js"
+import { For, Show, createEffect } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
 import { localTimeZone } from "./cron"
-import { DEFAULT_RECURRENCE, type Recurrence, isValidCron, nextRun } from "./recurrence"
+import { DEFAULT_RECURRENCE, type Recurrence, isValidCron } from "./recurrence"
 
 export type PermissionScope = "default" | "read-only"
 
@@ -139,52 +138,8 @@ export function NewScheduledTaskDialog(props: {
     }
   }
 
-  const projectName = () => {
-    const directory = form.directory.trim()
-
-    if (!directory) return undefined
-
-    return props.projects.find((project) => project.directory === directory)?.name ?? getFilename(directory)
-  }
-
-  const describeCadence = (recurrence: Recurrence) => {
-    switch (recurrence.kind) {
-      case "hourly":
-        return language.t("scheduled.create.frequency.hourly")
-      case "daily":
-        return language.t("scheduled.create.frequency.daily")
-      case "weekly":
-        return language.t("scheduled.create.frequency.weekly")
-      case "monthly":
-        return language.t("scheduled.create.frequency.monthly")
-      case "cron":
-        return language.t("scheduled.create.frequency.cron", { cron: recurrence.cron })
-    }
-  }
-
-  const nextFormat = createMemo(
-    () =>
-      new Intl.DateTimeFormat(language.intl(), {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-  )
-
-  const nextLabel = createMemo(() => {
-    const recurrence = form.recurrence
-
-    if (recurrence.kind !== "cron") return undefined
-
-    const date = nextRun(recurrence, new Date())
-
-    return date ? nextFormat().format(date) : undefined
-  })
-
   return (
-    <Dialog size="x-large" class="scheduled-create" containerClass="scheduled-create-container">
+    <Dialog size="large" class="scheduled-create" containerClass="scheduled-create-container">
       <DialogHeader>
         <DialogTitleGroup
           title={language.t("scheduled.create.title")}
@@ -376,81 +331,14 @@ export function NewScheduledTaskDialog(props: {
               </div>
             </Show>
           </div>
-
-          <aside class="scheduled-preview" aria-label={language.t("scheduled.create.preview.label")}>
-            <div class="scheduled-preview-head">
-              <span class="scheduled-preview-title">{language.t("scheduled.create.preview.label")}</span>
-              <span class="scheduled-preview-badge">{language.t("scheduled.create.preview.paused")}</span>
-            </div>
-
-            <dl class="scheduled-preview-list">
-              <div class="scheduled-preview-row">
-                <dt>{language.t("scheduled.create.preview.name")}</dt>
-                <dd>{form.name.trim() || titleOf(form.prompt) || language.t("scheduled.create.preview.untitled")}</dd>
-              </div>
-              <div class="scheduled-preview-row">
-                <dt>{language.t("scheduled.create.preview.runs")}</dt>
-                <dd data-empty={validCron() ? undefined : ""}>
-                  {validCron() ? describeCadence(form.recurrence) : language.t("scheduled.create.preview.empty")}
-                </dd>
-              </div>
-              <div class="scheduled-preview-row">
-                <dt>{language.t("scheduled.create.preview.next")}</dt>
-                <Show
-                  when={form.recurrence.kind === "cron"}
-                  fallback={<dd>{language.t("scheduled.create.preview.pending")}</dd>}
-                >
-                  <dd data-empty={nextLabel() ? undefined : ""}>
-                    {nextLabel() ?? language.t("scheduled.create.preview.empty")}
-                  </dd>
-                </Show>
-              </div>
-              <div class="scheduled-preview-row">
-                <dt>{language.t("scheduled.create.preview.zone")}</dt>
-                <dd>{form.tz}</dd>
-              </div>
-              <div class="scheduled-preview-row">
-                <dt>{language.t("scheduled.create.preview.project")}</dt>
-                <Show
-                  when={form.step === 2}
-                  fallback={<dd data-empty="">{language.t("scheduled.create.preview.next-step")}</dd>}
-                >
-                  <dd data-empty={projectName() ? undefined : ""}>
-                    {projectName() ?? language.t("scheduled.create.preview.empty")}
-                  </dd>
-                </Show>
-              </div>
-              <div class="scheduled-preview-row">
-                <dt>{language.t("scheduled.create.preview.permission")}</dt>
-                <Show
-                  when={form.step === 2}
-                  fallback={<dd data-empty="">{language.t("scheduled.create.preview.next-step")}</dd>}
-                >
-                  <dd>
-                    {language.t(
-                      form.permission === "read-only"
-                        ? "scheduled.create.permission.readonly"
-                        : "scheduled.create.permission.default",
-                    )}
-                  </dd>
-                </Show>
-              </div>
-            </dl>
-
-            <div class="scheduled-preview-prompt">
-              <span class="scheduled-preview-title">{language.t("scheduled.create.preview.prompt")}</span>
-              <p data-empty={form.prompt.trim() ? undefined : ""}>
-                {form.prompt.trim() || language.t("scheduled.create.preview.empty")}
-              </p>
-            </div>
-
-            <p class="scheduled-preview-note">{language.t("scheduled.create.footer.hint")}</p>
-          </aside>
         </div>
       </DialogBody>
 
       <DialogFooter>
-        <Show when={form.submitting}>
+        <Show
+          when={form.submitting}
+          fallback={<p class="scheduled-create-note">{language.t("scheduled.create.footer.hint")}</p>}
+        >
           <p class="scheduled-create-status" role="status">
             <Loader class="size-3.5" />
             {language.t("scheduled.create.saving")}
