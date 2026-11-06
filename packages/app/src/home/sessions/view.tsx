@@ -17,9 +17,11 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useSettingsDialog } from "@/settings/command"
+import { useSettingsSurface } from "@/settings/surface"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import { ArchivedSessionsDialog } from "@/shell/titlebar/inbox"
 import { sessionLabel } from "@/session/title"
+import { SessionMenuCopyID, useCopySessionID } from "@/session/menu-items"
 import { shouldOpenSessionInBackground } from "./open"
 import type { HomeSessionsState } from "./machine"
 import { createAltHold } from "./alt-hold"
@@ -545,15 +547,18 @@ function HomeTodaySummary(props: {
   const today = createMemo(() => props.groups.find((group) => group.id === "today"))
   const recent = createMemo(() => props.groups.reduce((count, group) => count + group.sessions.length, 0))
   const pinned = createMemo(() => props.groups.find((group) => group.id === "pinned")?.sessions.length ?? 0)
+
   const date = createMemo(() =>
     new Intl.DateTimeFormat(props.language.intl(), { month: "long", day: "numeric", weekday: "long" }).format(
       new Date(),
     ),
   )
+
   const greeting = createMemo(() => {
     const hour = new Date().getHours()
 
     if (hour < 12) return props.language.t("home.today.greeting.morning")
+
     if (hour < 18) return props.language.t("home.today.greeting.afternoon")
 
     return props.language.t("home.today.greeting.evening")
@@ -618,6 +623,8 @@ function HomeSessionRow(
   const title = createMemo(() => sessionLabel(props.record.session))
   const location = createMemo(() => props.location(props.record))
   const platform = usePlatform()
+  const settings = useSettingsSurface()
+  const copySessionID = useCopySessionID()
   const showProjectName = () => props.showProjectName && props.record.projectName
   const sessionID = () => props.record.session.id
   const menu = () => (props.rowUI.menu?.id === sessionID() ? props.rowUI.menu : undefined)
@@ -666,31 +673,44 @@ function HomeSessionRow(
     })
   }
 
+  const openProjectSettingsForSession = () =>
+    settings.openProject({ server: props.server, project: props.record.project.worktree })
+
   // Desktop shows the OS menu; the web build keeps the in-app one.
   const showNativeMenu = async (position: { x: number; y: number }) => {
     const show = platform.showContextMenu
 
     if (!show) return
     const session = props.record.session
+
     const chosen = await show(
       [
+        { id: "open", label: props.language.t("menu.action.open") },
+        { type: "separator" },
         {
           id: "pin",
           label: props.isPinned(session) ? props.language.t("common.unpin") : props.language.t("common.pin"),
         },
         { id: "rename", label: props.language.t("common.rename") },
-        { id: "settings", label: `${props.language.t("session.settings.menu")}…` },
+        { type: "separator" },
+        { id: "copyID", label: props.language.t("command.session.copyID") },
         { id: "export", label: `${props.language.t("common.export")}…` },
+        { type: "separator" },
+        { id: "settings", label: `${props.language.t("session.settings.menu")}…` },
+        { id: "projectSettings", label: `${props.language.t("project.settings.menu")}…` },
         { type: "separator" },
         { id: "delete", label: `${props.language.t("common.delete")}…` },
       ],
       position,
     )
 
-    if (chosen === "pin") props.onTogglePin(session)
+    if (chosen === "open") props.onOpenSession(session)
+    else if (chosen === "pin") props.onTogglePin(session)
     else if (chosen === "rename") openEditor()
-    else if (chosen === "settings") props.onSessionSettings(props.server, session)
+    else if (chosen === "copyID") void copySessionID(session.id)
     else if (chosen === "export") void props.onExportSession(props.server, session)
+    else if (chosen === "settings") props.onSessionSettings(props.server, session)
+    else if (chosen === "projectSettings") openProjectSettingsForSession()
     else if (chosen === "delete") props.onDeleteSession(props.server, session)
   }
 
@@ -928,20 +948,45 @@ function HomeSessionRow(
               requestAnimationFrame(() => rowButton()?.focus())
             }}
           >
-            <Menu.Item onSelect={() => props.onTogglePin(props.record.session)}>
-              {props.isPinned(props.record.session) ? props.language.t("common.unpin") : props.language.t("common.pin")}
-            </Menu.Item>
-            <Menu.Item onSelect={openEditor}>{props.language.t("common.rename")}</Menu.Item>
-            <Menu.Item onSelect={() => props.onSessionSettings(props.server, props.record.session)}>
-              {props.language.t("session.settings.menu")}…
-            </Menu.Item>
-            <Menu.Item onSelect={() => void props.onExportSession(props.server, props.record.session)}>
-              {props.language.t("common.export")}…
-            </Menu.Item>
+            <Menu.Group>
+              <Menu.GroupLabel>{props.language.t("menu.group.open")}</Menu.GroupLabel>
+              <Menu.Item onSelect={() => props.onOpenSession(props.record.session)}>
+                {props.language.t("menu.action.open")}
+              </Menu.Item>
+            </Menu.Group>
             <Menu.Separator />
-            <Menu.Item onSelect={() => props.onDeleteSession(props.server, props.record.session)}>
-              {props.language.t("common.delete")}…
-            </Menu.Item>
+            <Menu.Group>
+              <Menu.GroupLabel>{props.language.t("menu.group.organize")}</Menu.GroupLabel>
+              <Menu.Item onSelect={() => props.onTogglePin(props.record.session)}>
+                {props.isPinned(props.record.session) ? props.language.t("common.unpin") : props.language.t("common.pin")}
+              </Menu.Item>
+              <Menu.Item onSelect={openEditor}>{props.language.t("common.rename")}</Menu.Item>
+            </Menu.Group>
+            <Menu.Separator />
+            <Menu.Group>
+              <Menu.GroupLabel>{props.language.t("menu.group.copyExport")}</Menu.GroupLabel>
+              <SessionMenuCopyID sessionID={props.record.session.id} />
+              <Menu.Item onSelect={() => void props.onExportSession(props.server, props.record.session)}>
+                {props.language.t("common.export")}…
+              </Menu.Item>
+            </Menu.Group>
+            <Menu.Separator />
+            <Menu.Group>
+              <Menu.GroupLabel>{props.language.t("menu.group.settings")}</Menu.GroupLabel>
+              <Menu.Item onSelect={() => props.onSessionSettings(props.server, props.record.session)}>
+                {props.language.t("session.settings.menu")}…
+              </Menu.Item>
+              <Menu.Item onSelect={openProjectSettingsForSession}>
+                {props.language.t("project.settings.menu")}…
+              </Menu.Item>
+            </Menu.Group>
+            <Menu.Separator />
+            <Menu.Group>
+              <Menu.GroupLabel>{props.language.t("menu.group.danger")}</Menu.GroupLabel>
+              <Menu.Item onSelect={() => props.onDeleteSession(props.server, props.record.session)}>
+                {props.language.t("common.delete")}…
+              </Menu.Item>
+            </Menu.Group>
           </Menu.Content>
         </Menu.Portal>
       </Menu>

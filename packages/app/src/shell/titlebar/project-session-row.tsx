@@ -16,6 +16,7 @@ import { errorMessage } from "@/shell/layout/helpers"
 import { showToast } from "@/shell/notifications/toast"
 import { sessionTreeIDs } from "@/session/requests/session-request-tree"
 import { sessionLabel } from "@/session/title"
+import { SessionMenuCopyID } from "@/session/menu-items"
 import { notifySessionTabsRemoved } from "./session-events"
 import "./tab-nav.css"
 
@@ -168,16 +169,32 @@ export function ProjectSessionRow(props: {
             if (dialog.active) event.preventDefault()
           }}
         >
-          <Menu.Item
-            disabled={!ctx()}
-            onSelect={() => dialog.show(() => <RenameDialog title={sessionLabel(props.session)} onRename={rename} />)}
-          >
-            {language.t("common.rename")}
-          </Menu.Item>
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.open")}</Menu.GroupLabel>
+            <Menu.Item onSelect={props.onOpen}>{language.t("menu.action.open")}</Menu.Item>
+          </Menu.Group>
           <Menu.Separator />
-          <Menu.Item data-variant="critical" disabled={!ctx()} onSelect={() => dialog.show(() => <DeleteDialog />)}>
-            {language.t("common.delete")}…
-          </Menu.Item>
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.organize")}</Menu.GroupLabel>
+            <Menu.Item
+              disabled={!ctx()}
+              onSelect={() => dialog.show(() => <RenameDialog title={sessionLabel(props.session)} onRename={rename} />)}
+            >
+              {language.t("common.rename")}
+            </Menu.Item>
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.copyExport")}</Menu.GroupLabel>
+            <SessionMenuCopyID sessionID={props.session.id} />
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.danger")}</Menu.GroupLabel>
+            <Menu.Item data-variant="critical" disabled={!ctx()} onSelect={() => dialog.show(() => <DeleteDialog />)}>
+              {language.t("common.delete")}…
+            </Menu.Item>
+          </Menu.Group>
         </Menu.Context.Content>
       </Menu.Context.Portal>
     </Menu.Context>

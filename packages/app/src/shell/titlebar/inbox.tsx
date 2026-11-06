@@ -35,6 +35,8 @@ import { SessionSettingsDialog } from "@/session/settings-dialog"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { usePinnedSessions } from "@/session/pins"
+import { SessionMenuCopyID, useCopySessionID } from "@/session/menu-items"
+import { useSettingsSurface } from "@/settings/surface"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import type { LocalProject } from "@/shell/state/layout"
 import { pathKey } from "@/workspaces/path-key"
@@ -538,6 +540,7 @@ function InboxRow(props: InboxRowProps) {
   const language = useLanguage()
   const platform = usePlatform()
   const dialog = useDialog()
+  const settings = useSettingsSurface()
   const nativeMenu = () => !!platform.showContextMenu
   const project = createMemo(() => props.entry.ctx.projects.forSession(props.entry.session))
   const servers = useServers()
@@ -576,6 +579,12 @@ function InboxRow(props: InboxRowProps) {
     return seconds < 60 ? language.plural("sidebar.inbox.elapsed.seconds", seconds) : compact(seconds)
   }
 
+  const openProjectSettings = () =>
+    settings.openProject({
+      server: props.entry.server,
+      project: project()?.worktree ?? props.entry.session.location.directory,
+    })
+
   const age = () => {
     const seconds = Math.max(
       0,
@@ -585,6 +594,8 @@ function InboxRow(props: InboxRowProps) {
     return seconds < 60 ? language.t("sidebar.inbox.time.now") : compact(seconds)
   }
 
+  const copySessionID = useCopySessionID()
+
   const showNativeMenu = async (position: { x: number; y: number }) => {
     const show = platform.showContextMenu
 
@@ -592,25 +603,34 @@ function InboxRow(props: InboxRowProps) {
 
     const chosen = await show(
       [
+        { id: "open", label: language.t("menu.action.open") },
+        { type: "separator" },
         { id: "pin", label: props.pinned ? language.t("common.unpin") : language.t("common.pin") },
         {
           id: props.archived ? "unarchive" : "archive",
           label: props.archived ? language.t("sidebar.inbox.unarchive") : language.t("common.archive"),
         },
+        { type: "separator" },
+        { id: "copyID", label: language.t("command.session.copyID") },
+        { type: "separator" },
         { id: "settings", label: `${language.t("session.settings.menu")}…` },
+        { id: "projectSettings", label: `${language.t("project.settings.menu")}…` },
         { type: "separator" },
         { id: "delete", label: `${language.t("common.delete")}…` },
       ],
       position,
     )
 
-    if (chosen === "pin") props.onTogglePin()
+    if (chosen === "open") props.onOpen()
+    else if (chosen === "pin") props.onTogglePin()
     else if (chosen === "archive") props.onArchive()
     else if (chosen === "unarchive") props.onUnarchive()
+    else if (chosen === "copyID") void copySessionID(props.entry.session.id)
     else if (chosen === "settings")
       dialog.show(() => (
         <SessionSettingsDialog server={ServerConnection.key(props.entry.conn)} session={props.entry.session} />
       ))
+    else if (chosen === "projectSettings") openProjectSettings()
     else if (chosen === "delete") props.onDelete()
   }
 
@@ -679,26 +699,47 @@ function InboxRow(props: InboxRowProps) {
       </Menu.Context.Trigger>
       <Menu.Context.Portal>
         <Menu.Context.Content>
-          <Menu.Item onSelect={props.onTogglePin}>
-            {props.pinned ? language.t("common.unpin") : language.t("common.pin")}
-          </Menu.Item>
-          <Show
-            when={props.archived}
-            fallback={<Menu.Item onSelect={props.onArchive}>{language.t("common.archive")}</Menu.Item>}
-          >
-            <Menu.Item onSelect={props.onUnarchive}>{language.t("sidebar.inbox.unarchive")}</Menu.Item>
-          </Show>
-          <Menu.Item
-            onSelect={() =>
-              dialog.show(() => (
-                <SessionSettingsDialog server={ServerConnection.key(props.entry.conn)} session={props.entry.session} />
-              ))
-            }
-          >
-            {language.t("session.settings.menu")}…
-          </Menu.Item>
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.open")}</Menu.GroupLabel>
+            <Menu.Item onSelect={props.onOpen}>{language.t("menu.action.open")}</Menu.Item>
+          </Menu.Group>
           <Menu.Separator />
-          <Menu.Item onSelect={props.onDelete}>{language.t("common.delete")}…</Menu.Item>
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.organize")}</Menu.GroupLabel>
+            <Menu.Item onSelect={props.onTogglePin}>
+              {props.pinned ? language.t("common.unpin") : language.t("common.pin")}
+            </Menu.Item>
+            <Show
+              when={props.archived}
+              fallback={<Menu.Item onSelect={props.onArchive}>{language.t("common.archive")}</Menu.Item>}
+            >
+              <Menu.Item onSelect={props.onUnarchive}>{language.t("sidebar.inbox.unarchive")}</Menu.Item>
+            </Show>
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.copyExport")}</Menu.GroupLabel>
+            <SessionMenuCopyID sessionID={props.entry.session.id} />
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.settings")}</Menu.GroupLabel>
+            <Menu.Item
+              onSelect={() =>
+                dialog.show(() => (
+                  <SessionSettingsDialog server={ServerConnection.key(props.entry.conn)} session={props.entry.session} />
+                ))
+              }
+            >
+              {language.t("session.settings.menu")}…
+            </Menu.Item>
+            <Menu.Item onSelect={openProjectSettings}>{language.t("project.settings.menu")}…</Menu.Item>
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.danger")}</Menu.GroupLabel>
+            <Menu.Item onSelect={props.onDelete}>{language.t("common.delete")}…</Menu.Item>
+          </Menu.Group>
         </Menu.Context.Content>
       </Menu.Context.Portal>
     </Menu.Context>

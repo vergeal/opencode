@@ -11,7 +11,9 @@ import { Menu } from "@opencode/ui/menu"
 import { useServerCtx } from "@/runtime/server/runtime"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePinnedSessions } from "@/session/pins"
+import { SessionMenuCopyID } from "@/session/menu-items"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
+import { useSettingsSurface } from "@/settings/surface"
 import { displayName } from "@opencode/ui/project-avatar"
 import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import type { SessionInfo } from "@opencode/client/promise"
@@ -76,6 +78,7 @@ export function TabNavItem(
 ) {
   const language = useLanguage()
   const pins = usePinnedSessions()
+  const settings = useSettingsSurface()
   const [nav, setNav] = createStore<TabNavState>(initialTabNavState)
   const dispatch = (event: TabNavEvent) => setNav(transitionTabNav(nav, event))
   const editing = () => nav.overlay === "editing"
@@ -445,25 +448,50 @@ export function TabNavItem(
             openRename()
           }}
         >
-          <Menu.Item disabled={!props.session} onSelect={() => props.session && pins.toggle(props.session.id)}>
-            {props.session && pins.isPinned(props.session.id) ? language.t("common.unpin") : language.t("common.pin")}
-          </Menu.Item>
-          <Menu.Item disabled={!props.session} onSelect={() => dispatch({ type: "rename.request" })}>
-            {language.t("common.rename")}
-          </Menu.Item>
-          <Menu.Item disabled={!props.session} onSelect={() => props.onSessionSettings?.()}>
-            {language.t("session.settings.menu")}…
-          </Menu.Item>
-          <TabCloseMenuItems
-            orientation={props.orientation}
-            onClose={props.onClose}
-            onCloseOthers={props.onCloseOthers}
-            onCloseAfter={props.onCloseAfter}
-          />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.organize")}</Menu.GroupLabel>
+            <Menu.Item disabled={!props.session} onSelect={() => props.session && pins.toggle(props.session.id)}>
+              {props.session && pins.isPinned(props.session.id) ? language.t("common.unpin") : language.t("common.pin")}
+            </Menu.Item>
+            <Menu.Item disabled={!props.session} onSelect={() => dispatch({ type: "rename.request" })}>
+              {language.t("common.rename")}
+            </Menu.Item>
+            <TabCloseMenuItems
+              orientation={props.orientation}
+              onClose={props.onClose}
+              onCloseOthers={props.onCloseOthers}
+              onCloseAfter={props.onCloseAfter}
+            />
+          </Menu.Group>
           <Menu.Separator />
-          <Menu.Item data-variant="critical" disabled={!props.session} onSelect={props.onDelete}>
-            {language.t("session.delete.title")}…
-          </Menu.Item>
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.copyExport")}</Menu.GroupLabel>
+            <SessionMenuCopyID sessionID={props.session?.id} />
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.settings")}</Menu.GroupLabel>
+            <Menu.Item disabled={!props.session} onSelect={() => props.onSessionSettings?.()}>
+              {language.t("session.settings.menu")}…
+            </Menu.Item>
+            <Menu.Item
+              disabled={!props.session || !project()?.worktree}
+              onSelect={() => {
+                const directory = project()?.worktree
+
+                if (directory) settings.openProject({ server: props.server, project: directory })
+              }}
+            >
+              {language.t("project.settings.menu")}…
+            </Menu.Item>
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.danger")}</Menu.GroupLabel>
+            <Menu.Item data-variant="critical" disabled={!props.session} onSelect={props.onDelete}>
+              {language.t("session.delete.title")}…
+            </Menu.Item>
+          </Menu.Group>
         </Menu.Context.Content>
       </Menu.Context.Portal>
     </Menu.Context>
