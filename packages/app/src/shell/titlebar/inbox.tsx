@@ -353,9 +353,9 @@ export function SidebarInbox() {
         <div
           ref={scrollRef}
           data-slot="sidebar-inbox-scroll"
+          data-scrollable
           class="-me-2.5 flex min-h-0 flex-1 flex-col gap-[2px] overflow-y-auto pb-1 pe-2.5"
         >
-          data-scrollable
           <Show
             when={
               recent().length === 0 &&
