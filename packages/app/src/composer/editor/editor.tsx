@@ -363,7 +363,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               spellcheck={state.mode === "normal"}
               // @ts-expect-error
               autocomplete="off"
-              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-3 pe-[var(--composer-scroll-end)] pt-3 pb-2 text-[15px] font-[400] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-primitive"
+              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-3 pe-[var(--composer-scroll-end)] pt-3 pb-2 text-[15px] font-[400] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-primitive [&_[data-mention=skill]]:text-syntax-constant"
               classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell", "opacity-50": props.disabled }}
               style={{
                 "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
