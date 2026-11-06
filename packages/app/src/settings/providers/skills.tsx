@@ -1,10 +1,8 @@
 import type { SkillInfo } from "@opencode/client/promise"
 import { getDirectory, getFilename, containsDirectory } from "@opencode/util/path"
 import { Button } from "@opencode/ui/button"
-import { Loader } from "@opencode/ui/loader"
 import { Switch } from "@opencode/ui/switch"
-import { Textarea } from "@opencode/ui/textarea"
-import { For, Show, createEffect, createMemo, createResource, on, type Component } from "solid-js"
+import { For, Show, createEffect, createMemo, type Component } from "solid-js"
 import { createStore, produce } from "solid-js/store"
 import { ExternalLink } from "@/runtime/platform/external-link"
 import { usePlatform } from "@/runtime/platform/platform"
@@ -82,21 +80,12 @@ export const SettingsSkills: Component<{ directory: string }> = (props) => {
   const [state, setState] = createStore<{
     query: string
     selected?: string
-    tick: number
-    editing: boolean
-    draft: string
     toggling?: string
     rescanning: boolean
-    notice: boolean
-    save: { status: "idle" | "saving" | "error"; message?: string }
   }>({
     query: "",
-    tick: 0,
-    editing: false,
-    draft: "",
+    toggling: undefined,
     rescanning: false,
-    notice: false,
-    save: { status: "idle" },
   })
 
   const skills = () => data.location.skill.list({ directory: props.directory }) ?? []
@@ -133,8 +122,6 @@ export const SettingsSkills: Component<{ directory: string }> = (props) => {
     const current = state.selected
     const items = visible()
 
-    if (state.editing) return
-
     if (current && items.some((skill) => skill.id === current)) return
 
     if (!current && items.length === 0) return
@@ -142,46 +129,11 @@ export const SettingsSkills: Component<{ directory: string }> = (props) => {
     setState("selected", items[0]?.id)
   })
 
-  const [raw] = createResource(
-    () => {
-      const skill = selected()
-
-      return skill ? { skill, tick: state.tick } : undefined
-    },
-    async ({ skill }) => {
-      if (isVirtual(skill)) return { text: skill.content, virtual: true }
-
-      const bytes = await serverSdk.api.file.read({
-        path: getFilename(skill.path),
-        location: { directory: getDirectory(skill.path) },
-      })
-
-      return { text: readText(bytes), virtual: false }
-    },
-  )
-
-  const file = () => (raw.state === "ready" || raw.state === "refreshing" ? raw.latest : undefined)
-  const loading = () => raw.state === "unresolved" || raw.state === "pending"
-  const dirty = () => state.editing && file() !== undefined && state.draft !== file()!.text
-
   const selectSkill = (skill: SkillInfo) => {
     if (skill.id === state.selected) return
 
-    if (state.editing) {
-      setState("notice", true)
-
-      return
-    }
-
-    setState({ selected: skill.id, notice: false })
+    setState("selected", skill.id)
   }
-
-  createEffect(
-    on(
-      () => state.selected,
-      () => setState({ editing: false, draft: "", notice: false, save: { status: "idle" } }),
-    ),
-  )
 
   // The switch is optimistic until the rescan reports the written value, then it follows the server again.
   const [autoinvoke, setAutoinvoke] = createStore<Record<string, boolean>>({})
@@ -227,7 +179,6 @@ export const SettingsSkills: Component<{ directory: string }> = (props) => {
     try {
       await writeSkill(skill, withAutoinvoke(await readSkill(skill), enabled))
       setAutoinvoke(skill.id, enabled)
-      setState("tick", (tick) => tick + 1)
     } catch (error) {
       showToast({
         variant: "error",
@@ -236,28 +187,6 @@ export const SettingsSkills: Component<{ directory: string }> = (props) => {
       })
     } finally {
       setState("toggling", undefined)
-    }
-  }
-
-  const startEditing = () => {
-    const value = file()
-
-    if (!value) return
-
-    setState({ editing: true, draft: value.text, notice: false, save: { status: "idle" } })
-  }
-
-  const save = async (skill: SkillInfo) => {
-    if (state.save.status === "saving") return
-
-    setState("save", { status: "saving" })
-
-    try {
-      await writeSkill(skill, state.draft)
-      setState({ editing: false, notice: false, save: { status: "idle" } })
-      setState("tick", (tick) => tick + 1)
-    } catch (error) {
-      setState("save", { status: "error", message: error instanceof Error ? error.message : undefined })
     }
   }
 
@@ -273,6 +202,38 @@ export const SettingsSkills: Component<{ directory: string }> = (props) => {
     }
 
     void platform.openPath?.(directory)
+  }
+
+  // VS Code is the default editor; other systems fall back to whatever app owns the file.
+  const openInEditor = async (skill: SkillInfo) => {
+    if (!platform.openPath) return
+
+    const application = platform.os === "macos" ? "Visual Studio Code" : undefined
+
+    try {
+      await platform.openPath(skill.path, application)
+    } catch {
+      if (!application) {
+        showToast({ variant: "error", title: language.t("settings.skills.openEditorFailed") })
+
+        return
+      }
+
+      try {
+        await platform.openPath(skill.path)
+      } catch {
+        showToast({ variant: "error", title: language.t("settings.skills.openEditorFailed") })
+      }
+    }
+  }
+
+  const copyReference = async (skill: SkillInfo) => {
+    try {
+      await (platform.writeClipboardText?.(`@${skill.id}`) ?? navigator.clipboard.writeText(`@${skill.id}`))
+      showToast({ variant: "success", title: language.t("settings.skills.copiedReference") })
+    } catch {
+      showToast({ variant: "error", title: language.t("settings.skills.copyFailed") })
+    }
   }
 
   const rescan = async () => {
@@ -377,29 +338,46 @@ export const SettingsSkills: Component<{ directory: string }> = (props) => {
               <div class="settings-skills-header">
                 <div class="settings-skills-heading">
                   <h3 class="settings-skills-title">{skill().name}</h3>
-                  <p class="settings-skills-path" title={skill().path}>
-                    {skill().path}
-                  </p>
+                  <div class="settings-skills-meta">
+                    <button
+                      type="button"
+                      class="settings-skills-reference"
+                      title={language.t("settings.skills.copyReference")}
+                      onClick={() => void copyReference(skill())}
+                    >
+                      @{skill().id}
+                    </button>
+                    <span class="settings-skills-path" title={skill().path}>
+                      {skill().path}
+                    </span>
+                  </div>
                 </div>
                 <Show when={!isVirtual(skill())}>
-                  <Button
-                    size="small"
-                    variant="ghost-muted"
-                    icon="folder"
-                    onClick={() => reveal(skill())}
-                    disabled={!platform.revealPath && !platform.openPath}
-                  >
-                    {language.t("settings.skills.reveal")}
-                  </Button>
+                  <div class="settings-skills-actions">
+                    <Button
+                      size="small"
+                      variant="ghost-muted"
+                      icon="outline-code-brackets"
+                      disabled={!platform.openPath}
+                      onClick={() => void openInEditor(skill())}
+                    >
+                      {language.t("settings.skills.openEditor")}
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="ghost-muted"
+                      icon="folder"
+                      onClick={() => reveal(skill())}
+                      disabled={!platform.revealPath && !platform.openPath}
+                    >
+                      {language.t("settings.skills.reveal")}
+                    </Button>
+                  </div>
                 </Show>
               </div>
 
               <Show when={skill().description}>
                 {(description) => <p class="settings-skills-description">{description()}</p>}
-              </Show>
-
-              <Show when={state.notice}>
-                <p class="settings-skills-notice">{language.t("settings.skills.unsavedHint")}</p>
               </Show>
 
               <div class="settings-skills-toggle">
@@ -415,112 +393,12 @@ export const SettingsSkills: Component<{ directory: string }> = (props) => {
                 </div>
                 <Switch
                   checked={autoinvokeOn(skill())}
-                  disabled={isVirtual(skill()) || state.editing || !!state.toggling}
+                  disabled={isVirtual(skill()) || !!state.toggling}
                   hideLabel
                   onChange={(enabled) => void toggleAutoinvoke(skill(), enabled)}
                 >
                   {language.t("settings.skills.autoinvoke.title")}
                 </Switch>
-              </div>
-
-              <div class="settings-skills-content">
-                <div class="settings-skills-content-header">
-                  <span class="settings-skills-content-title">
-                    {isVirtual(skill()) ? "SKILL.md" : getFilename(skill().path)}
-                    <Show when={dirty()}>
-                      <span class="settings-skills-dirty">{language.t("settings.skills.unsaved")}</span>
-                    </Show>
-                  </span>
-                  <Show when={!isVirtual(skill())}>
-                    <Show
-                      when={state.editing}
-                      fallback={
-                        <Button
-                          size="small"
-                          variant="ghost-muted"
-                          icon="edit"
-                          disabled={!file()}
-                          onClick={startEditing}
-                        >
-                          {language.t("settings.skills.edit")}
-                        </Button>
-                      }
-                    >
-                      <div class="settings-skills-edit-actions">
-                        <Button
-                          size="small"
-                          variant="ghost-muted"
-                          onClick={() => setState({ editing: false, notice: false, save: { status: "idle" } })}
-                        >
-                          {language.t("settings.skills.cancel")}
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="contrast"
-                          disabled={state.save.status === "saving"}
-                          aria-busy={state.save.status === "saving"}
-                          onClick={() => void save(skill())}
-                        >
-                          {language.t(
-                            state.save.status === "saving" ? "settings.skills.saving" : "settings.skills.save",
-                          )}
-                        </Button>
-                      </div>
-                    </Show>
-                  </Show>
-                </div>
-
-                <Show when={state.save.status === "error"}>
-                  <p class="settings-skills-error">
-                    {language.t("settings.skills.saveFailed")}
-                    <Show when={state.save.status === "error" ? state.save.message : undefined}>
-                      {(message) => <span>{message()}</span>}
-                    </Show>
-                  </p>
-                </Show>
-
-                <div class="settings-skills-content-body" data-scrollable>
-                  <Show
-                    when={!loading()}
-                    fallback={
-                      <div class="settings-skills-loading">
-                        <Loader />
-                      </div>
-                    }
-                  >
-                    <Show
-                      when={raw.state !== "errored"}
-                      fallback={
-                        <div class="settings-skills-loading">
-                          <p>{language.t("settings.skills.loadFailed")}</p>
-                          <Button
-                            size="small"
-                            variant="ghost-muted"
-                            onClick={() => setState("tick", (tick) => tick + 1)}
-                          >
-                            {language.t("settings.skills.retry")}
-                          </Button>
-                        </div>
-                      }
-                    >
-                      <Show when={file()}>
-                        {(value) => (
-                          <Show
-                            when={state.editing}
-                            fallback={<pre class="settings-skills-preview">{value().text}</pre>}
-                          >
-                            <Textarea
-                              class="settings-skills-editor"
-                              value={state.draft}
-                              spellcheck={false}
-                              onInput={(event) => setState("draft", event.currentTarget.value)}
-                            />
-                          </Show>
-                        )}
-                      </Show>
-                    </Show>
-                  </Show>
-                </div>
               </div>
             </>
           )}
