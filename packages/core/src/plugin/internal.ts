@@ -86,6 +86,7 @@ import { QuestionTool } from "../tool/plugin/question.js"
 import { ReadToolFileSystem } from "../tool/read-filesystem.js"
 import { ReadTool } from "../tool/plugin/read.js"
 import { ArtifactTools } from "../tool/plugin/artifact.js"
+import { DeliverTool } from "../tool/plugin/deliver.js"
 import { KnowledgeTools } from "../tool/plugin/knowledge.js"
 import { ScheduleTools } from "../tool/plugin/schedule.js"
 import { ShellTool } from "../tool/plugin/shell.js"
@@ -271,6 +272,7 @@ const pre = [
   QuestionTool.Plugin,
   ReadTool.Plugin,
   ArtifactTools.Plugin,
+  DeliverTool.Plugin,
   KnowledgeTools.Plugin,
   ScheduleTools.Plugin,
   ShellTool.Plugin,
