@@ -148,38 +148,41 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
         class="sticky top-0 z-30 shrink-0 bg-v2-background-bg-base pb-1 pt-6 md:pb-3 lg:pt-12"
         onWheel={props.onWheel}
       >
-        <HomeSessionSearch
-          {...props}
-          showLocations={showLocations()}
-          hoveredSession={hover.sessionID}
-          onHoverSession={(sessionID) => setHover("sessionID", sessionID)}
-        />
-        <div class="pointer-events-none absolute right-0 top-[68px] z-20 flex items-center gap-1 md:top-[84px] lg:top-[108px]">
-          <Tooltip
-            class="pointer-events-auto flex shrink-0 items-center"
-            placement="bottom"
-            value={props.language.t("common.archive")}
-          >
-            <IconButton
-              data-action="home-archive"
-              variant="ghost-muted"
-              size="normal"
-              icon={<Icon name="archive" />}
-              class="h-7"
-              aria-label={props.language.t("common.archive")}
-              onClick={() => void dialog.show(() => <ArchivedSessionsDialog />)}
+        <div class="flex items-center gap-2">
+          <div class="min-w-0 flex-1 max-w-[420px]">
+            <HomeSessionSearch
+              {...props}
+              showLocations={showLocations()}
+              hoveredSession={hover.sessionID}
+              onHoverSession={(sessionID) => setHover("sessionID", sessionID)}
             />
-          </Tooltip>
-          <Button
-            data-action="home-manage-projects"
-            variant="ghost-muted"
-            size="normal"
-            icon="folder"
-            class="pointer-events-auto h-7 px-2 [font-weight:530]"
-            onClick={openProjectSettings}
-          >
-            {props.language.t("home.projects.manage")}
-          </Button>
+          </div>
+          <div class="flex shrink-0 items-center gap-1">
+            <Tooltip class="flex shrink-0 items-center" placement="bottom" value={props.language.t("common.archive")}>
+              <IconButton
+                data-action="home-archive"
+                variant="ghost-muted"
+                size="normal"
+                icon={<Icon name="archive" />}
+                aria-label={props.language.t("common.archive")}
+                onClick={() => void dialog.show(() => <ArchivedSessionsDialog />)}
+              />
+            </Tooltip>
+            <Tooltip
+              class="flex shrink-0 items-center"
+              placement="bottom"
+              value={props.language.t("home.projects.manage")}
+            >
+              <IconButton
+                data-action="home-manage-projects"
+                variant="ghost-muted"
+                size="normal"
+                icon={<Icon name="folder" />}
+                aria-label={props.language.t("home.projects.manage")}
+                onClick={openProjectSettings}
+              />
+            </Tooltip>
+          </div>
         </div>
       </div>
       <div class="pointer-events-none sticky top-[68px] z-40 h-0 -mr-3 md:top-[84px] lg:top-[108px]">
@@ -232,6 +235,7 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
                   <>
                     <HomeSessionGroupHeader
                       title={group().title}
+                      count={group().sessions.length}
                       titleOpacity={props.titleOpacity(group().id)}
                       onSetRef={(element) => props.onSetHeader(group().id, element)}
                       elevated={index === 0}
@@ -324,7 +328,7 @@ function HomeSessionSearch(
   },
 ) {
   return (
-    <div class="w-full">
+    <div class="w-full max-w-[420px]">
       <div ref={props.onSetSearchRoot} data-component="home-session-search" class="relative z-30 w-full">
         <Show when={props.searchOpen}>
           <div
@@ -393,9 +397,11 @@ function HomeSessionSearch(
         </Show>
         <label
           class={`
-            relative z-20 flex h-[34px] w-full max-w-[420px] items-center gap-2 rounded-[8px] border border-v2-border-border-muted py-1 ps-3 pe-2
-            text-[13px] leading-[var(--line-height-compact)] bg-v2-background-bg-base text-v2-icon-icon-muted transition-[background-color,border-color,box-shadow]
-            duration-[120ms] ease-in-out hover:border-v2-border-border-strong focus-within:border-v2-border-border-strong
+            relative z-20 flex h-[34px] w-full items-center gap-2 rounded-[7px] py-1 ps-3 pe-2
+            text-[13px] leading-[var(--line-height-compact)] bg-v2-background-bg-deep text-v2-icon-icon-muted
+            outline outline-1 -outline-offset-1 outline-transparent shadow-[var(--v2-elevation-input)]
+            transition-[background-color,outline-color,box-shadow] duration-[120ms] ease-in-out
+            focus-within:shadow-none focus-within:outline-v2-border-border-focus
           `}
         >
           <Icon name="magnifying-glass" />
@@ -569,27 +575,30 @@ function HomeTodaySummary(props: {
       <div class="flex flex-col pb-1">
         <h1 class="text-[20px] leading-[26px] font-semibold tracking-[-0.02em]">{greeting()}</h1>
         <p class="mt-1 text-[13px] leading-[var(--line-height-base)] text-v2-text-text-muted">{date()}</p>
-        <div class="mt-4 mb-5 flex flex-wrap gap-2 pr-24">
-          <HomeTodayChip label={props.language.t("home.today.stat.sessions")} value={today()?.sessions.length ?? 0} />
-          <HomeTodayChip label={props.language.t("home.today.stat.projects")} value={props.projectCount} />
-          <HomeTodayChip label={props.language.t("home.today.stat.pinned")} value={pinned()} />
+        <div class="mt-3 mb-6 flex flex-wrap items-center gap-x-2 pr-24 text-[11px] leading-[var(--line-height-compact)] text-v2-text-text-faint">
+          <HomeTodayStat label={props.language.t("home.today.stat.sessions")} value={today()?.sessions.length ?? 0} />
+          <span aria-hidden="true">·</span>
+          <HomeTodayStat label={props.language.t("home.today.stat.projects")} value={props.projectCount} />
+          <span aria-hidden="true">·</span>
+          <HomeTodayStat label={props.language.t("home.today.stat.pinned")} value={pinned()} />
         </div>
       </div>
     </Show>
   )
 }
 
-function HomeTodayChip(props: { label: string; value: number }) {
+function HomeTodayStat(props: { label: string; value: number }) {
   return (
-    <span class="flex h-6 items-center gap-1 rounded-full bg-v2-background-bg-layer-02 px-2 text-[11px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
+    <span class="flex items-center gap-1">
       {props.label}
-      <b class="font-semibold tabular-nums text-v2-text-text-base">{props.value}</b>
+      <b class="font-medium tabular-nums text-v2-text-text-muted">{props.value}</b>
     </span>
   )
 }
 
 function HomeSessionGroupHeader(props: {
   title: string
+  count: number
   titleOpacity: number
   onSetRef: (element: HTMLDivElement) => void
   elevated?: boolean
@@ -598,14 +607,20 @@ function HomeSessionGroupHeader(props: {
     <div
       ref={props.onSetRef}
       class={`
-        pointer-events-none sticky top-[68px] flex h-7 min-w-0 items-center justify-between
-        bg-v2-background-bg-base ps-1.5 md:ps-3 md:top-[84px] lg:top-[108px]
+        pointer-events-none sticky top-[68px] flex h-7 min-w-0 items-center justify-between gap-3
+        bg-v2-background-bg-base ps-1.5 pe-6 md:ps-3 md:top-[84px] lg:top-[108px]
       `}
       classList={{ "home-session-group-header z-[5]": !!props.elevated, "z-10": !props.elevated }}
     >
-      <div class={HOME_SECTION_LABEL} style={{ opacity: props.titleOpacity }}>
+      <div class={`${HOME_SECTION_LABEL} min-w-0 truncate`} style={{ opacity: props.titleOpacity }}>
         {props.title}
       </div>
+      <span
+        class="shrink-0 text-[11px] leading-4 tabular-nums text-v2-text-text-faint"
+        style={{ opacity: props.titleOpacity }}
+      >
+        {props.count}
+      </span>
     </div>
   )
 }
@@ -751,7 +766,7 @@ function HomeSessionRow(
       data-component="home-session-row-container"
       data-project-name={!!showProjectName()}
       data-session-id={props.record.session.id}
-      class="group/session relative flex h-10 min-w-0 items-center rounded-full outline-none focus:outline-none focus-visible:outline-none"
+      class="group/session relative flex h-10 min-w-0 items-center rounded-[9px] outline-none focus:outline-none focus-visible:outline-none"
       onContextMenu={(event) => {
         // While renaming, keep the native menu so paste and spelling work.
         if (editor()) return
@@ -821,7 +836,7 @@ function HomeSessionRow(
           aria-haspopup="menu"
           aria-expanded={!!menu()}
           class={`
-            flex h-10 min-w-0 w-full flex-1 shrink-0 cursor-default items-center rounded-full border-0
+            flex h-10 min-w-0 w-full flex-1 shrink-0 cursor-default items-center rounded-[9px] border-0
             bg-transparent py-3 ps-3 pe-3 text-start text-v2-text-text-muted [font-weight:530]
             transition-[background-color,color,box-shadow] duration-[120ms] ease-in-out
             hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]
@@ -1093,7 +1108,10 @@ function HomeSessionsEmpty(props: {
   language: ReturnType<typeof useLanguage>
 }) {
   return (
-    <div class="flex min-h-full flex-col items-center gap-4 px-6 pt-12 text-center">
+    <div class="flex min-h-full flex-col items-center px-6 pt-16 text-center">
+      <span class="mb-5 flex size-11 items-center justify-center rounded-[10px] bg-v2-background-bg-layer-01 text-v2-icon-icon-muted">
+        <Icon name={props.onNewSession ? "speech-bubble" : "folder"} size="large" />
+      </span>
       <div
         class={`
           shrink-0 text-[16px] leading-[var(--line-height-base)] tracking-[-0.04px]
@@ -1104,7 +1122,7 @@ function HomeSessionsEmpty(props: {
       </div>
       <p
         class={`
-          mb-1 text-center text-[13px] leading-[var(--line-height-base)] tracking-[-0.04px]
+          mt-1.5 mb-5 max-w-[42ch] text-center text-[13px] leading-[var(--line-height-base)] tracking-[-0.04px]
           text-v2-text-text-muted [font-weight: 400]
         `}
       >

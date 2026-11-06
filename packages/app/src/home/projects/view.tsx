@@ -407,7 +407,7 @@ function HomeServerRow(props: {
       }
     >
       <div
-        class="group/server relative flex h-7 w-full min-w-0 items-center rounded-full"
+        class="group/server relative flex h-7 w-full min-w-0 items-center rounded-[7px]"
         data-home-row
         data-dimmed={!healthy() && !incompatible()}
         data-selected={props.selected ? "" : undefined}
@@ -631,7 +631,7 @@ function HomeProjectRow(
 
   return (
     <div
-      class="group/project relative flex h-7 min-w-0 items-center rounded-full"
+      class="group/project relative flex h-7 min-w-0 items-center rounded-[7px]"
       data-home-row
       data-dimmed={serverUnreachable()}
       data-selected={props.selected ? "" : undefined}
@@ -710,7 +710,7 @@ function HomeProjectNavButton(props: JSX.ButtonHTMLAttributes<HTMLButtonElement>
     <button
       {...rest}
       class={`
-        flex h-[30px] min-w-0 w-full shrink-0 cursor-default items-center gap-2 rounded-full bg-transparent px-1.5 text-left
+        flex h-[30px] min-w-0 w-full shrink-0 cursor-default items-center gap-2 rounded-[7px] bg-transparent px-1.5 text-left
         text-[12.5px] leading-[18px] text-v2-text-text-muted [font-weight: 400] transition-[background-color,color,box-shadow] duration-[120ms] ease-in-out
         hover:bg-v2-background-bg-layer-01 hover:text-v2-text-text-base
         data-[selected]:bg-v2-background-bg-base data-[selected]:text-v2-text-text-base
