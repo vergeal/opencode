@@ -538,6 +538,10 @@ export function createSessionTimelineRowRenderer(input: {
   }
 
   const notice = (message: SessionMessageInfo) => {
+    // Instruction keys are stable identifiers; show the ones that name a known source instead of the raw key.
+    const sourceLabel = (key: string) =>
+      key === "core/project" ? i18n.t("ui.sessionTimeline.notice.instructionSource.project") : key
+
     if (message.type === "agent-switched")
       return {
         label: i18n.t("ui.sessionTimeline.notice.agentChanged"),
@@ -556,7 +560,10 @@ export function createSessionTimelineRowRenderer(input: {
         : undefined
 
       if (message.metadata?.notice === "instructions" && sources?.length)
-        return { label: i18n.t("ui.sessionTimeline.notice.instructionsUpdated"), items: sources }
+        return {
+          label: i18n.t("ui.sessionTimeline.notice.instructionsUpdated"),
+          items: sources.map(sourceLabel),
+        }
       const prefix = "Instructions updated: "
 
       if (message.description?.startsWith(prefix)) {
@@ -568,7 +575,7 @@ export function createSessionTimelineRowRenderer(input: {
 
         return {
           label: i18n.t("ui.sessionTimeline.notice.instructionsUpdated"),
-          items: keys,
+          items: keys.map(sourceLabel),
         }
       }
 

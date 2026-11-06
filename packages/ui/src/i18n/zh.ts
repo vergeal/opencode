@@ -232,6 +232,7 @@ export const dict = {
   "ui.sessionTimeline.notice.cancelled": "{{actor}} 已取消",
   "ui.sessionTimeline.notice.finished": "{{actor}} 已完成",
   "ui.sessionTimeline.notice.instructionsUpdated": "指令已更新",
+  "ui.sessionTimeline.notice.instructionSource.project": "项目提示词",
   "ui.sessionTimeline.notice.restart": "重启后继续",
   "ui.promptInput.placeholder.followUp": "添加后续消息，输入 {{slash}} 使用命令，输入 {{at}} 添加上下文...",
   "ui.promptInput.steer": "引导",
