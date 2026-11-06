@@ -53,6 +53,7 @@ import { Image } from "../image.js"
 import { InstructionDiscovery } from "../instruction-discovery.js"
 import { Integration } from "../integration.js"
 import { Job } from "../job.js"
+import { Knowledge } from "../knowledge.js"
 import { KV } from "../kv.js"
 import { Location } from "../location.js"
 import { ModelsDev } from "../models-dev.js"
@@ -85,6 +86,7 @@ import { QuestionTool } from "../tool/plugin/question.js"
 import { ReadToolFileSystem } from "../tool/read-filesystem.js"
 import { ReadTool } from "../tool/plugin/read.js"
 import { ArtifactTools } from "../tool/plugin/artifact.js"
+import { KnowledgeTools } from "../tool/plugin/knowledge.js"
 import { ScheduleTools } from "../tool/plugin/schedule.js"
 import { ShellTool } from "../tool/plugin/shell.js"
 import { SkillTool } from "../tool/plugin/skill.js"
@@ -144,6 +146,7 @@ const services = [
   InstructionDiscovery.Service,
   Integration.Service,
   Job.Service,
+  Knowledge.Service,
   KV.Service,
   LLMClient.Service,
   Location.Service,
@@ -204,6 +207,7 @@ export const requirements = LayerNode.group([
   InstructionDiscovery.node,
   Integration.node,
   Job.node,
+  Knowledge.node,
   KV.node,
   llmClient,
   Location.node,
@@ -267,6 +271,7 @@ const pre = [
   QuestionTool.Plugin,
   ReadTool.Plugin,
   ArtifactTools.Plugin,
+  KnowledgeTools.Plugin,
   ScheduleTools.Plugin,
   ShellTool.Plugin,
   SkillTool.Plugin,

@@ -19,6 +19,7 @@ import { projectSettingsKey, useSettings } from "@/settings/model"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { ProjectFolderMissing } from "./project-folder-missing"
 import { ProjectOptions } from "./project-options"
+import { ProjectKnowledge } from "./project-knowledge"
 import { SettingsList } from "@/settings/list"
 import { SettingsRow } from "@/settings/row"
 import { createEditProjectModel } from "./project-model"
@@ -219,6 +220,14 @@ export const SettingsProjectGeneral: Component<{
             </div>
           </Show>
         </SettingsList>
+
+        <Show when={props.project.id !== "global" ? props.project.id : undefined}>
+          {(projectID) => (
+            <SettingsList>
+              <ProjectKnowledge projectID={projectID()} />
+            </SettingsList>
+          )}
+        </Show>
       </div>
     </>
   )

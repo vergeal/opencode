@@ -2813,6 +2813,98 @@ export interface ExperimentalConfigApi<E = never> {
   readonly update: ExperimentalConfigUpdateOperation<E>
 }
 
+export type ExperimentalServerKnowledgeListOutput = ReadonlyArray<{
+  readonly id: string
+  readonly name: string
+  readonly description?: string | undefined
+  readonly summary?: string | undefined
+  readonly keywords: ReadonlyArray<string>
+  readonly status: "empty" | "indexing" | "ready" | "stale" | "failed"
+  readonly model?: string | undefined
+  readonly documentCount: number
+  readonly chunkCount: number
+  readonly indexedAt?: DateTime.Utc | undefined
+  readonly time: { readonly created: DateTime.Utc; readonly updated: DateTime.Utc }
+}>
+export type ExperimentalServerKnowledgeListOperation<E = never> = () => Effect.Effect<
+  ExperimentalServerKnowledgeListOutput,
+  E
+>
+
+export type ExperimentalServerKnowledgeSyncInput = {
+  readonly libraryID: string
+  readonly name: string
+  readonly description?: string | undefined
+  readonly documents: ReadonlyArray<{
+    readonly path: string
+    readonly name: string
+    readonly kind: "document" | "spreadsheet" | "text"
+    readonly size: number
+    readonly text: string
+  }>
+}
+export type ExperimentalServerKnowledgeSyncOutput = {
+  readonly id: string
+  readonly name: string
+  readonly description?: string | undefined
+  readonly summary?: string | undefined
+  readonly keywords: ReadonlyArray<string>
+  readonly status: "empty" | "indexing" | "ready" | "stale" | "failed"
+  readonly model?: string | undefined
+  readonly documentCount: number
+  readonly chunkCount: number
+  readonly indexedAt?: DateTime.Utc | undefined
+  readonly time: { readonly created: DateTime.Utc; readonly updated: DateTime.Utc }
+}
+export type ExperimentalServerKnowledgeSyncOperation<E = never> = (
+  input: ExperimentalServerKnowledgeSyncInput,
+) => Effect.Effect<ExperimentalServerKnowledgeSyncOutput, E>
+
+export type ExperimentalServerKnowledgeRemoveInput = { readonly libraryID: string }
+export type ExperimentalServerKnowledgeRemoveOutput = void
+export type ExperimentalServerKnowledgeRemoveOperation<E = never> = (
+  input: ExperimentalServerKnowledgeRemoveInput,
+) => Effect.Effect<ExperimentalServerKnowledgeRemoveOutput, E>
+
+export type ExperimentalServerKnowledgeAssignedInput = { readonly projectID: Project.ID }
+export type ExperimentalServerKnowledgeAssignedOutput = ReadonlyArray<{
+  readonly id: string
+  readonly name: string
+  readonly description?: string | undefined
+  readonly summary?: string | undefined
+  readonly keywords: ReadonlyArray<string>
+  readonly status: "empty" | "indexing" | "ready" | "stale" | "failed"
+  readonly model?: string | undefined
+  readonly documentCount: number
+  readonly chunkCount: number
+  readonly indexedAt?: DateTime.Utc | undefined
+  readonly time: { readonly created: DateTime.Utc; readonly updated: DateTime.Utc }
+}>
+export type ExperimentalServerKnowledgeAssignedOperation<E = never> = (
+  input: ExperimentalServerKnowledgeAssignedInput,
+) => Effect.Effect<ExperimentalServerKnowledgeAssignedOutput, E>
+
+export type ExperimentalServerKnowledgeAssignInput = { readonly projectID: Project.ID; readonly libraryID: string }
+export type ExperimentalServerKnowledgeAssignOutput = void
+export type ExperimentalServerKnowledgeAssignOperation<E = never> = (
+  input: ExperimentalServerKnowledgeAssignInput,
+) => Effect.Effect<ExperimentalServerKnowledgeAssignOutput, E>
+
+export type ExperimentalServerKnowledgeUnassignInput = { readonly projectID: Project.ID; readonly libraryID: string }
+export type ExperimentalServerKnowledgeUnassignOutput = void
+export type ExperimentalServerKnowledgeUnassignOperation<E = never> = (
+  input: ExperimentalServerKnowledgeUnassignInput,
+) => Effect.Effect<ExperimentalServerKnowledgeUnassignOutput, E>
+
+export interface ExperimentalServerKnowledgeApi<E = never> {
+  readonly list: ExperimentalServerKnowledgeListOperation<E>
+  readonly sync: ExperimentalServerKnowledgeSyncOperation<E>
+  readonly remove: ExperimentalServerKnowledgeRemoveOperation<E>
+  readonly assigned: ExperimentalServerKnowledgeAssignedOperation<E>
+  readonly assign: ExperimentalServerKnowledgeAssignOperation<E>
+  readonly unassign: ExperimentalServerKnowledgeUnassignOperation<E>
+}
+
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput
 
@@ -3032,6 +3124,57 @@ export type ConfigUpdateOutput = ExperimentalConfigUpdateOutput
 /** @deprecated Use `ExperimentalConfigUpdateOperation`. Removed in the next minor. */
 export type ConfigUpdateOperation<E = never> = ExperimentalConfigUpdateOperation<E>
 
+/** @deprecated Use `ExperimentalServerKnowledgeListOutput`. Removed in the next minor. */
+export type ServerKnowledgeListOutput = ExperimentalServerKnowledgeListOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeListOperation`. Removed in the next minor. */
+export type ServerKnowledgeListOperation<E = never> = ExperimentalServerKnowledgeListOperation<E>
+
+/** @deprecated Use `ExperimentalServerKnowledgeSyncInput`. Removed in the next minor. */
+export type ServerKnowledgeSyncInput = ExperimentalServerKnowledgeSyncInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeSyncOutput`. Removed in the next minor. */
+export type ServerKnowledgeSyncOutput = ExperimentalServerKnowledgeSyncOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeSyncOperation`. Removed in the next minor. */
+export type ServerKnowledgeSyncOperation<E = never> = ExperimentalServerKnowledgeSyncOperation<E>
+
+/** @deprecated Use `ExperimentalServerKnowledgeRemoveInput`. Removed in the next minor. */
+export type ServerKnowledgeRemoveInput = ExperimentalServerKnowledgeRemoveInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeRemoveOutput`. Removed in the next minor. */
+export type ServerKnowledgeRemoveOutput = ExperimentalServerKnowledgeRemoveOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeRemoveOperation`. Removed in the next minor. */
+export type ServerKnowledgeRemoveOperation<E = never> = ExperimentalServerKnowledgeRemoveOperation<E>
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignedInput`. Removed in the next minor. */
+export type ServerKnowledgeAssignedInput = ExperimentalServerKnowledgeAssignedInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignedOutput`. Removed in the next minor. */
+export type ServerKnowledgeAssignedOutput = ExperimentalServerKnowledgeAssignedOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignedOperation`. Removed in the next minor. */
+export type ServerKnowledgeAssignedOperation<E = never> = ExperimentalServerKnowledgeAssignedOperation<E>
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignInput`. Removed in the next minor. */
+export type ServerKnowledgeAssignInput = ExperimentalServerKnowledgeAssignInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignOutput`. Removed in the next minor. */
+export type ServerKnowledgeAssignOutput = ExperimentalServerKnowledgeAssignOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignOperation`. Removed in the next minor. */
+export type ServerKnowledgeAssignOperation<E = never> = ExperimentalServerKnowledgeAssignOperation<E>
+
+/** @deprecated Use `ExperimentalServerKnowledgeUnassignInput`. Removed in the next minor. */
+export type ServerKnowledgeUnassignInput = ExperimentalServerKnowledgeUnassignInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeUnassignOutput`. Removed in the next minor. */
+export type ServerKnowledgeUnassignOutput = ExperimentalServerKnowledgeUnassignOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeUnassignOperation`. Removed in the next minor. */
+export type ServerKnowledgeUnassignOperation<E = never> = ExperimentalServerKnowledgeUnassignOperation<E>
+
 /** @deprecated Use `ExperimentalGenerateApi`. Removed in the next minor. */
 export type GenerateApi<E = never> = ExperimentalGenerateApi<E>
 
@@ -3043,6 +3186,9 @@ export type MigrationApi<E = never> = ExperimentalMigrationApi<E>
 
 /** @deprecated Use `ExperimentalUsageApi`. Removed in the next minor. */
 export type UsageApi<E = never> = ExperimentalUsageApi<E>
+
+/** @deprecated Use `ExperimentalServerKnowledgeApi`. Removed in the next minor. */
+export type ServerKnowledgeApi<E = never> = ExperimentalServerKnowledgeApi<E>
 
 export interface AppApi<E = never> {
   readonly server: ServerApi<E>
@@ -3060,6 +3206,7 @@ export interface AppApi<E = never> {
     readonly migration: ExperimentalMigrationApi<E>
     readonly usage: ExperimentalUsageApi<E>
     readonly config: ExperimentalConfigApi<E>
+    readonly "server.knowledge": ExperimentalServerKnowledgeApi<E>
   }
   readonly message: MessageApi<E>
   readonly model: ModelApi<E>
@@ -3118,5 +3265,26 @@ export interface AppApi<E = never> {
   readonly usage: {
     /** @deprecated Use `client.experimental.usage.limits`. Removed in the next minor. */
     readonly limits: ExperimentalUsageLimitsOperation<E>
+  }
+
+  /** @deprecated Use `client.experimental.server.knowledge`. Removed in the next minor. */
+  readonly "server.knowledge": {
+    /** @deprecated Use `client.experimental.server.knowledge.list`. Removed in the next minor. */
+    readonly list: ExperimentalServerKnowledgeListOperation<E>
+
+    /** @deprecated Use `client.experimental.server.knowledge.sync`. Removed in the next minor. */
+    readonly sync: ExperimentalServerKnowledgeSyncOperation<E>
+
+    /** @deprecated Use `client.experimental.server.knowledge.remove`. Removed in the next minor. */
+    readonly remove: ExperimentalServerKnowledgeRemoveOperation<E>
+
+    /** @deprecated Use `client.experimental.server.knowledge.assigned`. Removed in the next minor. */
+    readonly assigned: ExperimentalServerKnowledgeAssignedOperation<E>
+
+    /** @deprecated Use `client.experimental.server.knowledge.assign`. Removed in the next minor. */
+    readonly assign: ExperimentalServerKnowledgeAssignOperation<E>
+
+    /** @deprecated Use `client.experimental.server.knowledge.unassign`. Removed in the next minor. */
+    readonly unassign: ExperimentalServerKnowledgeUnassignOperation<E>
   }
 }

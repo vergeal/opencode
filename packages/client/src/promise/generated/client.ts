@@ -320,6 +320,17 @@ import type {
   ConfigShellsOutput,
   ExperimentalConfigUpdateInput,
   ExperimentalConfigUpdateOutput,
+  ExperimentalServerKnowledgeListOutput,
+  ExperimentalServerKnowledgeSyncInput,
+  ExperimentalServerKnowledgeSyncOutput,
+  ExperimentalServerKnowledgeRemoveInput,
+  ExperimentalServerKnowledgeRemoveOutput,
+  ExperimentalServerKnowledgeAssignedInput,
+  ExperimentalServerKnowledgeAssignedOutput,
+  ExperimentalServerKnowledgeAssignInput,
+  ExperimentalServerKnowledgeAssignOutput,
+  ExperimentalServerKnowledgeUnassignInput,
+  ExperimentalServerKnowledgeUnassignOutput,
 } from "./types.js"
 import { ClientError } from "./client-error.js"
 
@@ -1746,6 +1757,75 @@ export function make(options: ClientOptions) {
             requestOptions,
           ),
       },
+      "server.knowledge": {
+        list: (requestOptions?: RequestOptions) =>
+          request<ExperimentalServerKnowledgeListOutput>(
+            {
+              method: "GET",
+              path: `/api/experimental/knowledge`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        sync: (input: ExperimentalServerKnowledgeSyncInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerKnowledgeSyncOutput>(
+            {
+              method: "PUT",
+              path: `/api/experimental/knowledge/${encodeURIComponent(input.libraryID)}`,
+              body: { name: input["name"], description: input["description"], documents: input["documents"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        remove: (input: ExperimentalServerKnowledgeRemoveInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerKnowledgeRemoveOutput>(
+            {
+              method: "DELETE",
+              path: `/api/experimental/knowledge/${encodeURIComponent(input.libraryID)}`,
+              successStatus: 204,
+              declaredStatuses: [400, 401, 404],
+              empty: true,
+            },
+            requestOptions,
+          ),
+        assigned: (input: ExperimentalServerKnowledgeAssignedInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerKnowledgeAssignedOutput>(
+            {
+              method: "GET",
+              path: `/api/experimental/knowledge/assigned/${encodeURIComponent(input.projectID)}`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        assign: (input: ExperimentalServerKnowledgeAssignInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerKnowledgeAssignOutput>(
+            {
+              method: "PUT",
+              path: `/api/experimental/knowledge/assigned/${encodeURIComponent(input.projectID)}/${encodeURIComponent(input.libraryID)}`,
+              successStatus: 204,
+              declaredStatuses: [400, 401, 404],
+              empty: true,
+            },
+            requestOptions,
+          ),
+        unassign: (input: ExperimentalServerKnowledgeUnassignInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerKnowledgeUnassignOutput>(
+            {
+              method: "DELETE",
+              path: `/api/experimental/knowledge/assigned/${encodeURIComponent(input.projectID)}/${encodeURIComponent(input.libraryID)}`,
+              successStatus: 204,
+              declaredStatuses: [400, 401, 404],
+              empty: true,
+            },
+            requestOptions,
+          ),
+      },
     },
     message: {
       list: (input: MessageListInput, requestOptions?: RequestOptions) =>
@@ -2786,6 +2866,21 @@ export function make(options: ClientOptions) {
       ...client.config,
       /** @deprecated Use `client.experimental.config.update`. Removed in the next minor. */
       update: client.experimental.config.update,
+    },
+    /** @deprecated Use `client.experimental.server.knowledge`. Removed in the next minor. */
+    "server.knowledge": {
+      /** @deprecated Use `client.experimental.server.knowledge.list`. Removed in the next minor. */
+      list: client.experimental["server.knowledge"].list,
+      /** @deprecated Use `client.experimental.server.knowledge.sync`. Removed in the next minor. */
+      sync: client.experimental["server.knowledge"].sync,
+      /** @deprecated Use `client.experimental.server.knowledge.remove`. Removed in the next minor. */
+      remove: client.experimental["server.knowledge"].remove,
+      /** @deprecated Use `client.experimental.server.knowledge.assigned`. Removed in the next minor. */
+      assigned: client.experimental["server.knowledge"].assigned,
+      /** @deprecated Use `client.experimental.server.knowledge.assign`. Removed in the next minor. */
+      assign: client.experimental["server.knowledge"].assign,
+      /** @deprecated Use `client.experimental.server.knowledge.unassign`. Removed in the next minor. */
+      unassign: client.experimental["server.knowledge"].unassign,
     },
   }
 }

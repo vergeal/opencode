@@ -49,6 +49,17 @@ Rules:
 - If the conversation ends with an unanswered question to the user, preserve that exact question
 - If the conversation ends with an imperative statement or request to the user (e.g. "Now please run the command and paste the console output"), always include that exact request in the summary`
 
+const PROMPT_KNOWLEDGE = `You maintain the search index for a Project's knowledge libraries.
+
+You receive a library's name, its stated purpose, and excerpts of its documents. Describe what the library covers so a later search can tell whether it is relevant.
+
+Reply with JSON only, no prose and no Markdown fence:
+{"summary": "one or two sentences about what this library covers", "keywords": ["short term", "short term"]}
+
+- Write the summary in the language most of the documents use.
+- Use at most eight keywords: the subjects, products, teams, and identifiers a reader would search for.
+- Describe the whole library, not one document.`
+
 export const Plugin = define({
   id: "opencode.agent",
   effect: Effect.fn(function* (ctx) {
@@ -113,6 +124,18 @@ export const Plugin = define({
         item.hidden = true
         item.system = PROMPT_SUMMARY
         item.permissions.push({ action: "*", resource: "*", effect: "deny" })
+      })
+
+      editor.update(Agent.ID.make("knowledge"), (item) => {
+        item.name = Agent.Name.make("Knowledge")
+        item.description = "Indexes a Project's knowledge libraries and answers from them."
+        item.mode = "primary"
+        item.hidden = true
+        item.system = PROMPT_KNOWLEDGE
+        item.permissions.push(
+          { action: "*", resource: "*", effect: "deny" },
+          { action: "knowledge_search", resource: "*", effect: "allow" },
+        )
       })
     })
   }),

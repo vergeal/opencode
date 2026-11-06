@@ -386,6 +386,8 @@ export type ConfigModelReasoning =
 
 export type ConfigShellOption = { path: string; name: string; acceptable: boolean }
 
+export type KnowledgeStatus = "empty" | "indexing" | "ready" | "stale" | "failed"
+
 export type LocationPublicRef = { directory: AbsolutePath }
 
 export type FileSystemWrite = { path: AbsolutePath }
@@ -992,6 +994,20 @@ export type ConfigModelCapabilities = {
   output?: Array<string>
   temperature?: boolean
   reasoning?: ConfigModelReasoning
+}
+
+export type KnowledgeInfo = {
+  id: string
+  name: string
+  description?: string
+  summary?: string
+  keywords: Array<string>
+  status: KnowledgeStatus
+  model?: string
+  documentCount: number
+  chunkCount: number
+  indexedAt?: number
+  time: { created: number; updated: number }
 }
 
 export type SessionMessageLocationSwitched = {
@@ -4879,6 +4895,39 @@ export type ExperimentalConfigUpdateInput = { readonly shell: string | null }
 
 export type ExperimentalConfigUpdateOutput = void
 
+export type ExperimentalServerKnowledgeListOutput = Array<KnowledgeInfo>
+
+export type ExperimentalServerKnowledgeSyncInput = {
+  readonly libraryID: string
+  readonly name: string
+  readonly description?: string | undefined
+  readonly documents: ReadonlyArray<{
+    readonly path: string
+    readonly name: string
+    readonly kind: "document" | "spreadsheet" | "text"
+    readonly size: number
+    readonly text: string
+  }>
+}
+
+export type ExperimentalServerKnowledgeSyncOutput = KnowledgeInfo
+
+export type ExperimentalServerKnowledgeRemoveInput = { readonly libraryID: string }
+
+export type ExperimentalServerKnowledgeRemoveOutput = void
+
+export type ExperimentalServerKnowledgeAssignedInput = { readonly projectID: string }
+
+export type ExperimentalServerKnowledgeAssignedOutput = Array<KnowledgeInfo>
+
+export type ExperimentalServerKnowledgeAssignInput = { readonly projectID: string; readonly libraryID: string }
+
+export type ExperimentalServerKnowledgeAssignOutput = void
+
+export type ExperimentalServerKnowledgeUnassignInput = { readonly projectID: string; readonly libraryID: string }
+
+export type ExperimentalServerKnowledgeUnassignOutput = void
+
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput
 
@@ -5028,3 +5077,36 @@ export type ConfigUpdateInput = ExperimentalConfigUpdateInput
 
 /** @deprecated Use `ExperimentalConfigUpdateOutput`. Removed in the next minor. */
 export type ConfigUpdateOutput = ExperimentalConfigUpdateOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeListOutput`. Removed in the next minor. */
+export type ServerKnowledgeListOutput = ExperimentalServerKnowledgeListOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeSyncInput`. Removed in the next minor. */
+export type ServerKnowledgeSyncInput = ExperimentalServerKnowledgeSyncInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeSyncOutput`. Removed in the next minor. */
+export type ServerKnowledgeSyncOutput = ExperimentalServerKnowledgeSyncOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeRemoveInput`. Removed in the next minor. */
+export type ServerKnowledgeRemoveInput = ExperimentalServerKnowledgeRemoveInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeRemoveOutput`. Removed in the next minor. */
+export type ServerKnowledgeRemoveOutput = ExperimentalServerKnowledgeRemoveOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignedInput`. Removed in the next minor. */
+export type ServerKnowledgeAssignedInput = ExperimentalServerKnowledgeAssignedInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignedOutput`. Removed in the next minor. */
+export type ServerKnowledgeAssignedOutput = ExperimentalServerKnowledgeAssignedOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignInput`. Removed in the next minor. */
+export type ServerKnowledgeAssignInput = ExperimentalServerKnowledgeAssignInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeAssignOutput`. Removed in the next minor. */
+export type ServerKnowledgeAssignOutput = ExperimentalServerKnowledgeAssignOutput
+
+/** @deprecated Use `ExperimentalServerKnowledgeUnassignInput`. Removed in the next minor. */
+export type ServerKnowledgeUnassignInput = ExperimentalServerKnowledgeUnassignInput
+
+/** @deprecated Use `ExperimentalServerKnowledgeUnassignOutput`. Removed in the next minor. */
+export type ServerKnowledgeUnassignOutput = ExperimentalServerKnowledgeUnassignOutput

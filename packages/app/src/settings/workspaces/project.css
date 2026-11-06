@@ -343,6 +343,53 @@
   unicode-bidi: isolate;
 }
 
+.project-settings-knowledge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-block: 12px;
+}
+
+.project-settings-knowledge-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-settings-knowledge-title {
+  color: var(--v2-text-text-base);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: var(--line-height-compact);
+}
+
+.project-settings-knowledge-description {
+  color: var(--v2-text-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.project-settings-knowledge-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+
+.project-settings-knowledge-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-settings-knowledge-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-block: 12px;
+}
+
 :root[data-motion="reduce"] {
   .project-settings-icon-overlay,
   .project-settings-color,

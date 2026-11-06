@@ -18,6 +18,7 @@ import { importKnowledge, pickKnowledgeSources } from "./import"
 import { knowledgeImports, type KnowledgeImportJob } from "./import-status"
 import { NewLibraryDialog } from "./new-library-dialog"
 import { useKnowledgeLibraries, type KnowledgeFile, type KnowledgeFlag, type KnowledgeLibrary } from "./store"
+import { isKnowledgeLibraryOnServer, removeKnowledgeLibraryFromServer, syncKnowledgeLibrary } from "./sync"
 import { reviewLibrary } from "./summary"
 import "./knowledge.css"
 
@@ -204,6 +205,35 @@ export function KnowledgeScreen() {
     void remove(library.id, [...paths]).catch(() => undefined)
   }
 
+  const knowledgeApi = () => {
+    const connection = servers.list[0]
+
+    return connection ? global.serverCtx(ServerConnection.key(connection))?.sdk.api : undefined
+  }
+
+  /**
+   * A server copy exists only after a project linked the library. Edits keep that copy current, and
+   * libraries nobody linked stay local.
+   */
+  const mirrorServerCopy = (libraryID: string) => {
+    const api = knowledgeApi()
+    const library = libraries.get(libraryID)
+
+    if (!api || !library || platform.platform !== "desktop" || !platform.readKnowledgeFile) return
+
+    void (async () => {
+      if (!(await isKnowledgeLibraryOnServer(api, libraryID))) return
+      await syncKnowledgeLibrary({ api, platform, library })
+    })().catch(() => undefined)
+  }
+
+  const dropServerCopy = (libraryID: string) => {
+    const api = knowledgeApi()
+
+    if (!api) return
+    void removeKnowledgeLibraryFromServer(api, libraryID).catch(() => undefined)
+  }
+
   /** The user decides: a flagged document stays unless they remove it, and the flag can be cleared. */
   const openFlag = (library: KnowledgeLibrary, file: KnowledgeFile, flag: KnowledgeFlag) =>
     void dialog.show(() => (
@@ -214,6 +244,7 @@ export function KnowledgeScreen() {
         onRemove={() => {
           forgetFiles(library, [file.path])
           libraries.removeFiles(library.id, [file.path])
+          mirrorServerCopy(library.id)
 
           if (state.fileName === file.path) setState({ fileName: "", fileText: "" })
         }}
@@ -250,6 +281,7 @@ export function KnowledgeScreen() {
 
     forgetFiles(library, paths)
     libraries.removeFiles(library.id, paths)
+    mirrorServerCopy(library.id)
     setState({
       selectedFiles: state.selectedFiles.filter((path) => !paths.includes(path)),
       fileName: paths.includes(state.fileName) ? "" : state.fileName,
@@ -280,6 +312,7 @@ export function KnowledgeScreen() {
       library.files.map((file) => file.path),
     )
     libraries.remove(library.id)
+    dropServerCopy(library.id)
     setState({ selected: "", fileName: "", fileText: "", selectedFiles: [] })
   }
 
@@ -312,6 +345,8 @@ export function KnowledgeScreen() {
       const stored = await platform.listKnowledgeFiles?.({ libraryID: library.id }).catch(() => undefined)
 
       if (stored) libraries.setFiles(library.id, stored.files)
+
+      mirrorServerCopy(library.id)
 
       setState({ fileName: "", fileText: "", selectedFiles: [] })
       knowledgeImports.stage(library.id, "summarize")
@@ -375,6 +410,7 @@ export function KnowledgeScreen() {
 
     forgetFiles(library, paths)
     libraries.removeFiles(library.id, paths)
+    mirrorServerCopy(library.id)
     setState({
       selectedFiles: [],
       fileName: paths.includes(state.fileName) ? "" : state.fileName,

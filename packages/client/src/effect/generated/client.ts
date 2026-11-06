@@ -318,6 +318,17 @@ import type {
   ConfigShellsOutput,
   ExperimentalConfigUpdateInput,
   ExperimentalConfigUpdateOutput,
+  ExperimentalServerKnowledgeListOutput,
+  ExperimentalServerKnowledgeSyncInput,
+  ExperimentalServerKnowledgeSyncOutput,
+  ExperimentalServerKnowledgeRemoveInput,
+  ExperimentalServerKnowledgeRemoveOutput,
+  ExperimentalServerKnowledgeAssignedInput,
+  ExperimentalServerKnowledgeAssignedOutput,
+  ExperimentalServerKnowledgeAssignInput,
+  ExperimentalServerKnowledgeAssignOutput,
+  ExperimentalServerKnowledgeUnassignInput,
+  ExperimentalServerKnowledgeUnassignOutput,
 } from "../api/api.js"
 import { ClientError } from "./client-error.js"
 
@@ -1968,6 +1979,57 @@ const adaptGroupExperimentalConfig = (raw: RawClient["server.config"]) => ({
   update: EndpointExperimentalConfigUpdate(raw),
 })
 
+const EndpointExperimentalServerKnowledgeList = (raw: RawClient["server.knowledge"]) => () =>
+  preserveEffect<ExperimentalServerKnowledgeListOutput>()(
+    raw["knowledge.list"]({}).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointExperimentalServerKnowledgeSync =
+  (raw: RawClient["server.knowledge"]) => (input: ExperimentalServerKnowledgeSyncInput) =>
+    preserveEffect<ExperimentalServerKnowledgeSyncOutput>()(
+      raw["knowledge.sync"]({
+        params: { libraryID: input["libraryID"] },
+        payload: { name: input["name"], description: input["description"], documents: input["documents"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointExperimentalServerKnowledgeRemove =
+  (raw: RawClient["server.knowledge"]) => (input: ExperimentalServerKnowledgeRemoveInput) =>
+    preserveEffect<ExperimentalServerKnowledgeRemoveOutput>()(
+      raw["knowledge.remove"]({ params: { libraryID: input["libraryID"] } }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointExperimentalServerKnowledgeAssigned =
+  (raw: RawClient["server.knowledge"]) => (input: ExperimentalServerKnowledgeAssignedInput) =>
+    preserveEffect<ExperimentalServerKnowledgeAssignedOutput>()(
+      raw["knowledge.assigned"]({ params: { projectID: input["projectID"] } }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointExperimentalServerKnowledgeAssign =
+  (raw: RawClient["server.knowledge"]) => (input: ExperimentalServerKnowledgeAssignInput) =>
+    preserveEffect<ExperimentalServerKnowledgeAssignOutput>()(
+      raw["knowledge.assign"]({ params: { projectID: input["projectID"], libraryID: input["libraryID"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointExperimentalServerKnowledgeUnassign =
+  (raw: RawClient["server.knowledge"]) => (input: ExperimentalServerKnowledgeUnassignInput) =>
+    preserveEffect<ExperimentalServerKnowledgeUnassignOutput>()(
+      raw["knowledge.unassign"]({ params: { projectID: input["projectID"], libraryID: input["libraryID"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const adaptGroupExperimentalServerKnowledge = (raw: RawClient["server.knowledge"]) => ({
+  list: EndpointExperimentalServerKnowledgeList(raw),
+  sync: EndpointExperimentalServerKnowledgeSync(raw),
+  remove: EndpointExperimentalServerKnowledgeRemove(raw),
+  assigned: EndpointExperimentalServerKnowledgeAssigned(raw),
+  assign: EndpointExperimentalServerKnowledgeAssign(raw),
+  unassign: EndpointExperimentalServerKnowledgeUnassign(raw),
+})
+
 const adaptClient = (raw: RawClient) => {
   const client = {
     server: adaptGroupServer(raw["server.server"]),
@@ -1986,6 +2048,7 @@ const adaptClient = (raw: RawClient) => {
       migration: adaptGroupExperimentalMigration(raw["server.migration"]),
       usage: adaptGroupExperimentalUsage(raw["server.usage"]),
       config: adaptGroupExperimentalConfig(raw["server.config"]),
+      "server.knowledge": adaptGroupExperimentalServerKnowledge(raw["server.knowledge"]),
     },
     message: adaptGroupMessage(raw["server.message"]),
     model: adaptGroupModel(raw["server.model"]),
@@ -2103,6 +2166,21 @@ const adaptClient = (raw: RawClient) => {
       ...client.config,
       /** @deprecated Use `client.experimental.config.update`. Removed in the next minor. */
       update: client.experimental.config.update,
+    },
+    /** @deprecated Use `client.experimental.server.knowledge`. Removed in the next minor. */
+    "server.knowledge": {
+      /** @deprecated Use `client.experimental.server.knowledge.list`. Removed in the next minor. */
+      list: client.experimental["server.knowledge"].list,
+      /** @deprecated Use `client.experimental.server.knowledge.sync`. Removed in the next minor. */
+      sync: client.experimental["server.knowledge"].sync,
+      /** @deprecated Use `client.experimental.server.knowledge.remove`. Removed in the next minor. */
+      remove: client.experimental["server.knowledge"].remove,
+      /** @deprecated Use `client.experimental.server.knowledge.assigned`. Removed in the next minor. */
+      assigned: client.experimental["server.knowledge"].assigned,
+      /** @deprecated Use `client.experimental.server.knowledge.assign`. Removed in the next minor. */
+      assign: client.experimental["server.knowledge"].assign,
+      /** @deprecated Use `client.experimental.server.knowledge.unassign`. Removed in the next minor. */
+      unassign: client.experimental["server.knowledge"].unassign,
     },
   }
 }

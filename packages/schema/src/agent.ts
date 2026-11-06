@@ -45,6 +45,8 @@ export const Info = Schema.Struct({
           hidden: false,
           permissions: [
             { action: "*", resource: "*", effect: "allow" },
+            // Retrieval is reserved for the hidden knowledge agent; see its allow rule.
+            { action: "knowledge_search", resource: "*", effect: "deny" },
             { action: "read", resource: "*.env", effect: "ask" },
             { action: "read", resource: "*.env.*", effect: "ask" },
             { action: "read", resource: "*.env.example", effect: "allow" },
