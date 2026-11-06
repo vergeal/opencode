@@ -305,9 +305,10 @@ export function ScheduledScreen() {
         title={language.t("scheduled.title")}
         description={language.t("scheduled.description")}
         actions={
-          <Button variant="contrast" size="small" icon="plus" onClick={openNew}>
+          <button type="button" class="scheduled-primary" onClick={openNew}>
+            <Icon name="plus" size="small" />
             {language.t("scheduled.new")}
-          </Button>
+          </button>
         }
       />
 

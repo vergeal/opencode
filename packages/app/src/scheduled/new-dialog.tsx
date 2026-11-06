@@ -102,7 +102,7 @@ export function NewScheduledTaskDialog(props: {
   }
 
   return (
-    <Dialog size="x-large" class="scheduled-create">
+    <Dialog size="x-large" class="scheduled-create" containerClass="scheduled-create-container">
       <DialogHeader hideClose>
         <DialogTitleGroup title={language.t("scheduled.create.title")} />
       </DialogHeader>
@@ -112,7 +112,6 @@ export function NewScheduledTaskDialog(props: {
           <label class="scheduled-create-field">
             <span class="scheduled-create-label">{language.t("scheduled.create.prompt")}</span>
             <Textarea
-              class="scheduled-create-prompt"
               rows={4}
               autofocus
               value={form.prompt}

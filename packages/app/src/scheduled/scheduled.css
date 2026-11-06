@@ -495,6 +495,28 @@
 
 /* Create dialog -------------------------------------------------------- */
 
+.scheduled-create-container[data-slot="dialog-container"] {
+  /* The shared frame is a fixed 368px sheet; this form needs room for all three groups. */
+  height: min(calc(100vh - 64px), 520px);
+}
+
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].scheduled-create-container
+  [data-slot="dialog-content"]
+  [data-slot="dialog-header"] {
+  padding: 18px 22px 14px;
+  border-bottom: 0.5px solid var(--v2-border-border-muted);
+}
+
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].scheduled-create-container
+  [data-slot="dialog-content"]
+  [data-slot="dialog-header"]
+  [data-slot="dialog-title"] {
+  font-size: 15px;
+  line-height: 20px;
+}
+
 .scheduled-create-body {
   display: flex;
   flex: 1;
@@ -503,6 +525,12 @@
   min-height: 0;
   padding: 20px 22px;
   overflow-y: auto;
+}
+
+/* Both fields ship with a fixed 280px width, which reads as a broken column inside an 880px dialog. */
+.scheduled-create-body [data-component="text-input-v2"],
+.scheduled-create-body [data-component="textarea-v2"] {
+  width: 100%;
 }
 
 .scheduled-create-field {
@@ -523,10 +551,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-}
-
-.scheduled-create-row [data-component="text-input-v2"] {
-  width: 100%;
 }
 
 .scheduled-create [data-component="textarea-v2"] {
@@ -562,7 +586,11 @@
   font-family: var(--v2-font-family-code);
 }
 
-.scheduled-create [data-slot="dialog-footer"] {
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].scheduled-create-container
+  [data-slot="dialog-content"]
+  [data-slot="dialog-footer"] {
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 13px 22px;
@@ -571,7 +599,7 @@
 }
 
 .scheduled-create-foot-hint {
-  flex: 1;
+  flex: 1 1 220px;
   min-width: 0;
   margin: 0;
   font-size: 11.5px;
@@ -582,14 +610,18 @@
 .scheduled-create-actions {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
+  margin-inline-start: auto;
 }
 
 .scheduled-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   height: 28px;
   padding: 0 12px;
   border: 0.5px solid var(--v2-background-bg-accent);
@@ -621,6 +653,16 @@
 }
 
 /* Narrow shell --------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .scheduled-create-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scheduled-create-foot-hint {
+    flex-basis: 100%;
+  }
+}
 
 @container scheduled (max-width: 760px) {
   .scheduled-body {
