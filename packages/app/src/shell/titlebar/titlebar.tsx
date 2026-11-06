@@ -5,7 +5,6 @@ import { useLocation, useNavigate } from "@solidjs/router"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Icon } from "@opencode/ui/icon"
-import type { IconName } from "@opencode/ui/icons/catalog"
 import { Keybind } from "@opencode/ui/keybind"
 import { Tooltip } from "@opencode/ui/tooltip"
 
@@ -33,6 +32,7 @@ import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import { useSessionTabAvatarState } from "@/shell/layout/project-avatar-state"
 import { ActivityRing } from "@opencode/ui/activity-ring"
 import { RecentlyClosedTabsMenu } from "./recently-closed-tabs-menu"
+import { SidebarNav } from "./sidebar-nav"
 import { useSettingsDialog } from "@/settings/command"
 import { TitlebarItems, useTitlebarItems } from "@/runtime/plugin/titlebar-items"
 import { SessionSettingsDialog } from "@/session/settings-dialog"
@@ -752,36 +752,18 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                   </div>
                                 </div>
                               </div>
-                              <div data-slot="sidebar-nav" class="flex w-full shrink-0 flex-col gap-1 pb-2">
-                                <SidebarNavItem
-                                  action="vertical-tabs-home"
-                                  label={language.t("home.title")}
-                                  icon="workspace"
-                                  pressed={layout.route().type === "home"}
-                                  onClick={toggleHome}
-                                />
-                                <SidebarNavItem
-                                  action="vertical-tabs-inbox"
-                                  label={language.t("inbox.title")}
-                                  icon="bubble-5"
-                                  pressed={layout.route().type === "inbox"}
-                                  onClick={() => navigate("/inbox")}
-                                />
-                                <SidebarNavItem
-                                  action="vertical-tabs-knowledge"
-                                  label={language.t("knowledge.title")}
-                                  icon="file-document"
-                                  pressed={layout.route().type === "knowledge"}
-                                  onClick={() => navigate("/knowledge")}
-                                />
-                                <SidebarNavItem
-                                  action="vertical-tabs-scheduled"
-                                  label={language.t("scheduled.title")}
-                                  icon="checklist"
-                                  pressed={layout.route().type === "scheduled"}
-                                  onClick={() => navigate("/scheduled")}
-                                />
-                              </div>
+                              <SidebarNav
+                                pressed={(id) => layout.route().type === id}
+                                onSelect={(id) => {
+                                  if (id === "home") {
+                                    toggleHome()
+
+                                    return
+                                  }
+
+                                  navigate(`/${id}`)
+                                }}
+                              />
                               {/* The first row of the tab list is starting a session; the menu keeps recently closed
                                   tabs reachable from the same row. */}
                               <div class="flex w-full shrink-0 flex-col gap-1 pb-2">
@@ -843,28 +825,5 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
         </Match>
       </Switch>
     </header>
-  )
-}
-
-function SidebarNavItem(props: {
-  action: string
-  label: string
-  icon: IconName
-  pressed: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      data-titlebar-tab-action
-      data-action={props.action}
-      data-state={props.pressed ? "pressed" : undefined}
-      aria-pressed={props.pressed}
-      class="group flex h-7 w-full shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] text-v2-text-text-faint hover:text-v2-text-text-base data-[state=pressed]:text-v2-text-text-base"
-      onClick={props.onClick}
-    >
-      <Icon name={props.icon} class="shrink-0" />
-      <span class="min-w-0 truncate">{props.label}</span>
-    </button>
   )
 }
