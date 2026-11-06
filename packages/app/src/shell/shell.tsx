@@ -31,6 +31,18 @@ type SidebarPose = { closed: number; peek: number | undefined }
 
 export const sidebarToggleCommand = { id: "sidebar.toggle", keybind: "mod+shift+b" }
 
+const SIDEBAR_WIDTH_MIN = 224
+
+const SIDEBAR_WIDTH_DEFAULT_RATIO = 0.25
+
+const SIDEBAR_WIDTH_MAX_RATIO = 0.4
+
+/** The navigation column takes a quarter of the window, within a usable minimum and a draggable maximum. */
+const sidebarMaxWidth = (viewport: number) => Math.max(640, Math.round(viewport * SIDEBAR_WIDTH_MAX_RATIO))
+
+const defaultSidebarWidth = (viewport: number) =>
+  Math.min(sidebarMaxWidth(viewport), Math.max(SIDEBAR_WIDTH_MIN, Math.round(viewport * SIDEBAR_WIDTH_DEFAULT_RATIO)))
+
 export default function Layout(props: ParentProps) {
   const platform = usePlatform()
   const settings = useSettingsSurface()
@@ -49,8 +61,8 @@ export default function Layout(props: ParentProps) {
     tabsAside: HTMLElement | undefined
     tabsPanel: HTMLElement | undefined
   }>({
-    // macOS navigation columns stay narrow: the design's 224–240px, still draggable for anyone who wants more.
-    tabsWidth: Math.min(240, Math.max(224, Math.round(window.innerWidth * 0.2))),
+    // The navigation column defaults to a quarter of the window, still draggable for anyone who wants more.
+    tabsWidth: defaultSidebarWidth(window.innerWidth),
     tabsMount: undefined,
     tabsAside: undefined,
     tabsPanel: undefined,
@@ -296,7 +308,7 @@ export default function Layout(props: ParentProps) {
                 direction="horizontal"
                 size={state.tabsWidth}
                 min={136}
-                max={640}
+                max={sidebarMaxWidth(window.innerWidth)}
                 onResize={(width) => setState("tabsWidth", width)}
                 onDraggingChange={setPanelResizing}
               />
