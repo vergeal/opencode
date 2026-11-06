@@ -15,7 +15,7 @@ import { PageHeader, PagePanel, PageToolbar } from "@/shell/page"
 import { errorMessage } from "@/shell/layout/helpers"
 import { showToast } from "@/shell/notifications/toast"
 import { describeOutcome, describeStatus, describeWhen, formatTime, taskName } from "./describe"
-import { transition, type TaskEvent, type TaskState } from "./machine"
+import { tasksOf, transition, type TaskEvent, type TaskState } from "./machine"
 import { NewScheduledTaskDialog, type NewTaskInput } from "./new-dialog"
 import "./scheduled.css"
 
@@ -76,11 +76,7 @@ export function ScheduledScreen() {
   const [selected, setSelected] = createSignal<string>()
   const [busy, setBusy] = createSignal<string>()
 
-  const tasks = () => {
-    const current = state()
-
-    return current.status === "ready" ? current.tasks : []
-  }
+  const tasks = () => tasksOf(state())
 
   const load = async () => {
     const client = api()
@@ -218,7 +214,7 @@ export function ScheduledScreen() {
       setQuery("")
 
       // A create that lands before the first listing finished still has to appear.
-      if (state().status !== "ready") void load()
+      if (state().status === "loading") void load()
 
       return true
     } catch (error) {
@@ -296,17 +292,32 @@ export function ScheduledScreen() {
             onInput={(event) => setQuery(event.currentTarget.value)}
           />
         </div>
+        <Show when={state().status === "refreshing"}>
+          <Loader class="size-4 shrink-0" />
+        </Show>
       </PageToolbar>
 
       <div class="scheduled-body">
         <aside class="scheduled-list" data-scrollable>
-          <Show when={state().status === "ready"} fallback={state().status === "loading" ? <Loader /> : undefined}>
+          <Show
+            when={state().status !== "loading"}
+            fallback={
+              <div class="scheduled-list-loading">
+                <Loader />
+              </div>
+            }
+          >
             <Show
               when={visible().length > 0}
               fallback={
-                <p class="scheduled-empty">
-                  {tasks().length === 0 ? language.t("scheduled.empty") : language.t("scheduled.empty.noMatch")}
-                </p>
+                <div class="scheduled-empty-state">
+                  <p class="scheduled-empty">
+                    {tasks().length === 0 ? language.t("scheduled.empty") : language.t("scheduled.empty.noMatch")}
+                  </p>
+                  <Button size="small" variant="neutral" onClick={openNew}>
+                    {language.t("scheduled.new")}
+                  </Button>
+                </div>
               }
             >
               <For each={visible()}>
@@ -340,9 +351,10 @@ export function ScheduledScreen() {
         <section class="scheduled-detail" data-scrollable>
           <Show when={error()}>
             {(message) => (
-              <div class="scheduled-placeholder">
-                <p class="scheduled-placeholder-title">{language.t("scheduled.error.title")}</p>
-                <p class="scheduled-placeholder-description">{message()}</p>
+              <div class="scheduled-error" role="alert">
+                <span class="scheduled-error-message">
+                  {language.t("scheduled.error.title")} · {message()}
+                </span>
                 <Button size="small" variant="neutral" onClick={() => void load()}>
                   {language.t("scheduled.retry")}
                 </Button>
@@ -350,24 +362,28 @@ export function ScheduledScreen() {
             )}
           </Show>
 
-          <Show when={state().status === "loading"}>
-            <div class="scheduled-placeholder">
-              <Loader />
-            </div>
-          </Show>
-
-          <Show when={state().status === "ready"}>
-            <Show
-              when={current()}
-              fallback={
+          <Show
+            when={current()}
+            fallback={
+              <Show
+                when={state().status === "loading"}
+                fallback={
+                  <div class="scheduled-placeholder">
+                    <p class="scheduled-placeholder-title">{language.t("scheduled.detail.select.title")}</p>
+                    <p class="scheduled-placeholder-description">
+                      {language.t("scheduled.detail.select.description")}
+                    </p>
+                  </div>
+                }
+              >
                 <div class="scheduled-placeholder">
-                  <p class="scheduled-placeholder-title">{language.t("scheduled.detail.select.title")}</p>
-                  <p class="scheduled-placeholder-description">{language.t("scheduled.detail.select.description")}</p>
+                  <Loader />
                 </div>
-              }
-            >
-              {(task) => (
-                <>
+              </Show>
+            }
+          >
+            {(task) => (
+              <>
                   <div class="scheduled-detail-head">
                     <div class="scheduled-detail-heading">
                       <h2>{taskName(task(), language)}</h2>
@@ -479,7 +495,6 @@ export function ScheduledScreen() {
                 </>
               )}
             </Show>
-          </Show>
         </section>
       </div>
     </PagePanel>

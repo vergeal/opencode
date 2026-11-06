@@ -1,8 +1,7 @@
 import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Icon } from "@opencode/ui/icon"
-import type { JSX } from "solid-js"
-import { createStore } from "solid-js/store"
+import { Show, createSignal, type JSX } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection } from "@/runtime/server/registry"
@@ -10,6 +9,7 @@ import { DialogServer } from "@/servers/connect/dialog"
 import { SettingsList } from "@/settings/list"
 import { SettingsPageHeader } from "@/settings/page-header"
 import type { SettingsServer } from "./inventory"
+import { transition, type RetryState } from "./unavailable-machine"
 import "@/settings/settings.css"
 
 /** A per-server page while its server is unreachable. */
@@ -25,7 +25,15 @@ export function SettingsServerUnavailable(props: {
   const language = useLanguage()
   const dialog = useDialog()
   const global = useGlobal()
-  const [state, setState] = createStore({ retrying: false })
+  const [retryState, setRetryState] = createSignal<RetryState>({ status: "idle" })
+
+  const retrying = () => retryState().status === "retrying"
+
+  const retryError = () => {
+    const current = retryState()
+
+    return current.status === "failed" ? current.message : undefined
+  }
 
   const http = () =>
     props.entry.connection?.type === "http" && !ServerConnection.builtin(props.entry.connection)
@@ -33,8 +41,20 @@ export function SettingsServerUnavailable(props: {
       : undefined
 
   const retry = () => {
-    setState("retrying", true)
-    void global.servers.retry().finally(() => setState("retrying", false))
+    if (retrying()) return
+
+    setRetryState((current) => transition(current, { type: "retry.started" }))
+
+    void global.servers.retry().then(
+      () => setRetryState((current) => transition(current, { type: "retry.succeeded" })),
+      (error) =>
+        setRetryState((current) =>
+          transition(current, {
+            type: "retry.failed",
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        ),
+    )
   }
 
   const edit = () => {
@@ -57,8 +77,15 @@ export function SettingsServerUnavailable(props: {
             <div class="settings-server-unavailable-description">
               {language.t("settings.server.unreachable.description", { server: props.entry.name })}
             </div>
+            <Show when={retryError()}>
+              {(message) => (
+                <div class="settings-server-unavailable-error" role="alert">
+                  {language.t("settings.server.unreachable.retryFailed", { message: message() })}
+                </div>
+              )}
+            </Show>
             <div class="settings-server-unavailable-actions">
-              <Button size="normal" variant="neutral" icon="refresh" disabled={state.retrying} onClick={retry}>
+              <Button size="normal" variant="neutral" icon="refresh" disabled={retrying()} onClick={retry}>
                 {language.t("settings.server.unreachable.retry")}
               </Button>
               <Button size="normal" variant="ghost-muted" onClick={edit}>

@@ -959,6 +959,7 @@ export const dict = {
   "settings.server.unreachable.description":
     "{{server}} isn't responding. Its settings will appear here once it reconnects.",
   "settings.server.unreachable.retry": "Retry",
+  "settings.server.unreachable.retryFailed": "Still unreachable: {{message}}",
   "settings.server.unreachable.edit": "Edit server",
   "settings.server.preferences.websearch.title": "Third-party search",
   "settings.server.preferences.websearch.description": "Select the search provider agents use to search the web",
@@ -1595,6 +1596,8 @@ export const dict = {
   "knowledge.preview.empty": "Select a file to read it",
   "knowledge.preview.converted": "Markdown",
   "knowledge.preview.unreadable": "This file cannot be read as text.",
+  "knowledge.preview.failed": "Could not read this file: {{message}}",
+  "knowledge.preview.retry": "Retry",
   "knowledge.discards.title": "Skipped files",
   "knowledge.discards.description": "Files the import left out of this knowledge base.",
   "knowledge.discards.duplicate": "Already in the library as {{path}}",

@@ -154,6 +154,24 @@
   word-break: break-word;
 }
 
+.knowledge-preview-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 0.5px solid var(--v2-state-fg-danger);
+  border-radius: 9px;
+  color: var(--v2-state-fg-danger);
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+}
+
+.knowledge-preview-error-message {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .knowledge-ghost-button {
   display: flex;
   height: 28px;

@@ -1,4 +1,4 @@
-import { For, Show, createMemo, onCleanup, onMount } from "solid-js"
+import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Button } from "@opencode/ui/button"
 import { Checkbox } from "@opencode/ui/checkbox"
@@ -17,6 +17,7 @@ import { PageHeader } from "@/shell/page"
 import { importKnowledge, pickKnowledgeSources } from "./import"
 import { knowledgeImports, type KnowledgeImportJob } from "./import-status"
 import { NewLibraryDialog } from "./new-library-dialog"
+import { previewPath, transition, type PreviewState } from "./preview-machine"
 import { useKnowledgeLibraries, type KnowledgeFile, type KnowledgeFlag, type KnowledgeLibrary } from "./store"
 import { isKnowledgeLibraryOnServer, removeKnowledgeLibraryFromServer, syncKnowledgeLibrary } from "./sync"
 import { reviewLibrary } from "./summary"
@@ -75,13 +76,27 @@ export function KnowledgeScreen() {
   const [state, setState] = createStore({
     selected: "",
     query: "",
-    fileName: "",
-    fileText: "",
-    loadingFile: false,
     importError: "",
     selectedFiles: [] as string[],
     listWidth: 280,
   })
+
+  // The preview is its own lifecycle: opening a file must never look like an idle pane with stale text.
+  const [preview, setPreview] = createSignal<PreviewState>({ status: "idle" })
+
+  const closePreview = () => setPreview((current) => transition(current, { type: "file.closed" }))
+
+  const previewText = () => {
+    const current = preview()
+
+    return current.status === "ready" ? current.text : ""
+  }
+
+  const previewMessage = () => {
+    const current = preview()
+
+    return current.status === "failed" ? current.message : ""
+  }
 
   const importing = () => !!knowledgeImports.get(state.selected)
 
@@ -113,7 +128,7 @@ export function KnowledgeScreen() {
     return [...groups.entries()]
   })
 
-  const previewFile = createMemo(() => selected()?.files.find((file) => file.path === state.fileName))
+  const previewFile = createMemo(() => selected()?.files.find((file) => file.path === previewPath(preview())))
 
   const allVisibleSelected = createMemo(() => {
     const files = visibleFiles()
@@ -137,7 +152,8 @@ export function KnowledgeScreen() {
       <NewLibraryDialog
         onCreate={(name, description) => {
           const id = libraries.create(name, description)
-          setState({ selected: id, query: "", fileName: "", fileText: "", selectedFiles: [] })
+          setState({ selected: id, query: "", selectedFiles: [] })
+          closePreview()
         }}
       />
     ))
@@ -147,7 +163,8 @@ export function KnowledgeScreen() {
    * import that kept running after the user left the workspace.
    */
   const openLibrary = (library: KnowledgeLibrary) => {
-    setState({ selected: library.id, query: "", fileName: "", fileText: "", selectedFiles: [] })
+    setState({ selected: library.id, query: "", selectedFiles: [] })
+    closePreview()
 
     void platform
       .listKnowledgeFiles?.({ libraryID: library.id })
@@ -246,7 +263,7 @@ export function KnowledgeScreen() {
           libraries.removeFiles(library.id, [file.path])
           mirrorServerCopy(library.id)
 
-          if (state.fileName === file.path) setState({ fileName: "", fileText: "" })
+          if (previewPath(preview()) === file.path) closePreview()
         }}
       />
     ))
@@ -282,11 +299,9 @@ export function KnowledgeScreen() {
     forgetFiles(library, paths)
     libraries.removeFiles(library.id, paths)
     mirrorServerCopy(library.id)
-    setState({
-      selectedFiles: state.selectedFiles.filter((path) => !paths.includes(path)),
-      fileName: paths.includes(state.fileName) ? "" : state.fileName,
-      fileText: paths.includes(state.fileName) ? "" : state.fileText,
-    })
+
+    if (paths.includes(previewPath(preview()))) closePreview()
+    setState("selectedFiles", (current) => current.filter((path) => !paths.includes(path)))
   }
 
   const confirmRemovePaths = (library: KnowledgeLibrary, paths: ReadonlyArray<string>) => {
@@ -313,7 +328,8 @@ export function KnowledgeScreen() {
     )
     libraries.remove(library.id)
     dropServerCopy(library.id)
-    setState({ selected: "", fileName: "", fileText: "", selectedFiles: [] })
+    setState({ selected: "", selectedFiles: [] })
+    closePreview()
   }
 
   /** One entry point: the picker accepts folders and files together, several at a time. */
@@ -348,7 +364,8 @@ export function KnowledgeScreen() {
 
       mirrorServerCopy(library.id)
 
-      setState({ fileName: "", fileText: "", selectedFiles: [] })
+      setState("selectedFiles", [])
+      closePreview()
       knowledgeImports.stage(library.id, "summarize")
 
       // Re-importing a folder adds nothing, and an empty excerpt set cannot describe the library.
@@ -385,9 +402,30 @@ export function KnowledgeScreen() {
   }
 
   const openFile = async (library: KnowledgeLibrary, file: KnowledgeFile) => {
-    setState({ fileName: file.path, loadingFile: true, fileText: "" })
-    const result = await platform.readKnowledgeFile?.({ libraryID: library.id, path: file.path })
-    setState({ fileText: result?.text ?? "", loadingFile: false })
+    setPreview((current) => transition(current, { type: "file.opened", path: file.path }))
+
+    try {
+      const result = await platform.readKnowledgeFile?.({ libraryID: library.id, path: file.path })
+      // The machine drops a read for a file the user already left.
+      setPreview((current) =>
+        transition(current, { type: "file.loaded", path: file.path, text: result?.text ?? "" }),
+      )
+    } catch (error) {
+      setPreview((current) =>
+        transition(current, {
+          type: "file.failed",
+          path: file.path,
+          message: error instanceof Error ? error.message : String(error),
+        }),
+      )
+    }
+  }
+
+  const retryPreview = () => {
+    const library = selected()
+    const file = previewFile()
+
+    if (library && file) void openFile(library, file)
   }
 
   const toggleFile = (path: string, checked: boolean) =>
@@ -411,11 +449,9 @@ export function KnowledgeScreen() {
     forgetFiles(library, paths)
     libraries.removeFiles(library.id, paths)
     mirrorServerCopy(library.id)
-    setState({
-      selectedFiles: [],
-      fileName: paths.includes(state.fileName) ? "" : state.fileName,
-      fileText: paths.includes(state.fileName) ? "" : state.fileText,
-    })
+
+    if (paths.includes(previewPath(preview()))) closePreview()
+    setState("selectedFiles", [])
   }
 
   const confirmRemoveFiles = (library: KnowledgeLibrary) => {
@@ -528,7 +564,10 @@ export function KnowledgeScreen() {
             <button
               type="button"
               class="knowledge-ghost-button"
-              onClick={() => setState({ selected: "", query: "", fileName: "", fileText: "", selectedFiles: [] })}
+              onClick={() => {
+                setState({ selected: "", query: "", selectedFiles: [] })
+                closePreview()
+              }}
             >
               <Icon name="outline-arrow-left" size="small" />
               {language.t("knowledge.back")}
@@ -759,7 +798,7 @@ export function KnowledgeScreen() {
                                   <ContextMenu.Trigger class="block min-w-0">
                                     <div
                                       class="knowledge-file-item"
-                                      data-selected={state.fileName === file.path ? "" : undefined}
+                                      data-selected={previewPath(preview()) === file.path ? "" : undefined}
                                     >
                                       <Checkbox
                                         hideLabel
@@ -849,7 +888,7 @@ export function KnowledgeScreen() {
                 </aside>
                 <section class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-4 py-3" data-scrollable>
                   <Show
-                    when={state.fileName}
+                    when={previewPath(preview())}
                     fallback={
                       <div class="flex h-full flex-col items-center justify-center gap-2 text-center">
                         <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
@@ -860,23 +899,37 @@ export function KnowledgeScreen() {
                   >
                     <div class="mb-2 flex items-center gap-2 text-[12px] text-v2-text-text-faint">
                       <span dir="auto" class="min-w-0 truncate">
-                        {state.fileName}
+                        {previewPath(preview())}
                       </span>
                       <Show when={previewFile() && isConverted(previewFile()!)}>
                         <span class="knowledge-ext-badge">{language.t("knowledge.preview.converted")}</span>
                       </Show>
                     </div>
                     <Show
-                      when={!state.loadingFile}
+                      when={preview().status !== "loading"}
                       fallback={
                         <div class="flex justify-center py-8">
                           <Loader />
                         </div>
                       }
                     >
-                      <pre class="knowledge-file-preview font-mono text-[13px] leading-[var(--line-height-base)]">
-                        {state.fileText || language.t("knowledge.preview.unreadable")}
-                      </pre>
+                      <Show
+                        when={preview().status === "failed"}
+                        fallback={
+                          <pre class="knowledge-file-preview font-mono text-[13px] leading-[var(--line-height-base)]">
+                            {previewText() || language.t("knowledge.preview.unreadable")}
+                          </pre>
+                        }
+                      >
+                        <div class="knowledge-preview-error" role="alert">
+                          <span class="knowledge-preview-error-message">
+                            {language.t("knowledge.preview.failed", { message: previewMessage() })}
+                          </span>
+                          <Button size="small" variant="neutral" onClick={retryPreview}>
+                            {language.t("knowledge.preview.retry")}
+                          </Button>
+                        </div>
+                      </Show>
                     </Show>
                   </Show>
                 </section>

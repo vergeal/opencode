@@ -2,7 +2,7 @@
 
 证据来源：仓库代码与 grep 输出（逐条带 `文件:行`）。**按本会话约束不做截图识别**，验收证据以代码行与命令输出为准。
 
-统计：条目 **161**，TODO **73**，DONE **88**。类别分布：结构 41（TODO 3 / DONE 38）、状态 38（19 / 19）、刻度 38（31 / 7）、交互 44（20 / 24）。
+统计：条目 **160**，TODO **67**，DONE **93**。类别分布：结构 41（TODO 3 / DONE 38）、状态 37（13 / 24）、刻度 38（31 / 7）、交互 44（20 / 24）。
 
 表内 `T` 为 TODO 数，`D` 为 DONE 数。
 
@@ -10,15 +10,15 @@
 | --- | --- | --- | --- | --- | --- |
 | shell | T0 / D4 | T3 / D0 | T4 / D0 | T4 / D2 | 结构达标 |
 | home | T0 / D4 | T4 / D0 | T4 / D0 | T3 / D1 | 结构达标 |
-| inbox | T0 / D3 | T1 / D2 | T0 / D3 | T2 / D1 | 结构达标 |
-| scheduled | T1 / D5 | T2 / D2 | T3 / D1 | T1 / D3 | 未达标 |
-| knowledge | T0 / D4 | T2 / D2 | T3 / D1 | T2 / D2 | 结构达标 |
-| settings | T0 / D4 | T2 / D2 | T4 / D0 | T1 / D3 | 结构达标 |
-| servers | T0 / D3 | T0 / D4 | T2 / D1 | T1 / D3 | 结构达标 |
-| workspaces | T0 / D4 | T2 / D1 | T3 / D0 | T2 / D2 | 结构达标 |
+| inbox | T0 / D3 | T0 / D2 | T0 / D3 | T2 / D1 | 状态达标 |
+| scheduled | T1 / D5 | T0 / D4 | T3 / D1 | T1 / D3 | 状态达标 |
+| knowledge | T0 / D4 | T0 / D4 | T3 / D1 | T2 / D2 | 状态达标 |
+| settings | T0 / D4 | T1 / D3 | T4 / D0 | T1 / D3 | 未达标 |
+| servers | T0 / D3 | T0 / D4 | T2 / D1 | T1 / D3 | 状态达标 |
+| workspaces | T0 / D4 | T2 / D1 | T3 / D0 | T2 / D2 | 未达标 |
 | new-session | T2 / D1 | T1 / D2 | T3 / D0 | T1 / D2 | 未达标 |
-| session | T0 / D3 | T1 / D2 | T2 / D1 | T2 / D2 | 结构达标 |
-| composer | T0 / D3 | T1 / D2 | T3 / D0 | T1 / D3 | 结构达标 |
+| session | T0 / D3 | T1 / D2 | T2 / D1 | T2 / D2 | 未达标 |
+| composer | T0 / D3 | T1 / D2 | T3 / D0 | T1 / D3 | 未达标 |
 
 ## shell
 
@@ -72,7 +72,6 @@
 | IB-S3 | 结构 | 页面承担列表+详情，侧栏收窄为快捷入口，不再两处都当列表页 | 6.3 | packages/app/src/inbox/route.tsx:51 | DONE |
 | IB-T1 | 状态 | 空态补「打开定时任务」下一步动作 | 7.2 | packages/app/src/inbox/route.tsx:63 | DONE |
 | IB-T2 | 状态 | 实测 `rounded-[9px]` 属标准 4.3 允许档（9–10 卡片/内块） | 4.3 | packages/app/src/inbox/route.tsx:57 | DONE |
-| IB-T3 | 状态 | 页面无加载、错误、部分失败分支 | 7.2 | packages/app/src/inbox/route.tsx:14 | TODO |
 | IB-C1 | 刻度 | 正文改为 13px + `--line-height-base` | 3 | packages/app/src/inbox/route.tsx:59 | DONE |
 | IB-C2 | 刻度 | 同页统一 13px 正文 + 12px 说明，层级稳定 | 3 | packages/app/src/inbox/route.tsx:59,61 | DONE |
 | IB-C3 | 刻度 | 图标容器圆角改为允许档 9px | 4.3 | packages/app/src/inbox/route.tsx:57 | DONE |
@@ -90,8 +89,8 @@
 | SC-S4 | 结构 | 列表宽 320px，落在 300–360 区间 | 4.1 | packages/app/src/scheduled/scheduled.css:31 | DONE |
 | SC-T1 | 状态 | 有 `machine.ts` 判别联合承载生命周期 | 7.1 | packages/app/src/scheduled/machine.ts | DONE |
 | SC-T2 | 状态 | 错误态有原地重试 | 7.2 | packages/app/src/scheduled/route.tsx:348 | DONE |
-| SC-T3 | 状态 | 仅在 `status==="loading"` 给 `Loader`，刷新时清空列表 | 7.2 | packages/app/src/scheduled/route.tsx:303 | TODO |
-| SC-T4 | 状态 | 空列表没有「一句说明 + 一个下一步动作」 | 7.2 | packages/app/src/scheduled/route.tsx:303 | TODO |
+| SC-T3 | 状态 | `load.started` 保留旧数据转 `refreshing`，工具栏显示 `Loader`；首次加载才在列表区给 `Loader` | 7.2 | packages/app/src/scheduled/machine.ts:22、route.tsx:295,303 | DONE |
+| SC-T4 | 状态 | 空列表给一句说明 + 「新建任务」按钮 | 7.2 | packages/app/src/scheduled/route.tsx:311-318 | DONE |
 | SC-C1 | 刻度 | 行内 `gap: 3px` 不在 2/4/8 刻度 | 4.2 | packages/app/src/scheduled/scheduled.css:45 | TODO |
 | SC-C2 | 刻度 | 筛选计数 `margin: 6px` 不在刻度 | 4.2 | packages/app/src/scheduled/scheduled.css:9 | TODO |
 | SC-C3 | 刻度 | 搜索框宽度 `220px` 字面量 | 4.1 | packages/app/src/scheduled/scheduled.css:16 | TODO |
@@ -113,8 +112,8 @@
 | KN-S4 | 结构 | 文件预览用 `<pre>`，代码字体与正文行高正确 | 3 | packages/app/src/knowledge/route.tsx:877 | DONE |
 | KN-T1 | 状态 | 空态有说明与「新建」动作 | 7.2 | packages/app/src/knowledge/route.tsx:458,511 | DONE |
 | KN-T2 | 状态 | 预览加载用 `Loader`，非 `Spinner` | 7.2 | packages/app/src/knowledge/route.tsx:873 | DONE |
-| KN-T3 | 状态 | 知识库页自身没有行内错误与重试（错误只在设置页） | 7.2 | packages/app/src/knowledge/route.tsx | TODO |
-| KN-T4 | 状态 | `store.ts` 直接持有加载状态，没有 `machine.ts` 判别联合 | 7.1 | packages/app/src/knowledge/store.ts | TODO |
+| KN-T3 | 状态 | 预览读取失败给页内 danger 行 + 原地重试 `retryPreview` | 7.2 | packages/app/src/knowledge/route.tsx:905-928 | DONE |
+| KN-T4 | 状态 | 预览已从 `fileName`/`fileText`/`loadingFile` 三个字段收进 `preview-machine.ts` 判别联合（idle/loading/ready/failed，含过期 path 拒绝） | 7.1 | packages/app/src/knowledge/preview-machine.ts:1-40 | DONE |
 | KN-C1 | 刻度 | 六个 `--knowledge-tone` 使用 hex 字面量 | 2 | packages/app/src/knowledge/knowledge.css:3,17,21,25,29,33,37 | TODO |
 | KN-C2 | 刻度 | 库名与标题用 `text-[15px]` 字面量 | 3 | packages/app/src/knowledge/route.tsx:483,511 | TODO |
 | KN-C3 | 刻度 | 元信息混用 `text-[12px]`、`text-[11px]` 字面量 | 3 | packages/app/src/knowledge/route.tsx:490,752 | TODO |
@@ -133,7 +132,7 @@
 | SE-S3 | 结构 | 已使用 `@container` 收起侧栏 | 4.1 | packages/app/src/settings/settings.css:996-1034 | DONE |
 | SE-S4 | 结构 | 实测控件宽度 220px 不属刻度项；设置行 44px 已由 `--settings-row-min-height` 统一 | 4.1 | packages/app/src/settings/settings.css:11 | DONE |
 | SE-T1 | 状态 | 供应商页有 `machine.ts` | 7.1 | packages/app/src/settings/providers/machine.ts | DONE |
-| SE-T2 | 状态 | 服务器不可用用 `createStore({ retrying: false })` 布尔替代状态机 | 7.1 | packages/app/src/settings/servers/unavailable.tsx:28 | TODO |
+| SE-T2 | 状态 | 服务器不可用改为 `unavailable-machine.ts`（idle/retrying/failed），重试失败给页内 danger 行 | 7.1 | packages/app/src/settings/servers/unavailable-machine.ts:1-16、unavailable.tsx:28-55 | DONE |
 | SE-T3 | 状态 | 项目知识库错误有原地重试 | 7.2 | packages/app/src/settings/workspaces/project-knowledge.tsx:136 | DONE |
 | SE-T4 | 状态 | 设置搜索无「无结果 + 一个动作」的空态 | 7.2 | packages/app/src/settings/search.tsx:207 | TODO |
 | SE-C1 | 刻度 | 导航淡出遮罩用 `#000` 字面量 | 2 | packages/app/src/settings/settings.css:131-132 | TODO |
@@ -246,11 +245,12 @@
 | 状态点尺寸 | 标准 5.2 为 6px；`servers/registry/row.tsx` 用 `size-1.5`=6px | 一致，无需改 |
 | 页面标题字号 | 标准 3 为 20–21px；home 现为 26px | 按标准改，见 HM-C2 |
 | 服务器注册表行结构 | 标准 5.2 要求固定「图标 → 标题+状态点 → 副标题 → 元信息」；`packages/app` 内只有健康点组件，整行由 `packages/gui-plugins` 渲染，超出本轮可改范围（仅 app/ui/session-ui） | 原 SV-S4 条目移出计数，留待范围放开后按 5.2 重排 |
+| 收件箱页面数据源 | 标准 7.2 要求页面具备加载/错误/部分失败三态；`inbox/route.tsx` 目前没有 producer（`packages/app` 内无收件箱数据源，侧栏收件箱只聚合会话事件），无数据可驱动这三态 | 原 IB-T3 条目移出计数；页面保留主从骨架与空态，待收件箱数据源落地后按 7.2 补分支 |
 | 运行历史条数 | 标准 6.1 要求「最近记录固定 5 条」；`Schedule.Info` 只提供 `lastFiredAt`、`lastOutcome`、`lastOutput`、`runCount`，没有运行历史数组，也没有 list-runs 端点（改端点属 schema/server，禁改） | `scheduled` 详情按真实数据渲染 1 条并给空态，不补 4 条假记录；需要服务端补 `schedule.runs` 后才谈 5 条 |
 
 ## 进度
 
-- 条目：161
-- TODO：73
-- DONE：88
+- 条目：160
+- TODO：67
+- DONE：93
 - 口径：每条一个可复核的代码位置，同一问题不重复立项；后续每完成一项把该行改成 DONE 并补齐 `文件:行`。
