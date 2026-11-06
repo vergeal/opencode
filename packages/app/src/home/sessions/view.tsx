@@ -979,7 +979,7 @@ function HomeSessionTitle(props: { title: string; showProjectName: boolean; sear
       dir="auto"
       class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-base [font-weight:530]"
       classList={{
-        "text-[15px] leading-4 tracking-[-0.04px]": !!props.search,
+        "text-[13px] leading-[var(--line-height-compact)] tracking-[-0.04px]": !!props.search,
         "max-w-[min(70%,480px)] flex-[0_1_auto]": props.showProjectName,
         "flex-[1_1_auto]": !props.showProjectName,
       }}

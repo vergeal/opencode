@@ -547,7 +547,7 @@ export function DraftTabItem(
             if (props.suppressNavigation) return
             props.onNavigate()
           }}
-          class="flex h-full min-w-0 flex-1 flex-row items-center gap-1.5 text-[15px] font-medium text-v2-text-text-faint group-data-[active='true']:text-v2-text-text-base [-webkit-user-drag:none]"
+          class="flex h-full min-w-0 flex-1 flex-row items-center gap-2 text-[13px] leading-[var(--line-height-compact)] font-medium text-v2-text-text-faint group-data-[active='true']:text-v2-text-text-base [-webkit-user-drag:none]"
         >
           <span class="flex size-4 shrink-0 items-center justify-center">
             <svg
