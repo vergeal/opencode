@@ -25,6 +25,7 @@ export const menuHandlers = MenuRpcs.toLayer(
 
           return new Promise<{ id?: string }>((resolve) => {
             if (!win) return resolve({})
+
             const menu = Menu.buildFromTemplate(
               items.map((item) =>
                 item.type === "separator"
@@ -37,8 +38,16 @@ export const menuHandlers = MenuRpcs.toLayer(
                     },
               ),
             )
-            // Electron reads `x`/`y` as window-relative points and rejects one without the other.
-            const point = x !== undefined && y !== undefined ? { x: Math.round(x), y: Math.round(y) } : undefined
+            // Electron reads `x`/`y` as window-relative DIP points, but the renderer reports CSS pixels, which shrink
+            // by the window's zoom factor. Without the conversion the menu drifts toward the window origin at any
+            // zoom other than 100%. One point without the other is rejected.
+
+            const factor = win.webContents.getZoomFactor()
+
+            const point =
+              x !== undefined && y !== undefined
+                ? { x: Math.round(x * factor), y: Math.round(y * factor) }
+                : undefined
 
             menu.popup({
               window: win,
