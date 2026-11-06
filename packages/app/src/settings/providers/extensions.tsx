@@ -1,7 +1,6 @@
 import { Predicate } from "effect"
 import { Component, For, Show, createEffect, createMemo, createResource, type JSX } from "solid-js"
 import { useDialog } from "@opencode/ui/context/dialog"
-import { Icon } from "@opencode/ui/icon"
 import { Button } from "@opencode/ui/button"
 import { Switch } from "@opencode/ui/switch"
 import { Tabs } from "@opencode/ui/tabs"
@@ -13,11 +12,11 @@ import { ServerConnection } from "@/runtime/server/registry"
 import { useMcpToggle } from "@/providers/connect/mcp"
 import { DialogMcp } from "@/providers/connect/mcp-dialog"
 import { ExtensionPlugins } from "@/runtime/plugin/extension-plugins"
-import { ExternalLink } from "@/runtime/platform/external-link"
 import { usePlatform } from "@/runtime/platform/platform"
 import { SettingsList } from "@/settings/list"
 import type { SettingsView } from "@/settings/surface"
 import { SettingsPageHeader } from "@/settings/page-header"
+import { SettingsSkills } from "@/settings/providers/skills"
 import "@/settings/settings.css"
 import "@/shell/search-list.css"
 
@@ -80,9 +79,9 @@ export const SettingsExtensions: Component<{
 
   createEffect(() => {
     if (serverSdk.connection.status() !== "connected") return
-    void data.location.skill.sync().catch(() => undefined)
+    void data.location.skill.sync(location()).catch(() => undefined)
   })
-  const skills = () => data.location.skill.list() ?? []
+  const fill = () => (props.subtab ?? "mcps") === "skills"
 
   return (
     <>
@@ -92,7 +91,7 @@ export const SettingsExtensions: Component<{
         actions={props.headerAction}
       />
 
-      <div class="settings-tab-body">
+      <div class="settings-tab-body" classList={{ "settings-tab-body--fill": fill() }}>
         <Tabs
           variant="pill"
           value={props.subtab ?? "mcps"}
@@ -100,6 +99,7 @@ export const SettingsExtensions: Component<{
             if (value === "mcps" || value === "plugins" || value === "skills") props.onSubtab(value)
           }}
           class="settings-extensions-tabs settings-subtabs"
+          classList={{ "settings-extensions-tabs--fill": fill() }}
         >
           <Tabs.List>
             <Tabs.Trigger value="mcps">{language.t("settings.extensions.tab.mcps")}</Tabs.Trigger>
@@ -205,28 +205,7 @@ export const SettingsExtensions: Component<{
           </Tabs.Content>
 
           <Tabs.Content value="skills">
-            <div class="settings-section">
-              <div class="flex items-center justify-between">
-                <span class="settings-extension-heading text-13-medium">
-                  {language.t("settings.extensions.availableAll")}
-                </span>
-                <ExternalLink class="settings-extension-link text-13-regular" href="https://opencode.ai/v2/docs/skills">
-                  {language.t("settings.extensions.addSkills")}
-                </ExternalLink>
-              </div>
-              <SettingsList variant="catalog">
-                <For each={skills()}>
-                  {(skill) => (
-                    <div class="settings-extension-row">
-                      <div class="settings-extension-lead">
-                        <Icon name="post-skill" class="text-v2-icon-icon-muted shrink-0" />
-                        <span class="settings-extension-name truncate">{skill.name}</span>
-                      </div>
-                    </div>
-                  )}
-                </For>
-              </SettingsList>
-            </div>
+            <SettingsSkills directory={location().directory} />
           </Tabs.Content>
         </Tabs>
       </div>
