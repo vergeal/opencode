@@ -612,7 +612,7 @@ function InboxRow(props: InboxRowProps) {
         data-slot="sidebar-inbox-item"
         data-status={status()}
         data-state={props.selected ? "active" : undefined}
-        class="group grid h-[30px] w-full shrink-0 grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 rounded-full ps-2 pe-2 text-start focus-visible:outline-none"
+        class="group grid h-[30px] w-full shrink-0 grid-cols-[16px_minmax(0,1fr)_auto] items-center gap-x-2 rounded-full ps-2 pe-2 text-start focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]"
         classList={{
           "transition-opacity hover:opacity-100 focus-visible:opacity-100": !props.selected,
           "opacity-70": status() === "working" && !props.selected,

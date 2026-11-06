@@ -317,7 +317,11 @@ export function ComposerEditor(props: ComposerEditorProps) {
               onAttachmentClick={props.controller.openAttachment}
               preview={props.controller.previewAttachment}
               onAttachmentRemove={(attachment) => props.controller.removeAttachment(attachment.id)}
-              onUploadCancel={(upload) => props.controller.cancelUpload(upload.id)}
+              onUploadCancel={(upload) => {
+                // The cancel button unmounts with the upload, so hand focus back to the editor before it goes.
+                props.controller.restoreFocus()
+                props.controller.cancelUpload(upload.id)
+              }}
               onCommentClick={(comment) => props.controller.toggleContext(comment.key)}
               onCommentRemove={(comment) => props.controller.removeContext(comment.key)}
               onFileRemove={(file) => props.controller.removeContext(file.key)}

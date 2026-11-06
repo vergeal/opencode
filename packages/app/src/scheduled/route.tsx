@@ -298,7 +298,40 @@ export function ScheduledScreen() {
       </PageToolbar>
 
       <div class="scheduled-body">
-        <aside class="scheduled-list" data-scrollable>
+        <aside
+          class="scheduled-list"
+          data-scrollable
+          onKeyDown={(event) => {
+            const keys = ["ArrowDown", "ArrowUp", "Home", "End"]
+
+            if (!keys.includes(event.key)) return
+
+            const rows = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("button.scheduled-row")]
+            const index = rows.findIndex((row) => row === document.activeElement)
+
+            if (index === -1) return
+            event.preventDefault()
+
+            const last = rows.length - 1
+
+            const go = (to: number) => {
+              const row = rows[to]
+
+              if (!row) return
+
+              row.focus()
+              const task = visible()[to]
+
+              if (task) setSelected(task.id)
+            }
+
+            if (event.key === "Home") return go(0)
+
+            if (event.key === "End") return go(last)
+
+            go(index + (event.key === "ArrowUp" ? -1 : 1))
+          }}
+        >
           <Show
             when={state().status !== "loading"}
             fallback={

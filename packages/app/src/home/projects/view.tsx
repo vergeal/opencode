@@ -716,7 +716,7 @@ function HomeProjectNavButton(props: JSX.ButtonHTMLAttributes<HTMLButtonElement>
         data-[selected]:bg-v2-background-bg-base data-[selected]:text-v2-text-text-base
         data-[selected]:hover:bg-v2-background-bg-base
         focus-visible:bg-v2-background-bg-layer-01 focus-visible:text-v2-text-text-base focus-visible:outline-none
-        focus-visible:[box-shadow:inset_0_0_0_0.5px_var(--v2-border-border-muted)]
+        focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]
         ${local.class ?? ""}
       `}
       classList={local.classList}

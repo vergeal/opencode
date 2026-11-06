@@ -322,14 +322,21 @@ export function KnowledgeScreen() {
   }
 
   const removeLibrary = (library: KnowledgeLibrary) => {
-    forgetFiles(
-      library,
-      library.files.map((file) => file.path),
-    )
-    libraries.remove(library.id)
-    dropServerCopy(library.id)
-    setState({ selected: "", selectedFiles: [] })
-    closePreview()
+    void dialog.show(() => (
+      <RemoveLibraryDialog
+        name={library.name}
+        onConfirm={() => {
+          forgetFiles(
+            library,
+            library.files.map((file) => file.path),
+          )
+          libraries.remove(library.id)
+          dropServerCopy(library.id)
+          setState({ selected: "", selectedFiles: [] })
+          closePreview()
+        }}
+      />
+    ))
   }
 
   /** One entry point: the picker accepts folders and files together, several at a time. */
@@ -501,7 +508,34 @@ export function KnowledgeScreen() {
               </div>
             }
           >
-            <div class="knowledge-grid">
+            <div
+              class="knowledge-grid"
+              onKeyDown={(event) => {
+                const keys = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"]
+
+                if (!keys.includes(event.key)) return
+
+                const cards = [...event.currentTarget.querySelectorAll<HTMLButtonElement>("button.knowledge-card")]
+                const index = cards.findIndex((card) => card === document.activeElement)
+
+                if (index === -1) return
+                event.preventDefault()
+
+                const last = cards.length - 1
+                const go = (to: number) => cards[Math.min(Math.max(to, 0), last)]?.focus()
+
+                if (event.key === "Home") return go(0)
+
+                if (event.key === "End") return go(last)
+
+                // auto-fill 的列数来自计算后的轨道数，垂直移动一次跨一行。
+                const horizontal = event.key === "ArrowRight" || event.key === "ArrowLeft"
+                const columns = getComputedStyle(event.currentTarget).gridTemplateColumns.split(" ").filter(Boolean).length
+                const step = horizontal ? 1 : Math.max(columns, 1)
+
+                go(index + (event.key === "ArrowRight" || event.key === "ArrowDown" ? step : -step))
+              }}
+            >
               <For each={libraries.libraries()}>
                 {(library, index) => (
                   <ContextMenu>
@@ -766,7 +800,33 @@ export function KnowledgeScreen() {
                       </Show>
                     </div>
                   </Show>
-                  <div class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-1 pb-2" data-scrollable>
+                  <div
+                    class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-1 pb-2"
+                    data-scrollable
+                    onKeyDown={(event) => {
+                      const keys = ["ArrowDown", "ArrowUp", "Home", "End"]
+
+                      if (!keys.includes(event.key)) return
+
+                      const rows = [
+                        ...event.currentTarget.querySelectorAll<HTMLButtonElement>("button.knowledge-file-row"),
+                      ]
+
+                      const index = rows.findIndex((row) => row === document.activeElement)
+
+                      if (index === -1) return
+                      event.preventDefault()
+
+                      const last = rows.length - 1
+                      const go = (to: number) => rows[Math.min(Math.max(to, 0), last)]?.focus()
+
+                      if (event.key === "Home") return go(0)
+
+                      if (event.key === "End") return go(last)
+
+                      go(index + (event.key === "ArrowDown" ? 1 : -1))
+                    }}
+                  >
                     <Show
                       when={visibleFiles().length > 0}
                       fallback={
@@ -886,7 +946,12 @@ export function KnowledgeScreen() {
                     onResize={(width) => setState("listWidth", width)}
                   />
                 </aside>
-                <section class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-4 py-3" data-scrollable>
+                <section
+                  class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-4 py-3 focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]"
+                  data-scrollable
+                  tabIndex={0}
+                  aria-label={language.t("knowledge.preview.empty")}
+                >
                   <Show
                     when={previewPath(preview())}
                     fallback={
@@ -1185,6 +1250,36 @@ function DiscardsDialog(props: { discards: ReadonlyArray<KnowledgeDiscard>; init
 }
 
 /** Asks before dropping library entries; the imported folder always keeps its files. */
+function RemoveLibraryDialog(props: { name: string; onConfirm: () => void }) {
+  const dialog = useDialog()
+  const language = useLanguage()
+
+  return (
+    <Dialog fit>
+      <DialogHeader hideClose>
+        <DialogTitleGroup
+          title={language.t("knowledge.delete")}
+          description={language.t("knowledge.delete.confirm", { name: props.name })}
+        />
+      </DialogHeader>
+      <DialogFooter>
+        <Button variant="neutral" autofocus onClick={() => dialog.close()}>
+          {language.t("common.cancel")}
+        </Button>
+        <Button
+          variant="danger"
+          onClick={() => {
+            dialog.close()
+            props.onConfirm()
+          }}
+        >
+          {language.t("knowledge.delete")}
+        </Button>
+      </DialogFooter>
+    </Dialog>
+  )
+}
+
 function RemoveFilesDialog(props: { count: number; flagged?: boolean; onConfirm: () => void }) {
   const dialog = useDialog()
   const language = useLanguage()

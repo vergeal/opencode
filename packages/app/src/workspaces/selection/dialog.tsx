@@ -595,6 +595,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
         }
         button[data-type="item"]:focus-visible {
           outline: none !important;
+          box-shadow: inset 0 0 0 1px var(--v2-border-border-focus) !important;
         }
         [data-item-type="folder"] > [data-item-section="icon"] {
           width: auto !important;

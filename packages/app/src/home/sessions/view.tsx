@@ -478,7 +478,7 @@ function HomeSessionSearchResultRow(
       class={`
         flex h-10 w-full shrink-0 cursor-default items-center border-0 py-3 pl-[18px] pr-6 text-left
         transition-[background-color] duration-[120ms] ease-in-out
-        hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
+        hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]
       `}
       classList={{
         "bg-v2-overlay-simple-overlay-hover": props.selected,
@@ -742,7 +742,7 @@ function HomeSessionRow(
                 disabled={editor()?.renaming ?? false}
                 class={`
                 block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-v2-text-text-base
-                [font-weight:530] field-sizing-content outline-none focus:outline-none focus-visible:outline-none
+                [font-weight:530] field-sizing-content outline-none focus:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]
                  ${showProjectName() ? "max-w-[min(70%,480px)] flex-[0_1_auto]" : "flex-[1_1_auto]"}
               `}
                 style={{ "--inline-input-shadow": "none", "text-align": "start" }}
@@ -789,7 +789,7 @@ function HomeSessionRow(
             flex h-10 min-w-0 w-full flex-1 shrink-0 cursor-default items-center rounded-full border-0
             bg-transparent py-3 ps-3 pe-3 text-start text-v2-text-text-muted [font-weight:530]
             transition-[background-color,color,box-shadow] duration-[120ms] ease-in-out
-            hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none
+            hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]
           `}
           classList={{ "gap-1.5": props.desktop, "gap-2": !props.desktop, "md:pe-10": SHOW_HOME_SESSION_ARCHIVE }}
           onMouseDown={(event) => {

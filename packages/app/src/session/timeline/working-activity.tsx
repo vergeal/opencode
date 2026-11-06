@@ -97,7 +97,7 @@ export function SessionWorkedHeader(props: {
       <Show when={props.expandable} fallback={row()}>
         <button
           type="button"
-          class="flex min-w-0 w-full items-center gap-1.5 text-start focus-visible:outline-none"
+          class="flex min-w-0 w-full items-center gap-1.5 text-start focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]"
           aria-expanded={props.expanded}
           aria-label={language.t(props.expanded ? "session.worked.collapse" : "session.worked.expand")}
           onClick={() => props.onToggle?.()}

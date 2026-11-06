@@ -1488,7 +1488,7 @@ export const dict = {
   "scheduled.detail.delete": "Delete",
   "scheduled.detail.delete.title": "Delete scheduled task",
   "scheduled.detail.delete.description": 'Delete "{{name}}"? Its session and history stay.',
-  "scheduled.detail.delete.button": "Delete",
+  "scheduled.detail.delete.button": "Delete task",
   "scheduled.status.active": "Active",
   "scheduled.status.paused": "Paused",
   "scheduled.status.done": "Done",
@@ -1532,6 +1532,8 @@ export const dict = {
   "knowledge.create": "Create",
   "knowledge.back": "All knowledge bases",
   "knowledge.delete": "Delete knowledge base",
+  "knowledge.delete.confirm":
+    "Delete \u201c{{name}}\u201d and remove its files from the app? The original files on disk are not deleted.",
   "knowledge.name.placeholder": "Name this knowledge base",
   "knowledge.new.about.placeholder": "What is this knowledge base for? (optional)",
   "knowledge.new.about.hint":

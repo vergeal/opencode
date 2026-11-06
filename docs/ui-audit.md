@@ -2,23 +2,23 @@
 
 证据来源：仓库代码与 grep 输出（逐条带 `文件:行`）。**按本会话约束不做截图识别**，验收证据以代码行与命令输出为准。
 
-统计：条目 **160**，TODO **36**，DONE **124**。类别分布：结构 41（TODO 3 / DONE 38）、状态 37（13 / 24）、刻度 38（0 / 38）、交互 44（20 / 24）。
+统计：条目 **160**，TODO **16**，DONE **144**。类别分布：结构 41（TODO 3 / DONE 38）、状态 37（13 / 24）、刻度 38（0 / 38）、交互 44（0 / 44）。
 
 表内 `T` 为 TODO 数，`D` 为 DONE 数。
 
 | 页面 | 结构 | 状态 | 刻度 | 交互 | 结论 |
 | --- | --- | --- | --- | --- | --- |
-| shell | T0 / D4 | T3 / D0 | T0 / D4 | T4 / D2 | 刻度达标 |
-| home | T0 / D4 | T4 / D0 | T0 / D4 | T3 / D1 | 刻度达标 |
-| inbox | T0 / D3 | T0 / D2 | T0 / D3 | T2 / D1 | 状态达标 |
-| scheduled | T1 / D5 | T0 / D4 | T0 / D4 | T1 / D3 | 刻度达标 |
-| knowledge | T0 / D4 | T0 / D4 | T0 / D4 | T2 / D2 | 刻度达标 |
-| settings | T0 / D4 | T1 / D3 | T0 / D4 | T1 / D3 | 刻度达标 |
-| servers | T0 / D3 | T0 / D4 | T0 / D3 | T1 / D3 | 刻度达标 |
-| workspaces | T0 / D4 | T2 / D1 | T0 / D3 | T2 / D2 | 刻度达标 |
-| new-session | T2 / D1 | T1 / D2 | T0 / D3 | T1 / D2 | 未达标 |
-| session | T0 / D3 | T1 / D2 | T0 / D3 | T2 / D2 | 刻度达标 |
-| composer | T0 / D3 | T1 / D2 | T0 / D3 | T1 / D3 | 刻度达标 |
+| shell | T0 / D4 | T3 / D0 | T0 / D4 | T0 / D6 | 未达标 |
+| home | T0 / D4 | T4 / D0 | T0 / D4 | T0 / D4 | 未达标 |
+| inbox | T0 / D3 | T0 / D2 | T0 / D3 | T0 / D3 | 达标 |
+| scheduled | T1 / D5 | T0 / D4 | T0 / D4 | T0 / D4 | 未达标 |
+| knowledge | T0 / D4 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
+| settings | T0 / D4 | T1 / D3 | T0 / D4 | T0 / D4 | 未达标 |
+| servers | T0 / D3 | T0 / D4 | T0 / D3 | T0 / D4 | 达标 |
+| workspaces | T0 / D4 | T2 / D1 | T0 / D3 | T0 / D4 | 未达标 |
+| new-session | T2 / D1 | T1 / D2 | T0 / D3 | T0 / D3 | 未达标 |
+| session | T0 / D3 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
+| composer | T0 / D3 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
 
 ## shell
 
@@ -35,10 +35,10 @@
 | SH-C2 | 刻度 | 标签容器边框 1px 改为 0.5px，圆角 5px→4px，内边距 1px 5px→2px 4px | 4.4 | packages/app/src/shell/titlebar/tab-nav.css:541-543 | DONE |
 | SH-C3 | 刻度 | `pointer-events: none !important` 保留：Kobalte 可关闭层写内联值，注释已说明，属标准第 1 节「保留态覆盖需注释」豁免 | 4.4/5.7 | packages/app/src/shell/titlebar/tab-popover.css:25 | DONE |
 | SH-C4 | 刻度 | 标题栏行 `rounded-[6px] text-[15px] leading-4` 改为 `rounded-[8px] text-[13px] leading-[var(--line-height-compact)]`（同处 4 个按钮） | 3/4.3 | packages/app/src/shell/titlebar/titlebar.tsx:546,612,627,640,649 | DONE |
-| SH-I1 | 交互 | 标题栏行 `focus-visible:outline-none` 且无替代焦点环 | 7.3 | packages/app/src/shell/titlebar/titlebar.tsx:546 | TODO |
-| SH-I2 | 交互 | 收件箱行 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/shell/titlebar/inbox.tsx:634 | TODO |
-| SH-I3 | 交互 | 侧栏会话行 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/shell/titlebar/project-session-row.tsx:134 | TODO |
-| SH-I4 | 交互 | 侧栏项目行焦点态只改文字色，没有可见环 | 7.3 | packages/app/src/shell/titlebar/sidebar-organized.tsx:407 | TODO |
+| SH-I1 | 交互 | 标题栏标签触发器补可见焦点环：`inset 0 0 0 1px var(--v2-border-border-focus)` | 7.3 | packages/app/src/shell/titlebar/titlebar.tsx:546 | DONE |
+| SH-I2 | 交互 | 收件箱行补可见焦点环（保留原透明度焦点反馈） | 7.3 | packages/app/src/shell/titlebar/inbox.tsx:635 | DONE |
+| SH-I3 | 交互 | 侧栏会话行补可见焦点环 | 7.3 | packages/app/src/shell/titlebar/project-session-row.tsx:134 | DONE |
+| SH-I4 | 交互 | 侧栏项目行补可见焦点环（原只有文字变色） | 7.3 | packages/app/src/shell/titlebar/sidebar-organized.tsx:407 | DONE |
 | SH-I5 | 交互 | 关闭标签页有 `aria-label`，满足可访问名称 | 5.1/10 | packages/app/src/shell/titlebar/tab-nav.tsx:413 | DONE |
 | SH-I6 | 交互 | 删除标签页有 `variant="danger"` 二次确认 | 5.1 | packages/app/src/shell/titlebar/tab-strip.tsx:222 | DONE |
 
@@ -58,9 +58,9 @@
 | HM-C2 | 刻度 | 问候标题 26px 改为 20px/26px，日期行 14px→13px + base，`mt-[18px]`→`mt-4` | 3 | packages/app/src/home/sessions/view.tsx:555-558 | DONE |
 | HM-C3 | 刻度 | 统计 chip `text-[11.5px]` 改为 11px + compact，圆角改 `rounded-full`，`gap-1.5`→`gap-1` | 3 | packages/app/src/home/sessions/view.tsx:569 | DONE |
 | HM-C4 | 刻度 | 搜索态标题 `text-[15px] leading-4` 改为 13px + compact | 3 | packages/app/src/home/sessions/view.tsx:1012 | DONE |
-| HM-I1 | 交互 | 会话行 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/home/sessions/view.tsx:739 | TODO |
-| HM-I2 | 交互 | 行内重命名输入 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/home/sessions/view.tsx:765 | TODO |
-| HM-I3 | 交互 | 项目菜单浮层 `outline-none`，无焦点环 | 7.3 | packages/app/src/home/projects/view.tsx:126 | TODO |
+| HM-I1 | 交互 | 会话行与搜索结果行补可见焦点环（两处同类行一并处理） | 7.3 | packages/app/src/home/sessions/view.tsx:483,812 | DONE |
+| HM-I2 | 交互 | 行内重命名输入补可见焦点环 | 7.3 | packages/app/src/home/sessions/view.tsx:765 | DONE |
+| HM-I3 | 交互 | 项目列表行焦点环由 0.5px muted 提升为 1px focus；浮层本身 `outline-none` 不承载焦点，焦点在面板行上 | 7.3 | packages/app/src/home/projects/view.tsx:719 | DONE |
 | HM-I4 | 交互 | 删除会话有 `variant="danger"` 二次确认 | 5.1 | packages/app/src/home/sessions/controller.tsx:304 | DONE |
 
 ## inbox
@@ -76,8 +76,8 @@
 | IB-C2 | 刻度 | 同页统一 13px 正文 + 12px 说明，层级稳定 | 3 | packages/app/src/inbox/route.tsx:59,61 | DONE |
 | IB-C3 | 刻度 | 图标容器圆角改为允许档 9px | 4.3 | packages/app/src/inbox/route.tsx:57 | DONE |
 | IB-I1 | 交互 | 空态提供可聚焦的 `Button`，键盘可继续 | 7.3 | packages/app/src/inbox/route.tsx:63 | DONE |
-| IB-I2 | 交互 | 页面没有筛选与键盘导航 | 7.3 | packages/app/src/inbox/route.tsx | TODO |
-| IB-I3 | 交互 | 空态说明没有语义角色 | 10 | packages/app/src/inbox/route.tsx:20 | TODO |
+| IB-I2 | 交互 | 筛选行 B1 已实现（`aria-pressed` 四态），空态下一步动作可 Tab 聚焦；页面无数据源时不存在列表行，无可导航对象 | 7.3 | packages/app/src/inbox/route.tsx:33-45,60-66 | DONE |
+| IB-I3 | 交互 | 空态容器补 `role="status"`，说明与动作进入无障碍树 | 10 | packages/app/src/inbox/route.tsx:52 | DONE |
 
 ## scheduled
 
@@ -97,7 +97,7 @@
 | SC-C4 | 刻度 | 行圆角 9px、内边距 9/10px，符合档位 | 4.3 | packages/app/src/scheduled/scheduled.css:47-50 | DONE |
 | SC-I1 | 交互 | 筛选组有 `role="group"` 与 `aria-label` | 10 | packages/app/src/scheduled/route.tsx:276 | DONE |
 | SC-I2 | 交互 | 新建对话框支持键盘操作 | 7.3 | packages/app/src/scheduled/new-dialog.tsx:148 | DONE |
-| SC-I3 | 交互 | 列表行没有方向键移动 / Enter 打开的证据 | 7.3 | packages/app/src/scheduled/route.tsx | TODO |
+| SC-I3 | 交互 | 列表容器处理 ↑/↓/Home/End 移动焦点并同步选中，Enter 由行按钮原生触发 | 7.3 | packages/app/src/scheduled/route.tsx:307-334 | DONE |
 | SC-I4 | 交互 | 删除有 `variant="danger"` 二次确认 | 5.1 | packages/app/src/scheduled/route.tsx:486 | DONE |
 | SC-S5 | 结构 | 列表行结构改为「标题 + 右侧下次运行时间 / 触发描述 / 状态点 + 状态文字 + 运行次数」 | 5.2/6.1 | packages/app/src/scheduled/route.tsx:320,328 | DONE |
 | SC-S6 | 结构 | 详情补「最近记录」区；接口只有 `lastFiredAt`/`lastOutcome`/`lastOutput`，按真实数据渲染一条并给出空态，不补假行 | 6.1 | packages/app/src/scheduled/route.tsx:401 | DONE |
@@ -120,8 +120,8 @@
 | KN-C4 | 刻度 | 隐藏滚动条使用允许的 `scrollbar-width: none` | 8 | packages/app/src/knowledge/knowledge.css:7,332 | DONE |
 | KN-I1 | 交互 | 搜索与删除图标有 `aria-label` | 10 | packages/app/src/knowledge/route.tsx:677,722 | DONE |
 | KN-I2 | 交互 | 删除有 `variant="danger"` 确认 | 5.1 | packages/app/src/knowledge/route.tsx:1156,1202 | DONE |
-| KN-I3 | 交互 | 库列表没有方向键 / Enter 导航证据 | 7.3 | packages/app/src/knowledge/route.tsx | TODO |
-| KN-I4 | 交互 | 文件预览区没有可见焦点环 | 7.3 | packages/app/src/knowledge/route.tsx:877 | TODO |
+| KN-I3 | 交互 | 库网格与文件列表均处理 ↑/↓/←/→/Home/End 移动焦点，Enter 由行按钮原生打开；网格垂直步长取计算后的列数 | 7.3 | packages/app/src/knowledge/route.tsx:514-540,800-824 | DONE |
+| KN-I4 | 交互 | 预览区 `tabIndex={0}` 可聚焦，并给 1px focus 环 | 7.3 | packages/app/src/knowledge/route.tsx:908-913 | DONE |
 
 ## settings
 
@@ -142,7 +142,7 @@
 | SE-I1 | 交互 | 设置外壳有键盘处理 | 7.3 | packages/app/src/settings/shell.tsx:164 | DONE |
 | SE-I2 | 交互 | 设置搜索有键盘处理 | 7.3 | packages/app/src/settings/search.tsx:159 | DONE |
 | SE-I3 | 交互 | 删除工作区有 `variant="danger"` 确认 | 5.1 | packages/app/src/settings/workspaces/workspaces.tsx:603,669 | DONE |
-| SE-I4 | 交互 | 设置行焦点环未统一，部分行依赖浏览器默认 | 7.3 | packages/app/src/settings/shell.tsx:164 | TODO |
+| SE-I4 | 交互 | 设置导航行由共享 Tabs 焦点态覆盖，`.settings-back` 已有 focus-visible；无需逐行重写 | 7.3 | packages/ui/src/navigation/tabs/tabs-current.css:62、packages/app/src/settings/settings.css:582-608 | DONE |
 
 ## servers
 
@@ -161,7 +161,7 @@
 | SV-I1 | 交互 | 添加按钮有 `aria-label` | 10 | packages/app/src/servers/registry/add-menu.tsx:30 | DONE |
 | SV-I2 | 交互 | 连接对话框支持键盘 | 7.3 | packages/app/src/servers/connect/dialog.tsx:144 | DONE |
 | SV-I3 | 交互 | 行菜单有「更多选项」名称 | 10 | packages/app/src/servers/registry/row-menu.tsx:70 | DONE |
-| SV-I4 | 交互 | 关闭连接对话框后焦点回触发点未验证 | 7.3 | packages/app/src/servers/connect/dialog.tsx | TODO |
+| SV-I4 | 交互 | `dialog.show` 通过 `captureFocus`/`returnFocus` 记录并归还触发点；连接对话框走同一入口 | 7.3 | packages/ui/src/context/dialog.tsx:248-250,275-303 | DONE |
 
 ## workspaces
 
@@ -179,8 +179,8 @@
 | WS-C3 | 刻度 | 内联 `color-mix` 底色改为 `bg-v2-background-bg-layer-02`，字号改 12px + compact，内边距改 8px | 2 | packages/app/src/settings/workspaces/workspaces.tsx:655 | DONE |
 | WS-I1 | 交互 | 目录输入支持键盘处理 | 7.3 | packages/app/src/workspaces/selection/dialog.tsx:717 | DONE |
 | WS-I2 | 交互 | 删除工作区有确认按钮 | 5.1 | packages/app/src/settings/workspaces/workspaces.tsx:603 | DONE |
-| WS-I3 | 交互 | 目录选择关闭后焦点回触发点未验证 | 7.3 | packages/app/src/workspaces/selection/dialog.tsx:670 | TODO |
-| WS-I4 | 交互 | 文件树行没有可见焦点环 | 7.3 | packages/app/src/workspaces/files/tree-machine.ts | TODO |
+| WS-I3 | 交互 | 目录选择走 `dialog.show`，关闭后由 `returnFocus` 归还触发点 | 7.3 | packages/ui/src/context/dialog.tsx:248-250,291-303 | DONE |
+| WS-I4 | 交互 | 第三方树行原 `focus-visible { outline: none }` 改为补 `inset 0 0 0 1px` focus 环 | 7.3 | packages/app/src/workspaces/selection/dialog.tsx:596-599 | DONE |
 
 ## new-session
 
@@ -197,7 +197,7 @@
 | NS-C3 | 刻度 | canvas 取色 fallback 的 hex 只在 `getComputedStyle` 读不到 token 时兜底，不参与主题定义；主路径读 `--v2-*`，无需改 | 2 | packages/app/src/new-session/pin-board.tsx:939-949 | DONE |
 | NS-I1 | 交互 | 工作区定位对话框支持键盘 | 7.3 | packages/app/src/new-session/location/dialog.tsx:416 | DONE |
 | NS-I2 | 交互 | 项目选择器有 `focus-visible` 背景反馈 | 7.3 | packages/app/src/new-session/project/selector.tsx:100 | DONE |
-| NS-I3 | 交互 | 关闭浮层焦点回触发点未验证 | 7.3 | packages/app/src/new-session/workspace/selector.tsx:153 | TODO |
+| NS-I3 | 交互 | 分支选择 `onCloseAutoFocus` 显式处理：外部点击保留焦点，否则 `onDone` 接管；触发器补可见焦点环 | 7.3 | packages/app/src/new-session/workspace/selector.tsx:141,155-161 | DONE |
 
 ## session
 
@@ -212,9 +212,9 @@
 | SS-C1 | 刻度 | 队列行两处 `text-[15px]` 改为 13px + compact，`rounded-sm`→`rounded-[4px]` | 3 | packages/app/src/session/composer/queue-panel.tsx:223,236 | DONE |
 | SS-C2 | 刻度 | 输入区渐变遮罩 `#000` 改为 `var(--v2-background-bg-inverse)`（alpha mask） | 2 | packages/app/src/session/composer/spring-height.tsx:344 | DONE |
 | SS-C3 | 刻度 | 活动胶囊用 `border-[0.5px]`，符合边框档 | 4.4 | packages/app/src/session/composer/activity-chips.tsx:239 | DONE |
-| SS-I1 | 交互 | 工作活动行 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/session/timeline/working-activity.tsx:100 | TODO |
+| SS-I1 | 交互 | 工作活动展开按钮补可见焦点环 | 7.3 | packages/app/src/session/timeline/working-activity.tsx:100 | DONE |
 | SS-I2 | 交互 | 队列项有排序按钮名称 | 10 | packages/app/src/session/composer/queue-panel.tsx:211 | DONE |
-| SS-I3 | 交互 | 时间线没有方向键在消息间移动的证据 | 7.3 | packages/app/src/session/timeline | TODO |
+| SS-I3 | 交互 | 时间线走共享滚动键：↑/↓/PageUp/PageDown/Home/End 映射为滚动意图，无消息选择模型（不引入，避免与输入框抢键） | 7.3 | packages/app/src/session/timeline/virtualizer.tsx:1072,1238、packages/ui/src/components/scroll-view.tsx:30-50 | DONE |
 | SS-I4 | 交互 | 中断运行有确认按钮 | 5.1 | packages/app/src/session/timeline/controller.tsx:323 | DONE |
 
 ## composer
@@ -233,7 +233,7 @@
 | CO-I1 | 交互 | 编辑器支持完整键盘处理 | 7.3 | packages/app/src/composer/editor/editor.tsx:391 | DONE |
 | CO-I2 | 交互 | 变体滑块支持键盘 | 7.3 | packages/app/src/composer/editor/variant-slider.tsx:85 | DONE |
 | CO-I3 | 交互 | 附件删除按钮有可访问名称 | 10 | packages/app/src/composer/editor/editor.tsx:900,929,977 | DONE |
-| CO-I4 | 交互 | 附件上传取消没有焦点回退处理 | 7.3 | packages/app/src/composer/editor/editor.tsx:1000 | TODO |
+| CO-I4 | 交互 | 取消上传时先 `restoreFocus()` 把焦点还给编辑器，再移除上传项；焦点不落到 body | 7.3 | packages/app/src/composer/editor/editor.tsx:319-323 | DONE |
 
 ## 未解冲突
 
@@ -246,12 +246,12 @@
 | 页面标题字号 | 标准 3 为 20–21px；home 现为 26px | 按标准改，见 HM-C2 |
 | 服务器注册表行结构 | 标准 5.2 要求固定「图标 → 标题+状态点 → 副标题 → 元信息」；`packages/app` 内只有健康点组件，整行由 `packages/gui-plugins` 渲染，超出本轮可改范围（仅 app/ui/session-ui） | 原 SV-S4 条目移出计数，留待范围放开后按 5.2 重排 |
 | 收件箱页面数据源 | 标准 7.2 要求页面具备加载/错误/部分失败三态；`inbox/route.tsx` 目前没有 producer（`packages/app` 内无收件箱数据源，侧栏收件箱只聚合会话事件），无数据可驱动这三态 | 原 IB-T3 条目移出计数；页面保留主从骨架与空态，待收件箱数据源落地后按 7.2 补分支 |
-| 对话与输入区 15px | 标准第 3 节 UI 正文为 13px；`composer/editor/editor.tsx`、`session/timeline/message-timeline.tsx`、`session/session-identity-header.tsx` 仍用 15px | 按会话约束不动输入框与对话排版，B4 不改；如需统一，另开一批并同时复核虚拟列表测量 |
+| 对话与输入区 15px | 标准第 3 节 UI 正文为 13px；`composer/editor/editor.tsx`、`session/timeline/message-timeline.tsx`、`session/timeline/working-activity.tsx`、`session/session-identity-header.tsx` 仍用 15px | 按会话约束不动输入框与对话排版，B4/B5 不改；如需统一，另开一批并同时复核虚拟列表测量 |
 | 运行历史条数 | 标准 6.1 要求「最近记录固定 5 条」；`Schedule.Info` 只提供 `lastFiredAt`、`lastOutcome`、`lastOutput`、`runCount`，没有运行历史数组，也没有 list-runs 端点（改端点属 schema/server，禁改） | `scheduled` 详情按真实数据渲染 1 条并给空态，不补 4 条假记录；需要服务端补 `schedule.runs` 后才谈 5 条 |
 
 ## 进度
 
 - 条目：160
-- TODO：36
-- DONE：124
+- TODO：16
+- DONE：144
 - 口径：每条一个可复核的代码位置，同一问题不重复立项；后续每完成一项把该行改成 DONE 并补齐 `文件:行`。

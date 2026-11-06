@@ -52,7 +52,7 @@ export function InboxScreen() {
           data-scrollable
           class="flex w-80 shrink-0 flex-col overflow-y-auto border-e-[0.5px] border-v2-border-border-muted p-2"
         >
-          <div class="my-auto flex flex-col items-center gap-3 px-4 py-10 text-center">
+          <div role="status" class="my-auto flex flex-col items-center gap-3 px-4 py-10 text-center">
             <span class="flex size-9 items-center justify-center rounded-[9px] bg-v2-background-bg-layer-02 text-v2-icon-icon-muted">
               <Icon name="notifications" />
             </span>
