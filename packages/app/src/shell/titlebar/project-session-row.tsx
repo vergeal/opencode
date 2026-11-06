@@ -1,4 +1,4 @@
-import { Show } from "solid-js"
+import { Show, type Setter } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useQueryClient } from "@tanstack/solid-query"
 import type { SessionInfo } from "@opencode/client/promise"
@@ -26,6 +26,9 @@ export function ProjectSessionRow(props: {
   openTab: boolean
   active: boolean
   onOpen: () => void
+  /** The session row is the sortable element itself: dnd-kit refuses to start a drag on an interactive element
+   *  that is only a descendant of the draggable, and this row is a single full-width button. */
+  setElement: Setter<Element | undefined>
 }) {
   const language = useLanguage()
 
@@ -128,6 +131,7 @@ export function ProjectSessionRow(props: {
     <Menu.Context modal={false}>
       <Menu.Context.Trigger
         as="button"
+        ref={props.setElement}
         type="button"
         data-titlebar-tab-action
         data-state={props.active ? "pressed" : undefined}

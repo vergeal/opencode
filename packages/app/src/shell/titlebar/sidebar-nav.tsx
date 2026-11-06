@@ -103,8 +103,9 @@ function SidebarNavRow(props: {
   })
 
   return (
-    <div ref={sortable.ref} class="relative shrink-0">
+    <div class="relative shrink-0">
       <button
+        ref={sortable.ref}
         type="button"
         data-titlebar-tab-action
         data-action={`vertical-tabs-${props.id}`}

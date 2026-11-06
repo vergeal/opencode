@@ -1,5 +1,5 @@
 import { Schema } from "effect"
-import { createEffect, createMemo, Show, onCleanup, untrack, type Accessor, type JSX } from "solid-js"
+import { createEffect, createMemo, Show, onCleanup, untrack, type Accessor, type JSX, type Setter } from "solid-js"
 import { Key } from "@solid-primitives/keyed"
 import { createStore } from "solid-js/store"
 import { useQuery } from "@tanstack/solid-query"
@@ -283,8 +283,6 @@ function ProjectList(props: {
             sensors={[
               PointerSensor.configure({
                 activationConstraints: [new PointerActivationConstraints.Distance({ value: 4 })],
-                preventActivation: (event) =>
-                  event.target instanceof Element && !!event.target.closest("[data-project-action]"),
               }),
             ]}
             modifiers={[RestrictToVerticalAxis]}
@@ -356,28 +354,30 @@ function ProjectList(props: {
                           sessionID={record().session.id}
                           group={key()}
                           index={projectSessions().findIndex((item) => item.session.id === record().session.id)}
-                        >
-                          <ProjectSessionRow
-                            server={ServerConnection.key(conn())}
-                            session={record().session}
-                            openTab={props.isOpenTab(ServerConnection.key(conn()), record().session.id)}
-                            active={
-                              props.highlightActive &&
-                              props.currentTab?.type === "session" &&
-                              props.currentTab.server === ServerConnection.key(conn()) &&
-                              props.currentTab.sessionId === record().session.id
-                            }
-                            onOpen={() => {
-                              props.onSelect({
-                                server: ServerConnection.key(conn()),
-                                sessionId: record().session.id,
-                              })
-                              actions.openProjectSession(conn(), project().worktree, record().session, {
-                                preview: true,
-                              })
-                            }}
-                          />
-                        </SessionRow>
+                          render={(setElement) => (
+                            <ProjectSessionRow
+                              setElement={setElement}
+                              server={ServerConnection.key(conn())}
+                              session={record().session}
+                              openTab={props.isOpenTab(ServerConnection.key(conn()), record().session.id)}
+                              active={
+                                props.highlightActive &&
+                                props.currentTab?.type === "session" &&
+                                props.currentTab.server === ServerConnection.key(conn()) &&
+                                props.currentTab.sessionId === record().session.id
+                              }
+                              onOpen={() => {
+                                props.onSelect({
+                                  server: ServerConnection.key(conn()),
+                                  sessionId: record().session.id,
+                                })
+                                actions.openProjectSession(conn(), project().worktree, record().session, {
+                                  preview: true,
+                                })
+                              }}
+                            />
+                          )}
+                        />
                       )}
                     </Key>
                     <Show when={projectSessions().length > limit()}>
@@ -441,7 +441,7 @@ function ProjectRow(props: {
   })
 
   return (
-    <div ref={sortable.ref} class="relative shrink-0">
+    <div class="relative shrink-0">
       <div
         class="group/project relative flex h-7 min-w-0 shrink-0 items-center rounded-[6px] pe-1 hover:bg-v2-overlay-simple-overlay-hover has-[:focus-visible]:bg-v2-overlay-simple-overlay-hover"
         onContextMenu={(event) => {
@@ -455,6 +455,7 @@ function ProjectRow(props: {
         }}
       >
         <button
+          ref={sortable.ref}
           type="button"
           class="flex h-full min-w-0 flex-1 shrink-0 cursor-default items-center gap-2 rounded-[6px] bg-transparent px-2 text-start text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted [font-weight:440] transition-colors duration-[120ms] ease-in-out group-hover/project:text-v2-text-text-base focus-visible:text-v2-text-text-base focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)]"
           aria-expanded={props.expanded}
@@ -523,7 +524,12 @@ function ProjectRow(props: {
 }
 
 /** Sessions sort inside their project only: the group pins them to one list and rejects drags from elsewhere. */
-function SessionRow(props: { sessionID: string; group: string; index: number; children: JSX.Element }) {
+function SessionRow(props: {
+  sessionID: string
+  group: string
+  index: number
+  render: (setElement: Setter<Element | undefined>) => JSX.Element
+}) {
   const sortable = useSortable({
     get id() {
       return props.sessionID
@@ -540,9 +546,5 @@ function SessionRow(props: { sessionID: string; group: string; index: number; ch
     accept: (source) => source.data?.group === props.group,
   })
 
-  return (
-    <div ref={sortable.ref} class="relative shrink-0">
-      {props.children}
-    </div>
-  )
+  return props.render(sortable.ref)
 }
