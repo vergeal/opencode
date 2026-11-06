@@ -2,7 +2,7 @@
 
 证据来源：仓库代码与 grep 输出（逐条带 `文件:行`）。**按本会话约束不做截图识别**，验收证据以代码行与命令输出为准。
 
-统计：条目 **159**，TODO **74**，DONE **85**。类别分布：结构 39（TODO 3 / DONE 36）、状态 38（20 / 18）、刻度 38（31 / 7）、交互 44（20 / 24）。
+统计：条目 **161**，TODO **73**，DONE **88**。类别分布：结构 41（TODO 3 / DONE 38）、状态 38（19 / 19）、刻度 38（31 / 7）、交互 44（20 / 24）。
 
 表内 `T` 为 TODO 数，`D` 为 DONE 数。
 
@@ -11,10 +11,10 @@
 | shell | T0 / D4 | T3 / D0 | T4 / D0 | T4 / D2 | 结构达标 |
 | home | T0 / D4 | T4 / D0 | T4 / D0 | T3 / D1 | 结构达标 |
 | inbox | T0 / D3 | T1 / D2 | T0 / D3 | T2 / D1 | 结构达标 |
-| scheduled | T1 / D3 | T2 / D2 | T3 / D1 | T1 / D3 | 未达标 |
+| scheduled | T1 / D5 | T2 / D2 | T3 / D1 | T1 / D3 | 未达标 |
 | knowledge | T0 / D4 | T2 / D2 | T3 / D1 | T2 / D2 | 结构达标 |
 | settings | T0 / D4 | T2 / D2 | T4 / D0 | T1 / D3 | 结构达标 |
-| servers | T0 / D3 | T1 / D3 | T2 / D1 | T1 / D3 | 结构达标 |
+| servers | T0 / D3 | T0 / D4 | T2 / D1 | T1 / D3 | 结构达标 |
 | workspaces | T0 / D4 | T2 / D1 | T3 / D0 | T2 / D2 | 结构达标 |
 | new-session | T2 / D1 | T1 / D2 | T3 / D0 | T1 / D2 | 未达标 |
 | session | T0 / D3 | T1 / D2 | T2 / D1 | T2 / D2 | 结构达标 |
@@ -100,6 +100,8 @@
 | SC-I2 | 交互 | 新建对话框支持键盘操作 | 7.3 | packages/app/src/scheduled/new-dialog.tsx:148 | DONE |
 | SC-I3 | 交互 | 列表行没有方向键移动 / Enter 打开的证据 | 7.3 | packages/app/src/scheduled/route.tsx | TODO |
 | SC-I4 | 交互 | 删除有 `variant="danger"` 二次确认 | 5.1 | packages/app/src/scheduled/route.tsx:486 | DONE |
+| SC-S5 | 结构 | 列表行结构改为「标题 + 右侧下次运行时间 / 触发描述 / 状态点 + 状态文字 + 运行次数」 | 5.2/6.1 | packages/app/src/scheduled/route.tsx:320,328 | DONE |
+| SC-S6 | 结构 | 详情补「最近记录」区；接口只有 `lastFiredAt`/`lastOutcome`/`lastOutput`，按真实数据渲染一条并给出空态，不补假行 | 6.1 | packages/app/src/scheduled/route.tsx:401 | DONE |
 
 ## knowledge
 
@@ -152,7 +154,7 @@
 | SV-S3 | 结构 | 实测为单步表单，标准 5.6 要求步骤指示仅用于真正的多步流程 | 5.6 | packages/app/src/servers/connect/dialog.tsx:95 | DONE |
 | SV-T1 | 状态 | 连接流程有 `machine.ts` | 7.1 | packages/app/src/servers/connect/machine.ts | DONE |
 | SV-T2 | 状态 | 健康状态由 `health-machine` 派生 | 7.1 | packages/app/src/runtime/server/health-machine.ts | DONE |
-| SV-T3 | 状态 | 健康点只靠颜色区分（success/critical/faint），没有文字 | 5.3 | packages/app/src/servers/registry/row.tsx:15-20 | TODO |
+| SV-T3 | 状态 | 健康点改为 `role="status"` + 语义文案（已连接/无法连接/检测中/认证/连接中/版本不兼容），颜色只作辅助 | 5.3 | packages/app/src/servers/registry/row.tsx:10-26 | DONE |
 | SV-T4 | 状态 | 认证、连接中、不兼容都带文字 `aria-label` | 10 | packages/app/src/servers/registry/row.tsx:27,36 | DONE |
 | SV-C1 | 刻度 | 连接页边框 `1px solid` | 4.4 | packages/app/src/servers/connect/screen.css:100 | TODO |
 | SV-C2 | 刻度 | 连接方式按钮 `text-[15px]` 字面量 | 3 | packages/app/src/servers/connect/method.tsx:18 | TODO |
@@ -244,10 +246,11 @@
 | 状态点尺寸 | 标准 5.2 为 6px；`servers/registry/row.tsx` 用 `size-1.5`=6px | 一致，无需改 |
 | 页面标题字号 | 标准 3 为 20–21px；home 现为 26px | 按标准改，见 HM-C2 |
 | 服务器注册表行结构 | 标准 5.2 要求固定「图标 → 标题+状态点 → 副标题 → 元信息」；`packages/app` 内只有健康点组件，整行由 `packages/gui-plugins` 渲染，超出本轮可改范围（仅 app/ui/session-ui） | 原 SV-S4 条目移出计数，留待范围放开后按 5.2 重排 |
+| 运行历史条数 | 标准 6.1 要求「最近记录固定 5 条」；`Schedule.Info` 只提供 `lastFiredAt`、`lastOutcome`、`lastOutput`、`runCount`，没有运行历史数组，也没有 list-runs 端点（改端点属 schema/server，禁改） | `scheduled` 详情按真实数据渲染 1 条并给空态，不补 4 条假记录；需要服务端补 `schedule.runs` 后才谈 5 条 |
 
 ## 进度
 
-- 条目：159
-- TODO：74
-- DONE：85
+- 条目：161
+- TODO：73
+- DONE：88
 - 口径：每条一个可复核的代码位置，同一问题不重复立项；后续每完成一项把该行改成 DONE 并补齐 `文件:行`。

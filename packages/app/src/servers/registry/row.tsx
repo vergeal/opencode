@@ -7,11 +7,31 @@ import { selectServerIndicator, type ServerHealth } from "@/runtime/server/healt
 export function ServerHealthIndicator(props: { health?: ServerHealth }) {
   const language = useLanguage()
   const indicator = () => selectServerIndicator(props.health)
+  // The dot alone cannot carry the state: keep the same five outcomes readable without color or sight.
+
+  const label = () => {
+    switch (indicator()) {
+      case "healthy":
+        return language.t("server.status.healthy")
+      case "unreachable":
+        return language.t("server.status.unreachable")
+      case "auth":
+        return language.t("server.status.authentication")
+      case "connecting":
+        return language.t("server.status.connecting")
+      case "incompatible":
+        return language.t("server.status.incompatible")
+      default:
+        return language.t("server.status.unknown")
+    }
+  }
 
   return (
     <Switch
       fallback={
         <div
+          role="status"
+          aria-label={label()}
           classList={{
             "size-1.5 rounded-full shrink-0 my-[3.5px]": true,
             "bg-icon-success-base": indicator() === "healthy",
@@ -40,7 +60,13 @@ export function ServerHealthIndicator(props: { health?: ServerHealth }) {
         </span>
       </Match>
       <Match when={indicator() === "incompatible"}>
-        <Icon name="warning" size="small" class="shrink-0 text-icon-warning-base" />
+        <span
+          role="status"
+          aria-label={language.t("server.status.incompatible")}
+          class="inline-flex h-3.5 w-1.5 shrink-0 items-center justify-center"
+        >
+          <Icon name="warning" size="small" class="shrink-0 text-icon-warning-base" />
+        </span>
       </Match>
     </Switch>
   )
