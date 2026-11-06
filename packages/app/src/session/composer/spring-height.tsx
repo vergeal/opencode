@@ -341,7 +341,7 @@ function styleFace(
   content.style.transform = `translateY(${((1 - p) * input.dy).toFixed(2)}px)`
   content.style.filter = p < 0.999 && blur() > 0 ? `blur(${((1 - p) * blur()).toFixed(2)}px)` : ""
   content.style.maskImage =
-    hidden > 0 ? `linear-gradient(to top, transparent ${hidden}px, #000 ${hidden + Math.min(24, hidden)}px)` : ""
+    hidden > 0 ? `linear-gradient(to top, transparent ${hidden}px, var(--v2-background-bg-inverse) ${hidden + Math.min(24, hidden)}px)` : ""
 }
 
 // Mounts its children when `when` turns truthy and grows them in; when it turns falsy they close and unmount. With

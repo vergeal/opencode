@@ -464,8 +464,8 @@ function HomeServerRow(props: {
               {(label) => (
                 <span
                   class={`
-                  shrink-0 rounded-[3px] border border-v2-border-border-base px-1 py-0.5
-                  text-[9px] leading-none text-v2-text-text-muted
+                  shrink-0 rounded-[4px] border border-v2-border-border-base px-1 py-0.5
+                  text-[11px] leading-[var(--line-height-compact)] text-v2-text-text-muted
                 `}
                 >
                   {label()}

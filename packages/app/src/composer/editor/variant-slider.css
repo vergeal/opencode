@@ -3,12 +3,16 @@
    ring and shadow to separate from the rail. */
 [data-slot="composer-variant-slider"] {
   --composer-variant-fill: var(--v2-system-accent);
-  --composer-variant-thumb: #ffffff;
-  --composer-variant-thumb-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.28);
+  --composer-variant-thumb: var(--v2-grey-50);
+  --composer-variant-thumb-shadow:
+    0 0 0 0.5px color-mix(in srgb, var(--v2-grey-1100) 8%, transparent),
+    0 1px 3px color-mix(in srgb, var(--v2-grey-1100) 28%, transparent);
 }
 
 [data-color-scheme="dark"] [data-slot="composer-variant-slider"] {
-  --composer-variant-thumb-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.55);
+  --composer-variant-thumb-shadow:
+    0 0 0 0.5px color-mix(in srgb, var(--v2-grey-1100) 45%, transparent),
+    0 1px 3px color-mix(in srgb, var(--v2-grey-1100) 55%, transparent);
 }
 
 [data-slot="composer-variant-rail"] {

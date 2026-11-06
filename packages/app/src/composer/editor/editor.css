@@ -305,6 +305,9 @@
   background: var(--v2-background-bg-layer-01);
 }
 
+/* The drag-in-progress state must override the shared composer surface, and the dock sets that surface
+   inline, so the retained-state override needs a forced value — allowed by the acceptance standard when
+   the reason is written down. */
 [data-moving][data-dock-border-underlay]
   :is([data-component="composer"], [data-component="dock-prompt"], [data-component="session-websearch-dock"]) {
   background: transparent !important;

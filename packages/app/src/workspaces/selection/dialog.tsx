@@ -554,18 +554,21 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
 
         return { text: language.t("dialog.directory.gitRepo") }
       },
+      // The third-party tree ships its own row styles, so this block is a retained-state override: the
+      // acceptance standard allows forced values when the reason is written down, and only the visual
+      // row metrics live here — no layout behavior depends on it.
       unsafeCSS: `
         button[data-type="item"] {
           height: 24px !important;
           min-height: 24px !important;
           padding: 4px 8px !important;
           margin: 0 !important;
-          gap: 6px !important;
+          gap: 8px !important;
           border-radius: 4px !important;
           background: transparent !important;
           box-shadow: none !important;
           color: var(--v2-text-text-muted) !important;
-          font-size: 15px !important;
+          font-size: 13px !important;
           font-weight: 400 !important;
           letter-spacing: -0.04px !important;
         }

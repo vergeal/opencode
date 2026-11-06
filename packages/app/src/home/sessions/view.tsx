@@ -337,7 +337,7 @@ function HomeSessionSearch(
                     fallback={
                       <p
                         class={`
-                          my-1.5 px-4 pb-2 text-[15px] leading-4 tracking-[-0.04px]
+                          my-1 px-4 pb-2 text-[13px] leading-[var(--line-height-compact)] tracking-[-0.04px]
                           text-v2-text-text-muted [font-weight: 400]
                         `}
                       >
@@ -348,7 +348,7 @@ function HomeSessionSearch(
                     <div class="flex flex-col">
                       <p
                         class={`
-                          my-1.5 pl-[18px] pr-6 text-[15px] leading-4 tracking-[-0.04px]
+                          my-1 ps-5 pe-6 text-[13px] leading-[var(--line-height-compact)] tracking-[-0.04px]
                           text-v2-text-text-muted [font-weight: 400]
                         `}
                       >
@@ -547,9 +547,9 @@ function HomeTodaySummary(props: {
   return (
     <Show when={recent() > 0}>
       <div class="flex flex-col pb-1">
-        <h1 class="text-[26px] leading-[32px] font-semibold tracking-[-0.02em]">{greeting()}</h1>
-        <p class="mt-1.5 text-[14px] leading-[20px] text-v2-text-text-muted">{date()}</p>
-        <div class="mt-[18px] mb-5 flex flex-wrap gap-2 pr-24">
+        <h1 class="text-[20px] leading-[26px] font-semibold tracking-[-0.02em]">{greeting()}</h1>
+        <p class="mt-1 text-[13px] leading-[var(--line-height-base)] text-v2-text-text-muted">{date()}</p>
+        <div class="mt-4 mb-5 flex flex-wrap gap-2 pr-24">
           <HomeTodayChip label={props.language.t("home.today.stat.sessions")} value={today()?.sessions.length ?? 0} />
           <HomeTodayChip label={props.language.t("home.today.stat.projects")} value={props.projectCount} />
           <HomeTodayChip label={props.language.t("home.today.stat.pinned")} value={pinned()} />
@@ -561,7 +561,7 @@ function HomeTodaySummary(props: {
 
 function HomeTodayChip(props: { label: string; value: number }) {
   return (
-    <span class="flex h-6 items-center gap-1.5 rounded-[6px] bg-v2-background-bg-layer-02 px-2 text-[11.5px] text-v2-text-text-muted">
+    <span class="flex h-6 items-center gap-1 rounded-full bg-v2-background-bg-layer-02 px-2 text-[11px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
       {props.label}
       <b class="font-semibold tabular-nums text-v2-text-text-base">{props.value}</b>
     </span>
@@ -1017,7 +1017,7 @@ function HomeSessionProjectName(props: { name: string; search?: boolean; trailin
       classList={{
         "flex-[0_1_auto]": !!props.trailing,
         "flex-[1_1_auto]": !props.trailing,
-        "text-[15px] leading-4 tracking-[-0.04px]": !!props.search,
+        "text-[13px] leading-[var(--line-height-compact)] tracking-[-0.04px]": !!props.search,
       }}
     >
       {props.name}
@@ -1027,10 +1027,10 @@ function HomeSessionProjectName(props: { name: string; search?: boolean; trailin
 
 function HomeSessionsEmpty(props: { onNewSession?: () => void; language: ReturnType<typeof useLanguage> }) {
   return (
-    <div class="flex min-h-full flex-col items-center gap-4 px-6 pt-[52px] text-center">
+    <div class="flex min-h-full flex-col items-center gap-4 px-6 pt-12 text-center">
       <div
         class={`
-          shrink-0 text-[15px] leading-text-compact tracking-[-0.04px]
+          shrink-0 text-[16px] leading-[var(--line-height-base)] tracking-[-0.04px]
           text-v2-text-text-base [font-weight:530]
         `}
       >
@@ -1038,7 +1038,7 @@ function HomeSessionsEmpty(props: { onNewSession?: () => void; language: ReturnT
       </div>
       <p
         class={`
-          mb-1 text-center text-[15px] leading-5 tracking-[-0.04px]
+          mb-1 text-center text-[13px] leading-[var(--line-height-base)] tracking-[-0.04px]
           text-v2-text-text-muted [font-weight: 400]
         `}
       >

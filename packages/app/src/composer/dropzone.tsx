@@ -65,9 +65,9 @@ export function ComposerDropzone(props: {
                 background:
                   "repeating-linear-gradient(135deg, transparent 0px, transparent 12px, color-mix(in srgb, var(--v2-text-text-base) var(--session-dropzone-stripe), transparent) 12px, color-mix(in srgb, var(--v2-text-text-base) var(--session-dropzone-stripe), transparent) 24px)",
                 "-webkit-mask-image":
-                  "radial-gradient(ellipse 59% 40% at center, black 0%, rgba(0,0,0,0.72) 58%, transparent 100%)",
+                  "radial-gradient(ellipse 59% 40% at center, var(--v2-background-bg-inverse) 0%, color-mix(in srgb, var(--v2-background-bg-inverse) 72%, transparent) 58%, transparent 100%)",
                 "mask-image":
-                  "radial-gradient(ellipse 59% 40% at center, black 0%, rgba(0,0,0,0.72) 58%, transparent 100%)",
+                  "radial-gradient(ellipse 59% 40% at center, var(--v2-background-bg-inverse) 0%, color-mix(in srgb, var(--v2-background-bg-inverse) 72%, transparent) 58%, transparent 100%)",
               }}
             />
           </div>

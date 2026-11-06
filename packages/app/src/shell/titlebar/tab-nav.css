@@ -538,13 +538,13 @@
 }
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-search"] {
   margin-inline-start: auto;
-  border: 1px solid var(--v2-border-border-muted);
-  border-radius: 5px;
-  padding: 1px 5px;
+  border: 0.5px solid var(--v2-border-border-muted);
+  border-radius: 4px;
+  padding: 2px 4px;
   background: var(--v2-background-bg-base);
   color: var(--v2-text-text-faint);
   font-size: 10.5px;
-  line-height: 14px;
+  line-height: var(--line-height-compact);
 }
 
 [data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-brand-search"]:hover {

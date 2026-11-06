@@ -128,8 +128,8 @@
     mask-image: linear-gradient(
       to bottom,
       transparent,
-      #000 var(--settings-nav-fade-start),
-      #000 calc(100% - var(--settings-nav-fade-end)),
+      var(--v2-background-bg-inverse) var(--settings-nav-fade-start),
+      var(--v2-background-bg-inverse) calc(100% - var(--settings-nav-fade-end)),
       transparent
     );
     animation:
@@ -2333,7 +2333,7 @@
 }
 
 .settings-subtabs[data-component="tabs-v2"][data-variant="pill"] > [data-slot="tabs-v2-list"] {
-  padding-inline: 0 !important;
+  padding-inline: 0;
 }
 
 .settings-subtabs > [data-slot="tabs-v2-content"] {
@@ -2418,13 +2418,13 @@
   color: var(--text-strong);
 }
 
-.settings-extension-link {
-  color: var(--v2-text-text-accent) !important;
+.settings-extension-link[href] {
+  color: var(--v2-text-text-accent);
   text-decoration: underline;
 }
 
-.settings-extension-link:hover {
-  color: var(--v2-text-text-accent-hover) !important;
+.settings-extension-link[href]:hover {
+  color: var(--v2-text-text-accent-hover);
 }
 
 .settings-subtabs[data-component="tabs-v2"][data-variant="pill"] > [data-slot="tabs-v2-list"]::before {

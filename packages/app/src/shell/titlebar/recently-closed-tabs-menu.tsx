@@ -196,7 +196,7 @@ export function RecentlyClosedTabsMenu(props: {
             <Show when={!recent().length && !other().length}>
               <div
                 role="status"
-                class="px-3 py-2 text-[15px] leading-[var(--line-height-compact)] text-v2-text-text-faint"
+                class="px-3 py-2 text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-faint"
               >
                 {language.t(state.query.trim() ? "session.search.noResults" : "session.tabs.closed.empty")}
               </div>

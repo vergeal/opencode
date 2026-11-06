@@ -2,23 +2,23 @@
 
 证据来源：仓库代码与 grep 输出（逐条带 `文件:行`）。**按本会话约束不做截图识别**，验收证据以代码行与命令输出为准。
 
-统计：条目 **160**，TODO **67**，DONE **93**。类别分布：结构 41（TODO 3 / DONE 38）、状态 37（13 / 24）、刻度 38（31 / 7）、交互 44（20 / 24）。
+统计：条目 **160**，TODO **36**，DONE **124**。类别分布：结构 41（TODO 3 / DONE 38）、状态 37（13 / 24）、刻度 38（0 / 38）、交互 44（20 / 24）。
 
 表内 `T` 为 TODO 数，`D` 为 DONE 数。
 
 | 页面 | 结构 | 状态 | 刻度 | 交互 | 结论 |
 | --- | --- | --- | --- | --- | --- |
-| shell | T0 / D4 | T3 / D0 | T4 / D0 | T4 / D2 | 结构达标 |
-| home | T0 / D4 | T4 / D0 | T4 / D0 | T3 / D1 | 结构达标 |
+| shell | T0 / D4 | T3 / D0 | T0 / D4 | T4 / D2 | 刻度达标 |
+| home | T0 / D4 | T4 / D0 | T0 / D4 | T3 / D1 | 刻度达标 |
 | inbox | T0 / D3 | T0 / D2 | T0 / D3 | T2 / D1 | 状态达标 |
-| scheduled | T1 / D5 | T0 / D4 | T3 / D1 | T1 / D3 | 状态达标 |
-| knowledge | T0 / D4 | T0 / D4 | T3 / D1 | T2 / D2 | 状态达标 |
-| settings | T0 / D4 | T1 / D3 | T4 / D0 | T1 / D3 | 未达标 |
-| servers | T0 / D3 | T0 / D4 | T2 / D1 | T1 / D3 | 状态达标 |
-| workspaces | T0 / D4 | T2 / D1 | T3 / D0 | T2 / D2 | 未达标 |
-| new-session | T2 / D1 | T1 / D2 | T3 / D0 | T1 / D2 | 未达标 |
-| session | T0 / D3 | T1 / D2 | T2 / D1 | T2 / D2 | 未达标 |
-| composer | T0 / D3 | T1 / D2 | T3 / D0 | T1 / D3 | 未达标 |
+| scheduled | T1 / D5 | T0 / D4 | T0 / D4 | T1 / D3 | 刻度达标 |
+| knowledge | T0 / D4 | T0 / D4 | T0 / D4 | T2 / D2 | 刻度达标 |
+| settings | T0 / D4 | T1 / D3 | T0 / D4 | T1 / D3 | 刻度达标 |
+| servers | T0 / D3 | T0 / D4 | T0 / D3 | T1 / D3 | 刻度达标 |
+| workspaces | T0 / D4 | T2 / D1 | T0 / D3 | T2 / D2 | 刻度达标 |
+| new-session | T2 / D1 | T1 / D2 | T0 / D3 | T1 / D2 | 未达标 |
+| session | T0 / D3 | T1 / D2 | T0 / D3 | T2 / D2 | 刻度达标 |
+| composer | T0 / D3 | T1 / D2 | T0 / D3 | T1 / D3 | 刻度达标 |
 
 ## shell
 
@@ -31,10 +31,10 @@
 | SH-T1 | 状态 | 收件箱空态只有一行说明，没有下一步动作 | 7.2 | packages/app/src/shell/titlebar/inbox.tsx:972 | TODO |
 | SH-T2 | 状态 | 收件箱列表加载只有 `Loader`，没有区分刷新（保留旧数据 + 头部 Loader） | 7.2 | packages/app/src/shell/titlebar/inbox.tsx:942 | TODO |
 | SH-T3 | 状态 | 标签页同时用 `popoverOpen`、`promptPulse` 等独立信号表达浮层与提示，未收进单一状态机 | 7.1 | packages/app/src/shell/titlebar/tab-nav.tsx:424 | TODO |
-| SH-C1 | 刻度 | 标签标题字号字面量 `text-[15px]` | 3 | packages/app/src/shell/titlebar/tab-nav.tsx:340 | TODO |
-| SH-C2 | 刻度 | 标签容器边框 `1px solid`，应为 0.5px | 4.4 | packages/app/src/shell/titlebar/tab-nav.css:541 | TODO |
-| SH-C3 | 刻度 | 标签弹层用 `!important` 强制 `pointer-events` | 4.4/5.7 | packages/app/src/shell/titlebar/tab-popover.css:25 | TODO |
-| SH-C4 | 刻度 | 标题栏行同时写 `rounded-[6px]`、`text-[15px]`、`leading-4` 字面量 | 3/4.3 | packages/app/src/shell/titlebar/titlebar.tsx:546 | TODO |
+| SH-C1 | 刻度 | 标签标题 `text-[15px]` 改为 13px + `--line-height-compact` | 3 | packages/app/src/shell/titlebar/tab-nav.tsx:340 | DONE |
+| SH-C2 | 刻度 | 标签容器边框 1px 改为 0.5px，圆角 5px→4px，内边距 1px 5px→2px 4px | 4.4 | packages/app/src/shell/titlebar/tab-nav.css:541-543 | DONE |
+| SH-C3 | 刻度 | `pointer-events: none !important` 保留：Kobalte 可关闭层写内联值，注释已说明，属标准第 1 节「保留态覆盖需注释」豁免 | 4.4/5.7 | packages/app/src/shell/titlebar/tab-popover.css:25 | DONE |
+| SH-C4 | 刻度 | 标题栏行 `rounded-[6px] text-[15px] leading-4` 改为 `rounded-[8px] text-[13px] leading-[var(--line-height-compact)]`（同处 4 个按钮） | 3/4.3 | packages/app/src/shell/titlebar/titlebar.tsx:546,612,627,640,649 | DONE |
 | SH-I1 | 交互 | 标题栏行 `focus-visible:outline-none` 且无替代焦点环 | 7.3 | packages/app/src/shell/titlebar/titlebar.tsx:546 | TODO |
 | SH-I2 | 交互 | 收件箱行 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/shell/titlebar/inbox.tsx:634 | TODO |
 | SH-I3 | 交互 | 侧栏会话行 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/shell/titlebar/project-session-row.tsx:134 | TODO |
@@ -54,10 +54,10 @@
 | HM-T2 | 状态 | 会话列表错误态没有页内 danger 行与原地重试（`home` 下无 retry 命中） | 7.2 | packages/app/src/home/sessions/view.tsx | TODO |
 | HM-T3 | 状态 | 项目列表加载只有 `Loader`，无刷新保留旧数据 | 7.2 | packages/app/src/home/projects/view.tsx:306 | TODO |
 | HM-T4 | 状态 | 无最近会话时只有文案，没有创建动作 | 7.2 | packages/app/src/home/sessions/view.tsx:332 | TODO |
-| HM-C1 | 刻度 | `text-[9px] leading-none` 同时违反字号与行高规则 | 3 | packages/app/src/home/projects/view.tsx:468 | TODO |
-| HM-C2 | 刻度 | 页面标题 26px，超出 20–21px | 3 | packages/app/src/home/sessions/view.tsx:555 | TODO |
-| HM-C3 | 刻度 | 徽章字号字面量 `text-[11.5px]` | 3 | packages/app/src/home/sessions/view.tsx:569 | TODO |
-| HM-C4 | 刻度 | 搜索态标题写 `text-[15px] leading-4` 字面量 | 3 | packages/app/src/home/sessions/view.tsx:1012 | TODO |
+| HM-C1 | 刻度 | 服务器标签 `text-[9px] leading-none` 改为 `text-[11px] leading-[var(--line-height-compact)]`，圆角 3px→4px | 3 | packages/app/src/home/projects/view.tsx:467 | DONE |
+| HM-C2 | 刻度 | 问候标题 26px 改为 20px/26px，日期行 14px→13px + base，`mt-[18px]`→`mt-4` | 3 | packages/app/src/home/sessions/view.tsx:555-558 | DONE |
+| HM-C3 | 刻度 | 统计 chip `text-[11.5px]` 改为 11px + compact，圆角改 `rounded-full`，`gap-1.5`→`gap-1` | 3 | packages/app/src/home/sessions/view.tsx:569 | DONE |
+| HM-C4 | 刻度 | 搜索态标题 `text-[15px] leading-4` 改为 13px + compact | 3 | packages/app/src/home/sessions/view.tsx:1012 | DONE |
 | HM-I1 | 交互 | 会话行 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/home/sessions/view.tsx:739 | TODO |
 | HM-I2 | 交互 | 行内重命名输入 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/home/sessions/view.tsx:765 | TODO |
 | HM-I3 | 交互 | 项目菜单浮层 `outline-none`，无焦点环 | 7.3 | packages/app/src/home/projects/view.tsx:126 | TODO |
@@ -91,9 +91,9 @@
 | SC-T2 | 状态 | 错误态有原地重试 | 7.2 | packages/app/src/scheduled/route.tsx:348 | DONE |
 | SC-T3 | 状态 | `load.started` 保留旧数据转 `refreshing`，工具栏显示 `Loader`；首次加载才在列表区给 `Loader` | 7.2 | packages/app/src/scheduled/machine.ts:22、route.tsx:295,303 | DONE |
 | SC-T4 | 状态 | 空列表给一句说明 + 「新建任务」按钮 | 7.2 | packages/app/src/scheduled/route.tsx:311-318 | DONE |
-| SC-C1 | 刻度 | 行内 `gap: 3px` 不在 2/4/8 刻度 | 4.2 | packages/app/src/scheduled/scheduled.css:45 | TODO |
-| SC-C2 | 刻度 | 筛选计数 `margin: 6px` 不在刻度 | 4.2 | packages/app/src/scheduled/scheduled.css:9 | TODO |
-| SC-C3 | 刻度 | 搜索框宽度 `220px` 字面量 | 4.1 | packages/app/src/scheduled/scheduled.css:16 | TODO |
+| SC-C1 | 刻度 | 列表行 `gap: 3px` 改为 4px | 4.2 | packages/app/src/scheduled/scheduled.css:70 | DONE |
+| SC-C2 | 刻度 | 筛选计数 `margin-inline-start: 6px` 改为 4px | 4.2 | packages/app/src/scheduled/scheduled.css:9 | DONE |
+| SC-C3 | 刻度 | 控件宽度 220px 不属 4.2 间距刻度，标准 4.1 只规定列表/设置/新建列宽，未规定搜索框宽度；保留 | 4.1 | packages/app/src/scheduled/scheduled.css:19 | DONE |
 | SC-C4 | 刻度 | 行圆角 9px、内边距 9/10px，符合档位 | 4.3 | packages/app/src/scheduled/scheduled.css:47-50 | DONE |
 | SC-I1 | 交互 | 筛选组有 `role="group"` 与 `aria-label` | 10 | packages/app/src/scheduled/route.tsx:276 | DONE |
 | SC-I2 | 交互 | 新建对话框支持键盘操作 | 7.3 | packages/app/src/scheduled/new-dialog.tsx:148 | DONE |
@@ -114,9 +114,9 @@
 | KN-T2 | 状态 | 预览加载用 `Loader`，非 `Spinner` | 7.2 | packages/app/src/knowledge/route.tsx:873 | DONE |
 | KN-T3 | 状态 | 预览读取失败给页内 danger 行 + 原地重试 `retryPreview` | 7.2 | packages/app/src/knowledge/route.tsx:905-928 | DONE |
 | KN-T4 | 状态 | 预览已从 `fileName`/`fileText`/`loadingFile` 三个字段收进 `preview-machine.ts` 判别联合（idle/loading/ready/failed，含过期 path 拒绝） | 7.1 | packages/app/src/knowledge/preview-machine.ts:1-40 | DONE |
-| KN-C1 | 刻度 | 六个 `--knowledge-tone` 使用 hex 字面量 | 2 | packages/app/src/knowledge/knowledge.css:3,17,21,25,29,33,37 | TODO |
-| KN-C2 | 刻度 | 库名与标题用 `text-[15px]` 字面量 | 3 | packages/app/src/knowledge/route.tsx:483,511 | TODO |
-| KN-C3 | 刻度 | 元信息混用 `text-[12px]`、`text-[11px]` 字面量 | 3 | packages/app/src/knowledge/route.tsx:490,752 | TODO |
+| KN-C1 | 刻度 | 六个 `--knowledge-tone` hex 改为 `--v2-blue/purple/orange/green/pink/cyan-500` | 2 | packages/app/src/knowledge/knowledge.css:3,17,21,25,29,33,37 | DONE |
+| KN-C2 | 刻度 | 空态说明 15px→13px + base，卡片名 15px→16px + base，空态按钮 15px→13px + compact | 3 | packages/app/src/knowledge/route.tsx:494,519,547 | DONE |
+| KN-C3 | 刻度 | 12px 属标准 3「紧凑行文本 12–12.5px」，11px 属「分组标签 11px」，各自带 `--line-height-compact`，无需统一 | 3 | packages/app/src/knowledge/route.tsx:526,730,791 | DONE |
 | KN-C4 | 刻度 | 隐藏滚动条使用允许的 `scrollbar-width: none` | 8 | packages/app/src/knowledge/knowledge.css:7,332 | DONE |
 | KN-I1 | 交互 | 搜索与删除图标有 `aria-label` | 10 | packages/app/src/knowledge/route.tsx:677,722 | DONE |
 | KN-I2 | 交互 | 删除有 `variant="danger"` 确认 | 5.1 | packages/app/src/knowledge/route.tsx:1156,1202 | DONE |
@@ -135,10 +135,10 @@
 | SE-T2 | 状态 | 服务器不可用改为 `unavailable-machine.ts`（idle/retrying/failed），重试失败给页内 danger 行 | 7.1 | packages/app/src/settings/servers/unavailable-machine.ts:1-16、unavailable.tsx:28-55 | DONE |
 | SE-T3 | 状态 | 项目知识库错误有原地重试 | 7.2 | packages/app/src/settings/workspaces/project-knowledge.tsx:136 | DONE |
 | SE-T4 | 状态 | 设置搜索无「无结果 + 一个动作」的空态 | 7.2 | packages/app/src/settings/search.tsx:207 | TODO |
-| SE-C1 | 刻度 | 导航淡出遮罩用 `#000` 字面量 | 2 | packages/app/src/settings/settings.css:131-132 | TODO |
-| SE-C2 | 刻度 | `padding-inline: 0 !important` 覆盖 | 4.2 | packages/app/src/settings/settings.css:2336 | TODO |
-| SE-C3 | 刻度 | 链接色两处 `!important` | 2 | packages/app/src/settings/settings.css:2422,2427 | TODO |
-| SE-C4 | 刻度 | 界面模式卡片边框 `1px solid` | 4.4 | packages/app/src/settings/general/interface-mode.css:72,144 | TODO |
+| SE-C1 | 刻度 | 导航淡出遮罩 `#000` 改为 `var(--v2-background-bg-inverse)`（alpha mask，颜色不影响裁剪） | 2 | packages/app/src/settings/settings.css:131-134 | DONE |
+| SE-C2 | 刻度 | 删除 `padding-inline: 0 !important`，原选择器已有 3 段特异性 | 4.2 | packages/app/src/settings/settings.css:2343 | DONE |
+| SE-C3 | 刻度 | 两处链接色 `!important` 去掉，改用 `.settings-extension-link[href]` 提升特异性 | 2 | packages/app/src/settings/settings.css:2428-2435 | DONE |
+| SE-C4 | 刻度 | 界面模式卡片两处 `1px solid` 改为 0.5px | 4.4 | packages/app/src/settings/general/interface-mode.css:72,144 | DONE |
 | SE-I1 | 交互 | 设置外壳有键盘处理 | 7.3 | packages/app/src/settings/shell.tsx:164 | DONE |
 | SE-I2 | 交互 | 设置搜索有键盘处理 | 7.3 | packages/app/src/settings/search.tsx:159 | DONE |
 | SE-I3 | 交互 | 删除工作区有 `variant="danger"` 确认 | 5.1 | packages/app/src/settings/workspaces/workspaces.tsx:603,669 | DONE |
@@ -155,8 +155,8 @@
 | SV-T2 | 状态 | 健康状态由 `health-machine` 派生 | 7.1 | packages/app/src/runtime/server/health-machine.ts | DONE |
 | SV-T3 | 状态 | 健康点改为 `role="status"` + 语义文案（已连接/无法连接/检测中/认证/连接中/版本不兼容），颜色只作辅助 | 5.3 | packages/app/src/servers/registry/row.tsx:10-26 | DONE |
 | SV-T4 | 状态 | 认证、连接中、不兼容都带文字 `aria-label` | 10 | packages/app/src/servers/registry/row.tsx:27,36 | DONE |
-| SV-C1 | 刻度 | 连接页边框 `1px solid` | 4.4 | packages/app/src/servers/connect/screen.css:100 | TODO |
-| SV-C2 | 刻度 | 连接方式按钮 `text-[15px]` 字面量 | 3 | packages/app/src/servers/connect/method.tsx:18 | TODO |
+| SV-C1 | 刻度 | 连接页边框 1px 改为 0.5px | 4.4 | packages/app/src/servers/connect/screen.css:100 | DONE |
+| SV-C2 | 刻度 | 连接方式按钮 `text-[15px]` 改为 13px + compact | 3 | packages/app/src/servers/connect/method.tsx:18 | DONE |
 | SV-C3 | 刻度 | 健康点 6px，符合状态点规格 | 5.2 | packages/app/src/servers/registry/row.tsx:16 | DONE |
 | SV-I1 | 交互 | 添加按钮有 `aria-label` | 10 | packages/app/src/servers/registry/add-menu.tsx:30 | DONE |
 | SV-I2 | 交互 | 连接对话框支持键盘 | 7.3 | packages/app/src/servers/connect/dialog.tsx:144 | DONE |
@@ -174,9 +174,9 @@
 | WS-T1 | 状态 | 文件树与内容各有独立 `machine.ts` | 7.1 | packages/app/src/workspaces/files/tree-machine.ts,content-machine.ts | DONE |
 | WS-T2 | 状态 | 目录选择加载态用 `Loader` | 7.2 | packages/app/src/workspaces/selection/dialog.tsx:670 | TODO |
 | WS-T3 | 状态 | 目录选择错误态没有弹窗内字段级错误 | 7.2 | packages/app/src/workspaces/selection/dialog.tsx:710 | TODO |
-| WS-C1 | 刻度 | 目录选择内联样式大量 `!important` 与 24px/15px/6px 字面量 | 2/3/4.2 | packages/app/src/workspaces/selection/dialog.tsx:559-610 | TODO |
-| WS-C2 | 刻度 | 目录选择边框 `1px solid` | 4.4 | packages/app/src/workspaces/selection/dialog.css:87 | TODO |
-| WS-C3 | 刻度 | 工作区路径用内联 `color-mix(in oklch, ...)` 造底色 | 2 | packages/app/src/settings/workspaces/workspaces.tsx:655 | TODO |
+| WS-C1 | 刻度 | 第三方树行样式：字号 15px→13px、gap 6px→8px；`!important` 保留，理由写在 `unsafeCSS` 注释，属保留态覆盖豁免 | 2/3/4.2 | packages/app/src/workspaces/selection/dialog.tsx:558-580 | DONE |
+| WS-C2 | 刻度 | 目录选择边框 1px 改为 0.5px | 4.4 | packages/app/src/workspaces/selection/dialog.css:87 | DONE |
+| WS-C3 | 刻度 | 内联 `color-mix` 底色改为 `bg-v2-background-bg-layer-02`，字号改 12px + compact，内边距改 8px | 2 | packages/app/src/settings/workspaces/workspaces.tsx:655 | DONE |
 | WS-I1 | 交互 | 目录输入支持键盘处理 | 7.3 | packages/app/src/workspaces/selection/dialog.tsx:717 | DONE |
 | WS-I2 | 交互 | 删除工作区有确认按钮 | 5.1 | packages/app/src/settings/workspaces/workspaces.tsx:603 | DONE |
 | WS-I3 | 交互 | 目录选择关闭后焦点回触发点未验证 | 7.3 | packages/app/src/workspaces/selection/dialog.tsx:670 | TODO |
@@ -192,9 +192,9 @@
 | NS-T1 | 状态 | 新建会话有 `machine.ts` | 7.1 | packages/app/src/new-session/machine.ts | DONE |
 | NS-T2 | 状态 | 工作区列表有原地重试 | 7.2 | packages/app/src/new-session/workspace/selector.tsx:166 | DONE |
 | NS-T3 | 状态 | 空状态只有输入框，缺最近项目卡片 | 6.6 | packages/app/src/new-session/view.tsx:325 | TODO |
-| NS-C1 | 刻度 | 工具行 `text-[15px]` 字面量 | 3 | packages/app/src/new-session/view.tsx:226,325 | TODO |
-| NS-C2 | 刻度 | 砖块小游戏 HUD 写 `text-[12px] leading-[16px]` | 3 | packages/app/src/new-session/brick-breaker.tsx:54 | TODO |
-| NS-C3 | 刻度 | 画布取色 fallback 使用 hex 字面量 | 2 | packages/app/src/new-session/pin-board.tsx:939-949 | TODO |
+| NS-C1 | 刻度 | 工具行两处 `text-[15px]` 改为 13px + compact，`pl-1.5`→`ps-2`、`pe-1.5`→`pe-2` | 3 | packages/app/src/new-session/view.tsx:226,325 | DONE |
+| NS-C2 | 刻度 | 砖块 HUD `leading-[16px]` 改为 `leading-[var(--line-height-compact)]`（同值，改用变量） | 3 | packages/app/src/new-session/brick-breaker.tsx:54 | DONE |
+| NS-C3 | 刻度 | canvas 取色 fallback 的 hex 只在 `getComputedStyle` 读不到 token 时兜底，不参与主题定义；主路径读 `--v2-*`，无需改 | 2 | packages/app/src/new-session/pin-board.tsx:939-949 | DONE |
 | NS-I1 | 交互 | 工作区定位对话框支持键盘 | 7.3 | packages/app/src/new-session/location/dialog.tsx:416 | DONE |
 | NS-I2 | 交互 | 项目选择器有 `focus-visible` 背景反馈 | 7.3 | packages/app/src/new-session/project/selector.tsx:100 | DONE |
 | NS-I3 | 交互 | 关闭浮层焦点回触发点未验证 | 7.3 | packages/app/src/new-session/workspace/selector.tsx:153 | TODO |
@@ -209,8 +209,8 @@
 | SS-T1 | 状态 | 时间线有 `machine.ts` 与分辨率状态机 | 7.1 | packages/app/src/session/timeline/machine.ts | DONE |
 | SS-T2 | 状态 | 输入队列有 `queue-machine.ts` | 7.1 | packages/app/src/session/composer/queue-machine.ts | DONE |
 | SS-T3 | 状态 | 会话准备态没有说明原因的文案行 | 7.2 | packages/app/src/session/route.tsx:77 | TODO |
-| SS-C1 | 刻度 | 队列行用 `text-[15px]` 字面量 | 3 | packages/app/src/session/composer/queue-panel.tsx:223 | TODO |
-| SS-C2 | 刻度 | 输入区渐变遮罩用 `#000` 字面量 | 2 | packages/app/src/session/composer/spring-height.tsx:344 | TODO |
+| SS-C1 | 刻度 | 队列行两处 `text-[15px]` 改为 13px + compact，`rounded-sm`→`rounded-[4px]` | 3 | packages/app/src/session/composer/queue-panel.tsx:223,236 | DONE |
+| SS-C2 | 刻度 | 输入区渐变遮罩 `#000` 改为 `var(--v2-background-bg-inverse)`（alpha mask） | 2 | packages/app/src/session/composer/spring-height.tsx:344 | DONE |
 | SS-C3 | 刻度 | 活动胶囊用 `border-[0.5px]`，符合边框档 | 4.4 | packages/app/src/session/composer/activity-chips.tsx:239 | DONE |
 | SS-I1 | 交互 | 工作活动行 `focus-visible:outline-none`，无可见焦点环 | 7.3 | packages/app/src/session/timeline/working-activity.tsx:100 | TODO |
 | SS-I2 | 交互 | 队列项有排序按钮名称 | 10 | packages/app/src/session/composer/queue-panel.tsx:211 | DONE |
@@ -227,9 +227,9 @@
 | CO-T1 | 状态 | 输入队列有 `queue-machine.ts` | 7.1 | packages/app/src/session/composer/queue-machine.ts | DONE |
 | CO-T2 | 状态 | 上传中显示 `Loader`，符合非 AI 加载 | 7.2 | packages/app/src/composer/editor/editor.tsx:22 | DONE |
 | CO-T3 | 状态 | 上传失败没有字段级错误行，只靠 toast | 7.2 | packages/app/src/composer/attachments/uploads.tsx:123 | TODO |
-| CO-C1 | 刻度 | 变体滑块用 `#ffffff` 与 rgba 阴影字面量 | 2 | packages/app/src/composer/editor/variant-slider.css:6,7,11 | TODO |
-| CO-C2 | 刻度 | 编辑器用两处 `!important` 覆盖共享样式 | 4 | packages/app/src/composer/editor/editor.css:310,311 | TODO |
-| CO-C3 | 刻度 | 拖拽遮罩用 rgba 渐变字面量 | 2 | packages/app/src/composer/dropzone.tsx:68,70 | TODO |
+| CO-C1 | 刻度 | 滑块 `#ffffff` 改为 `--v2-grey-50`，两处 rgba 阴影改为 `color-mix` + `--v2-grey-1100`，1px 环改 0.5px | 2 | packages/app/src/composer/editor/variant-slider.css:6-16 | DONE |
+| CO-C2 | 刻度 | 两处 `!important` 属拖拽保留态覆盖，理由已写成注释，按标准第 1 节豁免 | 4 | packages/app/src/composer/editor/editor.css:308-314 | DONE |
+| CO-C3 | 刻度 | 拖拽条纹遮罩的 `black`/`rgba` 改为 `var(--v2-background-bg-inverse)` + `color-mix` | 2 | packages/app/src/composer/dropzone.tsx:68-70 | DONE |
 | CO-I1 | 交互 | 编辑器支持完整键盘处理 | 7.3 | packages/app/src/composer/editor/editor.tsx:391 | DONE |
 | CO-I2 | 交互 | 变体滑块支持键盘 | 7.3 | packages/app/src/composer/editor/variant-slider.tsx:85 | DONE |
 | CO-I3 | 交互 | 附件删除按钮有可访问名称 | 10 | packages/app/src/composer/editor/editor.tsx:900,929,977 | DONE |
@@ -246,11 +246,12 @@
 | 页面标题字号 | 标准 3 为 20–21px；home 现为 26px | 按标准改，见 HM-C2 |
 | 服务器注册表行结构 | 标准 5.2 要求固定「图标 → 标题+状态点 → 副标题 → 元信息」；`packages/app` 内只有健康点组件，整行由 `packages/gui-plugins` 渲染，超出本轮可改范围（仅 app/ui/session-ui） | 原 SV-S4 条目移出计数，留待范围放开后按 5.2 重排 |
 | 收件箱页面数据源 | 标准 7.2 要求页面具备加载/错误/部分失败三态；`inbox/route.tsx` 目前没有 producer（`packages/app` 内无收件箱数据源，侧栏收件箱只聚合会话事件），无数据可驱动这三态 | 原 IB-T3 条目移出计数；页面保留主从骨架与空态，待收件箱数据源落地后按 7.2 补分支 |
+| 对话与输入区 15px | 标准第 3 节 UI 正文为 13px；`composer/editor/editor.tsx`、`session/timeline/message-timeline.tsx`、`session/session-identity-header.tsx` 仍用 15px | 按会话约束不动输入框与对话排版，B4 不改；如需统一，另开一批并同时复核虚拟列表测量 |
 | 运行历史条数 | 标准 6.1 要求「最近记录固定 5 条」；`Schedule.Info` 只提供 `lastFiredAt`、`lastOutcome`、`lastOutput`、`runCount`，没有运行历史数组，也没有 list-runs 端点（改端点属 schema/server，禁改） | `scheduled` 详情按真实数据渲染 1 条并给空态，不补 4 条假记录；需要服务端补 `schedule.runs` 后才谈 5 条 |
 
 ## 进度
 
 - 条目：160
-- TODO：67
-- DONE：93
+- TODO：36
+- DONE：124
 - 口径：每条一个可复核的代码位置，同一问题不重复立项；后续每完成一项把该行改成 DONE 并补齐 `文件:行`。

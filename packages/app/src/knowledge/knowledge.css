@@ -1,6 +1,6 @@
 [data-slot="knowledge-panel"] {
   /* Tones are picked per card so a flat grid still reads as a set of distinct collections. */
-  --knowledge-tone: #5b8cff;
+  --knowledge-tone: var(--v2-blue-500);
 }
 
 .knowledge-scroll {
@@ -14,27 +14,27 @@
 }
 
 .knowledge-card[data-tone="0"] {
-  --knowledge-tone: #5b8cff;
+  --knowledge-tone: var(--v2-blue-500);
 }
 
 .knowledge-card[data-tone="1"] {
-  --knowledge-tone: #a86bff;
+  --knowledge-tone: var(--v2-purple-500);
 }
 
 .knowledge-card[data-tone="2"] {
-  --knowledge-tone: #ff8a5c;
+  --knowledge-tone: var(--v2-orange-500);
 }
 
 .knowledge-card[data-tone="3"] {
-  --knowledge-tone: #34c98c;
+  --knowledge-tone: var(--v2-green-500);
 }
 
 .knowledge-card[data-tone="4"] {
-  --knowledge-tone: #ff6b9a;
+  --knowledge-tone: var(--v2-pink-500);
 }
 
 .knowledge-card[data-tone="5"] {
-  --knowledge-tone: #2fc4d6;
+  --knowledge-tone: var(--v2-cyan-500);
 }
 
 .knowledge-card {

@@ -491,7 +491,7 @@ export function KnowledgeScreen() {
             fallback={
               <div class="flex h-full flex-col items-center justify-center gap-3 text-center">
                 <Icon name="folder" class="text-v2-text-text-faint" />
-                <p class="text-[15px] leading-[var(--line-height-base)]">{language.t("knowledge.empty")}</p>
+                <p class="text-[13px] leading-[var(--line-height-base)]">{language.t("knowledge.empty")}</p>
                 <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
                   {language.t("knowledge.empty.hint")}
                 </p>
@@ -516,7 +516,7 @@ export function KnowledgeScreen() {
                           <span class="knowledge-card-icon">
                             <Icon name="file-document" size="small" />
                           </span>
-                          <span class="min-w-0 truncate text-[15px] leading-[var(--line-height-base)] font-medium">
+                          <span class="min-w-0 truncate text-[16px] leading-[var(--line-height-base)] font-medium">
                             {library.name}
                           </span>
                         </span>
@@ -544,7 +544,7 @@ export function KnowledgeScreen() {
               </For>
               <button type="button" class="knowledge-card-add" onClick={openNewLibrary}>
                 <Icon name="plus" />
-                <span class="text-[15px] leading-[var(--line-height-base)]">{language.t("knowledge.new")}</span>
+                <span class="text-[13px] leading-[var(--line-height-compact)]">{language.t("knowledge.new")}</span>
               </button>
             </div>
           </Show>
