@@ -100,7 +100,7 @@ describe("settings schema", () => {
         newQuestionUI: false,
         sidebarOrganize: "list",
         mobileTitlebarPosition: "top",
-        followUpBehavior: "steer",
+        followUpBehavior: "queue",
       },
       appearance: {
         fontSize: 14,
@@ -153,7 +153,7 @@ describe("settings schema", () => {
       showTerminal: true,
       autoSave: false,
       timelineDetail: timelinePresets[2].value,
-      followUpBehavior: "steer",
+      followUpBehavior: "queue",
       backgroundActivity: "left",
       timelineWidth: "comfortable",
       newQuestionUI: false,

@@ -309,7 +309,7 @@ export const defaultSettings: Settings = {
     newQuestionUI: false,
     sidebarOrganize: "list",
     mobileTitlebarPosition: "top",
-    followUpBehavior: "steer",
+    followUpBehavior: "queue",
   },
   appearance: { fontSize: 14, mono: "", sans: "", terminal: "", tabLayout: "horizontal", reduceMotion: "system" },
   keybinds: {},
