@@ -746,14 +746,17 @@
 
 /* Project and permission cards ---------------------------------------- */
 
+/* One bordered surface with hairline rows reads as a picker, not a stack of separate cards. */
 .scheduled-project-list,
 .scheduled-permission-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
   min-width: 0;
-  max-height: 160px;
+  max-height: 184px;
   overflow-y: auto;
+  border: 0.5px solid var(--v2-border-border-muted);
+  border-radius: 10px;
+  background: var(--v2-background-bg-deep);
 }
 
 .scheduled-project,
@@ -762,14 +765,30 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 44px;
-  padding: 8px 12px;
+  min-height: 42px;
+  padding: 9px 11px;
   text-align: start;
-  border: 0.5px solid var(--v2-border-border-muted);
-  border-radius: 9px;
-  background: var(--v2-background-bg-base);
+  border: 0;
+  background: transparent;
   color: var(--v2-text-text-base);
   cursor: default;
+}
+
+.scheduled-project + .scheduled-project,
+.scheduled-permission + .scheduled-permission {
+  border-top: 0.5px solid var(--v2-border-border-muted);
+}
+
+.scheduled-project:first-child,
+.scheduled-permission:first-child {
+  border-start-start-radius: 10px;
+  border-start-end-radius: 10px;
+}
+
+.scheduled-project:last-child,
+.scheduled-permission:last-child {
+  border-end-start-radius: 10px;
+  border-end-end-radius: 10px;
 }
 
 @media (hover: hover) {
@@ -782,13 +801,13 @@
 .scheduled-project[data-selected],
 .scheduled-permission[data-selected] {
   background: var(--v2-background-bg-layer-02);
-  border-color: var(--v2-border-border-strong);
+  box-shadow: inset 0 0 0 0.5px var(--v2-border-border-strong);
 }
 
 .scheduled-project:focus-visible,
 .scheduled-permission:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--v2-focus-ring-color);
+  box-shadow: inset 0 0 0 2px var(--v2-focus-ring-color);
 }
 
 .scheduled-project-icon {
@@ -796,29 +815,37 @@
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 0.5px solid var(--v2-border-border-base);
-  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   background: var(--v2-background-bg-layer-01);
   color: var(--v2-icon-icon-muted);
+}
+
+.scheduled-project[data-selected] .scheduled-project-icon {
+  background: var(--v2-background-bg-layer-03);
+  color: var(--v2-text-text-base);
 }
 
 .scheduled-project-body {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 }
 
 .scheduled-project-name {
   overflow: hidden;
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: var(--line-height-compact);
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.scheduled-project[data-selected] .scheduled-project-name {
+  font-weight: 600;
 }
 
 .scheduled-project-path {
@@ -833,6 +860,10 @@
 
 .scheduled-project-check {
   flex: none;
+  color: var(--v2-icon-icon-muted);
+}
+
+.scheduled-project[data-selected] .scheduled-project-check {
   color: var(--v2-text-text-base);
 }
 
