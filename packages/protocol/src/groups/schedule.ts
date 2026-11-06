@@ -35,10 +35,16 @@ export const ScheduleEndpoints = [
     ),
   ),
   HttpApiEndpoint.get("schedule.list", "/api/experimental/schedule", {
-    query: { sessionID: Session.ID },
+    query: { sessionID: Schema.optional(Session.ID) },
     success: Schema.Struct({ data: Schema.Array(Schedule.Info) }),
     error: [SessionNotFoundError, ForbiddenError],
-  }).annotateMerge(annotations("list", "List schedules", "List a Session's schedules, oldest first.")),
+  }).annotateMerge(
+    annotations(
+      "list",
+      "List schedules",
+      "List schedules oldest first. Pass sessionID to scope the list to one Session; omit it to list every schedule.",
+    ),
+  ),
   HttpApiEndpoint.get("schedule.get", "/api/experimental/schedule/:scheduleID", {
     params,
     success: Schema.Struct({ data: Schedule.Info }),
