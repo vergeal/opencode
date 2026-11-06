@@ -257,7 +257,7 @@ export function ScheduledScreen() {
     ))
 
   return (
-    <PagePanel>
+    <PagePanel class="scheduled-page">
       <PageHeader
         title={language.t("scheduled.title")}
         description={language.t("scheduled.description")}

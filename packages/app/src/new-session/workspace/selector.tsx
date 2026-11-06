@@ -138,7 +138,7 @@ export function NewSessionBranch(props: { workspace: NewSessionWorkspaceControll
               ref={trigger}
               aria-busy={branches.loading}
               aria-description={language.t("command.session.branch.choose")}
-              class="flex h-7 min-w-0 max-w-[220px] items-center gap-1.5 rounded-sm px-1.5 text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)] data-[expanded]:bg-v2-overlay-simple-overlay-pressed data-[expanded]:text-v2-text-text-base"
+              class="flex h-7 min-w-0 max-w-[min(220px,40vw)] items-center gap-1.5 rounded-sm px-1.5 text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)] data-[expanded]:bg-v2-overlay-simple-overlay-pressed data-[expanded]:text-v2-text-text-base"
             >
               <Icon name="branch-out" size="normal" class="shrink-0 text-v2-icon-icon-muted" />
               <span ref={observe} dir="auto" class="min-w-0 truncate">
@@ -150,7 +150,7 @@ export function NewSessionBranch(props: { workspace: NewSessionWorkspaceControll
               <Show when={initial()}>
                 {(initial) => (
                   <Popover.Content
-                    class="w-[243px] overflow-hidden rounded-lg bg-v2-background-bg-layer-01 shadow-[var(--v2-elevation-floating)] focus:outline-none"
+                    class="w-[min(243px,calc(100vw_-_32px))] overflow-hidden rounded-lg bg-v2-background-bg-layer-01 shadow-[var(--v2-elevation-floating)] focus:outline-none"
                     onInteractOutside={() => (outside = true)}
                     onCloseAutoFocus={(event) => {
                       // An outside click keeps focus where the user put it.

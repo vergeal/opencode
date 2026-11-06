@@ -17,6 +17,11 @@
   min-width: 0;
 }
 
+/* The split follows the page's own width, not the viewport, so a narrow shell narrows the page. */
+.scheduled-page {
+  container: scheduled / inline-size;
+}
+
 .scheduled-body {
   display: flex;
   flex: 1;
@@ -173,7 +178,7 @@
 
 .scheduled-detail {
   flex: 1;
-  min-width: 0;
+  min-width: 420px;
   min-height: 0;
   padding: 20px 24px 24px;
   overflow-y: auto;
@@ -418,7 +423,7 @@
   gap: 4px;
 }
 
-@media (max-width: 760px) {
+@container scheduled (max-width: 760px) {
   .scheduled-body {
     flex-direction: column;
   }
@@ -428,6 +433,10 @@
     max-height: 42%;
     border-inline-end: 0;
     border-block-end: 0.5px solid var(--v2-border-border-muted);
+  }
+
+  .scheduled-detail {
+    min-width: 0;
   }
 
   .scheduled-facts {

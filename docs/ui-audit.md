@@ -2,7 +2,7 @@
 
 证据来源：仓库代码与 grep 输出（逐条带 `文件:行`）。**按本会话约束不做截图识别**，验收证据以代码行与命令输出为准。
 
-统计：条目 **164**，TODO **14**，DONE **150**。类别分布：结构 45（TODO 3 / DONE 42）、状态 37（TODO 11 / DONE 26）、刻度 38（TODO 0 / DONE 38）、交互 44（TODO 0 / DONE 44）。
+统计：条目 **164**，TODO **11**，DONE **153**。类别分布：结构 45（TODO 0 / DONE 45）、状态 37（TODO 11 / DONE 26）、刻度 38（TODO 0 / DONE 38）、交互 44（TODO 0 / DONE 44）。
 
 表内 `T` 为 TODO 数，`D` 为 DONE 数。
 
@@ -11,12 +11,12 @@
 | shell | T0 / D4 | T3 / D0 | T0 / D4 | T0 / D6 | 未达标 |
 | home | T0 / D4 | T4 / D0 | T0 / D4 | T0 / D4 | 未达标 |
 | inbox | T0 / D3 | T0 / D2 | T0 / D3 | T0 / D3 | 达标 |
-| scheduled | T1 / D6 | T0 / D4 | T0 / D4 | T0 / D4 | 未达标 |
+| scheduled | T0 / D7 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
 | knowledge | T0 / D5 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
 | settings | T0 / D4 | T1 / D3 | T0 / D4 | T0 / D4 | 未达标 |
 | servers | T0 / D4 | T0 / D4 | T0 / D3 | T0 / D4 | 达标 |
 | workspaces | T0 / D4 | T0 / D3 | T0 / D3 | T0 / D4 | 达标 |
-| new-session | T2 / D1 | T1 / D2 | T0 / D3 | T0 / D3 | 未达标 |
+| new-session | T0 / D3 | T1 / D2 | T0 / D3 | T0 / D3 | 未达标 |
 | session | T0 / D4 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
 | composer | T0 / D3 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
 
@@ -83,7 +83,7 @@
 
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| SC-S1 | 结构 | 主从分栏靠 `flex` 宽度写死，缺少 `@container`，窄容器不会先收详情 | 4.1 | packages/app/src/scheduled/scheduled.css:20-36 | TODO |
+| SC-S1 | 结构 | 页面级 `container: scheduled / inline-size`；`@container scheduled (max-width:760px)` 时列表在上、正文在下；横向详情 `min-width:420px`，纵向归零 | 4.1 | packages/app/src/scheduled/scheduled.css:21-24,181,426-446、route.tsx:260 | DONE |
 | SC-S2 | 结构 | 实测列表已带 `data-scrollable` | 8 | packages/app/src/scheduled/route.tsx:301 | DONE |
 | SC-S3 | 结构 | 实测筛选 chip 与搜索同在 `PageToolbar` 单行，右对齐 | 6.1 | packages/app/src/scheduled/route.tsx:276 | DONE |
 | SC-S4 | 结构 | 列表宽 320px，落在 300–360 区间 | 4.1 | packages/app/src/scheduled/scheduled.css:31 | DONE |
@@ -190,8 +190,8 @@
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
 | NS-S1 | 结构 | 新建会话单列最大宽度改为 660px | 6.6 | packages/app/src/new-session/wordmark.tsx:132 | DONE |
-| NS-S2 | 结构 | 项目与工作区选择器宽度写死 `max-w-[160px]` / `max-w-[220px]` | 4.1 | packages/app/src/new-session/project/selector.tsx:100 | TODO |
-| NS-S3 | 结构 | 工作区浮层写死 `w-[243px]` | 4.1 | packages/app/src/new-session/workspace/selector.tsx:153 | TODO |
+| NS-S2 | 结构 | 选择器宽度改为随视口收敛：`max-w-[min(160px,30vw)]` / `max-w-[min(220px,40vw)]` | 4.1 | packages/app/src/new-session/project/selector.tsx:100、workspace/selector.tsx:141 | DONE |
+| NS-S3 | 结构 | 工作区浮层宽度改为 `min(243px, calc(100vw-32px))`，窄屏不溢出 | 4.1 | packages/app/src/new-session/workspace/selector.tsx:153 | DONE |
 | NS-T1 | 状态 | 新建会话有 `machine.ts` | 7.1 | packages/app/src/new-session/machine.ts | DONE |
 | NS-T2 | 状态 | 工作区列表有原地重试 | 7.2 | packages/app/src/new-session/workspace/selector.tsx:166 | DONE |
 | NS-T3 | 状态 | 空状态只有输入框，缺最近项目卡片 | 6.6 | packages/app/src/new-session/view.tsx:325 | TODO |
@@ -257,6 +257,6 @@
 ## 进度
 
 - 条目：164
-- TODO：14
-- DONE：150
+- TODO：11
+- DONE：153
 - 口径：每条一个可复核的代码位置，同一问题不重复立项；后续每完成一项把该行改成 DONE 并补齐 `文件:行`。
