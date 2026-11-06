@@ -826,6 +826,13 @@
   margin-top: 12px;
 }
 
+.settings-server-unavailable-error {
+  max-width: 360px;
+  color: var(--v2-state-fg-danger);
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+}
+
 .settings-tab-body {
   display: flex;
   flex-direction: column;
