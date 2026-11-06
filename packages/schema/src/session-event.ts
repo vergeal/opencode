@@ -30,14 +30,7 @@ const Base = {
   sessionID: SessionID,
 }
 
-/** Session-level instructions are counted in characters, so an emoji counts like a CJK glyph. */
-export const PromptLimit = 2000
-export const Prompt = Schema.String.check(
-  Schema.makeFilter(
-    (value: string) => Array.from(value).length <= PromptLimit,
-    Schema.isMaxLength(PromptLimit).annotations,
-  ),
-).annotate({ identifier: "Session.Prompt" })
+export const Prompt = Schema.String.annotate({ identifier: "Session.Prompt" })
 export type Prompt = typeof Prompt.Type
 
 const options = {

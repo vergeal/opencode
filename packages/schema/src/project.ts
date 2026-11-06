@@ -29,14 +29,7 @@ export const Commands = Schema.Struct({
   ),
 }).annotate({ identifier: "Project.Commands" })
 export interface Commands extends Schema.Schema.Type<typeof Commands> {}
-/** Project instructions are counted in characters, not UTF-16 units, so an emoji counts like a CJK glyph. */
-export const PromptLimit = 528
-export const Prompt = Schema.String.check(
-  Schema.makeFilter(
-    (value: string) => Array.from(value).length <= PromptLimit,
-    Schema.isMaxLength(PromptLimit).annotations,
-  ),
-).annotate({ identifier: "Project.Prompt" })
+export const Prompt = Schema.String.annotate({ identifier: "Project.Prompt" })
 export type Prompt = typeof Prompt.Type
 export const Time = Schema.Struct({
   created: NonNegativeInt,

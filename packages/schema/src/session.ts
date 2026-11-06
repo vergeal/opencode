@@ -24,7 +24,6 @@ export type Metadata = SessionMetadata
 
 export const Prompt = SessionEvent.Prompt
 export type Prompt = typeof Prompt.Type
-export const PromptLimit = SessionEvent.PromptLimit
 
 export const Event = SessionEvent
 
