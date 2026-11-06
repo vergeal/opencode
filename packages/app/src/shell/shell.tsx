@@ -33,11 +33,11 @@ export const sidebarToggleCommand = { id: "sidebar.toggle", keybind: "mod+shift+
 
 const SIDEBAR_WIDTH_MIN = 224
 
-const SIDEBAR_WIDTH_DEFAULT_RATIO = 0.25
+const SIDEBAR_WIDTH_DEFAULT_RATIO = 0.2
 
 const SIDEBAR_WIDTH_MAX_RATIO = 0.4
 
-/** The navigation column takes a quarter of the window, within a usable minimum and a draggable maximum. */
+/** The navigation column takes a fifth of the window, within a usable minimum and a draggable maximum. */
 const sidebarMaxWidth = (viewport: number) => Math.max(640, Math.round(viewport * SIDEBAR_WIDTH_MAX_RATIO))
 
 const defaultSidebarWidth = (viewport: number) =>
