@@ -15,6 +15,7 @@ import { sessionHref } from "@/shell/routes/session"
 import { PageHeader, PagePanel, PageToolbar } from "@/shell/page"
 import { errorMessage } from "@/shell/layout/helpers"
 import { showToast } from "@/shell/notifications/toast"
+import { cronPrompt, localTimeZone, parseCron } from "./cron"
 import { describeOutcome, describeStatus, describeWhen, formatTime, taskName } from "./describe"
 import { tasksOf, transition, type TaskEvent, type TaskState } from "./machine"
 import { NewScheduledTaskDialog, type NewTaskInput } from "./new-dialog"
@@ -238,13 +239,27 @@ export function ScheduledScreen() {
     if (!client) return false
 
     try {
+      const generated = await client.experimental.generate.text({ prompt: cronPrompt(input.prompt) })
+      const cron = parseCron(generated.text)
+
+      // Without a schedule there is nothing to create, so keep the dialog open and explain what was missing.
+      if (!cron) {
+        showToast({
+          variant: "error",
+          title: language.t("scheduled.create.parseFailed"),
+          description: language.t("scheduled.create.parseFailed.description"),
+        })
+
+        return false
+      }
+
       const session = await client.session.create({ location: { directory: input.directory }, title: input.name })
 
       const created = await client.experimental.schedule.create({
         sessionID: session.id,
         name: input.name,
         prompt: input.prompt,
-        when: input.when,
+        when: { cron, tz: localTimeZone() },
       })
 
       // Create always enables, so "save without enabling" is one pause right after it.

@@ -497,7 +497,7 @@
 
 .scheduled-create-container[data-slot="dialog-container"] {
   /* The shared frame is a fixed 368px sheet; this form needs room for all three groups. */
-  height: min(calc(100vh - 64px), 520px);
+  height: min(calc(100vh - 64px), 460px);
 }
 
 [data-component="dialog-v2"]
@@ -569,17 +569,14 @@
   color: var(--v2-text-text-faint);
 }
 
-.scheduled-modes {
+.scheduled-create-status {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
-}
-
-.scheduled-form-error {
   margin: 0;
-  font-size: 12px;
+  font-size: 11.5px;
   line-height: var(--line-height-compact);
-  color: var(--v2-state-fg-danger);
+  color: var(--v2-text-text-muted);
 }
 
 .scheduled-create .scheduled-mono {
