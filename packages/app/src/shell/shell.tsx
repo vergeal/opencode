@@ -49,9 +49,8 @@ export default function Layout(props: ParentProps) {
     tabsAside: HTMLElement | undefined
     tabsPanel: HTMLElement | undefined
   }>({
-    // macOS navigation columns stay narrow: a fifth of the window, with a floor so a small window keeps a
-    // usable list. Still draggable for anyone who wants more.
-    tabsWidth: Math.max(240, Math.round(window.innerWidth * 0.2)),
+    // macOS navigation columns stay narrow: the design's 224–240px, still draggable for anyone who wants more.
+    tabsWidth: Math.min(240, Math.max(224, Math.round(window.innerWidth * 0.2))),
     tabsMount: undefined,
     tabsAside: undefined,
     tabsPanel: undefined,

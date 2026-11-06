@@ -645,7 +645,7 @@
 [data-component="dialog-v2"] .archived-sessions-dialog [data-slot="dialog-content"] {
   [data-slot="dialog-header"] {
     padding: 14px 16px 12px;
-    border-bottom: 1px solid var(--v2-border-border-muted);
+    border-bottom: 0.5px solid var(--v2-border-border-muted);
   }
 
   [data-slot="dialog-header"] [data-slot="dialog-title"] {

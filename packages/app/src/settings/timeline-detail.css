@@ -44,7 +44,7 @@
       width: var(--timeline-detail-progress);
       height: 100%;
       border-radius: inherit;
-      background: var(--v2-background-bg-accent);
+      background: var(--v2-text-text-base);
     }
 
     span {
@@ -59,7 +59,7 @@
       background: var(--timeline-detail-marker-background);
 
       &[data-selected] {
-        background: var(--v2-background-bg-accent);
+        background: var(--v2-text-text-base);
       }
 
       &:dir(rtl) {

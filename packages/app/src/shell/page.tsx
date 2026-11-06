@@ -26,10 +26,10 @@ export function PageHeader(props: {
   actions?: JSX.Element
 }) {
   return (
-    <header class="flex shrink-0 items-start gap-4 border-b border-v2-border-border-muted px-5 py-4">
+    <header class="flex shrink-0 items-start gap-4 border-b border-v2-border-border-muted px-6 py-3">
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         {props.breadcrumb}
-        <h1 class="text-[17px] leading-[var(--line-height-base)] font-medium">{props.title}</h1>
+        <h1 class="text-[20px] leading-[26px] font-semibold tracking-[-0.2px]">{props.title}</h1>
         {props.description ? (
           <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">{props.description}</p>
         ) : null}
@@ -43,7 +43,7 @@ export function PageHeader(props: {
 export function PageToolbar(props: ParentProps<{ class?: string }>) {
   return (
     <div
-      class={`flex shrink-0 items-center gap-2 border-b border-v2-border-border-muted px-5 py-3 ${props.class ?? ""}`}
+      class={`flex shrink-0 items-center gap-2 border-b border-v2-border-border-muted px-6 py-3 ${props.class ?? ""}`}
     >
       {props.children}
     </div>

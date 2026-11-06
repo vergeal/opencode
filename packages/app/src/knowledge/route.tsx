@@ -444,13 +444,12 @@ export function KnowledgeScreen() {
           title={language.t("knowledge.title")}
           description={language.t("knowledge.description")}
           actions={
-            <button type="button" class="knowledge-toolbar-button" onClick={openNewLibrary}>
-              <Icon name="plus" size="small" />
+            <Button variant="contrast" size="small" icon="plus" onClick={openNewLibrary}>
               {language.t("knowledge.new")}
-            </button>
+            </Button>
           }
         />
-        <div class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-5 py-4" data-scrollable>
+        <div class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-6 py-4" data-scrollable>
           <Show
             when={libraries.libraries().length > 0}
             fallback={
@@ -460,10 +459,9 @@ export function KnowledgeScreen() {
                 <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
                   {language.t("knowledge.empty.hint")}
                 </p>
-                <button type="button" class="knowledge-toolbar-button" onClick={openNewLibrary}>
-                  <Icon name="plus" size="small" />
+                <Button variant="contrast" size="small" icon="plus" onClick={openNewLibrary}>
                   {language.t("knowledge.new")}
-                </button>
+                </Button>
               </div>
             }
           >
@@ -536,9 +534,9 @@ export function KnowledgeScreen() {
               {language.t("knowledge.back")}
             </button>
             <div class="ms-auto flex items-center gap-2">
-              <button
-                type="button"
-                class="knowledge-toolbar-button"
+              <Button
+                size="small"
+                variant="contrast"
                 disabled={importing() || platform.platform !== "desktop"}
                 onClick={() => void runImport()}
               >
@@ -546,7 +544,7 @@ export function KnowledgeScreen() {
                   <Loader class="size-3.5" />
                 </Show>
                 {language.t("knowledge.import")}
-              </button>
+              </Button>
               <Show when={!importing() && flaggedPaths(props.library).length}>
                 {(count) => (
                   <button

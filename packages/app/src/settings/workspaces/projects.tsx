@@ -77,7 +77,7 @@ export const SettingsProjects: Component<{
         actions={
           <>
             <Show when={projects().length > 0}>
-              <Button variant="ghost-muted" icon="plus" onClick={addProject}>
+              <Button variant="contrast" icon="plus" onClick={addProject}>
                 {language.t("home.project.add")}
               </Button>
             </Show>
