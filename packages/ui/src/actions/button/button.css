@@ -209,6 +209,30 @@
     cursor: not-allowed;
   }
 
+  /* Dark mode inverts the pair: the primary key is a paper pill with an ink label, and the secondary key is a
+     gray pill with a paper label. Both keep the light-mode meaning, so a dialog never shows two white buttons. */
+  [data-color-scheme="dark"] [data-component="button-v2"]:is([data-variant="contrast"], [data-variant="submit"]) {
+    background-color: var(--v2-grey-100);
+    color: var(--v2-grey-1100);
+  }
+
+  [data-color-scheme="dark"] [data-component="button-v2"][data-variant="neutral"] {
+    background-color: var(--v2-background-bg-layer-03);
+    color: var(--v2-text-text-base);
+  }
+
+  @media (hover: hover) {
+    [data-color-scheme="dark"]
+      [data-component="button-v2"][data-variant="neutral"]:is(:hover, [data-state="hover"]):not(:disabled) {
+      background-color: var(--v2-background-bg-layer-04);
+    }
+  }
+
+  [data-color-scheme="dark"]
+    [data-component="button-v2"][data-variant="neutral"]:is(:active, [data-state="pressed"]):not(:disabled) {
+    background-color: var(--v2-background-bg-layer-04);
+  }
+
   /* Loading */
   [data-component="button-v2"][data-variant="loading"] {
     background: var(--v2-background-bg-layer-02);
