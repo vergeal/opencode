@@ -9,6 +9,8 @@ macOS style here means restraint, clear structure and predictable behavior. Hier
 
 Read the reference surface before designing: `packages/app/src/settings/settings.css` and `packages/app/src/settings/providers/extensions.tsx`. The settings screen is the closest existing expression of this style.
 
+The consolidated, repo-wide rules live in `docs/opencode-ui-standard.md`. It merges this skill with the density, skeleton sizes and status language of the scheduled-workbench design, and maps every value onto real `--v2-*` tokens. Read it when the task touches layout sizes, component specs, page patterns or the acceptance checklist.
+
 ## When To Use
 
 - Designing or reshaping an app or desktop surface: settings, a list/detail pane, a toolbar, a menu, a picker or a confirmation flow.
