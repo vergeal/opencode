@@ -530,71 +530,225 @@
 
 /* Create dialog -------------------------------------------------------- */
 
+/* The x-large frame already caps at 880x600; the two columns need every pixel of that height. */
 .scheduled-create-container[data-slot="dialog-container"] {
-  /* The shared frame is a fixed 368px sheet; this form needs room for all three groups. */
-  height: min(calc(100vh - 64px), 520px);
+  height: min(calc(100vh - 92px), 600px);
 }
 
-/* Wizard steps --------------------------------------------------------- */
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].scheduled-create-container
+  [data-slot="dialog-content"]
+  [data-slot="dialog-header"] {
+  padding: 18px 22px 14px;
+  border-bottom: 0.5px solid var(--v2-border-border-muted);
+}
 
-.scheduled-steps {
+[data-component="dialog-v2"]
+  [data-slot="dialog-container"].scheduled-create-container
+  [data-slot="dialog-content"]
+  [data-slot="dialog-header"]
+  [data-slot="dialog-title"] {
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.scheduled-create-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 292px;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+.scheduled-create-form {
   display: flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  margin: 1px 0 0 auto;
-  padding: 0;
-  list-style: none;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  min-height: 0;
+  padding: 20px 22px;
+  overflow-y: auto;
 }
 
-.scheduled-step {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+/* Both fields ship with a fixed 280px width, which reads as a broken column inside the dialog. */
+.scheduled-create-form [data-component="text-input-v2"],
+.scheduled-create-form [data-component="textarea-v2"] {
+  width: 100%;
+}
+
+.scheduled-create-form .scheduled-number {
+  width: 64px;
+}
+
+.scheduled-create-form .scheduled-time {
+  width: 116px;
+}
+
+.scheduled-create [data-component="textarea-v2"] {
+  border-radius: 10px;
+}
+
+.scheduled-create [data-component="textarea-v2"] [data-slot="textarea-v2-textarea"] {
+  padding: 12px 13px;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+.scheduled-create .scheduled-mono {
+  font-family: var(--v2-font-family-code);
+}
+
+/* Fields --------------------------------------------------------------- */
+
+.scheduled-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.scheduled-field-label {
   font-size: 11.5px;
   line-height: var(--line-height-compact);
+  font-weight: 600;
+  color: var(--v2-text-text-muted);
+}
+
+.scheduled-field-hint {
+  font-size: 11px;
+  line-height: var(--line-height-compact);
   color: var(--v2-text-text-faint);
-  white-space: nowrap;
 }
 
-.scheduled-step + .scheduled-step::before {
-  content: "";
-  flex: none;
-  width: 18px;
-  height: 1px;
-  background: var(--v2-border-border-muted);
+.scheduled-field-hint[data-tone="danger"] {
+  color: var(--v2-state-fg-danger);
 }
 
-.scheduled-step[data-state="current"] {
-  color: var(--v2-text-text-base);
-}
-
-.scheduled-step-index {
-  display: inline-flex;
-  flex: none;
+.scheduled-create-status {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 17px;
-  height: 17px;
-  border: 1px solid var(--v2-border-border-base);
-  border-radius: 50%;
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
+  gap: 6px;
+  margin: 0;
+  font-size: 11.5px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
 }
 
-.scheduled-step[data-state="current"] .scheduled-step-index {
-  border-color: var(--v2-background-bg-inverse);
+.scheduled-create-status[data-tone="success"] {
+  color: var(--v2-state-fg-success);
+}
+
+/* Frequency ------------------------------------------------------------ */
+
+.scheduled-frequency {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--v2-background-bg-layer-02);
+}
+
+.scheduled-frequency-option {
+  flex: 1 1 0;
+  height: 26px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--v2-text-text-muted);
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  white-space: nowrap;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .scheduled-frequency-option:not([data-selected]):hover {
+    background: var(--v2-overlay-simple-overlay-hover);
+    color: var(--v2-text-text-base);
+  }
+}
+
+.scheduled-frequency-option[data-selected] {
+  background: var(--v2-background-bg-base);
+  color: var(--v2-text-text-base);
+  font-weight: 500;
+  box-shadow: 0 0 0 0.5px var(--v2-border-border-base);
+}
+
+/* On a dark track the base fill is darker than the track; step up one layer so the key stays the raised pill. */
+[data-color-scheme="dark"] .scheduled-frequency-option[data-selected] {
+  background: var(--v2-background-bg-layer-03);
+}
+
+.scheduled-frequency-option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--v2-focus-ring-color);
+}
+
+.scheduled-schedule-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 0.5px solid var(--v2-border-border-muted);
+  border-radius: 9px;
+  background: var(--v2-background-bg-deep);
+}
+
+.scheduled-inline-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
+}
+
+.scheduled-inline-field > span:first-child {
+  flex: 1 1 auto;
+}
+
+.scheduled-inline-field > * {
+  flex: none;
+}
+
+.scheduled-weekdays {
+  display: flex;
+  gap: 4px;
+}
+
+.scheduled-weekday {
+  flex: 1 1 0;
+  height: 28px;
+  padding: 0;
+  border: 0.5px solid var(--v2-border-border-muted);
+  border-radius: 6px;
+  background: var(--v2-background-bg-base);
+  color: var(--v2-text-text-muted);
+  font-size: 11.5px;
+  line-height: var(--line-height-compact);
+  white-space: nowrap;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .scheduled-weekday:not([data-selected]):hover {
+    background: var(--v2-overlay-simple-overlay-hover);
+    color: var(--v2-text-text-base);
+  }
+}
+
+.scheduled-weekday[data-selected] {
+  border-color: transparent;
   background: var(--v2-background-bg-inverse);
   color: var(--v2-text-text-inverse);
 }
 
-.scheduled-step[data-state="done"] {
-  color: var(--v2-state-fg-success);
-}
-
-.scheduled-step[data-state="done"] .scheduled-step-index {
-  border-color: var(--v2-state-border-success);
-  background: var(--v2-state-bg-success);
+.scheduled-weekday:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--v2-focus-ring-color);
 }
 
 /* Project and permission cards ---------------------------------------- */
@@ -605,7 +759,7 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  max-height: 252px;
+  max-height: 160px;
   overflow-y: auto;
 }
 
@@ -635,7 +789,7 @@
 .scheduled-project[data-selected],
 .scheduled-permission[data-selected] {
   background: var(--v2-background-bg-layer-02);
-  box-shadow: 0 0 0 1px var(--v2-background-bg-accent);
+  border-color: var(--v2-border-border-strong);
 }
 
 .scheduled-project:focus-visible,
@@ -686,7 +840,7 @@
 
 .scheduled-project-check {
   flex: none;
-  color: var(--v2-text-text-accent);
+  color: var(--v2-text-text-base);
 }
 
 .scheduled-permission-radio {
@@ -699,7 +853,7 @@
 }
 
 .scheduled-permission[data-selected] .scheduled-permission-radio {
-  border: 5px solid var(--v2-background-bg-accent);
+  border: 5px solid var(--v2-background-bg-inverse);
   background: var(--v2-background-bg-base);
 }
 
@@ -723,165 +877,131 @@
   color: var(--v2-text-text-muted);
 }
 
-/* Summary -------------------------------------------------------------- */
+/* Preview -------------------------------------------------------------- */
 
-.scheduled-summary {
+.scheduled-preview {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px;
-  border: 0.5px solid var(--v2-border-border-muted);
-  border-radius: 9px;
-  background: var(--v2-background-bg-deep);
-}
-
-.scheduled-summary-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12px;
-  line-height: var(--line-height-compact);
-  color: var(--v2-text-text-muted);
-}
-
-.scheduled-summary-row b {
+  gap: 14px;
   min-width: 0;
-  overflow: hidden;
-  font-weight: 500;
-  color: var(--v2-text-text-base);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-[data-component="dialog-v2"]
-  [data-slot="dialog-container"].scheduled-create-container
-  [data-slot="dialog-content"]
-  [data-slot="dialog-header"] {
-  padding: 18px 22px 14px;
-  border-bottom: 0.5px solid var(--v2-border-border-muted);
-}
-
-[data-component="dialog-v2"]
-  [data-slot="dialog-container"].scheduled-create-container
-  [data-slot="dialog-content"]
-  [data-slot="dialog-header"]
-  [data-slot="dialog-title"] {
-  font-size: 15px;
-  line-height: 20px;
-}
-
-.scheduled-create-body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 18px;
   min-height: 0;
-  padding: 20px 22px;
+  padding: 20px;
+  border-inline-start: 0.5px solid var(--v2-border-border-muted);
+  background: var(--v2-background-bg-deep);
   overflow-y: auto;
 }
 
-/* Both fields ship with a fixed 280px width, which reads as a broken column inside an 880px dialog. */
-.scheduled-create-body [data-component="text-input-v2"],
-.scheduled-create-body [data-component="textarea-v2"] {
-  width: 100%;
-}
-
-.scheduled-create-field {
+.scheduled-preview-head {
   display: flex;
-  flex-direction: column;
-  gap: 7px;
-  min-width: 0;
-}
-
-.scheduled-create-label {
-  font-size: 11.5px;
-  line-height: var(--line-height-compact);
-  font-weight: 600;
-  color: var(--v2-text-text-muted);
-}
-
-.scheduled-parsed {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-/* The parsed facts read as fixed labels: the model produced them, the user does not edit them here. */
-.scheduled-pchip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 24px;
-  padding: 0 8px;
-  border: 0.5px solid var(--v2-border-border-muted);
-  border-radius: 6px;
-  background: var(--v2-background-bg-layer-01);
-  font-size: 11.5px;
-  line-height: var(--line-height-compact);
-  color: var(--v2-text-text-muted);
-  white-space: nowrap;
-}
-
-.scheduled-pchip b {
-  font-weight: 500;
-  color: var(--v2-text-text-base);
-}
-
-.scheduled-create [data-component="textarea-v2"] {
-  border-radius: 10px;
-}
-
-.scheduled-create [data-component="textarea-v2"] [data-slot="textarea-v2-textarea"] {
-  padding: 12px 13px;
-  font-size: 13.5px;
-  line-height: 1.65;
-}
-
-.scheduled-create-hint {
+.scheduled-preview-title {
   font-size: 11px;
   line-height: var(--line-height-compact);
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--v2-text-text-faint);
 }
 
-.scheduled-create-status {
-  display: flex;
+.scheduled-preview-badge {
+  display: inline-flex;
+  flex: none;
   align-items: center;
-  gap: 6px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 9999px;
+  background: var(--v2-background-bg-layer-03);
+  color: var(--v2-text-text-muted);
+  font-size: 10.5px;
+  line-height: var(--line-height-compact);
+  white-space: nowrap;
+}
+
+.scheduled-preview-list {
+  display: flex;
+  flex-direction: column;
   margin: 0;
+  padding: 0;
+}
+
+.scheduled-preview-row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 0.5px solid var(--v2-border-border-muted);
+}
+
+.scheduled-preview-row:last-child {
+  border-bottom: 0;
+}
+
+.scheduled-preview-row dt {
   font-size: 11.5px;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);
 }
 
-.scheduled-create-status[data-tone="danger"] {
-  color: var(--v2-state-fg-danger);
+.scheduled-preview-row dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-base);
+  overflow-wrap: anywhere;
 }
 
-.scheduled-create .scheduled-mono {
-  font-family: var(--v2-font-family-code);
+.scheduled-preview-row dd[data-empty] {
+  color: var(--v2-text-text-faint);
 }
+
+.scheduled-preview-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--v2-background-bg-layer-01);
+}
+
+.scheduled-preview-prompt p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: var(--line-height-base);
+  color: var(--v2-text-text-base);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.scheduled-preview-prompt p[data-empty] {
+  color: var(--v2-text-text-faint);
+}
+
+.scheduled-preview-note {
+  margin: auto 0 0;
+  padding-top: 4px;
+  font-size: 11px;
+  line-height: var(--line-height-base);
+  color: var(--v2-text-text-faint);
+}
+
+/* Footer --------------------------------------------------------------- */
 
 [data-component="dialog-v2"]
   [data-slot="dialog-container"].scheduled-create-container
   [data-slot="dialog-content"]
   [data-slot="dialog-footer"] {
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
   padding: 13px 22px;
   border-top: 0.5px solid var(--v2-border-border-muted);
   background: var(--v2-background-bg-deep);
-}
-
-.scheduled-create-foot-hint {
-  flex: 1 1 220px;
-  min-width: 0;
-  margin: 0;
-  font-size: 11.5px;
-  line-height: var(--line-height-compact);
-  color: var(--v2-text-text-faint);
 }
 
 .scheduled-create-actions {
@@ -896,9 +1016,16 @@
 
 /* Narrow shell --------------------------------------------------------- */
 
-@media (max-width: 720px) {
-  .scheduled-create-foot-hint {
-    flex-basis: 100%;
+@media (max-width: 780px) {
+  .scheduled-create-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .scheduled-preview {
+    max-height: 42%;
+    border-inline-start: 0;
+    border-block-start: 0.5px solid var(--v2-border-border-muted);
   }
 }
 

@@ -331,20 +331,6 @@ export function ScheduledScreen() {
     if (!client) return false
 
     try {
-      // The dialog already parsed the prompt, so a successful parse here is reused instead of generated again.
-      const schedule = input.schedule ?? (await infer(input.prompt))
-
-      // Without a schedule there is nothing to create, so keep the dialog open and explain what was missing.
-      if (!schedule) {
-        showToast({
-          variant: "error",
-          title: language.t("scheduled.create.parseFailed"),
-          description: language.t("scheduled.create.parseFailed.description"),
-        })
-
-        return false
-      }
-
       const session = await client.session.create({
         location: { directory: input.directory },
         title: input.name,
@@ -356,7 +342,7 @@ export function ScheduledScreen() {
           sessionID: session.id,
           name: input.name,
           prompt: input.prompt,
-          when: { cron: schedule.cron, tz: schedule.timezone },
+          when: input.when,
         })
 
         // New tasks start paused; the user enables one from the task list once it looks right.
