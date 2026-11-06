@@ -590,6 +590,62 @@
   font-family: var(--v2-font-family-code);
 }
 
+/* Steps ---------------------------------------------------------------- */
+
+.scheduled-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scheduled-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-faint);
+}
+
+/* A short rule between the two steps reads as a path without adding another row. */
+.scheduled-step:not(:last-child)::after {
+  content: "";
+  width: 10px;
+  height: 0.5px;
+  background: var(--v2-border-border-muted);
+}
+
+.scheduled-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 0.5px solid var(--v2-border-border-muted);
+  border-radius: 50%;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scheduled-step[data-state="current"] {
+  color: var(--v2-text-text-base);
+  font-weight: 600;
+}
+
+.scheduled-step[data-state="current"] .scheduled-step-index {
+  border-color: var(--v2-border-border-strong);
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-text-text-base);
+}
+
+.scheduled-step[data-state="done"] .scheduled-step-index {
+  border-color: var(--v2-border-border-strong);
+  color: var(--v2-text-text-muted);
+}
+
 /* Fields --------------------------------------------------------------- */
 
 .scheduled-field {

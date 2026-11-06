@@ -55,6 +55,8 @@ export function NewScheduledTaskDialog(props: {
   const language = useLanguage()
 
   const [form, setForm] = createStore<{
+    /** The dialog asks for the task first, then for where it runs. */
+    step: 1 | 2
     name: string
     nameTouched: boolean
     prompt: string
@@ -64,6 +66,7 @@ export function NewScheduledTaskDialog(props: {
     tz: string
     submitting: boolean
   }>({
+    step: 1,
     name: "",
     nameTouched: false,
     prompt: "",
@@ -73,6 +76,14 @@ export function NewScheduledTaskDialog(props: {
     tz: localTimeZone(),
     submitting: false,
   })
+
+  let formEl: HTMLDivElement | undefined
+
+  // Each step starts at the top; otherwise the second step opens where the first one was scrolled to.
+  const goToStep = (step: 1 | 2) => {
+    setForm("step", step)
+    formEl?.scrollTo({ top: 0 })
+  }
 
   // The name follows the first line until the user edits it, so a task is never left unnamed.
   createEffect(() => {
@@ -102,7 +113,9 @@ export function NewScheduledTaskDialog(props: {
 
   const validCron = () => form.recurrence.kind !== "cron" || isValidCron(form.recurrence.cron)
 
-  const valid = () => form.prompt.trim().length >= MIN_PROMPT && form.directory.trim() !== "" && validCron()
+  const validTask = () => form.prompt.trim().length >= MIN_PROMPT && validCron()
+
+  const valid = () => validTask() && form.directory.trim() !== ""
 
   const submit = async () => {
     if (!valid() || form.submitting) return
@@ -181,172 +194,187 @@ export function NewScheduledTaskDialog(props: {
 
       <DialogBody>
         <div class="scheduled-create-layout">
-          <div class="scheduled-create-form" data-scrollable>
-            <label class="scheduled-field">
-              <span class="scheduled-field-label">{language.t("scheduled.create.name.label")}</span>
-              <TextInput
-                appearance="base"
-                value={form.name}
-                placeholder={language.t("scheduled.create.name.placeholder")}
-                onInput={(event) => {
-                  setForm("nameTouched", true)
-                  setForm("name", event.currentTarget.value)
-                }}
-              />
-              <small class="scheduled-field-hint">{language.t("scheduled.create.name.hint")}</small>
-            </label>
+          <div class="scheduled-create-form" data-scrollable ref={(el) => (formEl = el)}>
+            <ol class="scheduled-steps">
+              <li class="scheduled-step" data-state={form.step === 1 ? "current" : "done"}>
+                <span class="scheduled-step-index">1</span>
+                {language.t("scheduled.create.step.task")}
+              </li>
+              <li class="scheduled-step" data-state={form.step === 2 ? "current" : undefined}>
+                <span class="scheduled-step-index">2</span>
+                {language.t("scheduled.create.step.project")}
+              </li>
+            </ol>
 
-            <label class="scheduled-field">
-              <span class="scheduled-field-label">{language.t("scheduled.create.prompt.label")}</span>
-              <Textarea
-                rows={5}
-                autofocus
-                value={form.prompt}
-                placeholder={language.t("scheduled.create.prompt.placeholder")}
-                onInput={(event) => setForm("prompt", event.currentTarget.value)}
-              />
-            </label>
+            <Show when={form.step === 1}>
+              <label class="scheduled-field">
+                <span class="scheduled-field-label">{language.t("scheduled.create.name.label")}</span>
+                <TextInput
+                  appearance="base"
+                  value={form.name}
+                  placeholder={language.t("scheduled.create.name.placeholder")}
+                  onInput={(event) => {
+                    setForm("nameTouched", true)
+                    setForm("name", event.currentTarget.value)
+                  }}
+                />
+                <small class="scheduled-field-hint">{language.t("scheduled.create.name.hint")}</small>
+              </label>
 
-            <div class="scheduled-field">
-              <span class="scheduled-field-label">{language.t("scheduled.create.schedule.label")}</span>
-              <div
-                class="scheduled-frequency"
-                role="radiogroup"
-                aria-label={language.t("scheduled.create.schedule.label")}
-              >
-                <For each={FREQUENCY_OPTIONS}>
-                  {(option) => (
-                    <button
-                      type="button"
-                      class="scheduled-frequency-option"
-                      role="radio"
-                      aria-checked={form.recurrence.kind === option.kind}
-                      data-selected={form.recurrence.kind === option.kind ? "" : undefined}
-                      onClick={() => chooseKind(option.kind)}
-                    >
-                      {language.t(option.label)}
-                    </button>
-                  )}
-                </For>
-              </div>
+              <label class="scheduled-field">
+                <span class="scheduled-field-label">{language.t("scheduled.create.prompt.label")}</span>
+                <Textarea
+                  rows={5}
+                  autofocus
+                  value={form.prompt}
+                  placeholder={language.t("scheduled.create.prompt.placeholder")}
+                  onInput={(event) => setForm("prompt", event.currentTarget.value)}
+                />
+              </label>
 
-              <Show when={custom()}>
-                {(recurrence) => (
-                  <div class="scheduled-schedule-detail">
-                    <label class="scheduled-field">
-                      <span class="scheduled-field-label">{language.t("scheduled.create.cron.label")}</span>
-                      <TextInput
-                        appearance="base"
-                        class="scheduled-mono"
-                        value={recurrence().cron}
-                        invalid={!isValidCron(recurrence().cron)}
-                        onInput={(event) => setCron(event.currentTarget.value)}
-                      />
-                    </label>
-                    <small
-                      class="scheduled-field-hint"
-                      data-tone={isValidCron(recurrence().cron) ? undefined : "danger"}
-                    >
-                      {isValidCron(recurrence().cron)
-                        ? language.t("scheduled.create.cron.hint")
-                        : language.t("scheduled.create.cron.invalid")}
-                    </small>
-                  </div>
-                )}
-              </Show>
-
-              <small class="scheduled-field-hint">{language.t("scheduled.create.schedule.hint")}</small>
-            </div>
-
-            <div class="scheduled-field">
-              <span class="scheduled-field-label">{language.t("scheduled.create.project.label")}</span>
-              <Show
-                when={props.projects.length > 0}
-                fallback={
-                  <TextInput
-                    appearance="base"
-                    class="scheduled-mono"
-                    value={form.directory}
-                    placeholder={language.t("scheduled.create.project.placeholder")}
-                    onInput={(event) => setForm("directory", event.currentTarget.value)}
-                  />
-                }
-              >
+              <div class="scheduled-field">
+                <span class="scheduled-field-label">{language.t("scheduled.create.schedule.label")}</span>
                 <div
-                  class="scheduled-project-list"
+                  class="scheduled-frequency"
                   role="radiogroup"
-                  aria-label={language.t("scheduled.create.project.label")}
+                  aria-label={language.t("scheduled.create.schedule.label")}
                 >
-                  <For each={props.projects}>
-                    {(project) => (
+                  <For each={FREQUENCY_OPTIONS}>
+                    {(option) => (
                       <button
                         type="button"
-                        class="scheduled-project"
+                        class="scheduled-frequency-option"
                         role="radio"
-                        aria-checked={form.directory === project.directory}
-                        data-selected={form.directory === project.directory ? "" : undefined}
-                        onClick={() => setForm("directory", project.directory)}
+                        aria-checked={form.recurrence.kind === option.kind}
+                        data-selected={form.recurrence.kind === option.kind ? "" : undefined}
+                        onClick={() => chooseKind(option.kind)}
                       >
-                        <span class="scheduled-project-icon">
-                          <Icon name="folder" size="small" />
-                        </span>
-                        <span class="scheduled-project-body">
-                          <span class="scheduled-project-name">{project.name}</span>
-                          <span class="scheduled-project-path">{project.directory}</span>
-                        </span>
-                        <Show when={form.directory === project.directory}>
-                          <Icon name="check" size="small" class="scheduled-project-check" />
-                        </Show>
+                        {language.t(option.label)}
                       </button>
                     )}
                   </For>
                 </div>
-              </Show>
-              <small class="scheduled-field-hint">{language.t("scheduled.create.project.hint")}</small>
-            </div>
 
-            <div class="scheduled-field">
-              <span class="scheduled-field-label">{language.t("scheduled.create.permission.label")}</span>
-              <div
-                class="scheduled-permission-list"
-                role="radiogroup"
-                aria-label={language.t("scheduled.create.permission.label")}
-              >
-                <For
-                  each={
-                    [
-                      {
-                        scope: "default",
-                        title: "scheduled.create.permission.default",
-                        note: "scheduled.create.permission.default.description",
-                      },
-                      {
-                        scope: "read-only",
-                        title: "scheduled.create.permission.readonly",
-                        note: "scheduled.create.permission.readonly.description",
-                      },
-                    ] as const
+                <Show when={custom()}>
+                  {(recurrence) => (
+                    <div class="scheduled-schedule-detail">
+                      <label class="scheduled-field">
+                        <span class="scheduled-field-label">{language.t("scheduled.create.cron.label")}</span>
+                        <TextInput
+                          appearance="base"
+                          class="scheduled-mono"
+                          value={recurrence().cron}
+                          invalid={!isValidCron(recurrence().cron)}
+                          onInput={(event) => setCron(event.currentTarget.value)}
+                        />
+                      </label>
+                      <small
+                        class="scheduled-field-hint"
+                        data-tone={isValidCron(recurrence().cron) ? undefined : "danger"}
+                      >
+                        {isValidCron(recurrence().cron)
+                          ? language.t("scheduled.create.cron.hint")
+                          : language.t("scheduled.create.cron.invalid")}
+                      </small>
+                    </div>
+                  )}
+                </Show>
+
+                <small class="scheduled-field-hint">{language.t("scheduled.create.schedule.hint")}</small>
+              </div>
+            </Show>
+
+            <Show when={form.step === 2}>
+              <div class="scheduled-field">
+                <span class="scheduled-field-label">{language.t("scheduled.create.project.label")}</span>
+                <Show
+                  when={props.projects.length > 0}
+                  fallback={
+                    <TextInput
+                      appearance="base"
+                      class="scheduled-mono"
+                      value={form.directory}
+                      placeholder={language.t("scheduled.create.project.placeholder")}
+                      onInput={(event) => setForm("directory", event.currentTarget.value)}
+                    />
                   }
                 >
-                  {(option) => (
-                    <button
-                      type="button"
-                      class="scheduled-permission"
-                      role="radio"
-                      aria-checked={form.permission === option.scope}
-                      data-selected={form.permission === option.scope ? "" : undefined}
-                      onClick={() => setForm("permission", option.scope)}
-                    >
-                      <span class="scheduled-permission-radio" aria-hidden="true" />
-                      <span class="scheduled-permission-body">
-                        <span class="scheduled-permission-title">{language.t(option.title)}</span>
-                        <span class="scheduled-permission-note">{language.t(option.note)}</span>
-                      </span>
-                    </button>
-                  )}
-                </For>
+                  <div
+                    class="scheduled-project-list"
+                    role="radiogroup"
+                    aria-label={language.t("scheduled.create.project.label")}
+                  >
+                    <For each={props.projects}>
+                      {(project) => (
+                        <button
+                          type="button"
+                          class="scheduled-project"
+                          role="radio"
+                          aria-checked={form.directory === project.directory}
+                          data-selected={form.directory === project.directory ? "" : undefined}
+                          onClick={() => setForm("directory", project.directory)}
+                        >
+                          <span class="scheduled-project-icon">
+                            <Icon name="folder" size="small" />
+                          </span>
+                          <span class="scheduled-project-body">
+                            <span class="scheduled-project-name">{project.name}</span>
+                            <span class="scheduled-project-path">{project.directory}</span>
+                          </span>
+                          <Show when={form.directory === project.directory}>
+                            <Icon name="check" size="small" class="scheduled-project-check" />
+                          </Show>
+                        </button>
+                      )}
+                    </For>
+                  </div>
+                </Show>
+                <small class="scheduled-field-hint">{language.t("scheduled.create.project.hint")}</small>
               </div>
-            </div>
+
+              <div class="scheduled-field">
+                <span class="scheduled-field-label">{language.t("scheduled.create.permission.label")}</span>
+                <div
+                  class="scheduled-permission-list"
+                  role="radiogroup"
+                  aria-label={language.t("scheduled.create.permission.label")}
+                >
+                  <For
+                    each={
+                      [
+                        {
+                          scope: "default",
+                          title: "scheduled.create.permission.default",
+                          note: "scheduled.create.permission.default.description",
+                        },
+                        {
+                          scope: "read-only",
+                          title: "scheduled.create.permission.readonly",
+                          note: "scheduled.create.permission.readonly.description",
+                        },
+                      ] as const
+                    }
+                  >
+                    {(option) => (
+                      <button
+                        type="button"
+                        class="scheduled-permission"
+                        role="radio"
+                        aria-checked={form.permission === option.scope}
+                        data-selected={form.permission === option.scope ? "" : undefined}
+                        onClick={() => setForm("permission", option.scope)}
+                      >
+                        <span class="scheduled-permission-radio" aria-hidden="true" />
+                        <span class="scheduled-permission-body">
+                          <span class="scheduled-permission-title">{language.t(option.title)}</span>
+                          <span class="scheduled-permission-note">{language.t(option.note)}</span>
+                        </span>
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </div>
+            </Show>
           </div>
 
           <aside class="scheduled-preview" aria-label={language.t("scheduled.create.preview.label")}>
@@ -383,19 +411,29 @@ export function NewScheduledTaskDialog(props: {
               </div>
               <div class="scheduled-preview-row">
                 <dt>{language.t("scheduled.create.preview.project")}</dt>
-                <dd data-empty={projectName() ? undefined : ""}>
-                  {projectName() ?? language.t("scheduled.create.preview.empty")}
-                </dd>
+                <Show
+                  when={form.step === 2}
+                  fallback={<dd data-empty="">{language.t("scheduled.create.preview.next-step")}</dd>}
+                >
+                  <dd data-empty={projectName() ? undefined : ""}>
+                    {projectName() ?? language.t("scheduled.create.preview.empty")}
+                  </dd>
+                </Show>
               </div>
               <div class="scheduled-preview-row">
                 <dt>{language.t("scheduled.create.preview.permission")}</dt>
-                <dd>
-                  {language.t(
-                    form.permission === "read-only"
-                      ? "scheduled.create.permission.readonly"
-                      : "scheduled.create.permission.default",
-                  )}
-                </dd>
+                <Show
+                  when={form.step === 2}
+                  fallback={<dd data-empty="">{language.t("scheduled.create.preview.next-step")}</dd>}
+                >
+                  <dd>
+                    {language.t(
+                      form.permission === "read-only"
+                        ? "scheduled.create.permission.readonly"
+                        : "scheduled.create.permission.default",
+                    )}
+                  </dd>
+                </Show>
               </div>
             </dl>
 
@@ -419,12 +457,26 @@ export function NewScheduledTaskDialog(props: {
           </p>
         </Show>
         <div class="scheduled-create-actions">
-          <Button variant="neutral" onClick={() => dialog.close()}>
-            {language.t("common.cancel")}
-          </Button>
-          <Button variant="contrast" disabled={!valid() || form.submitting} onClick={() => void submit()}>
-            {language.t("scheduled.create.submit")}
-          </Button>
+          <Show
+            when={form.step === 2}
+            fallback={
+              <>
+                <Button variant="neutral" onClick={() => dialog.close()}>
+                  {language.t("common.cancel")}
+                </Button>
+                <Button variant="contrast" disabled={!validTask()} onClick={() => goToStep(2)}>
+                  {language.t("scheduled.create.next")}
+                </Button>
+              </>
+            }
+          >
+            <Button variant="neutral" disabled={form.submitting} onClick={() => goToStep(1)}>
+              {language.t("scheduled.create.back")}
+            </Button>
+            <Button variant="contrast" disabled={!valid() || form.submitting} onClick={() => void submit()}>
+              {language.t("scheduled.create.submit")}
+            </Button>
+          </Show>
         </div>
       </DialogFooter>
     </Dialog>
