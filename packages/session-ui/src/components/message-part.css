@@ -203,7 +203,8 @@
     }
 
     [data-highlight="file"],
-    [data-highlight="agent"] {
+    [data-highlight="agent"],
+    [data-highlight="skill"] {
       color: var(--v2-text-text-accent);
       font-weight: 400;
       direction: ltr;

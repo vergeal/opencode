@@ -46,6 +46,7 @@ import { userRunSpring, type UserRun } from "../timeline/user-runs"
 import type {
   PromptAgentAttachment,
   PromptAttachment,
+  PromptSkillAttachment,
   SessionMessageAssistant,
   SessionMessageAssistantReasoning,
   SessionMessageCompaction,
@@ -352,6 +353,7 @@ export function CurrentUserMessageDisplay(props: {
   const references = createMemo(() => props.references ?? [])
   const inlineFiles = createMemo(() => files().filter((file) => !!file.mention))
   const agents = createMemo(() => props.message.agents ?? [])
+  const skills = createMemo(() => props.message.skills ?? [])
   const comments = createMemo(() => props.comments ?? [])
 
   const sent = createMemo(() =>
@@ -724,7 +726,14 @@ export function CurrentUserMessageDisplay(props: {
               fallback={
                 <Show
                   when={hasMarkdownSyntax(props.text)}
-                  fallback={<CurrentHighlightedText text={props.text} files={inlineFiles()} agents={agents()} />}
+                  fallback={
+                    <CurrentHighlightedText
+                      text={props.text}
+                      files={inlineFiles()}
+                      agents={agents()}
+                      skills={skills()}
+                    />
+                  }
                 >
                   <Markdown text={props.text} cacheKey={`${props.message.id}:user`} />
                 </Show>
@@ -738,7 +747,14 @@ export function CurrentUserMessageDisplay(props: {
               >
                 <Show
                   when={hasMarkdownSyntax(props.text)}
-                  fallback={<CurrentHighlightedText text={props.text} files={inlineFiles()} agents={agents()} />}
+                  fallback={
+                    <CurrentHighlightedText
+                      text={props.text}
+                      files={inlineFiles()}
+                      agents={agents()}
+                      skills={skills()}
+                    />
+                  }
                 >
                   <Markdown text={props.text} cacheKey={`${props.message.id}:user`} />
                 </Show>
@@ -871,7 +887,12 @@ function scrollParent(element: HTMLElement) {
   return document.scrollingElement
 }
 
-function CurrentHighlightedText(props: { text: string; files: PromptAttachment[]; agents: PromptAgentAttachment[] }) {
+function CurrentHighlightedText(props: {
+  text: string
+  files: PromptAttachment[]
+  agents: PromptAgentAttachment[]
+  skills: PromptSkillAttachment[]
+}) {
   const segments = createMemo(() => {
     const references = [
       ...props.files.flatMap((file) =>
@@ -879,6 +900,9 @@ function CurrentHighlightedText(props: { text: string; files: PromptAttachment[]
       ),
       ...props.agents.flatMap((agent) =>
         agent.mention ? [{ start: agent.mention.start, end: agent.mention.end, type: "agent" as const }] : [],
+      ),
+      ...props.skills.flatMap((skill) =>
+        skill.mention ? [{ start: skill.mention.start, end: skill.mention.end, type: "skill" as const }] : [],
       ),
     ].sort((a, b) => a.start - b.start)
 
@@ -935,7 +959,7 @@ function CurrentHighlightedText(props: { text: string; files: PromptAttachment[]
   )
 }
 
-type HighlightSegment = { text: string; type?: "file" | "agent" | "link" }
+type HighlightSegment = { text: string; type?: "file" | "agent" | "skill" | "link" }
 
 function SessionReferenceText(props: { text: string }) {
   const markdown = useMarkdown()
