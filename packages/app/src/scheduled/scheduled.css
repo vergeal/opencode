@@ -894,41 +894,6 @@
   margin-inline-start: auto;
 }
 
-.scheduled-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 30px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9999px;
-  background: var(--v2-grey-100);
-  box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
-  color: var(--v2-grey-1000);
-  font-family: var(--v2-font-family-sans);
-  font-size: 12.5px;
-  font-weight: 400;
-  white-space: nowrap;
-  cursor: default;
-}
-
-@media (hover: hover) {
-  .scheduled-primary:hover:not(:disabled) {
-    background: color-mix(in srgb, var(--v2-grey-100) 88%, var(--v2-grey-1000));
-  }
-}
-
-.scheduled-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.scheduled-primary:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--v2-focus-ring-color);
-}
-
 /* Narrow shell --------------------------------------------------------- */
 
 @media (max-width: 720px) {

@@ -76,7 +76,7 @@ export function ServerSignedOutPanel(props: { conn: ServerConnection.Any }) {
           </div>
         </div>
         <Show when={props.conn.type === "http" || (props.conn.type === "plugin" && !!props.conn.connect)}>
-          <Button variant="neutral" size="normal" onClick={signIn}>
+          <Button variant="contrast" size="normal" onClick={signIn}>
             {language.t("session.error.signedOut.signIn")}
           </Button>
         </Show>

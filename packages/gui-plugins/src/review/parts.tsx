@@ -125,7 +125,7 @@ function ReviewUnavailable(props: { review: ReviewModel }) {
               {failure.type === "timeout" ? ctx.t("load.timeout") : failure.message}
             </div>
           </div>
-          <Button size="small" variant="outline" onClick={() => props.review.retry()}>
+          <Button size="small" variant="contrast" onClick={() => props.review.retry()}>
             {ctx.t("common.retry")}
           </Button>
         </div>

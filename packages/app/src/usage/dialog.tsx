@@ -68,7 +68,7 @@ export function DialogUsage(props: {
                   <span class="text-[15px] leading-text-compact font-[400] tracking-[-0.04px] text-v2-text-text-muted">
                     {language.t("usage.error")}
                   </span>
-                  <Button variant="neutral" onClick={load}>
+                  <Button variant="contrast" onClick={load}>
                     {language.t("usage.retry")}
                   </Button>
                 </div>

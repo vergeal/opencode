@@ -76,27 +76,24 @@
     color: currentColor;
   }
 
-  /* Neutral */
+  /* Neutral: the secondary key. A paper fill with an ink label, for cancel, back, close and every other
+     action that is not the one the screen is asking for. */
   [data-component="button-v2"][data-variant="neutral"] {
-    background-color: var(--v2-background-bg-button-neutral);
-    color: var(--v2-text-text-base);
-    box-shadow: var(--v2-elevation-button-neutral);
+    background-color: var(--v2-grey-100);
+    background-image: none;
+    color: var(--v2-grey-1000);
+    text-shadow: none;
+    box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
   }
 
-  [data-component="button-v2"][data-variant="neutral"]:is(:hover, [data-state="hover"]):not(:disabled) {
-    background-image:
-      linear-gradient(90deg, var(--v2-overlay-simple-overlay-hover) 0%, var(--v2-overlay-simple-overlay-hover) 100%),
-      linear-gradient(90deg, var(--v2-background-bg-button-neutral) 0%, var(--v2-background-bg-button-neutral) 100%);
+  @media (hover: hover) {
+    [data-component="button-v2"][data-variant="neutral"]:is(:hover, [data-state="hover"]):not(:disabled) {
+      background-color: color-mix(in srgb, var(--v2-grey-100) 88%, var(--v2-grey-1000));
+    }
   }
 
   [data-component="button-v2"][data-variant="neutral"]:is(:active, [data-state="pressed"]):not(:disabled) {
-    background-image:
-      linear-gradient(
-        90deg,
-        var(--v2-overlay-simple-overlay-pressed) 0%,
-        var(--v2-overlay-simple-overlay-pressed) 100%
-      ),
-      linear-gradient(90deg, var(--v2-background-bg-button-neutral) 0%, var(--v2-background-bg-button-neutral) 100%);
+    background-color: color-mix(in srgb, var(--v2-grey-100) 78%, var(--v2-grey-1000));
   }
 
   [data-component="button-v2"][data-variant="neutral"]:is(:disabled, [data-state="disabled"]) {
@@ -104,27 +101,23 @@
     cursor: not-allowed;
   }
 
-  /* Danger */
+  /* Danger: the same paper pill, with the destructive label. */
   [data-component="button-v2"][data-variant="danger"] {
-    background-color: var(--v2-background-bg-button-neutral);
+    background-color: var(--v2-grey-100);
+    background-image: none;
     color: var(--v2-state-fg-danger);
-    box-shadow: var(--v2-elevation-button-neutral);
+    text-shadow: none;
+    box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
   }
 
-  [data-component="button-v2"][data-variant="danger"]:is(:hover, [data-state="hover"]):not(:disabled) {
-    background-image:
-      linear-gradient(90deg, var(--v2-overlay-simple-overlay-hover) 0%, var(--v2-overlay-simple-overlay-hover) 100%),
-      linear-gradient(90deg, var(--v2-background-bg-button-neutral) 0%, var(--v2-background-bg-button-neutral) 100%);
+  @media (hover: hover) {
+    [data-component="button-v2"][data-variant="danger"]:is(:hover, [data-state="hover"]):not(:disabled) {
+      background-color: color-mix(in srgb, var(--v2-grey-100) 88%, var(--v2-grey-1000));
+    }
   }
 
   [data-component="button-v2"][data-variant="danger"]:is(:active, [data-state="pressed"]):not(:disabled) {
-    background-image:
-      linear-gradient(
-        90deg,
-        var(--v2-overlay-simple-overlay-pressed) 0%,
-        var(--v2-overlay-simple-overlay-pressed) 100%
-      ),
-      linear-gradient(90deg, var(--v2-background-bg-button-neutral) 0%, var(--v2-background-bg-button-neutral) 100%);
+    background-color: color-mix(in srgb, var(--v2-grey-100) 78%, var(--v2-grey-1000));
   }
 
   [data-component="button-v2"][data-variant="danger"]:is(:disabled, [data-state="disabled"]) {
@@ -133,25 +126,21 @@
   }
 
   [data-component="button-v2"][data-variant="warning"] {
-    background-color: var(--v2-background-bg-button-neutral);
+    background-color: var(--v2-grey-100);
+    background-image: none;
     color: var(--v2-state-fg-warning);
-    box-shadow: var(--v2-elevation-button-neutral);
+    text-shadow: none;
+    box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
   }
 
-  [data-component="button-v2"][data-variant="warning"]:is(:hover, [data-state="hover"]):not(:disabled) {
-    background-image:
-      linear-gradient(90deg, var(--v2-overlay-simple-overlay-hover) 0%, var(--v2-overlay-simple-overlay-hover) 100%),
-      linear-gradient(90deg, var(--v2-background-bg-button-neutral) 0%, var(--v2-background-bg-button-neutral) 100%);
+  @media (hover: hover) {
+    [data-component="button-v2"][data-variant="warning"]:is(:hover, [data-state="hover"]):not(:disabled) {
+      background-color: color-mix(in srgb, var(--v2-grey-100) 88%, var(--v2-grey-1000));
+    }
   }
 
   [data-component="button-v2"][data-variant="warning"]:is(:active, [data-state="pressed"]):not(:disabled) {
-    background-image:
-      linear-gradient(
-        90deg,
-        var(--v2-overlay-simple-overlay-pressed) 0%,
-        var(--v2-overlay-simple-overlay-pressed) 100%
-      ),
-      linear-gradient(90deg, var(--v2-background-bg-button-neutral) 0%, var(--v2-background-bg-button-neutral) 100%);
+    background-color: color-mix(in srgb, var(--v2-grey-100) 78%, var(--v2-grey-1000));
   }
 
   [data-component="button-v2"][data-variant="warning"]:is(:disabled, [data-state="disabled"]) {
@@ -179,39 +168,43 @@
     cursor: not-allowed;
   }
 
-  /* Contrast */
-  [data-component="button-v2"][data-variant="contrast"] {
-    background-image:
-      linear-gradient(180deg, var(--v2-alpha-light-20) 0%, var(--v2-alpha-light-0) 100%),
-      linear-gradient(90deg, var(--v2-background-bg-contrast) 0%, var(--v2-background-bg-contrast) 100%);
+  /* Contrast: the primary key. One per action group: the action the screen is asking for. */
+  [data-component="button-v2"]:is([data-variant="contrast"], [data-variant="submit"]) {
+    background-color: var(--v2-background-bg-contrast);
+    background-image: none;
     color: var(--v2-text-text-contrast);
-    text-shadow: 0 0.5px 0.5px rgba(0, 0, 0, 0.3);
-    box-shadow: var(--v2-elevation-button-contrast);
+    text-shadow: none;
+    box-shadow: none;
   }
 
-  [data-component="button-v2"][data-variant="contrast"]:is(:hover, [data-state="hover"]):not(:disabled) {
-    background-image:
-      linear-gradient(
+  @media (hover: hover) {
+    [data-component="button-v2"]:is([data-variant="contrast"], [data-variant="submit"]):is(
+        :hover,
+        [data-state="hover"]
+      ):not(:disabled) {
+      background-image: linear-gradient(
         90deg,
         var(--v2-overlay-simple-overlay-contrast-hover) 0%,
         var(--v2-overlay-simple-overlay-contrast-hover) 100%
-      ),
-      linear-gradient(180deg, var(--v2-alpha-light-20) 0%, var(--v2-alpha-light-0) 100%),
-      linear-gradient(90deg, var(--v2-background-bg-contrast) 0%, var(--v2-background-bg-contrast) 100%);
+      );
+    }
   }
 
-  [data-component="button-v2"][data-variant="contrast"]:is(:active, [data-state="pressed"]):not(:disabled) {
-    background-image:
-      linear-gradient(
-        90deg,
-        var(--v2-overlay-simple-overlay-contrast-pressed) 0%,
-        var(--v2-overlay-simple-overlay-contrast-pressed) 100%
-      ),
-      linear-gradient(180deg, var(--v2-alpha-light-20) 0%, var(--v2-alpha-light-0) 100%),
-      linear-gradient(90deg, var(--v2-background-bg-contrast) 0%, var(--v2-background-bg-contrast) 100%);
+  [data-component="button-v2"]:is([data-variant="contrast"], [data-variant="submit"]):is(
+      :active,
+      [data-state="pressed"]
+    ):not(:disabled) {
+    background-image: linear-gradient(
+      90deg,
+      var(--v2-overlay-simple-overlay-contrast-pressed) 0%,
+      var(--v2-overlay-simple-overlay-contrast-pressed) 100%
+    );
   }
 
-  [data-component="button-v2"][data-variant="contrast"]:is(:disabled, [data-state="disabled"]) {
+  [data-component="button-v2"]:is([data-variant="contrast"], [data-variant="submit"]):is(
+      :disabled,
+      [data-state="disabled"]
+    ) {
     opacity: 0.4;
     cursor: not-allowed;
   }
@@ -332,37 +325,6 @@
   }
 
   [data-component="button-v2"][data-variant="ghost-faint"]:is(:disabled, [data-state="disabled"]) {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* Every key is one pill: a paper fill with an ink label. Variants keep their meaning in copy and confirmation,
-     not in colour, so toolbars, dialogs and row actions share one control shape. */
-  [data-component="button-v2"][data-variant] {
-    background-color: var(--v2-grey-100);
-    background-image: none;
-    color: var(--v2-grey-1000);
-    text-shadow: none;
-    box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-
-  [data-component="button-v2"][data-variant] [data-slot="icon-svg"] {
-    color: currentColor;
-  }
-
-  @media (hover: hover) {
-    [data-component="button-v2"][data-variant]:is(:hover, [data-state="hover"]):not(:disabled) {
-      background-color: color-mix(in srgb, var(--v2-grey-100) 88%, var(--v2-grey-1000));
-    }
-  }
-
-  [data-component="button-v2"][data-variant]:is(:active, [data-state="pressed"]):not(:disabled) {
-    background-color: color-mix(in srgb, var(--v2-grey-100) 78%, var(--v2-grey-1000));
-  }
-
-  [data-component="button-v2"][data-variant]:is(:disabled, [data-state="disabled"]) {
     opacity: 0.5;
     cursor: not-allowed;
   }

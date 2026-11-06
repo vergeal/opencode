@@ -1250,7 +1250,7 @@ function ProviderConnection(props: {
             {isConsole ? view().error : language.t("provider.connect.status.failed", { error: view().error ?? "" })}
           </span>
         </div>
-        <Button variant={isConsole ? undefined : "neutral"} onClick={() => controller.retry()}>
+        <Button variant="contrast" onClick={() => controller.retry()}>
           {language.t(isConsole ? "provider.connect.console.retry" : "common.retry")}
         </Button>
       </div>

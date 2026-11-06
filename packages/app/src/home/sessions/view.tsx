@@ -958,7 +958,9 @@ function HomeSessionRow(
             <Menu.Group>
               <Menu.GroupLabel>{props.language.t("menu.group.organize")}</Menu.GroupLabel>
               <Menu.Item onSelect={() => props.onTogglePin(props.record.session)}>
-                {props.isPinned(props.record.session) ? props.language.t("common.unpin") : props.language.t("common.pin")}
+                {props.isPinned(props.record.session)
+                  ? props.language.t("common.unpin")
+                  : props.language.t("common.pin")}
               </Menu.Item>
               <Menu.Item onSelect={openEditor}>{props.language.t("common.rename")}</Menu.Item>
             </Menu.Group>
@@ -1110,14 +1112,14 @@ function HomeSessionsEmpty(props: {
       </p>
       <Show when={props.onNewSession}>
         {(onNewSession) => (
-          <Button data-action="home-new-session" variant="neutral" size="normal" icon="edit" onClick={onNewSession()}>
+          <Button data-action="home-new-session" variant="contrast" size="normal" icon="edit" onClick={onNewSession()}>
             {props.language.t("command.session.new")}
           </Button>
         )}
       </Show>
       <Show when={!props.onNewSession && props.onAddProject}>
         {(onAddProject) => (
-          <Button data-action="home-add-project" variant="neutral" size="normal" icon="plus" onClick={onAddProject()}>
+          <Button data-action="home-add-project" variant="contrast" size="normal" icon="plus" onClick={onAddProject()}>
             {props.language.t("home.project.add")}
           </Button>
         )}

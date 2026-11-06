@@ -728,9 +728,7 @@ function useCatalog(props: ServiceProps, service: "plugins" | "skills"): Service
     Body: () => (
       <Show
         when={list().length}
-        fallback={
-          <ServiceEmpty title={ctx.t(service === "plugins" ? "plugins.empty" : "skills.empty")} />
-        }
+        fallback={<ServiceEmpty title={ctx.t(service === "plugins" ? "plugins.empty" : "skills.empty")} />}
       >
         <For each={list()}>
           {(item) => (
@@ -1152,7 +1150,7 @@ function McpErrorDialog(props: { session: MountedSession; directory: string; nam
                 {ctx.t("mcp.error.disable")}
               </Button>
               <Button
-                variant="neutral"
+                variant="contrast"
                 disabled={toggle.isPending}
                 onClick={() => toggle.mutate({ name: props.name, enabled: true })}
               >
@@ -1215,7 +1213,8 @@ function McpSignInDialog(props: {
 
     // A failed request says nothing about the attempt, which may still be pending, so keep polling until it expires.
     if (!result.ok) {
-      if (Date.now() >= deadline) return fail(result.error instanceof Error ? result.error.message : String(result.error))
+      if (Date.now() >= deadline)
+        return fail(result.error instanceof Error ? result.error.message : String(result.error))
       timer = setTimeout(() => void poll(), 1_000)
 
       return

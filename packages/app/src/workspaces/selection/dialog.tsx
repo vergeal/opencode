@@ -811,11 +811,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
           <Show when={!state.loading && state.error}>
             <div class="directory-picker-state directory-picker-error">
               <span role="alert">{language.t("dialog.directory.readError")}</span>
-              <Button
-                size="small"
-                variant="neutral"
-                onClick={() => void navigate(state.root || start() || home())}
-              >
+              <Button size="small" variant="neutral" onClick={() => void navigate(state.root || start() || home())}>
                 {language.t("common.retry")}
               </Button>
             </div>

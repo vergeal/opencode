@@ -125,7 +125,7 @@ export const SettingsProjects: Component<{
                 <div class="text-13-regular text-v2-text-text-muted">
                   {language.t("settings.projects.empty.description")}
                 </div>
-                <Button variant="neutral" icon="plus" class="mt-6" onClick={addProject}>
+                <Button variant="contrast" icon="plus" class="mt-6" onClick={addProject}>
                   {language.t("home.project.add")}
                 </Button>
               </div>

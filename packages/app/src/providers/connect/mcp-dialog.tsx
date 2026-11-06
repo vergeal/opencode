@@ -204,7 +204,7 @@ export function McpDialog(props: {
                 >
                   {language.t("dialog.mcp.error.disable")}
                 </Button>
-                <Button variant="neutral" disabled={props.pending} onClick={() => toggleServer(current().name)}>
+                <Button variant="contrast" disabled={props.pending} onClick={() => toggleServer(current().name)}>
                   {language.t("common.retry")}
                 </Button>
               </ErrorDetails>

@@ -207,7 +207,7 @@ export default function TerminalPanel(props: {
                 <div class="text-13-regular text-text-strong">{plugin.t("list.failed")}</div>
                 <div class="text-12-regular text-text-weak break-words">{view().error}</div>
               </div>
-              <Button size="small" variant="outline" onClick={() => void terminal().retry()}>
+              <Button size="small" variant="contrast" onClick={() => void terminal().retry()}>
                 {plugin.t("common.retry")}
               </Button>
             </div>

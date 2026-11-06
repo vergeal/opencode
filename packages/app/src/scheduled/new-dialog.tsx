@@ -369,7 +369,7 @@ export function NewScheduledTaskDialog(props: {
             : language.t("scheduled.create.footer.step", { current: form.step, total: 3 })}
         </p>
         <div class="scheduled-create-actions">
-          <Button variant="ghost" onClick={() => dialog.close()}>
+          <Button variant="neutral" onClick={() => dialog.close()}>
             {language.t("common.cancel")}
           </Button>
           <Show when={form.step > 1}>
@@ -378,14 +378,14 @@ export function NewScheduledTaskDialog(props: {
             </Button>
           </Show>
           <Show when={form.step < 3}>
-            <button type="button" class="scheduled-primary" disabled={!canNext() || busy()} onClick={() => void next()}>
+            <Button variant="contrast" disabled={!canNext() || busy()} onClick={() => void next()}>
               {language.t("scheduled.create.next")}
-            </button>
+            </Button>
           </Show>
           <Show when={form.step === 3}>
-            <button type="button" class="scheduled-primary" disabled={!valid() || busy()} onClick={() => void submit()}>
+            <Button variant="contrast" disabled={!valid() || busy()} onClick={() => void submit()}>
               {language.t("scheduled.create.submit")}
-            </button>
+            </Button>
           </Show>
         </div>
       </DialogFooter>

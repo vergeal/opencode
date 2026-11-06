@@ -85,7 +85,7 @@ export function SettingsServerUnavailable(props: {
               )}
             </Show>
             <div class="settings-server-unavailable-actions">
-              <Button size="normal" variant="neutral" icon="refresh" disabled={retrying()} onClick={retry}>
+              <Button size="normal" variant="contrast" icon="refresh" disabled={retrying()} onClick={retry}>
                 {language.t("settings.server.unreachable.retry")}
               </Button>
               <Button size="normal" variant="ghost-muted" onClick={edit}>

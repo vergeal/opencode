@@ -728,7 +728,7 @@ export const SessionQuestionDockClassic: Component<{ request: FormInfo; onSubmit
                 }
               >
                 <Button
-                  variant={last() ? "submit" : "neutral"}
+                  variant="submit"
                   size="large"
                   disabled={sending()}
                   onClick={next}

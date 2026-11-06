@@ -414,9 +414,7 @@ export function KnowledgeScreen() {
     try {
       const result = await platform.readKnowledgeFile?.({ libraryID: library.id, path: file.path })
       // The machine drops a read for a file the user already left.
-      setPreview((current) =>
-        transition(current, { type: "file.loaded", path: file.path, text: result?.text ?? "" }),
-      )
+      setPreview((current) => transition(current, { type: "file.loaded", path: file.path, text: result?.text ?? "" }))
     } catch (error) {
       setPreview((current) =>
         transition(current, {
@@ -502,7 +500,7 @@ export function KnowledgeScreen() {
                 <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
                   {language.t("knowledge.empty.hint")}
                 </p>
-                <Button variant="contrast" size="small" icon="plus" onClick={openNewLibrary}>
+                <Button variant="neutral" size="small" icon="plus" onClick={openNewLibrary}>
                   {language.t("knowledge.new")}
                 </Button>
               </div>
@@ -530,7 +528,9 @@ export function KnowledgeScreen() {
 
                 // auto-fill 的列数来自计算后的轨道数，垂直移动一次跨一行。
                 const horizontal = event.key === "ArrowRight" || event.key === "ArrowLeft"
-                const columns = getComputedStyle(event.currentTarget).gridTemplateColumns.split(" ").filter(Boolean).length
+                const columns = getComputedStyle(event.currentTarget)
+                  .gridTemplateColumns.split(" ")
+                  .filter(Boolean).length
                 const step = horizontal ? 1 : Math.max(columns, 1)
 
                 go(index + (event.key === "ArrowRight" || event.key === "ArrowDown" ? step : -step))
