@@ -147,7 +147,7 @@ export function createHomeSessionSearchController(home: HomeController, sessions
       close,
     },
     result: {
-      loading: () => sessions.data.loading() || state.lookingUp,
+      loading: () => sessions.data.state().status === "loading" || state.lookingUp,
       list: results,
       active,
       noResultsLabel: () => language.t("home.sessions.search.noResults", { query: query() }),

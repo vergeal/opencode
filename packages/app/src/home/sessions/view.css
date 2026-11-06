@@ -57,6 +57,19 @@
   animation: home-sessions-reveal 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
+.home-sessions-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border: 0.5px solid var(--v2-state-fg-danger);
+  border-radius: 9px;
+  color: var(--v2-state-fg-danger);
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+}
+
 @keyframes home-session-skeleton-sweep {
   from {
     mask-position: 100% 0;

@@ -3,7 +3,7 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { Button } from "@opencode/ui/button"
 import { Dialog, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { useQuery, useQueryClient } from "@tanstack/solid-query"
-import { type Accessor, createEffect, createMemo, type JSX, startTransition, untrack } from "solid-js"
+import { type Accessor, createEffect, createMemo, createSignal, type JSX, on, startTransition, untrack } from "solid-js"
 import { usePinnedSessions } from "@/session/pins"
 import { notifySessionTabsRemoved } from "@/shell/titlebar/session-events"
 import { useCommand } from "@/shell/commands/command"
@@ -23,6 +23,7 @@ import { showToast } from "@/shell/notifications/toast"
 import { archiveHomeSession } from "./archive"
 import { SessionSettingsDialog } from "@/session/settings-dialog"
 import { homeSessionsQuery } from "./queries"
+import { transition, type HomeSessionsState } from "./machine"
 import type { HomeController } from "../model"
 import { buildHomeSessionRecords, homeProjectForSession, homeSessionLocation, type HomeSessionRecord } from "./records"
 
@@ -104,6 +105,36 @@ export function createHomeSessionsController(home: HomeController) {
   })
 
   const groups = createMemo(() => groupSessions(records(), pinnedIDs(), language))
+  const [state, setState] = createSignal<HomeSessionsState>({ status: "loading" })
+
+  createEffect(
+    on(
+      () => ({
+        pending: sessionLoad.isPending,
+        fetching: sessionLoad.isFetching,
+        error:
+          sessionLoad.isError && !sessionLoad.isFetching
+            ? errorMessage(sessionLoad.error, language.t("common.requestFailed"))
+            : undefined,
+        count: records().length,
+      }),
+      (input) => {
+        setState((current) => {
+          if (input.error) return transition(current, { type: "failed", message: input.error })
+
+          if (input.pending || input.fetching) return transition(current, { type: "refresh" })
+
+          return transition(current, { type: "loaded", count: input.count })
+        })
+      },
+    ),
+  )
+
+  const retry = () => {
+    setState(transition(state(), { type: "reset" }))
+    void sessionLoad.refetch()
+  }
+
   const prefetched = new Set<string>()
 
   const location = (record: HomeSessionRecord) => {
@@ -316,7 +347,8 @@ export function createHomeSessionsController(home: HomeController) {
     data: {
       records,
       groups,
-      loading: () => sessionLoad.isPending,
+      state,
+      retry,
       searchRecords: allRecords,
     },
     platform: {

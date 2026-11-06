@@ -4,7 +4,7 @@ import { Icon } from "@opencode/ui/icon"
 import { Slash } from "@opencode/ui/slash"
 import { Keybind } from "@opencode/ui/keybind"
 import { useCommand } from "@/shell/commands/command"
-import { Show, createMemo, createSignal, type JSX } from "solid-js"
+import { Show, For, createMemo, createSignal, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { getFilename } from "@opencode/util/path"
@@ -73,6 +73,7 @@ export function NewSessionView(props: {
   )
 
   const settings = useSettings()
+  const language = useLanguage()
 
   const [wordmark, setWordmark] = createStore<WordmarkState>({ mode: "flat", game: false })
 
@@ -131,6 +132,38 @@ export function NewSessionView(props: {
                   )}
                 </Show>
               </div>
+              <Show when={props.project.projects().length > 0}>
+                <div
+                  data-slot="new-session-recent-projects"
+                  class="flex flex-wrap items-center gap-2"
+                  role="group"
+                  aria-label={language.t("session.new.project.recent")}
+                >
+                  <For each={props.project.projects().slice(0, 6)}>
+                    {(project) => (
+                      <button
+                        type="button"
+                        data-action="prompt-project-card"
+                        aria-pressed={props.project.isSelected(project)}
+                        class="flex h-7 min-w-0 items-center gap-2 rounded-lg border-[0.5px] border-v2-border-border-base px-2 text-[13px] font-[400] leading-[var(--line-height-base)] tracking-[-0.04px] text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)] aria-[pressed=true]:border-v2-border-border-focus aria-[pressed=true]:text-v2-text-text-base"
+                        onClick={() => {
+                          props.project.select(project)
+                          props.composer.restoreFocus()
+                        }}
+                      >
+                        <ProjectAvatar
+                          class="shrink-0"
+                          fallback={displayName(project)}
+                          src={getProjectAvatarSource(project.id, project.icon)}
+                          variant={getProjectAvatarVariant(project.icon?.color)}
+                          generated={getProjectAvatarGenerated(project)}
+                        />
+                        <span class="min-w-0 truncate">{displayName(project)}</span>
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </Show>
               <Show when={props.project.empty()}>
                 <PromptProjectAddButton controller={props.project} />
               </Show>

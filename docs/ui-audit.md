@@ -2,23 +2,23 @@
 
 证据来源：仓库代码与 grep 输出（逐条带 `文件:行`）。**按本会话约束不做截图识别**，验收证据以代码行与命令输出为准。
 
-统计：条目 **164**，TODO **11**，DONE **153**。类别分布：结构 45（TODO 0 / DONE 45）、状态 37（TODO 11 / DONE 26）、刻度 38（TODO 0 / DONE 38）、交互 44（TODO 0 / DONE 44）。
+统计：条目 **164**，TODO **0**，DONE **164**。类别分布：结构 45（TODO 0 / DONE 45）、状态 37（TODO 0 / DONE 37）、刻度 38（TODO 0 / DONE 38）、交互 44（TODO 0 / DONE 44）。
 
 表内 `T` 为 TODO 数，`D` 为 DONE 数。
 
 | 页面 | 结构 | 状态 | 刻度 | 交互 | 结论 |
 | --- | --- | --- | --- | --- | --- |
-| shell | T0 / D4 | T3 / D0 | T0 / D4 | T0 / D6 | 未达标 |
-| home | T0 / D4 | T4 / D0 | T0 / D4 | T0 / D4 | 未达标 |
+| shell | T0 / D4 | T0 / D3 | T0 / D4 | T0 / D6 | 达标 |
+| home | T0 / D4 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
 | inbox | T0 / D3 | T0 / D2 | T0 / D3 | T0 / D3 | 达标 |
 | scheduled | T0 / D7 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
 | knowledge | T0 / D5 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
-| settings | T0 / D4 | T1 / D3 | T0 / D4 | T0 / D4 | 未达标 |
+| settings | T0 / D4 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
 | servers | T0 / D4 | T0 / D4 | T0 / D3 | T0 / D4 | 达标 |
 | workspaces | T0 / D4 | T0 / D3 | T0 / D3 | T0 / D4 | 达标 |
-| new-session | T0 / D3 | T1 / D2 | T0 / D3 | T0 / D3 | 未达标 |
-| session | T0 / D4 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
-| composer | T0 / D3 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
+| new-session | T0 / D3 | T0 / D3 | T0 / D3 | T0 / D3 | 达标 |
+| session | T0 / D4 | T0 / D3 | T0 / D3 | T0 / D4 | 达标 |
+| composer | T0 / D3 | T0 / D3 | T0 / D3 | T0 / D4 | 达标 |
 
 ## shell
 
@@ -28,9 +28,9 @@
 | SH-S2 | 结构 | 垂直标签条滚动区补 `data-scrollable` | 8 | packages/app/src/shell/titlebar/tab-strip.tsx:540 | DONE |
 | SH-S3 | 结构 | 实测水平标题栏只有首页、搜索两个 icon 按钮，符合「最多 2 个 icon + 溢出菜单」 | 5.1 | packages/app/src/shell/titlebar/titlebar.tsx:354,379 | DONE |
 | SH-S4 | 结构 | 归档会话弹窗改用 `size="large"`（640），删除内联宽度与圆角覆盖 | 5.6 | packages/app/src/shell/titlebar/inbox.tsx:755 | DONE |
-| SH-T1 | 状态 | 收件箱空态只有一行说明，没有下一步动作 | 7.2 | packages/app/src/shell/titlebar/inbox.tsx:972 | TODO |
-| SH-T2 | 状态 | 收件箱列表加载只有 `Loader`，没有区分刷新（保留旧数据 + 头部 Loader） | 7.2 | packages/app/src/shell/titlebar/inbox.tsx:942 | TODO |
-| SH-T3 | 状态 | 标签页同时用 `popoverOpen`、`promptPulse` 等独立信号表达浮层与提示，未收进单一状态机 | 7.1 | packages/app/src/shell/titlebar/tab-nav.tsx:424 | TODO |
+| SH-T1 | 状态 | 侧栏收件箱空态补「新建会话」按钮（`navigate("/")`）；`InboxSessionList` 空态也接受 `onStartSession` | 7.2 | packages/app/src/shell/titlebar/inbox.tsx:374-379,993-999 | DONE |
+| SH-T2 | 状态 | `InboxSessionList` 用 `populated()` 区分首次加载与刷新：首次居中 `Loader`，刷新保留旧行并在列表顶部显示小 `Loader`；生产侧栏读同步本地收件箱，无异步加载阶段 | 7.2 | packages/app/src/shell/titlebar/inbox.tsx:865-866,950-965 | DONE |
+| SH-T3 | 状态 | 新增判别联合 `TabNavState`（overlay: idle/preview/menu/editing + renamePending + pulse）与纯 `transitionTabNav`；`popoverOpen`/`promptPulse`/`menu.open`/`menu.rename`/`editing` 全部收进一个 store，组件只读选择器 | 7.1 | packages/app/src/shell/titlebar/tab-nav-machine.ts:1-50、tab-nav.tsx:82-85,172,424-436,446-450,459 | DONE |
 | SH-C1 | 刻度 | 标签标题 `text-[15px]` 改为 13px + `--line-height-compact` | 3 | packages/app/src/shell/titlebar/tab-nav.tsx:340 | DONE |
 | SH-C2 | 刻度 | 标签容器边框 1px 改为 0.5px，圆角 5px→4px，内边距 1px 5px→2px 4px | 4.4 | packages/app/src/shell/titlebar/tab-nav.css:541-543 | DONE |
 | SH-C3 | 刻度 | `pointer-events: none !important` 保留：Kobalte 可关闭层写内联值，注释已说明，属标准第 1 节「保留态覆盖需注释」豁免 | 4.4/5.7 | packages/app/src/shell/titlebar/tab-popover.css:25 | DONE |
@@ -50,10 +50,10 @@
 | HM-S2 | 结构 | 实测项目列表滚动容器已带 `data-scrollable` | 8 | packages/app/src/home/projects/view.tsx:224 | DONE |
 | HM-S3 | 结构 | 搜索框位于 1fr 详情列内，420px 上限不再压缩分栏 | 4.1 | packages/app/src/home/sessions/view.tsx:381 | DONE |
 | HM-S4 | 结构 | 实测 `rounded-[12px]` 属标准 4.3 允许档（12–13 浮层） | 4.3 | packages/app/src/home/sessions/view.tsx:318 | DONE |
-| HM-T1 | 状态 | `home` 目录无 `machine.ts`，加载态依赖父级 `loading` 布尔 | 7.1 | packages/app/src/home/sessions/view.tsx:74 | TODO |
-| HM-T2 | 状态 | 会话列表错误态没有页内 danger 行与原地重试（`home` 下无 retry 命中） | 7.2 | packages/app/src/home/sessions/view.tsx | TODO |
-| HM-T3 | 状态 | 项目列表加载只有 `Loader`，无刷新保留旧数据 | 7.2 | packages/app/src/home/projects/view.tsx:306 | TODO |
-| HM-T4 | 状态 | 无最近会话时只有文案，没有创建动作 | 7.2 | packages/app/src/home/sessions/view.tsx:332 | TODO |
+| HM-T1 | 状态 | 新增 `HomeSessionsState` 判别联合（loading/ready/empty/error）与纯 `transition`；控制器用 `createSignal` + `on` 驱动，view 只读 `state.status`，删除 `loading` 布尔 | 7.1 | packages/app/src/home/sessions/machine.ts:1-31、controller.tsx:107-140 | DONE |
+| HM-T2 | 状态 | 会话列表错误态在列表内渲染 `.home-sessions-error` danger 行 + `common.retry`，重试走 `sessionLoad.refetch()`，不依赖 toast | 7.2 | packages/app/src/home/sessions/view.tsx:217-226、view.css:60-70、controller.tsx:127-136 | DONE |
+| HM-T3 | 状态 | 改判 DONE：项目列表由 `createMemo(() => focusedServerCtx()?.projects.used() ?? [])` 同步派生，没有异步加载阶段；`projects/view.tsx:306` 的 `Loader` 是服务器认证按钮，非列表加载 | 7.2 | packages/app/src/home/model.ts:34、projects/view.tsx:306 | DONE |
+| HM-T4 | 状态 | 改判 DONE：空态在 HEAD 已有 `home-new-session` 按钮；本批再补无创建能力时的 `home-add-project` 下一步动作 | 7.2 | packages/app/src/home/sessions/view.tsx:1110-1124 | DONE |
 | HM-C1 | 刻度 | 服务器标签 `text-[9px] leading-none` 改为 `text-[11px] leading-[var(--line-height-compact)]`，圆角 3px→4px | 3 | packages/app/src/home/projects/view.tsx:467 | DONE |
 | HM-C2 | 刻度 | 问候标题 26px 改为 20px/26px，日期行 14px→13px + base，`mt-[18px]`→`mt-4` | 3 | packages/app/src/home/sessions/view.tsx:555-558 | DONE |
 | HM-C3 | 刻度 | 统计 chip `text-[11.5px]` 改为 11px + compact，圆角改 `rounded-full`，`gap-1.5`→`gap-1` | 3 | packages/app/src/home/sessions/view.tsx:569 | DONE |
@@ -136,7 +136,7 @@
 | SE-T1 | 状态 | 供应商页有 `machine.ts` | 7.1 | packages/app/src/settings/providers/machine.ts | DONE |
 | SE-T2 | 状态 | 服务器不可用改为 `unavailable-machine.ts`（idle/retrying/failed），重试失败给页内 danger 行 | 7.1 | packages/app/src/settings/servers/unavailable-machine.ts:1-16、unavailable.tsx:28-55 | DONE |
 | SE-T3 | 状态 | 项目知识库错误有原地重试 | 7.2 | packages/app/src/settings/workspaces/project-knowledge.tsx:136 | DONE |
-| SE-T4 | 状态 | 设置搜索无「无结果 + 一个动作」的空态 | 7.2 | packages/app/src/settings/search.tsx:207 | TODO |
+| SE-T4 | 状态 | 设置搜索空态补「清除搜索」按钮（`onClear={clear}`），空态由一段说明 + 一个动作组成；其它本地筛选空态不传 `onClear` 时不渲染按钮 | 7.2 | packages/app/src/settings/search-empty.tsx:7,84-90、search.tsx:149、search.css:85-96 | DONE |
 | SE-C1 | 刻度 | 导航淡出遮罩 `#000` 改为 `var(--v2-background-bg-inverse)`（alpha mask，颜色不影响裁剪） | 2 | packages/app/src/settings/settings.css:131-134 | DONE |
 | SE-C2 | 刻度 | 删除 `padding-inline: 0 !important`，原选择器已有 3 段特异性 | 4.2 | packages/app/src/settings/settings.css:2343 | DONE |
 | SE-C3 | 刻度 | 两处链接色 `!important` 去掉，改用 `.settings-extension-link[href]` 提升特异性 | 2 | packages/app/src/settings/settings.css:2428-2435 | DONE |
@@ -194,7 +194,7 @@
 | NS-S3 | 结构 | 工作区浮层宽度改为 `min(243px, calc(100vw-32px))`，窄屏不溢出 | 4.1 | packages/app/src/new-session/workspace/selector.tsx:153 | DONE |
 | NS-T1 | 状态 | 新建会话有 `machine.ts` | 7.1 | packages/app/src/new-session/machine.ts | DONE |
 | NS-T2 | 状态 | 工作区列表有原地重试 | 7.2 | packages/app/src/new-session/workspace/selector.tsx:166 | DONE |
-| NS-T3 | 状态 | 空状态只有输入框，缺最近项目卡片 | 6.6 | packages/app/src/new-session/view.tsx:325 | TODO |
+| NS-T3 | 状态 | 新建会话在输入框下方补最近项目卡片（最多 6 个，按已用/最近活跃排序，点击切换项目并回焦输入框），选中项 `aria-pressed` | 6.6 | packages/app/src/new-session/view.tsx:135-172、en.ts:715、zh.ts:410 | DONE |
 | NS-C1 | 刻度 | 工具行两处 `text-[15px]` 改为 13px + compact，`pl-1.5`→`ps-2`、`pe-1.5`→`pe-2` | 3 | packages/app/src/new-session/view.tsx:226,325 | DONE |
 | NS-C2 | 刻度 | 砖块 HUD `leading-[16px]` 改为 `leading-[var(--line-height-compact)]`（同值，改用变量） | 3 | packages/app/src/new-session/brick-breaker.tsx:54 | DONE |
 | NS-C3 | 刻度 | canvas 取色 fallback 的 hex 只在 `getComputedStyle` 读不到 token 时兜底，不参与主题定义；主路径读 `--v2-*`，无需改 | 2 | packages/app/src/new-session/pin-board.tsx:939-949 | DONE |
@@ -212,7 +212,7 @@
 | SS-S3 | 结构 | 实测时间线走 `ScrollView`，侧面板 `overflow-hidden` 内各自滚动，无共用滚动 | 8 | packages/app/src/session/screen.tsx:521 | DONE |
 | SS-T1 | 状态 | 时间线有 `machine.ts` 与分辨率状态机 | 7.1 | packages/app/src/session/timeline/machine.ts | DONE |
 | SS-T2 | 状态 | 输入队列有 `queue-machine.ts` | 7.1 | packages/app/src/session/composer/queue-machine.ts | DONE |
-| SS-T3 | 状态 | 会话准备态没有说明原因的文案行 | 7.2 | packages/app/src/session/route.tsx:77 | TODO |
+| SS-T3 | 状态 | 会话准备态在状态标题下补原因文案：准备 MCP 时显示「正在准备工具与服务」，否则说明「会话就绪后就会显示你的消息」 | 7.2 | packages/app/src/session/route.tsx:91-104、en.ts:718-719、zh.ts:772-773 | DONE |
 | SS-C1 | 刻度 | 队列行两处 `text-[15px]` 改为 13px + compact，`rounded-sm`→`rounded-[4px]` | 3 | packages/app/src/session/composer/queue-panel.tsx:223,236 | DONE |
 | SS-C2 | 刻度 | 输入区渐变遮罩 `#000` 改为 `var(--v2-background-bg-inverse)`（alpha mask） | 2 | packages/app/src/session/composer/spring-height.tsx:344 | DONE |
 | SS-C3 | 刻度 | 活动胶囊用 `border-[0.5px]`，符合边框档 | 4.4 | packages/app/src/session/composer/activity-chips.tsx:239 | DONE |
@@ -230,7 +230,7 @@
 | CO-S3 | 结构 | 工具条分隔线由 1px 改为 0.5px | 5.5 | packages/app/src/composer/editor/editor.tsx:1652 | DONE |
 | CO-T1 | 状态 | 输入队列有 `queue-machine.ts` | 7.1 | packages/app/src/session/composer/queue-machine.ts | DONE |
 | CO-T2 | 状态 | 上传中显示 `Loader`，符合非 AI 加载 | 7.2 | packages/app/src/composer/editor/editor.tsx:22 | DONE |
-| CO-T3 | 状态 | 上传失败没有字段级错误行，只靠 toast | 7.2 | packages/app/src/composer/attachments/uploads.tsx:123 | TODO |
+| CO-T3 | 状态 | 上传失败改为上传面板内持久 danger 行（文件名 + 原因 + `common.dismiss` 关闭），失败项保留在上传列表，不再只靠一次性 toast | 7.2 | packages/app/src/composer/attachments/uploads.tsx:42-60,114-133、attachments.css:47-56 | DONE |
 | CO-C1 | 刻度 | 滑块 `#ffffff` 改为 `--v2-grey-50`，两处 rgba 阴影改为 `color-mix` + `--v2-grey-1100`，1px 环改 0.5px | 2 | packages/app/src/composer/editor/variant-slider.css:6-16 | DONE |
 | CO-C2 | 刻度 | 两处 `!important` 属拖拽保留态覆盖，理由已写成注释，按标准第 1 节豁免 | 4 | packages/app/src/composer/editor/editor.css:308-314 | DONE |
 | CO-C3 | 刻度 | 拖拽条纹遮罩的 `black`/`rgba` 改为 `var(--v2-background-bg-inverse)` + `color-mix` | 2 | packages/app/src/composer/dropzone.tsx:68-70 | DONE |
@@ -253,10 +253,12 @@
 | 对话与输入区 15px | 标准第 3 节 UI 正文为 13px；`composer/editor/editor.tsx`、`session/timeline/message-timeline.tsx`、`session/timeline/working-activity.tsx`、`session/session-identity-header.tsx` 仍用 15px | 按会话约束不动输入框与对话排版，B4/B5 不改；如需统一，另开一批并同时复核虚拟列表测量 |
 | 弹窗默认焦点 | 标准 5.6 要求「弹窗打开焦点落在首个字段」，验收第 5 节要求「取消按钮默认聚焦」 | 表单弹窗（定时任务、知识库、服务器连接、目录选择、会话设置）保留首个字段 `autofocus`；破坏性确认弹窗按验收第 5 节把 `autofocus` 放在取消按钮 |
 | 运行历史条数 | 标准 6.1 要求「最近记录固定 5 条」；`Schedule.Info` 只提供 `lastFiredAt`、`lastOutcome`、`lastOutput`、`runCount`，没有运行历史数组，也没有 list-runs 端点（改端点属 schema/server，禁改） | `scheduled` 详情按真实数据渲染 1 条并给空态，不补 4 条假记录；需要服务端补 `schedule.runs` 后才谈 5 条 |
+| 上传失败重试 | 标准 7.2 要求错误形态带「原地重试」；上传失败项已保留文件名、原因与关闭动作，但 `uploads.track` 的调用方 `attachments.ts` 在失败后已结束本次 `stage`，在这里重试上传不会再把文件挂回提示词 | 失败行只提供关闭，用户重新拖入/粘贴文件即重试；若要做真正的原地重试，需把「上传 + 挂载附件」整体移进可重试的状态机，另开一批 |
+| 生产侧栏收件箱加载 | `SidebarInbox` 直接读本地同步收件箱（`createSessionInbox`），没有异步加载阶段可区分；标准 7.2 的刷新语义只在 `InboxSessionList`（Storybook/预览用）上有意义 | SH-T2 按组件层实现「首次加载 vs 刷新保留」；生产侧栏保持同步渲染，不添加虚假的加载态 |
 
 ## 进度
 
 - 条目：164
-- TODO：11
-- DONE：153
+- TODO：0
+- DONE：164
 - 口径：每条一个可复核的代码位置，同一问题不重复立项；后续每完成一项把该行改成 DONE 并补齐 `文件:行`。

@@ -407,6 +407,7 @@ export const dict = {
   "session.new.project.new": "新建项目",
   "session.new.project.search": "搜索项目",
   "session.new.project.add": "添加项目",
+  "session.new.project.recent": "最近项目",
   "session.new.workspace.runIn": "运行会话的位置",
   "session.new.workspace.triggerLocal": "本地",
   "session.new.workspace.local": "本地仓库",
@@ -451,6 +452,7 @@ export const dict = {
   "sidebar.inbox.archived.count.other": "{{count}} 个会话",
   "sidebar.inbox.archived.empty": "还没有归档会话",
   "sidebar.inbox.empty": "暂无会话",
+  "sidebar.inbox.empty.action": "新建会话",
 
   "settings.section.server": "服务器",
 
@@ -766,6 +768,9 @@ export const dict = {
   "session.queue.remove": "移除",
   "session.queue.reorder": "重新排列已排队的提示词",
   "session.new.worktree.creating": "正在创建 worktree",
+  "session.new.starting": "正在启动会话",
+  "session.new.preparing.description": "会话就绪后就会显示你的消息。",
+  "session.new.preparing.mcp": "正在准备工具与服务。",
   "settings.backToApp": "返回应用",
   "settings.appearance.row.tabs.title": "标签页",
   "settings.appearance.row.tabs.description": "选择会话标签页的排列方式",
@@ -995,6 +1000,7 @@ export const dict = {
   "workspace.delete.confirm": "删除“{{name}}”吗？",
   "workspace.delete.location": "位置",
   "settings.search.empty.query": "“{{query}}”",
+  "settings.search.clear": "清除搜索",
 
   "knowledge.title": "知识库",
   "inbox.title": "收件箱",

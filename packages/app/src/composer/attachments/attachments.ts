@@ -25,8 +25,6 @@ export type ComposerAttachmentConfig = {
   duplicate: () => void
   // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a failed attachment is opaque; the host formats it
   onError: (error: unknown) => void
-  // oxlint-disable-next-line anti-slop/no-unknown-parameters -- a failed upload is opaque; the host formats it
-  onUploadError: (error: unknown) => void
   readClipboardImage?: () => Promise<File | null>
   getPathForFile?: (file: File) => string
   onDragCancel?: (callback: () => void) => () => void
@@ -132,9 +130,8 @@ export function createComposerAttachments(
       .track({ id, filename: file.name, mime, size: file.size }, (report, signal) =>
         destination.upload(file, report, signal),
       )
-      .catch((error) => {
-        input.onUploadError(error)
-
+      .catch(() => {
+        // `uploads` keeps the failed row with its reason, so the upload error has its own line.
         return undefined
       })
       .finally(() => setPending("ids", (ids) => ids.filter((item) => item !== id)))

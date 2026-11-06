@@ -90,9 +90,16 @@ function PreparingSession(props: { sessionID: string; pending: PendingSession })
             />
             <div
               role="status"
-              class="mt-3 flex min-h-6 items-center text-[15px] font-medium leading-[var(--line-height-compact)] text-v2-text-text-muted"
+              class="mt-3 flex flex-col gap-1 text-[15px] font-medium leading-[var(--line-height-compact)] text-v2-text-text-muted"
             >
               <TextShimmer text={language.t(props.pending.view().status)} active />
+              <span class="text-[13px] font-[400] text-v2-text-text-faint">
+                {language.t(
+                  props.pending.view().preparingMcp
+                    ? "session.new.preparing.mcp"
+                    : "session.new.preparing.description",
+                )}
+              </span>
             </div>
           </div>
         </div>

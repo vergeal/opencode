@@ -1,9 +1,10 @@
-import { createEffect, onMount } from "solid-js"
+import { createEffect, onMount, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
+import { Button } from "@opencode/ui/button"
 import { useLanguage } from "@/runtime/i18n/language"
 
-export function SettingsSearchEmpty(props: { query: string }) {
+export function SettingsSearchEmpty(props: { query: string; onClear?: () => void }) {
   const language = useLanguage()
   const [state, setState] = createStore({ query: props.query })
   let container: HTMLDivElement | undefined
@@ -65,19 +66,28 @@ export function SettingsSearchEmpty(props: { query: string }) {
 
   return (
     <>
-      <div
-        ref={container}
-        class="settings-search-empty"
-        role="status"
-        aria-label={language.t("settings.search.empty", { query: text(props.query) })}
-      >
-        {language.rich("settings.search.empty", {
-          query: (
-            <span class="settings-search-empty-quoted">
-              <bdi dir="auto">{text(state.query)}</bdi>
-            </span>
-          ),
-        })}
+      <div class="settings-search-empty-panel">
+        <div
+          ref={container}
+          class="settings-search-empty"
+          role="status"
+          aria-label={language.t("settings.search.empty", { query: text(props.query) })}
+        >
+          {language.rich("settings.search.empty", {
+            query: (
+              <span class="settings-search-empty-quoted">
+                <bdi dir="auto">{text(state.query)}</bdi>
+              </span>
+            ),
+          })}
+        </div>
+        <Show when={props.onClear}>
+          {(onClear) => (
+            <Button size="small" variant="neutral" onClick={onClear()}>
+              {language.t("settings.search.clear")}
+            </Button>
+          )}
+        </Show>
       </div>
       <span class="settings-search-empty-measure" aria-hidden="true">
         <span ref={measure} dir="auto" />

@@ -1,4 +1,5 @@
 import { Schema } from "effect"
+import { useNavigate } from "@solidjs/router"
 import { Persistence } from "@/runtime/persistence/schema"
 import {
   createContext,
@@ -78,6 +79,7 @@ function applyOrder(order: Record<string, string[]>, container: string, list: In
 /** The experimental Inbox interface mode: the session inbox in place of vertical tabs. */
 export function SidebarInbox() {
   const language = useLanguage()
+  const navigate = useNavigate()
   const dialog = useDialog()
   const inbox = createSessionInbox({ archived: true })
   const pins = usePinnedSessions()
@@ -362,8 +364,16 @@ export function SidebarInbox() {
               sections().working.length === 0
             }
           >
-            <div class="px-1.5 py-2 text-[13px] leading-4 text-v2-text-text-faint">
-              {language.t("sidebar.inbox.empty")}
+            <div class="flex flex-col gap-2 px-1.5 py-2">
+              <p class="text-[13px] leading-4 text-v2-text-text-faint">{language.t("sidebar.inbox.empty")}</p>
+              <Button
+                variant="ghost-muted"
+                size="small"
+                class="w-fit justify-start px-1"
+                onClick={() => navigate("/")}
+              >
+                {language.t("sidebar.inbox.empty.action")}
+              </Button>
             </div>
           </Show>
           {/* Projects are gone from the navigation: every session lives in the flat Recent shelf. */}
@@ -806,9 +816,14 @@ export function InboxSessionList(props: {
   working: { count: number; rows: () => JSX.Element; expanded: boolean; onToggle: () => void }
   archived: boolean
   onArchived: () => void
+  onStartSession?: () => void
 }) {
   const language = useLanguage()
   const id = createUniqueId()
+
+  // First load blanks the list; a later refresh keeps the rows on screen and shows the loader above them.
+  const populated = () =>
+    props.current.count > 0 || props.working.count > 0 || props.sections.some((section) => section.count > 0)
 
   const [navigation, setNavigation] = createStore<{ focused?: string }>({})
 
@@ -891,19 +906,27 @@ export function InboxSessionList(props: {
         <span class="sr-only" role="status" aria-atomic="true">
           {props.announcement}
         </span>
-        <Show
-          when={!props.loading}
-          fallback={
-            <div class="flex justify-center p-2">
-              <Loader role="img" aria-hidden="false" aria-label={language.t("common.loading")} />
-            </div>
-          }
-        >
+        <Show when={props.loading && !populated()}>
+          <div class="flex justify-center p-2">
+            <Loader role="img" aria-hidden="false" aria-label={language.t("common.loading")} />
+          </div>
+        </Show>
+        <Show when={populated() || !props.loading}>
           <div
             data-slot="sidebar-inbox-scroll"
             data-scrollable
             class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto pb-1"
           >
+            <Show when={props.loading}>
+              <div class="flex justify-center pb-1">
+                <Loader
+                  class="size-3.5"
+                  role="img"
+                  aria-hidden="false"
+                  aria-label={language.t("common.loading")}
+                />
+              </div>
+            </Show>
             <Show when={props.current.count > 0}>
               <div class="flex shrink-0 flex-col gap-0.5 pb-2.5">{props.current.rows()}</div>
             </Show>
@@ -918,15 +941,21 @@ export function InboxSessionList(props: {
                 </Show>
               )}
             </For>
-            <Show
-              when={
-                props.current.count === 0 &&
-                props.working.count === 0 &&
-                props.sections.every((section) => section.count === 0)
-              }
-            >
-              <div class="px-1.5 py-2 text-[13px] leading-4 text-v2-text-text-faint">
-                {language.t("sidebar.inbox.empty")}
+            <Show when={!props.loading && !populated()}>
+              <div class="flex flex-col gap-2 px-1.5 py-2">
+                <p class="text-[13px] leading-4 text-v2-text-text-faint">{language.t("sidebar.inbox.empty")}</p>
+                <Show when={props.onStartSession}>
+                  {(onStartSession) => (
+                    <Button
+                      variant="ghost-muted"
+                      size="small"
+                      class="w-fit justify-start px-1"
+                      onClick={onStartSession()}
+                    >
+                      {language.t("sidebar.inbox.empty.action")}
+                    </Button>
+                  )}
+                </Show>
               </div>
             </Show>
             <Show when={props.archived}>

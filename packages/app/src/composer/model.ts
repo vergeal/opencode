@@ -518,12 +518,6 @@ export function createComposerModel(
       destination: useAttachmentDestination(adapter.controls),
       isDialogActive: () => !!dialog.active,
       duplicate: () => showToast({ title: language.t("prompt.toast.attachmentDuplicate.title") }),
-      onUploadError: (error) =>
-        showToast({
-          variant: "error",
-          title: language.t("prompt.toast.uploadFailed.title"),
-          description: composerErrorMessage(language, error),
-        }),
       onError: (error) =>
         showToast({
           variant: "error",

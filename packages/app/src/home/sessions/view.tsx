@@ -21,6 +21,7 @@ import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import { ArchivedSessionsDialog } from "@/shell/titlebar/inbox"
 import { sessionLabel } from "@/session/title"
 import { shouldOpenSessionInBackground } from "./open"
+import type { HomeSessionsState } from "./machine"
 import { createAltHold } from "./alt-hold"
 import "./view.css"
 import {
@@ -64,7 +65,9 @@ export type HomeSessionsViewProps = {
   language: ReturnType<typeof useLanguage>
   groups: HomeSessionGroup[]
   projectCount: number
-  loading: boolean
+  state: HomeSessionsState
+  onRetry: () => void
+  onAddProject: () => void
   desktop: boolean
   location: (record: HomeSessionRecord) => { worktree: string; branch: string | undefined }
   onRevealLocations: (record?: HomeSessionRecord) => void
@@ -125,9 +128,10 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
   const [placeholder, setPlaceholder] = createSignal(false)
 
   createEffect(() => {
-    const timer = props.loading
-      ? setTimeout(() => setPlaceholder(true), HOME_SESSION_PLACEHOLDER_DELAY_MS)
-      : setTimeout(() => setPlaceholder(false), prefersReducedMotion() ? 0 : HOME_SESSION_REVEAL_MS)
+    const timer =
+      props.state.status === "loading"
+        ? setTimeout(() => setPlaceholder(true), HOME_SESSION_PLACEHOLDER_DELAY_MS)
+        : setTimeout(() => setPlaceholder(false), prefersReducedMotion() ? 0 : HOME_SESSION_REVEAL_MS)
 
     onCleanup(() => clearTimeout(timer))
   })
@@ -187,26 +191,37 @@ export function HomeSessionsView(props: HomeSessionsViewProps) {
         data-slot="home-sessions-list"
         data-reveal={placeholder() || undefined}
         class="relative -mr-3 min-h-[calc(100cqh-64px)] md:min-h-[calc(100cqh-72px)] lg:min-h-[calc(100cqh-96px)]"
-        aria-busy={props.loading}
+        aria-busy={props.state.status === "loading"}
       >
         <Show when={placeholder()}>
           <HomeSessionSkeleton
-            visible={props.loading}
+            visible={props.state.status === "loading"}
             showProjectName={props.showProjectName}
             desktop={props.desktop}
           />
         </Show>
-        <Show when={!props.loading}>
+        <Show when={props.state.status !== "loading"}>
           <Show
-            when={props.groups.length > 0}
+            when={props.state.status !== "empty"}
             fallback={
               <HomeSessionsEmpty
                 onNewSession={props.canCreateSession ? props.onCreateSession : undefined}
+                onAddProject={props.onAddProject}
                 language={props.language}
               />
             }
           >
             <div ref={props.onSetContent} class="flex flex-col pt-1 pr-3 pb-16 md:pt-3">
+              <Show when={props.state.status === "error" ? props.state : undefined}>
+                {(state) => (
+                  <div class="home-sessions-error" role="alert">
+                    <span class="min-w-0 flex-1">{state().message}</span>
+                    <Button size="small" variant="neutral" onClick={props.onRetry}>
+                      {props.language.t("common.retry")}
+                    </Button>
+                  </div>
+                )}
+              </Show>
               <HomeTodaySummary groups={props.groups} projectCount={props.projectCount} language={props.language} />
               {/* Index keeps group subtrees mounted when the group arrays are
                   rebuilt, so store updates cannot recreate rows mid-gesture. */}
@@ -1025,7 +1040,11 @@ function HomeSessionProjectName(props: { name: string; search?: boolean; trailin
   )
 }
 
-function HomeSessionsEmpty(props: { onNewSession?: () => void; language: ReturnType<typeof useLanguage> }) {
+function HomeSessionsEmpty(props: {
+  onNewSession?: () => void
+  onAddProject?: () => void
+  language: ReturnType<typeof useLanguage>
+}) {
   return (
     <div class="flex min-h-full flex-col items-center gap-4 px-6 pt-12 text-center">
       <div
@@ -1048,6 +1067,13 @@ function HomeSessionsEmpty(props: { onNewSession?: () => void; language: ReturnT
         {(onNewSession) => (
           <Button data-action="home-new-session" variant="neutral" size="normal" icon="edit" onClick={onNewSession()}>
             {props.language.t("command.session.new")}
+          </Button>
+        )}
+      </Show>
+      <Show when={!props.onNewSession && props.onAddProject}>
+        {(onAddProject) => (
+          <Button data-action="home-add-project" variant="neutral" size="normal" icon="plus" onClick={onAddProject()}>
+            {props.language.t("home.project.add")}
           </Button>
         )}
       </Show>

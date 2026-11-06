@@ -85,6 +85,18 @@
   white-space: pre;
 }
 
+.settings-search-empty-panel {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-search [data-slot="search-list-empty"] .settings-search-empty-panel .settings-search-empty {
+  margin-block-start: 0;
+}
+
 /* Centred like every search list's empty state, with even insets on the rows' text spine. */
 .settings-search [data-slot="search-list-empty"] .settings-search-empty {
   justify-content: center;

@@ -9,6 +9,7 @@ import { createHomeScrollController } from "./scroll"
 import { createHomeSessionSearchController } from "./sessions/search"
 import { createHomeSessionsController } from "./sessions/controller"
 import { HomeSessions } from "./sessions/region"
+import { ServerConnection } from "@/runtime/server/registry"
 
 export function Home() {
   const mobile = createMediaQuery("(max-width: 767px)")
@@ -52,6 +53,12 @@ export function Home() {
             search={search}
             scroll={scroll}
             projectCount={projects.project.list().length}
+            onAddProject={() => {
+              const key = sessions.session.server()
+              const server = projects.server.list().find((item) => ServerConnection.key(item) === key)
+
+              if (server) projects.project.choose(server)
+            }}
           />
         </div>
       </ScrollView>

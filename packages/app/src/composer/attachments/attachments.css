@@ -44,6 +44,17 @@
     font-weight: 530;
   }
 
+  &[data-error] [data-slot="upload-row-name"] {
+    color: var(--v2-state-fg-danger);
+  }
+
+  [data-slot="upload-row-error"] {
+    font-size: 13px;
+    line-height: var(--line-height-compact);
+    color: var(--v2-state-fg-danger);
+    overflow-wrap: anywhere;
+  }
+
   [data-slot="upload-row-percent"] {
     flex-shrink: 0;
     color: var(--v2-text-text-muted);

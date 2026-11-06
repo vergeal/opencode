@@ -146,7 +146,7 @@ export function SettingsSearch() {
             </Show>
           </>
         )}
-        empty={<SettingsSearchEmpty query={search.state.query} />}
+        empty={<SettingsSearchEmpty query={search.state.query} onClear={clear} />}
         footer={matches().length > shown().length ? language.t("settings.search.refine") : undefined}
         scrollTop={search.state.scrollTop}
         onScroll={(top) => search.scroll(top)}

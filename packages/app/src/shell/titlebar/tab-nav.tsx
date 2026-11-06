@@ -1,5 +1,6 @@
 import { createEffect, createMemo, createSignal, onCleanup, Show, type Ref } from "solid-js"
 import { createStore } from "solid-js/store"
+import { initialTabNavState, transitionTabNav, type TabNavEvent, type TabNavState } from "./tab-nav-machine"
 import { Predicate } from "effect"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
@@ -75,8 +76,10 @@ export function TabNavItem(
 ) {
   const language = useLanguage()
   const pins = usePinnedSessions()
-  const [menu, setMenu] = createStore({ open: false, rename: false })
-  const [editing, setEditing] = createSignal(false)
+  const [nav, setNav] = createStore<TabNavState>(initialTabNavState)
+  const dispatch = (event: TabNavEvent) => setNav(transitionTabNav(nav, event))
+  const editing = () => nav.overlay === "editing"
+  const menuOpen = () => nav.overlay === "menu"
   const [titleOverflowing, setTitleOverflowing] = createSignal(false)
   let tabRoot!: HTMLDivElement
   let titleEl!: HTMLSpanElement
@@ -149,7 +152,6 @@ export function TabNavItem(
   })
 
   // Like the TUI, a prompt sent to a background tab's session pulses the tab once.
-  const [promptPulse, setPromptPulse] = createSignal(0)
   createEffect(() => {
     const data = serverCtx()?.data
     const sessionID = props.session?.id
@@ -159,13 +161,13 @@ export function TabNavItem(
       data.on("session.inbox.enqueued", (event) => {
         if (props.active || event.data.item.type !== "user" || data.session.root(event.data.sessionID) !== sessionID)
           return
-        setPromptPulse((count) => count + 1)
+        dispatch({ type: "pulse" })
       }),
     )
   })
 
-  const [popoverOpen, setPopoverOpen] = createSignal(false)
-  const previewBlocked = () => !!props.dragging || editing() || menu.open || !!props.pressed || !props.session
+  const previewOpen = () => nav.overlay === "preview"
+  const previewBlocked = () => !!props.dragging || editing() || menuOpen() || !!props.pressed || !props.session
 
   const measureTitleOverflow = () => {
     if (!titleEl || editing()) {
@@ -214,7 +216,7 @@ export function TabNavItem(
     const next = (titleEl.textContent ?? "").trim()
 
     titleEl.scrollLeft = 0
-    setEditing(false)
+    dispatch({ type: "rename.end" })
 
     if (!save || !next || next === original) {
       return
@@ -242,7 +244,7 @@ export function TabNavItem(
 
     if (!session) return
     titleEl.textContent = session.title ?? ""
-    setEditing(true)
+    dispatch({ type: "rename.begin" })
 
     requestAnimationFrame(() => {
       titleEl.focus()
@@ -298,14 +300,14 @@ export function TabNavItem(
         closeTab(event)
       }}
     >
-      <Show when={promptPulse()} keyed>
-        <span data-slot="tab-prompt-pulse" aria-hidden="true" onAnimationEnd={() => setPromptPulse(0)} />
+      <Show when={nav.pulse} keyed>
+        <span data-slot="tab-prompt-pulse" aria-hidden="true" onAnimationEnd={() => dispatch({ type: "pulse.clear" })} />
       </Show>
       <Menu.Context.Trigger
         as="a"
         disabled={editing() || props.dragging}
         aria-haspopup="menu"
-        aria-expanded={menu.open}
+        aria-expanded={menuOpen()}
         data-slot="tab-link"
         data-titlebar-tab-link
         href={props.href}
@@ -417,18 +419,16 @@ export function TabNavItem(
     <Menu.Context
       modal={false}
       onOpenChange={(open) => {
-        setMenu("open", open)
-
-        if (open) setPopoverOpen(false)
+        dispatch({ type: open ? "menu.open" : "menu.close" })
       }}
     >
       <TabPreviewPopover
         trigger={tab()}
         orientation={props.orientation}
-        open={popoverOpen() && !previewBlocked()}
+        open={previewOpen() && !previewBlocked()}
         onOpenChange={(value) => {
           if (value && previewBlocked()) return
-          setPopoverOpen(value)
+          dispatch({ type: value ? "preview.open" : "preview.close" })
         }}
         data={{
           projectName: projectName(),
@@ -440,16 +440,15 @@ export function TabNavItem(
       <Menu.Context.Portal>
         <Menu.Context.Content
           onCloseAutoFocus={(event) => {
-            if (!menu.rename) return
+            if (!nav.renamePending) return
             event.preventDefault()
-            setMenu("rename", false)
             openRename()
           }}
         >
           <Menu.Item disabled={!props.session} onSelect={() => props.session && pins.toggle(props.session.id)}>
             {props.session && pins.isPinned(props.session.id) ? language.t("common.unpin") : language.t("common.pin")}
           </Menu.Item>
-          <Menu.Item disabled={!props.session} onSelect={() => setMenu("rename", true)}>
+          <Menu.Item disabled={!props.session} onSelect={() => dispatch({ type: "rename.request" })}>
             {language.t("common.rename")}
           </Menu.Item>
           <Menu.Item disabled={!props.session} onSelect={() => props.onSessionSettings?.()}>
