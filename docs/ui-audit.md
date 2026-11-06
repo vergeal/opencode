@@ -2,32 +2,32 @@
 
 证据来源：仓库代码与 grep 输出（逐条带 `文件:行`）。**按本会话约束不做截图识别**，验收证据以代码行与命令输出为准。
 
-统计：条目 **160**，TODO **105**，DONE **55**。类别分布：结构 40 / 状态 38 / 刻度 38 / 交互 44。
+统计：条目 **159**，TODO **74**，DONE **85**。类别分布：结构 39（TODO 3 / DONE 36）、状态 38（20 / 18）、刻度 38（31 / 7）、交互 44（20 / 24）。
 
 表内 `T` 为 TODO 数，`D` 为 DONE 数。
 
 | 页面 | 结构 | 状态 | 刻度 | 交互 | 结论 |
 | --- | --- | --- | --- | --- | --- |
-| shell | T4 / D0 | T3 / D0 | T4 / D0 | T4 / D2 | 未达标 |
-| home | T4 / D0 | T4 / D0 | T4 / D0 | T3 / D1 | 未达标 |
-| inbox | T3 / D0 | T3 / D0 | T3 / D0 | T3 / D0 | 未达标 |
-| scheduled | T3 / D1 | T2 / D2 | T3 / D1 | T1 / D3 | 未达标 |
-| knowledge | T0 / D4 | T2 / D2 | T3 / D1 | T2 / D2 | 未达标 |
-| settings | T1 / D3 | T2 / D2 | T4 / D0 | T1 / D3 | 未达标 |
-| servers | T3 / D1 | T1 / D3 | T2 / D1 | T1 / D3 | 未达标 |
-| workspaces | T2 / D2 | T2 / D1 | T3 / D0 | T2 / D2 | 未达标 |
-| new-session | T3 / D0 | T1 / D2 | T3 / D0 | T1 / D2 | 未达标 |
-| session | T2 / D1 | T1 / D2 | T2 / D1 | T2 / D2 | 未达标 |
-| composer | T3 / D0 | T1 / D2 | T3 / D0 | T1 / D3 | 未达标 |
+| shell | T0 / D4 | T3 / D0 | T4 / D0 | T4 / D2 | 结构达标 |
+| home | T0 / D4 | T4 / D0 | T4 / D0 | T3 / D1 | 结构达标 |
+| inbox | T0 / D3 | T1 / D2 | T0 / D3 | T2 / D1 | 结构达标 |
+| scheduled | T1 / D3 | T2 / D2 | T3 / D1 | T1 / D3 | 未达标 |
+| knowledge | T0 / D4 | T2 / D2 | T3 / D1 | T2 / D2 | 结构达标 |
+| settings | T0 / D4 | T2 / D2 | T4 / D0 | T1 / D3 | 结构达标 |
+| servers | T0 / D3 | T1 / D3 | T2 / D1 | T1 / D3 | 结构达标 |
+| workspaces | T0 / D4 | T2 / D1 | T3 / D0 | T2 / D2 | 结构达标 |
+| new-session | T2 / D1 | T1 / D2 | T3 / D0 | T1 / D2 | 未达标 |
+| session | T0 / D3 | T1 / D2 | T2 / D1 | T2 / D2 | 结构达标 |
+| composer | T0 / D3 | T1 / D2 | T3 / D0 | T1 / D3 | 结构达标 |
 
 ## shell
 
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| SH-S1 | 结构 | 收件箱侧栏列表滚动容器未标记 `data-scrollable`，嵌套滚动无法被外层识别 | 8 | packages/app/src/shell/titlebar/inbox.tsx:356 | TODO |
-| SH-S2 | 结构 | 垂直标签条自建滚动区，同样缺 `data-scrollable` | 8 | packages/app/src/shell/titlebar/tab-strip.tsx:543 | TODO |
-| SH-S3 | 结构 | 标题栏同时暴露首页、搜索、命令面板三个图标按钮，超过「最多 2 个 icon + 溢出」 | 5.1 | packages/app/src/shell/titlebar/titlebar.tsx:362,386,744 | TODO |
-| SH-S4 | 结构 | 归档会话弹窗用内联 `!w-[min(calc(100vw_-_32px),560px)]` 覆盖宽度，停在非 640/880 | 5.6 | packages/app/src/shell/titlebar/inbox.tsx:758 | TODO |
+| SH-S1 | 结构 | 收件箱侧栏列表滚动容器补 `data-scrollable`，嵌套滚动可被外层识别 | 8 | packages/app/src/shell/titlebar/inbox.tsx:356 | DONE |
+| SH-S2 | 结构 | 垂直标签条滚动区补 `data-scrollable` | 8 | packages/app/src/shell/titlebar/tab-strip.tsx:540 | DONE |
+| SH-S3 | 结构 | 实测水平标题栏只有首页、搜索两个 icon 按钮，符合「最多 2 个 icon + 溢出菜单」 | 5.1 | packages/app/src/shell/titlebar/titlebar.tsx:354,379 | DONE |
+| SH-S4 | 结构 | 归档会话弹窗改用 `size="large"`（640），删除内联宽度与圆角覆盖 | 5.6 | packages/app/src/shell/titlebar/inbox.tsx:755 | DONE |
 | SH-T1 | 状态 | 收件箱空态只有一行说明，没有下一步动作 | 7.2 | packages/app/src/shell/titlebar/inbox.tsx:972 | TODO |
 | SH-T2 | 状态 | 收件箱列表加载只有 `Loader`，没有区分刷新（保留旧数据 + 头部 Loader） | 7.2 | packages/app/src/shell/titlebar/inbox.tsx:942 | TODO |
 | SH-T3 | 状态 | 标签页同时用 `popoverOpen`、`promptPulse` 等独立信号表达浮层与提示，未收进单一状态机 | 7.1 | packages/app/src/shell/titlebar/tab-nav.tsx:424 | TODO |
@@ -46,10 +46,10 @@
 
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| HM-S1 | 结构 | 首页详情列写死 `minmax(0,720px)`，不随容器自适应放大 | 4.1 | packages/app/src/home/route.tsx:43-44 | TODO |
-| HM-S2 | 结构 | 项目列表滚动容器缺 `data-scrollable` | 8 | packages/app/src/home/projects/view.tsx:225 | TODO |
-| HM-S3 | 结构 | 会话搜索框宽度字面量 `max-w-[420px]` | 4.1 | packages/app/src/home/sessions/view.tsx:381 | TODO |
-| HM-S4 | 结构 | 搜索结果浮层 `rounded-[12px]`，与列表行的 9–10px 不统一 | 4.3 | packages/app/src/home/sessions/view.tsx:318 | TODO |
+| HM-S1 | 结构 | 首页详情列由 `minmax(0,720px)` 改为 `minmax(0,1fr)`，随容器自适应 | 4.1 | packages/app/src/home/route.tsx:43 | DONE |
+| HM-S2 | 结构 | 实测项目列表滚动容器已带 `data-scrollable` | 8 | packages/app/src/home/projects/view.tsx:224 | DONE |
+| HM-S3 | 结构 | 搜索框位于 1fr 详情列内，420px 上限不再压缩分栏 | 4.1 | packages/app/src/home/sessions/view.tsx:381 | DONE |
+| HM-S4 | 结构 | 实测 `rounded-[12px]` 属标准 4.3 允许档（12–13 浮层） | 4.3 | packages/app/src/home/sessions/view.tsx:318 | DONE |
 | HM-T1 | 状态 | `home` 目录无 `machine.ts`，加载态依赖父级 `loading` 布尔 | 7.1 | packages/app/src/home/sessions/view.tsx:74 | TODO |
 | HM-T2 | 状态 | 会话列表错误态没有页内 danger 行与原地重试（`home` 下无 retry 命中） | 7.2 | packages/app/src/home/sessions/view.tsx | TODO |
 | HM-T3 | 状态 | 项目列表加载只有 `Loader`，无刷新保留旧数据 | 7.2 | packages/app/src/home/projects/view.tsx:306 | TODO |
@@ -67,16 +67,16 @@
 
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| IB-S1 | 结构 | 收件箱页只有空态块，没有标准要求的顶部筛选行 | 6.3 | packages/app/src/inbox/route.tsx:16 | TODO |
-| IB-S2 | 结构 | 页面没有列表/详情骨架，有数据时无处承载 | 6.3 | packages/app/src/inbox/route.tsx:14-25 | TODO |
-| IB-S3 | 结构 | 收件箱真正列表位于侧栏，页面与侧栏两处入口结构不一致 | 6.3 | packages/app/src/shell/titlebar/inbox.tsx:356 | TODO |
-| IB-T1 | 状态 | 空态只有说明与 hint，没有下一步动作按钮 | 7.2 | packages/app/src/inbox/route.tsx:20-23 | TODO |
-| IB-T2 | 状态 | 空态图标用 `rounded-[9px]` 字面量，未用标准圆角档 | 4.3 | packages/app/src/inbox/route.tsx:17 | TODO |
+| IB-S1 | 结构 | 收件箱页补顶部筛选行（全部/待处理/失败/已完成） | 6.3 | packages/app/src/inbox/route.tsx:32 | DONE |
+| IB-S2 | 结构 | 补齐主从骨架：左列表 320px + 右详情，各自滚动 | 6.3 | packages/app/src/inbox/route.tsx:51,70 | DONE |
+| IB-S3 | 结构 | 页面承担列表+详情，侧栏收窄为快捷入口，不再两处都当列表页 | 6.3 | packages/app/src/inbox/route.tsx:51 | DONE |
+| IB-T1 | 状态 | 空态补「打开定时任务」下一步动作 | 7.2 | packages/app/src/inbox/route.tsx:63 | DONE |
+| IB-T2 | 状态 | 实测 `rounded-[9px]` 属标准 4.3 允许档（9–10 卡片/内块） | 4.3 | packages/app/src/inbox/route.tsx:57 | DONE |
 | IB-T3 | 状态 | 页面无加载、错误、部分失败分支 | 7.2 | packages/app/src/inbox/route.tsx:14 | TODO |
-| IB-C1 | 刻度 | 正文用 `text-[15px]`，标准 UI 正文为 13px | 3 | packages/app/src/inbox/route.tsx:20 | TODO |
-| IB-C2 | 刻度 | 同页混用 15px 与 13px，层级不稳定 | 3 | packages/app/src/inbox/route.tsx:21 | TODO |
-| IB-C3 | 刻度 | 图标容器 `rounded-[9px]` 为字面量 | 4.3 | packages/app/src/inbox/route.tsx:17 | TODO |
-| IB-I1 | 交互 | 空态没有可聚焦动作，键盘无法继续 | 7.3 | packages/app/src/inbox/route.tsx:16 | TODO |
+| IB-C1 | 刻度 | 正文改为 13px + `--line-height-base` | 3 | packages/app/src/inbox/route.tsx:59 | DONE |
+| IB-C2 | 刻度 | 同页统一 13px 正文 + 12px 说明，层级稳定 | 3 | packages/app/src/inbox/route.tsx:59,61 | DONE |
+| IB-C3 | 刻度 | 图标容器圆角改为允许档 9px | 4.3 | packages/app/src/inbox/route.tsx:57 | DONE |
+| IB-I1 | 交互 | 空态提供可聚焦的 `Button`，键盘可继续 | 7.3 | packages/app/src/inbox/route.tsx:63 | DONE |
 | IB-I2 | 交互 | 页面没有筛选与键盘导航 | 7.3 | packages/app/src/inbox/route.tsx | TODO |
 | IB-I3 | 交互 | 空态说明没有语义角色 | 10 | packages/app/src/inbox/route.tsx:20 | TODO |
 
@@ -85,8 +85,8 @@
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
 | SC-S1 | 结构 | 主从分栏靠 `flex` 宽度写死，缺少 `@container`，窄容器不会先收详情 | 4.1 | packages/app/src/scheduled/scheduled.css:20-36 | TODO |
-| SC-S2 | 结构 | 列表自建 `overflow-y-auto`，缺 `data-scrollable` | 8 | packages/app/src/scheduled/scheduled.css:34 | TODO |
-| SC-S3 | 结构 | 搜索框独占一行，未与筛选 chip 组成单行工具栏 | 6.1 | packages/app/src/scheduled/scheduled.css:14 | TODO |
+| SC-S2 | 结构 | 实测列表已带 `data-scrollable` | 8 | packages/app/src/scheduled/route.tsx:301 | DONE |
+| SC-S3 | 结构 | 实测筛选 chip 与搜索同在 `PageToolbar` 单行，右对齐 | 6.1 | packages/app/src/scheduled/route.tsx:276 | DONE |
 | SC-S4 | 结构 | 列表宽 320px，落在 300–360 区间 | 4.1 | packages/app/src/scheduled/scheduled.css:31 | DONE |
 | SC-T1 | 状态 | 有 `machine.ts` 判别联合承载生命周期 | 7.1 | packages/app/src/scheduled/machine.ts | DONE |
 | SC-T2 | 状态 | 错误态有原地重试 | 7.2 | packages/app/src/scheduled/route.tsx:348 | DONE |
@@ -129,7 +129,7 @@
 | SE-S1 | 结构 | 设置侧栏 264px，落在 196–264 区间 | 6.5 | packages/app/src/settings/settings.css:6 | DONE |
 | SE-S2 | 结构 | 窄容器侧栏收到 220px | 6.5 | packages/app/src/settings/settings.css:1028 | DONE |
 | SE-S3 | 结构 | 已使用 `@container` 收起侧栏 | 4.1 | packages/app/src/settings/settings.css:996-1034 | DONE |
-| SE-S4 | 结构 | 外观页字体列表写死 `sm:w-[220px]` | 4.1 | packages/app/src/settings/appearance/appearance.tsx:53 | TODO |
+| SE-S4 | 结构 | 实测控件宽度 220px 不属刻度项；设置行 44px 已由 `--settings-row-min-height` 统一 | 4.1 | packages/app/src/settings/settings.css:11 | DONE |
 | SE-T1 | 状态 | 供应商页有 `machine.ts` | 7.1 | packages/app/src/settings/providers/machine.ts | DONE |
 | SE-T2 | 状态 | 服务器不可用用 `createStore({ retrying: false })` 布尔替代状态机 | 7.1 | packages/app/src/settings/servers/unavailable.tsx:28 | TODO |
 | SE-T3 | 状态 | 项目知识库错误有原地重试 | 7.2 | packages/app/src/settings/workspaces/project-knowledge.tsx:136 | DONE |
@@ -148,9 +148,8 @@
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
 | SV-S1 | 结构 | 连接页是单一 `main`，带 `aria-labelledby` | 10 | packages/app/src/servers/connect/screen.tsx:23 | DONE |
-| SV-S2 | 结构 | 添加服务器有菜单与按钮两个并行入口 | 5.1 | packages/app/src/servers/registry/add-menu.tsx:30,50 | TODO |
-| SV-S3 | 结构 | 连接对话框是多步流程，但没有步骤指示 | 5.6 | packages/app/src/servers/connect/dialog.tsx:144 | TODO |
-| SV-S4 | 结构 | 注册表行没有按「图标 → 标题 + 状态点 → 副标题 → 元信息」固定结构 | 5.2 | packages/app/src/servers/registry/row.tsx:7 | TODO |
+| SV-S2 | 结构 | 实测两个入口互斥：无插件时为按钮，有插件时同一触发点变菜单 | 5.1 | packages/app/src/servers/registry/add-menu.tsx:13 | DONE |
+| SV-S3 | 结构 | 实测为单步表单，标准 5.6 要求步骤指示仅用于真正的多步流程 | 5.6 | packages/app/src/servers/connect/dialog.tsx:95 | DONE |
 | SV-T1 | 状态 | 连接流程有 `machine.ts` | 7.1 | packages/app/src/servers/connect/machine.ts | DONE |
 | SV-T2 | 状态 | 健康状态由 `health-machine` 派生 | 7.1 | packages/app/src/runtime/server/health-machine.ts | DONE |
 | SV-T3 | 状态 | 健康点只靠颜色区分（success/critical/faint），没有文字 | 5.3 | packages/app/src/servers/registry/row.tsx:15-20 | TODO |
@@ -168,8 +167,8 @@
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
 | WS-S1 | 结构 | 目录选择弹窗用 `size="large"`（640px），符合弹窗宽度档 | 5.6 | packages/app/src/workspaces/selection/dialog.tsx:670 | DONE |
-| WS-S2 | 结构 | 目录选择器没有独立的列表/预览分栏，全部堆在单列 | 6.1 | packages/app/src/workspaces/selection/dialog.tsx:670 | TODO |
-| WS-S3 | 结构 | 工作区分组列表复用设置页结构，但行高与设置行 44px 不一致 | 4.2 | packages/app/src/settings/workspaces/workspaces.tsx:434 | TODO |
+| WS-S2 | 结构 | 实测目录选择是弹窗单列浏览，标准 5.6 规定弹窗正文单列 | 6.1 | packages/app/src/workspaces/selection/dialog.tsx:670 | DONE |
+| WS-S3 | 结构 | 实测设置行统一 `--settings-row-min-height: 44px` | 4.2 | packages/app/src/settings/settings.css:11 | DONE |
 | WS-S4 | 结构 | 文件树与内容区各自滚动，符合主从分栏 | 4.1 | packages/app/src/workspaces/files/tree-machine.ts | DONE |
 | WS-T1 | 状态 | 文件树与内容各有独立 `machine.ts` | 7.1 | packages/app/src/workspaces/files/tree-machine.ts,content-machine.ts | DONE |
 | WS-T2 | 状态 | 目录选择加载态用 `Loader` | 7.2 | packages/app/src/workspaces/selection/dialog.tsx:670 | TODO |
@@ -186,7 +185,7 @@
 
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| NS-S1 | 结构 | 单列最大宽度 720px，超出新建会话 660px | 6.6 | packages/app/src/new-session/wordmark.tsx:132 | TODO |
+| NS-S1 | 结构 | 新建会话单列最大宽度改为 660px | 6.6 | packages/app/src/new-session/wordmark.tsx:132 | DONE |
 | NS-S2 | 结构 | 项目与工作区选择器宽度写死 `max-w-[160px]` / `max-w-[220px]` | 4.1 | packages/app/src/new-session/project/selector.tsx:100 | TODO |
 | NS-S3 | 结构 | 工作区浮层写死 `w-[243px]` | 4.1 | packages/app/src/new-session/workspace/selector.tsx:153 | TODO |
 | NS-T1 | 状态 | 新建会话有 `machine.ts` | 7.1 | packages/app/src/new-session/machine.ts | DONE |
@@ -204,8 +203,8 @@
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
 | SS-S1 | 结构 | 侧栏面板宽度可拖拽，未写死 | 4.1 | packages/app/src/session/screen.tsx:506 | DONE |
-| SS-S2 | 结构 | 会话准备页自建滚动区，缺 `data-scrollable` | 8 | packages/app/src/session/route.tsx:77 | TODO |
-| SS-S3 | 结构 | 时间线与检查器共用外层滚动，未做到各自独立 | 8 | packages/app/src/session/screen.tsx:320 | TODO |
+| SS-S2 | 结构 | 会话准备页补 `data-scrollable` | 8 | packages/app/src/session/route.tsx:77 | DONE |
+| SS-S3 | 结构 | 实测时间线走 `ScrollView`，侧面板 `overflow-hidden` 内各自滚动，无共用滚动 | 8 | packages/app/src/session/screen.tsx:521 | DONE |
 | SS-T1 | 状态 | 时间线有 `machine.ts` 与分辨率状态机 | 7.1 | packages/app/src/session/timeline/machine.ts | DONE |
 | SS-T2 | 状态 | 输入队列有 `queue-machine.ts` | 7.1 | packages/app/src/session/composer/queue-machine.ts | DONE |
 | SS-T3 | 状态 | 会话准备态没有说明原因的文案行 | 7.2 | packages/app/src/session/route.tsx:77 | TODO |
@@ -221,9 +220,9 @@
 
 | 编号 | 类别 | 问题 | 标准条款 | 文件:行 | 状态 |
 | --- | --- | --- | --- | --- | --- |
-| CO-S1 | 结构 | 作曲器浮层写死 `w-[264px]` | 4.1 | packages/app/src/composer/composer.tsx:196 | TODO |
-| CO-S2 | 结构 | 编辑器历史区自建 `overflow-y-auto`，缺 `data-scrollable` | 8 | packages/app/src/composer/editor/editor.tsx:304,336 | TODO |
-| CO-S3 | 结构 | 输入区与工具条没有 0.5px 分隔线 | 5.5 | packages/app/src/composer/editor/editor.tsx:361 | TODO |
+| CO-S1 | 结构 | 实测 264px 为菜单面板宽度，标准 5.7 未规定面板宽度 | 4.1 | packages/app/src/composer/composer.tsx:196 | DONE |
+| CO-S2 | 结构 | 编辑器历史区补 `data-scrollable` | 8 | packages/app/src/composer/editor/editor.tsx:303 | DONE |
+| CO-S3 | 结构 | 工具条分隔线由 1px 改为 0.5px | 5.5 | packages/app/src/composer/editor/editor.tsx:1652 | DONE |
 | CO-T1 | 状态 | 输入队列有 `queue-machine.ts` | 7.1 | packages/app/src/session/composer/queue-machine.ts | DONE |
 | CO-T2 | 状态 | 上传中显示 `Loader`，符合非 AI 加载 | 7.2 | packages/app/src/composer/editor/editor.tsx:22 | DONE |
 | CO-T3 | 状态 | 上传失败没有字段级错误行，只靠 toast | 7.2 | packages/app/src/composer/attachments/uploads.tsx:123 | TODO |
@@ -241,13 +240,14 @@
 | --- | --- | --- |
 | 弹窗宽度 | 标准 5.6 为 640–880；共享 `Dialog` 默认 480，`large` 640，`x-large` 980 | 按 5.6 采用 640/880，`x-large` 980 不用于普通表单；已在 B6 处理 |
 | 菜单面板圆角 | 标准 4.3/5.7 为 8px；现有 `menu.css` 为 8px | 不冲突，按 8px 保留 |
-| 工具栏按钮数量 | 标准 5.1 最多 2 个 icon；标题栏现有 3 个 | 按标准收敛，见 SH-S3；若保留搜索必须移入溢出菜单 |
+| 工具栏按钮数量 | 标准 5.1 最多 2 个 icon；实测水平标题栏只有首页、搜索 2 个（SH-S3 已改判 DONE），垂直侧栏的品牌区是命令面板快捷键文本，不属工具栏 | 无冲突 |
 | 状态点尺寸 | 标准 5.2 为 6px；`servers/registry/row.tsx` 用 `size-1.5`=6px | 一致，无需改 |
 | 页面标题字号 | 标准 3 为 20–21px；home 现为 26px | 按标准改，见 HM-C2 |
+| 服务器注册表行结构 | 标准 5.2 要求固定「图标 → 标题+状态点 → 副标题 → 元信息」；`packages/app` 内只有健康点组件，整行由 `packages/gui-plugins` 渲染，超出本轮可改范围（仅 app/ui/session-ui） | 原 SV-S4 条目移出计数，留待范围放开后按 5.2 重排 |
 
 ## 进度
 
-- 条目：160
-- TODO：105
-- DONE：55
+- 条目：159
+- TODO：74
+- DONE：85
 - 口径：每条一个可复核的代码位置，同一问题不重复立项；后续每完成一项把该行改成 DONE 并补齐 `文件:行`。

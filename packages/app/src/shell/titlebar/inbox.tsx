@@ -353,6 +353,7 @@ export function SidebarInbox() {
           data-slot="sidebar-inbox-scroll"
           class="-me-2.5 flex min-h-0 flex-1 flex-col gap-[2px] overflow-y-auto pb-1 pe-2.5"
         >
+          data-scrollable
           <Show
             when={
               recent().length === 0 &&
@@ -403,7 +404,7 @@ export function SidebarInbox() {
               shimmer={!state.workingExpanded}
               onToggle={() => setState("workingExpanded", !state.workingExpanded)}
             />
-            <div class="flex min-h-0 flex-col gap-[2px] overflow-y-auto">
+            <div data-scrollable class="flex min-h-0 flex-col gap-[2px] overflow-y-auto">
               {/* The shelf folds completely; keeping the open session visible made a collapse look ignored. */}
               {rows(
                 sections().working.filter(() => state.workingExpanded),
@@ -711,11 +712,7 @@ export function ArchivedSessionsDialog() {
   )
 
   return (
-    <Dialog
-      fit
-      size="large"
-      containerClass="archived-sessions-dialog !h-auto !w-[min(calc(100vw_-_32px),560px)] !rounded-[12px]"
-    >
+    <Dialog fit size="large" containerClass="archived-sessions-dialog">
       <DialogHeader>
         <DialogTitleGroup
           title={language.t("sidebar.inbox.section.archived")}

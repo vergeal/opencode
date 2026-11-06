@@ -300,6 +300,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           ref={content}
           data-slot="composer-content"
           data-history-preview={historyLayout.height !== undefined ? "" : undefined}
+          data-scrollable
           class="min-h-0"
           classList={{ "flex-1 overflow-y-auto no-scrollbar": historyLayout.height !== undefined }}
           style={{ "--composer-fade-bottom": `${fadeBottom()}px` }}
@@ -1648,8 +1649,8 @@ function ComposerEditorTouchBar(props: { controller: ComposerEditorModel; docked
       data-slot="composer-touch-bar"
       class="flex shrink-0 items-center gap-1 bg-v2-background-bg-base"
       classList={{
-        "mt-2 h-14 rounded-xl border border-v2-border-border-base px-1.5": !props.docked,
-        "box-content h-14 border-t border-v2-border-border-base px-2 pb-[var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px))]":
+        "mt-2 h-14 rounded-xl border-[0.5px] border-v2-border-border-base px-1.5": !props.docked,
+        "box-content h-14 border-t-[0.5px] border-v2-border-border-base px-2 pb-[var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px))]":
           !!props.docked,
       }}
     >
