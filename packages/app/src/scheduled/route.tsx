@@ -15,7 +15,7 @@ import { sessionHref } from "@/shell/routes/session"
 import { PageHeader, PagePanel, PageToolbar } from "@/shell/page"
 import { errorMessage } from "@/shell/layout/helpers"
 import { showToast } from "@/shell/notifications/toast"
-import { cronPrompt, localTimeZone, parseCron } from "./cron"
+import { parseSchedule, schedulePrompt } from "./cron"
 import { describeOutcome, describeStatus, describeWhen, formatTime, taskName } from "./describe"
 import { tasksOf, transition, type TaskEvent, type TaskState } from "./machine"
 import { NewScheduledTaskDialog, type NewTaskInput } from "./new-dialog"
@@ -233,17 +233,31 @@ export function ScheduledScreen() {
     }
   }
 
+  const infer = async (prompt: string) => {
+    const client = api()
+
+    if (!client) return
+
+    try {
+      const generated = await client.experimental.generate.text({ prompt: schedulePrompt(prompt) })
+
+      return parseSchedule(generated.text)
+    } catch {
+      return
+    }
+  }
+
   const create = async (input: NewTaskInput) => {
     const client = api()
 
     if (!client) return false
 
     try {
-      const generated = await client.experimental.generate.text({ prompt: cronPrompt(input.prompt) })
-      const cron = parseCron(generated.text)
+      // The dialog already parsed the prompt, so a successful parse here is reused instead of generated again.
+      const schedule = input.schedule ?? (await infer(input.prompt))
 
       // Without a schedule there is nothing to create, so keep the dialog open and explain what was missing.
-      if (!cron) {
+      if (!schedule) {
         showToast({
           variant: "error",
           title: language.t("scheduled.create.parseFailed"),
@@ -253,21 +267,20 @@ export function ScheduledScreen() {
         return false
       }
 
-      const session = await client.session.create({ location: { directory: input.directory }, title: input.name })
+      const session = await client.session.create({ location: { directory: input.directory } })
 
       const created = await client.experimental.schedule.create({
         sessionID: session.id,
-        name: input.name,
         prompt: input.prompt,
-        when: { cron, tz: localTimeZone() },
+        when: { cron: schedule.cron, tz: schedule.timezone },
       })
 
       // Create always enables, so "save without enabling" is one pause right after it.
-      const schedule =
+      const saved =
         input.enabled === false ? await client.experimental.schedule.pause({ scheduleID: created.id }) : created
 
-      replace(schedule)
-      setSelected(schedule.id)
+      replace(saved)
+      setSelected(saved.id)
       setFilter("all")
       setQuery("")
 
@@ -300,7 +313,7 @@ export function ScheduledScreen() {
   const openNew = () => {
     const directory = context()?.data.session.list()[0]?.location.directory ?? ""
 
-    void dialog.show(() => <NewScheduledTaskDialog directory={directory} onCreate={create} />)
+    void dialog.show(() => <NewScheduledTaskDialog directory={directory} onCreate={create} onInfer={infer} />)
   }
 
   const confirmRemove = (task: ScheduleInfo) =>
