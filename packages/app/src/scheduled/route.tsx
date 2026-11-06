@@ -5,6 +5,7 @@ import { Dialog, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/
 import { Icon } from "@opencode/ui/icon"
 import { Loader } from "@opencode/ui/loader"
 import { TextInput } from "@opencode/ui/text-input"
+import { getFilename } from "@opencode/util/path"
 import { Option, Schema } from "effect"
 import { For, Show, createEffect, createMemo, createSignal, on } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -52,6 +53,21 @@ function promptOf(task: ScheduleInfo) {
   return task.action.type === "prompt" ? task.action.prompt : ""
 }
 
+/** A failed last run outranks the lifecycle status, so a task that just broke never reads as healthy. */
+function toneOf(task: ScheduleInfo): "success" | "danger" | "neutral" {
+  if (task.lastOutcome === "failed") return "danger"
+
+  return task.status === "active" ? "success" : "neutral"
+}
+
+/** The first line of the last output, so a run row stays one line. */
+function outputPreview(task: ScheduleInfo) {
+  return task.lastOutput
+    ?.split("\n")
+    .find((line) => line.trim())
+    ?.trim()
+}
+
 export function ScheduledScreen() {
   const language = useLanguage()
   const servers = useServers()
@@ -77,6 +93,29 @@ export function ScheduledScreen() {
   const [busy, setBusy] = createSignal<string>()
 
   const tasks = () => tasksOf(state())
+
+  /** A task only stores its session, so the project name comes from that session's directory. */
+  const projects = createMemo(() => {
+    const sessions = context()?.data.session.list() ?? []
+
+    return new Map(sessions.map((session) => [session.id, session.location.directory] as const))
+  })
+
+  const directoryOf = (task: ScheduleInfo) => (task.sessionID ? projects().get(task.sessionID) : undefined)
+
+  const projectOf = (task: ScheduleInfo) => {
+    const directory = directoryOf(task)
+
+    return directory ? getFilename(directory) : undefined
+  }
+
+  const linkTo = (task: ScheduleInfo) => {
+    const conn = connection()
+
+    if (!conn || !task.sessionID) return undefined
+
+    return sessionHref(ServerConnection.key(conn), task.sessionID)
+  }
 
   const load = async () => {
     const client = api()
@@ -201,12 +240,16 @@ export function ScheduledScreen() {
     try {
       const session = await client.session.create({ location: { directory: input.directory }, title: input.name })
 
-      const schedule = await client.experimental.schedule.create({
+      const created = await client.experimental.schedule.create({
         sessionID: session.id,
         name: input.name,
         prompt: input.prompt,
         when: input.when,
       })
+
+      // Create always enables, so "save without enabling" is one pause right after it.
+      const schedule =
+        input.enabled === false ? await client.experimental.schedule.pause({ scheduleID: created.id }) : created
 
       replace(schedule)
       setSelected(schedule.id)
@@ -272,20 +315,24 @@ export function ScheduledScreen() {
         <div class="scheduled-filters" role="group" aria-label={language.t("scheduled.filter.all")}>
           <For each={FILTERS}>
             {(key) => (
-              <Button
-                size="small"
-                variant={filter() === key ? "contrast" : "ghost-muted"}
+              <button
+                type="button"
+                class="scheduled-chip"
+                data-selected={filter() === key ? "" : undefined}
                 aria-pressed={filter() === key}
                 onClick={() => setFilter(key)}
               >
                 {language.t(FILTER_LABELS[key])}
-                <span class="scheduled-filter-count">{counts()[key] ?? 0}</span>
-              </Button>
+                <span class="scheduled-chip-count">{counts()[key] ?? 0}</span>
+              </button>
             )}
           </For>
         </div>
         <div class="scheduled-search">
           <TextInput
+            appearance="base"
+            surface="layer-1"
+            leadingIcon={<Icon name="magnifying-glass" size="small" />}
             value={query()}
             placeholder={language.t("scheduled.search.placeholder")}
             aria-label={language.t("scheduled.search.placeholder")}
@@ -361,17 +408,46 @@ export function ScheduledScreen() {
                     data-selected={selected() === task.id ? "" : undefined}
                     onClick={() => setSelected(task.id)}
                   >
-                    <span class="scheduled-row-head">
-                      <span class="scheduled-row-name">{taskName(task, language)}</span>
-                      <span class="scheduled-row-time">{formatTime(task.nextDueAt)}</span>
+                    <span class="scheduled-row-icon" aria-hidden="true">
+                      <Icon name="refresh" size="small" />
                     </span>
-                    <span class="scheduled-row-when">{describeWhen(task, language)}</span>
-                    <span class="scheduled-row-meta">
-                      <span class="scheduled-dot" data-status={task.status} data-outcome={task.lastOutcome} />
-                      <span>{describeStatus(task.status, language)}</span>
-                      <span class="scheduled-sep" />
-                      <span>
-                        {language.t("scheduled.detail.runs")} {task.runCount}
+                    <span class="scheduled-row-body">
+                      <span class="scheduled-row-top">
+                        <span class="scheduled-row-name">{taskName(task, language)}</span>
+                        <span class="scheduled-dot" data-status={task.status} data-outcome={task.lastOutcome} />
+                      </span>
+                      <span class="scheduled-row-sub">
+                        <span>{describeWhen(task, language)}</span>
+                        <Show when={projectOf(task)}>
+                          {(project) => (
+                            <>
+                              <span class="scheduled-sep" />
+                              <span>{project()}</span>
+                            </>
+                          )}
+                        </Show>
+                      </span>
+                      <span class="scheduled-row-meta">
+                        <Show
+                          when={task.lastOutcome === "failed" || task.status !== "active"}
+                          fallback={
+                            <>
+                              <span>
+                                {language.t("scheduled.detail.next")} {formatTime(task.nextDueAt)}
+                              </span>
+                              <span class="scheduled-sep" />
+                              <span>
+                                {language.t("scheduled.detail.runs")} {task.runCount}
+                              </span>
+                            </>
+                          }
+                        >
+                          <span class="scheduled-badge" data-tone={toneOf(task)}>
+                            {task.lastOutcome === "failed"
+                              ? describeOutcome("failed", language)
+                              : describeStatus(task.status, language)}
+                          </span>
+                        </Show>
                       </span>
                     </span>
                   </button>
@@ -403,9 +479,7 @@ export function ScheduledScreen() {
                 fallback={
                   <div class="scheduled-placeholder">
                     <p class="scheduled-placeholder-title">{language.t("scheduled.detail.select.title")}</p>
-                    <p class="scheduled-placeholder-description">
-                      {language.t("scheduled.detail.select.description")}
-                    </p>
+                    <p class="scheduled-placeholder-description">{language.t("scheduled.detail.select.description")}</p>
                   </div>
                 }
               >
@@ -417,117 +491,143 @@ export function ScheduledScreen() {
           >
             {(task) => (
               <>
-                  <div class="scheduled-detail-head">
-                    <div class="scheduled-detail-heading">
+                <div class="scheduled-detail-head">
+                  <div class="scheduled-detail-heading">
+                    <div class="scheduled-detail-title-row">
                       <h2>{taskName(task(), language)}</h2>
-                      <p>
-                        {describeWhen(task(), language)}
-                        <span class="scheduled-sep" />
-                        {task().tz}
-                      </p>
-                    </div>
-                    <div class="scheduled-detail-actions">
-                      <Show when={task().status !== "done"}>
-                        <Button
-                          size="small"
-                          variant="neutral"
-                          disabled={busy() === task().id}
-                          onClick={() => void setStatus(task(), task().status === "paused" ? "resume" : "pause")}
-                        >
-                          {language.t(
-                            task().status === "paused" ? "scheduled.detail.resume" : "scheduled.detail.pause",
-                          )}
-                        </Button>
+                      <span class="scheduled-badge" data-tone={task().status === "active" ? "success" : "neutral"}>
+                        {describeStatus(task().status, language)}
+                      </span>
+                      <Show when={task().lastOutcome === "failed"}>
+                        <span class="scheduled-badge" data-tone="danger">
+                          {describeOutcome("failed", language)}
+                        </span>
                       </Show>
+                    </div>
+                    <p class="scheduled-detail-sub">
+                      {describeWhen(task(), language)}
+                      <span class="scheduled-sep" />
+                      {task().tz}
+                      <Show when={projectOf(task())}>
+                        {(project) => (
+                          <>
+                            <span class="scheduled-sep" />
+                            {project()}
+                          </>
+                        )}
+                      </Show>
+                    </p>
+                  </div>
+                  <div class="scheduled-detail-actions">
+                    <Show when={task().status !== "done"}>
                       <Button
                         size="small"
-                        variant="ghost-danger"
-                        icon="outline-trash"
+                        variant="neutral"
                         disabled={busy() === task().id}
-                        onClick={() => void confirmRemove(task())}
+                        onClick={() => void setStatus(task(), task().status === "paused" ? "resume" : "pause")}
                       >
-                        {language.t("scheduled.detail.delete")}
+                        {language.t(task().status === "paused" ? "scheduled.detail.resume" : "scheduled.detail.pause")}
                       </Button>
-                    </div>
-                  </div>
-
-                  <div class="scheduled-status-line">
-                    <span class="scheduled-status" data-status={task().status}>
-                      {language.t(`scheduled.status.${task().status}`)}
-                    </span>
-                  </div>
-
-                  <dl class="scheduled-facts">
-                    <div>
-                      <dt>{language.t("scheduled.detail.next")}</dt>
-                      <dd>{formatTime(task().nextDueAt)}</dd>
-                    </div>
-                    <div>
-                      <dt>{language.t("scheduled.detail.runs")}</dt>
-                      <dd>{task().runCount}</dd>
-                    </div>
-                    <div>
-                      <dt>{language.t("scheduled.detail.last")}</dt>
-                      <dd>{task().lastOutcome ? describeOutcome(task().lastOutcome, language) : "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>{language.t("scheduled.detail.timezone")}</dt>
-                      <dd>{task().tz}</dd>
-                    </div>
-                  </dl>
-
-                  <div class="scheduled-section">
-                    <span class="scheduled-section-label">{language.t("scheduled.detail.recent")}</span>
-                    <Show
-                      when={task().lastFiredAt}
-                      fallback={
-                        <p class="scheduled-placeholder-description">{language.t("scheduled.detail.recent.empty")}</p>
-                      }
-                    >
-                      {(firedAt) => (
-                        <div class="scheduled-run-row">
-                          <span class="scheduled-dot" data-status={task().status} data-outcome={task().lastOutcome} />
-                          <span class="scheduled-run-time">{formatTime(firedAt())}</span>
-                          <span class="scheduled-run-outcome">
-                            {task().lastOutcome ? describeOutcome(task().lastOutcome, language) : "—"}
-                          </span>
-                        </div>
-                      )}
                     </Show>
+                    <Button
+                      size="small"
+                      variant="ghost-danger"
+                      icon="outline-trash"
+                      disabled={busy() === task().id}
+                      onClick={() => void confirmRemove(task())}
+                    >
+                      {language.t("scheduled.detail.delete")}
+                    </Button>
                   </div>
+                </div>
 
-                  <div class="scheduled-section">
-                    <span class="scheduled-section-label">{language.t("scheduled.detail.prompt")}</span>
-                    <pre class="scheduled-prompt">{promptOf(task())}</pre>
+                <div class="scheduled-stats">
+                  <div class="scheduled-stat">
+                    <div class="scheduled-stat-key">{language.t("scheduled.detail.next")}</div>
+                    <div class="scheduled-stat-value">{formatTime(task().nextDueAt)}</div>
                   </div>
+                  <div class="scheduled-stat">
+                    <div class="scheduled-stat-key">{language.t("scheduled.detail.directory")}</div>
+                    <div class="scheduled-stat-value scheduled-stat-path">{projectOf(task()) ?? "—"}</div>
+                  </div>
+                  <div class="scheduled-stat">
+                    <div class="scheduled-stat-key">{language.t("scheduled.detail.runs")}</div>
+                    <div class="scheduled-stat-value">{task().runCount}</div>
+                  </div>
+                  <div class="scheduled-stat">
+                    <div class="scheduled-stat-key">{language.t("scheduled.detail.last")}</div>
+                    <div class="scheduled-stat-value scheduled-stat-path">
+                      {task().lastOutcome ? describeOutcome(task().lastOutcome, language) : "—"}
+                    </div>
+                  </div>
+                </div>
 
-                  <Show when={task().lastOutput?.trim()}>
-                    {(output) => (
-                      <div class="scheduled-section">
-                        <span class="scheduled-section-label">{language.t("scheduled.detail.output")}</span>
-                        <pre class="scheduled-output">{output()}</pre>
+                <div class="scheduled-section">
+                  <span class="scheduled-section-label">{language.t("scheduled.detail.recent")}</span>
+                  <Show
+                    when={task().lastFiredAt}
+                    fallback={
+                      <div class="scheduled-run">
+                        <span class="scheduled-run-out">{language.t("scheduled.detail.recent.empty")}</span>
+                        <Show when={linkTo(task())}>
+                          {(href) => (
+                            <span class="scheduled-run-right">
+                              <a class="scheduled-run-link" href={href()}>
+                                {language.t("scheduled.detail.openSession")}
+                                <Icon name="arrow-up-right" size="small" />
+                              </a>
+                            </span>
+                          )}
+                        </Show>
+                      </div>
+                    }
+                  >
+                    {(firedAt) => (
+                      <div class="scheduled-run">
+                        <span class="scheduled-dot" data-status={task().status} data-outcome={task().lastOutcome} />
+                        <span class="scheduled-run-when">{formatTime(firedAt())}</span>
+                        <span class="scheduled-run-out">
+                          {outputPreview(task()) ??
+                            (task().lastOutcome ? describeOutcome(task().lastOutcome, language) : "—")}
+                        </span>
+                        <span class="scheduled-run-right">
+                          <Show when={task().lastOutcome}>
+                            {(outcome) => (
+                              <span class="scheduled-badge" data-tone={toneOf(task())}>
+                                {describeOutcome(outcome(), language)}
+                              </span>
+                            )}
+                          </Show>
+                          <Show when={linkTo(task())}>
+                            {(href) => (
+                              <a class="scheduled-run-link" href={href()}>
+                                {language.t("scheduled.detail.openSession")}
+                                <Icon name="arrow-up-right" size="small" />
+                              </a>
+                            )}
+                          </Show>
+                        </span>
                       </div>
                     )}
                   </Show>
+                </div>
 
-                  <Show when={task().sessionID}>
-                    {(sessionID) => (
-                      <div class="scheduled-section">
-                        <span class="scheduled-section-label">{language.t("scheduled.detail.session")}</span>
-                        <a
-                          class="scheduled-session-link"
-                          // SAFETY: AppLayout renders this route only when at least one server is connected.
-                          href={sessionHref(ServerConnection.key(connection()!), sessionID())}
-                        >
-                          {language.t("scheduled.detail.openSession")}
-                          <Icon name="arrow-up-right" size="small" />
-                        </a>
-                      </div>
-                    )}
-                  </Show>
-                </>
-              )}
-            </Show>
+                <div class="scheduled-section">
+                  <span class="scheduled-section-label">{language.t("scheduled.detail.prompt")}</span>
+                  <pre class="scheduled-prompt">{promptOf(task())}</pre>
+                </div>
+
+                <Show when={task().lastOutput?.trim()}>
+                  {(output) => (
+                    <div class="scheduled-section">
+                      <span class="scheduled-section-label">{language.t("scheduled.detail.output")}</span>
+                      <pre class="scheduled-output">{output()}</pre>
+                    </div>
+                  )}
+                </Show>
+              </>
+            )}
+          </Show>
         </section>
       </div>
     </PagePanel>

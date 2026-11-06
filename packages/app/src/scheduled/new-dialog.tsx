@@ -14,6 +14,8 @@ export type NewTaskInput = {
   prompt: string
   directory: string
   when: { cron: string } | { every: string } | { in: string } | { at: string }
+  /** Create always enables; `false` pauses the task right after it is saved. */
+  enabled?: boolean
 }
 
 function whenInput(mode: WhenMode, value: string): NewTaskInput["when"] {
@@ -72,10 +74,8 @@ export function NewScheduledTaskDialog(props: {
 
   const valid = createMemo(() => form.prompt.trim() !== "" && form.value.trim() !== "" && form.directory.trim() !== "")
 
-  const submit = async () => {
+  const submit = async (enabled: boolean) => {
     if (!valid() || form.submitting) return
-
-    const value = form.value.trim()
 
     setForm({ submitting: true, error: undefined })
 
@@ -84,7 +84,8 @@ export function NewScheduledTaskDialog(props: {
         name: form.name.trim() || undefined,
         prompt: form.prompt.trim(),
         directory: form.directory.trim(),
-        when: whenInput(form.mode, value),
+        when: whenInput(form.mode, form.value.trim()),
+        enabled,
       })
 
       // Keep the form and its values when the request failed, so the user can fix and retry.
@@ -101,92 +102,109 @@ export function NewScheduledTaskDialog(props: {
   }
 
   return (
-    <Dialog fit>
+    <Dialog size="x-large" class="scheduled-create">
       <DialogHeader hideClose>
-        <DialogTitleGroup
-          title={language.t("scheduled.create.title")}
-          description={language.t("scheduled.create.description")}
-        />
+        <DialogTitleGroup title={language.t("scheduled.create.title")} />
       </DialogHeader>
 
-      <DialogBody class="flex w-full min-w-0 flex-col gap-4">
-        <label class="scheduled-field">
-          <span>{language.t("scheduled.create.name")}</span>
-          <TextInput
-            autofocus
-            value={form.name}
-            placeholder={language.t("scheduled.create.name.placeholder")}
-            onInput={(event) => setForm("name", event.currentTarget.value)}
-          />
-        </label>
+      <DialogBody>
+        <div class="scheduled-create-body" data-scrollable>
+          <label class="scheduled-create-field">
+            <span class="scheduled-create-label">{language.t("scheduled.create.prompt")}</span>
+            <Textarea
+              class="scheduled-create-prompt"
+              rows={4}
+              autofocus
+              value={form.prompt}
+              placeholder={language.t("scheduled.create.prompt.placeholder")}
+              onInput={(event) => setForm("prompt", event.currentTarget.value)}
+            />
+          </label>
 
-        <label class="scheduled-field">
-          <span>{language.t("scheduled.create.prompt")}</span>
-          <Textarea
-            rows={4}
-            value={form.prompt}
-            placeholder={language.t("scheduled.create.prompt.placeholder")}
-            onInput={(event) => setForm("prompt", event.currentTarget.value)}
-          />
-        </label>
+          <div class="scheduled-create-row">
+            <label class="scheduled-create-field">
+              <span class="scheduled-create-label">{language.t("scheduled.create.name")}</span>
+              <TextInput
+                appearance="base"
+                value={form.name}
+                placeholder={language.t("scheduled.create.name.placeholder")}
+                onInput={(event) => setForm("name", event.currentTarget.value)}
+              />
+            </label>
 
-        <div class="scheduled-field">
-          <span>{language.t("scheduled.create.when")}</span>
-          <div class="scheduled-modes" role="group" aria-label={language.t("scheduled.create.when")}>
-            <For each={MODES}>
-              {(mode) => (
-                <Button
-                  size="small"
-                  variant={form.mode === mode ? "contrast" : "neutral"}
-                  aria-pressed={form.mode === mode}
-                  onClick={() => {
-                    setForm("mode", mode)
-                    setForm("value", "")
-                  }}
-                >
-                  {language.t(LABELS[mode])}
-                </Button>
-              )}
-            </For>
+            <label class="scheduled-create-field">
+              <span class="scheduled-create-label">{language.t("scheduled.create.directory")}</span>
+              <TextInput
+                appearance="base"
+                class="scheduled-mono"
+                value={form.directory}
+                onInput={(event) => setForm("directory", event.currentTarget.value)}
+              />
+              <small class="scheduled-create-hint">{language.t("scheduled.create.directory.hint")}</small>
+            </label>
           </div>
-          <TextInput
-            value={form.value}
-            placeholder={language.t(PLACEHOLDERS[form.mode])}
-            onInput={(event) => setForm("value", event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return
-              event.preventDefault()
-              void submit()
-            }}
-          />
+
+          <div class="scheduled-create-field">
+            <span class="scheduled-create-label">{language.t("scheduled.create.when")}</span>
+            <div class="scheduled-modes" role="group" aria-label={language.t("scheduled.create.when")}>
+              <For each={MODES}>
+                {(mode) => (
+                  <button
+                    type="button"
+                    class="scheduled-chip"
+                    data-selected={form.mode === mode ? "" : undefined}
+                    aria-pressed={form.mode === mode}
+                    onClick={() => {
+                      setForm("mode", mode)
+                      setForm("value", "")
+                    }}
+                  >
+                    {language.t(LABELS[mode])}
+                  </button>
+                )}
+              </For>
+            </div>
+            <TextInput
+              appearance="base"
+              value={form.value}
+              placeholder={language.t(PLACEHOLDERS[form.mode])}
+              onInput={(event) => setForm("value", event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return
+                event.preventDefault()
+                void submit(true)
+              }}
+            />
+          </div>
+
+          <Show when={form.error}>
+            {(message) => (
+              <p class="scheduled-form-error" role="alert">
+                {message()}
+              </p>
+            )}
+          </Show>
         </div>
-
-        <label class="scheduled-field">
-          <span>{language.t("scheduled.create.directory")}</span>
-          <TextInput
-            value={form.directory}
-            class="scheduled-mono"
-            onInput={(event) => setForm("directory", event.currentTarget.value)}
-          />
-          <small>{language.t("scheduled.create.directory.hint")}</small>
-        </label>
-
-        <Show when={form.error}>
-          {(message) => (
-            <p class="scheduled-form-error" role="alert">
-              {message()}
-            </p>
-          )}
-        </Show>
       </DialogBody>
 
       <DialogFooter>
-        <Button variant="neutral" onClick={() => dialog.close()}>
-          {language.t("common.cancel")}
-        </Button>
-        <Button variant="submit" disabled={!valid() || form.submitting} onClick={() => void submit()}>
-          {language.t("scheduled.create.submit")}
-        </Button>
+        <p class="scheduled-create-foot-hint">{language.t("scheduled.create.footer.hint")}</p>
+        <div class="scheduled-create-actions">
+          <Button variant="ghost" onClick={() => dialog.close()}>
+            {language.t("common.cancel")}
+          </Button>
+          <Button variant="neutral" disabled={!valid() || form.submitting} onClick={() => void submit(false)}>
+            {language.t("scheduled.create.saveOnly")}
+          </Button>
+          <button
+            type="button"
+            class="scheduled-primary"
+            disabled={!valid() || form.submitting}
+            onClick={() => void submit(true)}
+          >
+            {language.t("scheduled.create.submit.enabled")}
+          </button>
+        </div>
       </DialogFooter>
     </Dialog>
   )
