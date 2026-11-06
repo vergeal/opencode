@@ -23,8 +23,6 @@ export type NewTaskInput = {
   prompt: string
   directory: string
   permissions?: Array<{ action: string; resource: string; effect: "allow" | "deny" | "ask" }>
-  /** Create always enables; `false` pauses the task right after it is saved. */
-  enabled?: boolean
   /** The schedule the dialog already read from the prompt, so creating does not generate twice. */
   schedule?: ScheduleDraft
 }
@@ -115,7 +113,7 @@ export function NewScheduledTaskDialog(props: {
     ),
   )
 
-  const submit = async (enabled: boolean) => {
+  const submit = async () => {
     if (!valid() || form.submitting) return
 
     setForm("submitting", true)
@@ -134,7 +132,6 @@ export function NewScheduledTaskDialog(props: {
         prompt: form.prompt.trim(),
         directory: form.directory.trim(),
         permissions: form.permission === "read-only" ? READ_ONLY_PERMISSIONS : undefined,
-        enabled,
         schedule: draft,
       })
 
@@ -386,16 +383,8 @@ export function NewScheduledTaskDialog(props: {
             </button>
           </Show>
           <Show when={form.step === 3}>
-            <Button variant="neutral" disabled={!valid() || busy()} onClick={() => void submit(false)}>
-              {language.t("scheduled.create.saveOnly")}
-            </Button>
-            <button
-              type="button"
-              class="scheduled-primary"
-              disabled={!valid() || busy()}
-              onClick={() => void submit(true)}
-            >
-              {language.t("scheduled.create.submit.enabled")}
+            <button type="button" class="scheduled-primary" disabled={!valid() || busy()} onClick={() => void submit()}>
+              {language.t("scheduled.create.submit")}
             </button>
           </Show>
         </div>

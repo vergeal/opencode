@@ -359,9 +359,8 @@ export function ScheduledScreen() {
           when: { cron: schedule.cron, tz: schedule.timezone },
         })
 
-        // Create always enables, so "save without enabling" is one pause right after it.
-        const saved =
-          input.enabled === false ? await client.experimental.schedule.pause({ scheduleID: created.id }) : created
+        // New tasks start paused; the user enables one from the task list once it looks right.
+        const saved = await client.experimental.schedule.pause({ scheduleID: created.id }).catch(() => created)
 
         // The task owns this session as its execution unit. Archiving keeps it out of conversations and tabs;
         // its assistant messages are the execution log shown in the task detail.
