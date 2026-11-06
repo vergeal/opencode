@@ -37,7 +37,11 @@ const SidebarState = Persistence.struct({
   projectsCollapsed: Schema.Boolean,
   expanded: Persistence.record(Schema.Boolean),
   order: Persistence.record(Schema.mutable(Schema.Array(Schema.String))),
+  sessions: Persistence.record(Schema.mutable(Schema.Array(Schema.String))),
 })
+
+/** Project rows and session rows share one drag provider, so each list needs its own sortable group. */
+const PROJECT_SORT_GROUP = "sidebar-projects"
 
 export function SidebarOrganized(props: {
   currentTab: Tab | undefined
@@ -98,6 +102,7 @@ export function SidebarOrganized(props: {
     projectsCollapsed: false,
     expanded: {},
     order: {},
+    sessions: {},
   })
 
   const isOpenTab = (server: ServerConnection.Key, sessionId: string) =>
@@ -144,6 +149,7 @@ export function SidebarOrganized(props: {
                   ready={ready()}
                   onExpand={(key) => setState("expanded", key, (value) => !value)}
                   onReorder={(server, ids) => setState("order", server, ids)}
+                  onSessionsReorder={(key, ids) => setState("sessions", key, ids)}
                 />
               </div>
             </Show>
@@ -171,6 +177,7 @@ function ProjectList(props: {
   ready: boolean
   onExpand: (key: string) => void
   onReorder: (server: string, ids: string[]) => void
+  onSessionsReorder: (key: string, ids: string[]) => void
 }) {
   const language = useLanguage()
 
@@ -254,6 +261,20 @@ function ProjectList(props: {
 
   const grouped = createMemo(() => Map.groupBy(records(), (record) => pathKey(record.project.worktree)))
 
+  const sessionOrderKey = (projectID: string) => `${server()}:${projectID}`
+
+  // A saved order wins for the sessions it lists; anything newer than that order still floats to the top by
+  // activity, so a session that arrives after a drag is not buried under the pinned ones.
+  const orderSessions = (key: string, list: ReturnType<typeof buildHomeSessionRecords>) => {
+    const saved = props.state.sessions[key]
+
+    if (!saved?.length) return list
+    const ranked = new Set(saved)
+    const byID = new Map(list.map((record) => [record.session.id, record]))
+
+    return [...list.filter((record) => !ranked.has(record.session.id)), ...saved.flatMap((id) => byID.get(id) ?? [])]
+  }
+
   return (
     <>
       <Show when={connection()}>
@@ -275,21 +296,37 @@ function ProjectList(props: {
               const source = event.operation.source
 
               if (event.canceled || !isSortable(source) || source.initialIndex === source.index) return
-              props.onReorder(
-                ServerConnection.key(conn()),
-                arrayMove(
-                  projects().map((project) => project.id),
-                  source.initialIndex,
-                  source.index,
-                ),
+
+              const group = String(source.group ?? PROJECT_SORT_GROUP)
+
+              if (group === PROJECT_SORT_GROUP) {
+                props.onReorder(
+                  ServerConnection.key(conn()),
+                  arrayMove(
+                    projects().map((project) => project.id),
+                    source.initialIndex,
+                    source.index,
+                  ),
+                )
+
+                return
+              }
+
+              const project = projects().find((item) => sessionOrderKey(item.id) === group)
+
+              if (!project) return
+              const current = orderSessions(group, grouped().get(pathKey(project.worktree)) ?? []).map(
+                (record) => record.session.id,
               )
+
+              props.onSessionsReorder(group, arrayMove(current, source.initialIndex, source.index))
             }}
           >
             <Key each={visible()} by={(project) => `${ServerConnection.key(conn())}:${project.id}`}>
               {(project, index) => {
-                const key = () => `${server()}:${project().id}`
+                const key = () => sessionOrderKey(project().id)
 
-                const projectSessions = () => grouped().get(pathKey(project().worktree)) ?? []
+                const projectSessions = () => orderSessions(key(), grouped().get(pathKey(project().worktree)) ?? [])
 
                 const limit = () => local.sessionLimits[key()] ?? 5
 
@@ -315,24 +352,32 @@ function ProjectList(props: {
                       }
                     >
                       {(record) => (
-                        <ProjectSessionRow
-                          server={ServerConnection.key(conn())}
-                          session={record().session}
-                          openTab={props.isOpenTab(ServerConnection.key(conn()), record().session.id)}
-                          active={
-                            props.highlightActive &&
-                            props.currentTab?.type === "session" &&
-                            props.currentTab.server === ServerConnection.key(conn()) &&
-                            props.currentTab.sessionId === record().session.id
-                          }
-                          onOpen={() => {
-                            props.onSelect({
-                              server: ServerConnection.key(conn()),
-                              sessionId: record().session.id,
-                            })
-                            actions.openProjectSession(conn(), project().worktree, record().session, { preview: true })
-                          }}
-                        />
+                        <SessionRow
+                          sessionID={record().session.id}
+                          group={key()}
+                          index={projectSessions().findIndex((item) => item.session.id === record().session.id)}
+                        >
+                          <ProjectSessionRow
+                            server={ServerConnection.key(conn())}
+                            session={record().session}
+                            openTab={props.isOpenTab(ServerConnection.key(conn()), record().session.id)}
+                            active={
+                              props.highlightActive &&
+                              props.currentTab?.type === "session" &&
+                              props.currentTab.server === ServerConnection.key(conn()) &&
+                              props.currentTab.sessionId === record().session.id
+                            }
+                            onOpen={() => {
+                              props.onSelect({
+                                server: ServerConnection.key(conn()),
+                                sessionId: record().session.id,
+                              })
+                              actions.openProjectSession(conn(), project().worktree, record().session, {
+                                preview: true,
+                              })
+                            }}
+                          />
+                        </SessionRow>
                       )}
                     </Key>
                     <Show when={projectSessions().length > limit()}>
@@ -386,6 +431,13 @@ function ProjectRow(props: {
     get index() {
       return props.index
     },
+    get group() {
+      return PROJECT_SORT_GROUP
+    },
+    get data() {
+      return { group: PROJECT_SORT_GROUP }
+    },
+    accept: (source) => source.data?.group === PROJECT_SORT_GROUP,
   })
 
   return (
@@ -462,10 +514,35 @@ function ProjectRow(props: {
         </span>
       </div>
       <Show when={props.expanded}>
-        <div data-project-action class="flex flex-col gap-[3px] pb-1">
+        <div data-session-list class="flex flex-col gap-[3px] pb-1">
           {props.children}
         </div>
       </Show>
+    </div>
+  )
+}
+
+/** Sessions sort inside their project only: the group pins them to one list and rejects drags from elsewhere. */
+function SessionRow(props: { sessionID: string; group: string; index: number; children: JSX.Element }) {
+  const sortable = useSortable({
+    get id() {
+      return props.sessionID
+    },
+    get index() {
+      return props.index
+    },
+    get group() {
+      return props.group
+    },
+    get data() {
+      return { group: props.group }
+    },
+    accept: (source) => source.data?.group === props.group,
+  })
+
+  return (
+    <div ref={sortable.ref} class="relative shrink-0">
+      {props.children}
     </div>
   )
 }
