@@ -17,7 +17,7 @@ export type TimelinePendingActions = Omit<PendingActions, "status"> & {
 /** A timeline's message actions. A child session's timeline only opens attachments. */
 export function createTimelineActions(
   view: TimelineActionsView,
-  actions: Required<Pick<SessionUserActions, "revert" | "fork" | "chooseModel" | "openAttachment">> & {
+  actions: Required<Pick<SessionUserActions, "revert" | "fork" | "forkAfter" | "chooseModel" | "openAttachment">> & {
     pending: TimelinePendingActions
   },
 ): SessionUserActions {
@@ -37,6 +37,9 @@ export function createTimelineActions(
     },
     get fork() {
       return view.isChild() ? undefined : actions.fork
+    },
+    get forkAfter() {
+      return view.isChild() ? undefined : actions.forkAfter
     },
     get pending() {
       return view.isChild() ? undefined : pending

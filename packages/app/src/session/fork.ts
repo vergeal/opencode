@@ -55,3 +55,41 @@ export function useSessionFork() {
       })
   }
 }
+
+/**
+ * Forks a session after one of its replies: the new session keeps the history through that reply, opens, and leaves the
+ * composer empty so the user continues from there.
+ */
+export function useSessionForkAfter() {
+  const navigate = useNavigate()
+  const data = useData()
+  const serverSDK = useServerSDK()
+  const server = useServer()
+  const language = useLanguage()
+
+  return async (input: { sessionID: string; messageID: string }) => {
+    const messages = data.session.message.list(input.sessionID)
+    const position = messages.findIndex((message) => message.id === input.messageID)
+
+    if (position === -1) return false
+
+    // `before` copies the history above a message, so the next message keeps this reply and drops the rest. The last
+    // reply has no next message, and `through` copies the full history.
+    const next = messages[position + 1]
+
+    return serverSDK.api.session
+      .fork(next ? { sessionID: input.sessionID, before: next.id } : { sessionID: input.sessionID })
+      .then((forked) => {
+        data.session.remember(forked)
+        navigate(sessionHref(server.key, forked.id))
+
+        return true
+      })
+      .catch((cause: unknown) => {
+        const message = cause instanceof Error ? cause.message : String(cause)
+        showToast({ title: language.t("common.requestFailed"), description: message })
+
+        return false
+      })
+  }
+}

@@ -281,6 +281,7 @@ const source = {
   "ui.message.copyMessage": "Copy message",
   "ui.message.copyFullMessage": "Copy full message",
   "ui.message.forkMessage": "Fork from here",
+  "ui.message.forkResponse": "Fork from this response",
   "ui.message.revertMessage": "Rewind to here",
   "ui.message.moreActions": "More actions",
   "ui.message.moveToQueue": "Move to queue",

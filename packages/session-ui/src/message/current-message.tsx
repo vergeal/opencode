@@ -60,6 +60,7 @@ export function SessionAssistantContent(props: {
   content: SessionMessageAssistant["content"][number]
   contentID: string
   showAssistantCopyPartID?: string | null
+  onFork?: () => void
   turnDurationMs?: number | null
   turnTokensPerSecond?: number
   sources?: TurnSources
@@ -79,6 +80,7 @@ export function SessionAssistantContent(props: {
             text={content().text}
             message={props.message}
             showCopy={props.showAssistantCopyPartID === props.contentID}
+            onFork={props.onFork}
             turnDurationMs={props.turnDurationMs}
             turnTokensPerSecond={props.turnTokensPerSecond}
             sources={props.sources}

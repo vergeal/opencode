@@ -392,6 +392,7 @@ export function CurrentUserMessageDisplay(props: {
   })
   // In a run, only the last message keeps the meta line; the others offer their actions beside the bubble.
   // Bubble corners tighten where two bubbles meet, as in the iOS app's grouped corners.
+
   const folded = createMemo(() => !!props.run?.below && !!props.text)
 
   const meetsAbove = createMemo(
@@ -1183,6 +1184,8 @@ export function AssistantTextContent(props: {
   text: string
   message: SessionMessageAssistant
   showCopy: boolean
+  /** Starts a new session whose history ends after this reply. */
+  onFork?: () => void
   turnDurationMs?: number | null
   turnTokensPerSecond?: number
   /** The finished turn's web searches and fetches, shown as a chip in its footer. */
@@ -1292,6 +1295,19 @@ export function AssistantTextContent(props: {
           onClick={copy}
           aria-label={copied() ? i18n.t("ui.message.copied") : i18n.t("ui.message.copyResponse")}
         />
+        <Show when={props.onFork}>
+          {(onFork) => (
+            <MessageActionButton
+              icon="fork"
+              size="small"
+              label={i18n.t("ui.message.forkResponse")}
+              disabled={props.message.time.completed === undefined}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => onFork()()}
+              aria-label={i18n.t("ui.message.forkResponse")}
+            />
+          )}
+        </Show>
         <Show when={meta().length > 0}>
           <span data-slot="text-part-meta">
             <MetaItems items={meta()} slot="text-part" />

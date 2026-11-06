@@ -186,6 +186,7 @@ export const dict = {
   "ui.message.copy": "复制",
   "ui.message.copyMessage": "复制消息",
   "ui.message.forkMessage": "从此消息创建新会话",
+  "ui.message.forkResponse": "从此回答开分支",
   "ui.message.revertMessage": "撤销此消息",
   "ui.message.copyResponse": "复制回复",
   "ui.message.copied": "已复制！",

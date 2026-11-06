@@ -241,6 +241,7 @@ function setup() {
             {
               revert: () => {},
               fork: () => {},
+              forkAfter: () => {},
               chooseModel: () => {},
               openAttachment: () => {},
               pending: {

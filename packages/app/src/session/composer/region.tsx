@@ -33,7 +33,7 @@ import type { SessionScreenLayout } from "../screen-layout"
 import { syncPromptModel } from "../session-model-helpers"
 import type { SessionTimelineInteraction } from "../timeline/interaction"
 import { createSessionRevert } from "../revert"
-import { useSessionFork } from "../fork"
+import { useSessionFork, useSessionForkAfter } from "../fork"
 import { SessionComposerRegion } from "./session-composer-region"
 import { createSessionComposerController, type SessionComposerController } from "./controller"
 import { SessionQueuePanel } from "./queue-panel"
@@ -247,6 +247,11 @@ export function createActiveSessionRegion(input: {
   const fork = useSessionFork()
   const forkMessage: NonNullable<SessionUserActions["fork"]> = (target) => fork(target).then(() => undefined)
 
+  const forkAfter = useSessionForkAfter()
+
+  const forkAfterMessage: NonNullable<SessionUserActions["forkAfter"]> = (target) =>
+    forkAfter(target).then(() => undefined)
+
   const recalled = new Set<string>()
 
   // The free allowance or a Go usage limit stops a prompt after it was sent. Hand its text back so switching models and
@@ -400,6 +405,7 @@ export function createActiveSessionRegion(input: {
         createTimelineActions(view, {
           revert: revertMessage,
           fork: forkMessage,
+          forkAfter: forkAfterMessage,
           pending: pendingSteer,
           chooseModel: () => command.trigger("model.choose"),
           openAttachment,

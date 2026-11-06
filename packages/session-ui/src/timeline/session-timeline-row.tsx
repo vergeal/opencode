@@ -497,6 +497,15 @@ export function createSessionTimelineRowRenderer(input: {
                 content={content()}
                 contentID={ref()!.partID}
                 showAssistantCopyPartID={copyContentID(row().userMessageID)}
+                onFork={
+                  input.actions?.forkAfter
+                    ? () =>
+                        input.actions?.forkAfter?.({
+                          sessionID: input.sessionID(),
+                          messageID: message().id,
+                        })
+                    : undefined
+                }
                 turnDurationMs={duration(row().userMessageID)}
                 turnTokensPerSecond={turnTokensPerSecond()}
                 sources={turnSourcesValue()}
