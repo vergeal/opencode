@@ -2259,7 +2259,7 @@
 }
 
 [data-component="dialog-v2"].settings-server-dialog [data-slot="dialog-container"] {
-  width: 480px;
+  width: 640px;
   max-width: calc(100vw - 32px);
   height: auto;
   border-radius: 8px;

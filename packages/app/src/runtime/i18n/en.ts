@@ -1534,7 +1534,9 @@ export const dict = {
   "knowledge.delete": "Delete knowledge base",
   "knowledge.delete.confirm":
     "Delete \u201c{{name}}\u201d and remove its files from the app? The original files on disk are not deleted.",
+  "knowledge.name.label": "Name",
   "knowledge.name.placeholder": "Name this knowledge base",
+  "knowledge.new.about.label": "About",
   "knowledge.new.about.placeholder": "What is this knowledge base for? (optional)",
   "knowledge.new.about.hint":
     "Imports use this to judge which documents help. Documents that do not fit are marked, and you decide whether to remove them.",

@@ -28,30 +28,40 @@ export function NewLibraryDialog(props: { onCreate: (name: string, description: 
         <DialogTitleGroup title={language.t("knowledge.new")} description={language.t("knowledge.new.description")} />
       </DialogHeader>
       <DialogBody class="flex w-full min-w-0 flex-col gap-3 px-4">
-        <TextInput
-          autofocus
-          class="knowledge-name-field"
-          value={name()}
-          placeholder={language.t("knowledge.name.placeholder")}
-          aria-label={language.t("knowledge.name.placeholder")}
-          onInput={(event) => setName(event.currentTarget.value)}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return
-            event.preventDefault()
-            create()
-          }}
-        />
-        <Textarea
-          class="knowledge-description-field"
-          rows={3}
-          value={description()}
-          placeholder={language.t("knowledge.new.about.placeholder")}
-          aria-label={language.t("knowledge.new.about.placeholder")}
-          onInput={(event) => setDescription(event.currentTarget.value)}
-        />
-        <p class="text-[12px] leading-[var(--line-height-compact)] text-v2-text-text-faint">
-          {language.t("knowledge.new.about.hint")}
-        </p>
+        <label class="flex flex-col gap-2">
+          <span class="text-[12px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
+            {language.t("knowledge.name.label")}
+          </span>
+          <TextInput
+            autofocus
+            class="knowledge-name-field"
+            value={name()}
+            placeholder={language.t("knowledge.name.placeholder")}
+            aria-label={language.t("knowledge.name.label")}
+            onInput={(event) => setName(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return
+              event.preventDefault()
+              create()
+            }}
+          />
+        </label>
+        <label class="flex flex-col gap-2">
+          <span class="text-[12px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
+            {language.t("knowledge.new.about.label")}
+          </span>
+          <Textarea
+            class="knowledge-description-field"
+            rows={3}
+            value={description()}
+            placeholder={language.t("knowledge.new.about.placeholder")}
+            aria-label={language.t("knowledge.new.about.label")}
+            onInput={(event) => setDescription(event.currentTarget.value)}
+          />
+          <span class="text-[12px] leading-[var(--line-height-compact)] text-v2-text-text-faint">
+            {language.t("knowledge.new.about.hint")}
+          </span>
+        </label>
       </DialogBody>
       <DialogFooter>
         <Button variant="neutral" onClick={() => dialog.close()}>

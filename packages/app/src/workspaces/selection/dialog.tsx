@@ -3,6 +3,7 @@ import { FileTree } from "@pierre/trees"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitle } from "@opencode/ui/dialog"
 import { Button } from "@opencode/ui/button"
 import { Divider } from "@opencode/ui/divider"
+import { Loader } from "@opencode/ui/loader"
 import {
   displayName,
   getProjectAvatarSource,
@@ -803,10 +804,21 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
           on:wheel={{ handleEvent: (event: WheelEvent) => event.stopPropagation(), passive: true }}
         >
           <Show when={state.loading}>
-            <div class="directory-picker-state">{language.t("common.loading")}</div>
+            <div class="directory-picker-state" role="status" aria-label={language.t("common.loading")}>
+              <Loader />
+            </div>
           </Show>
           <Show when={!state.loading && state.error}>
-            <div class="directory-picker-state">{language.t("dialog.directory.readError")}</div>
+            <div class="directory-picker-state directory-picker-error">
+              <span role="alert">{language.t("dialog.directory.readError")}</span>
+              <Button
+                size="small"
+                variant="neutral"
+                onClick={() => void navigate(state.root || start() || home())}
+              >
+                {language.t("common.retry")}
+              </Button>
+            </div>
           </Show>
         </div>
       </DialogBody>

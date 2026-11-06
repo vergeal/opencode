@@ -3,7 +3,7 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { TextInput } from "@opencode/ui/text-input"
 import { Textarea } from "@opencode/ui/textarea"
-import { For, createMemo } from "solid-js"
+import { For, Show, createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
 
@@ -59,6 +59,7 @@ export function NewScheduledTaskDialog(props: {
     value: string
     directory: string
     submitting: boolean
+    error: string | undefined
   }>({
     name: "",
     prompt: "",
@@ -66,6 +67,7 @@ export function NewScheduledTaskDialog(props: {
     value: "",
     directory: props.directory,
     submitting: false,
+    error: undefined,
   })
 
   const valid = createMemo(() => form.prompt.trim() !== "" && form.value.trim() !== "" && form.directory.trim() !== "")
@@ -75,7 +77,7 @@ export function NewScheduledTaskDialog(props: {
 
     const value = form.value.trim()
 
-    setForm("submitting", true)
+    setForm({ submitting: true, error: undefined })
 
     try {
       const created = await props.onCreate({
@@ -86,14 +88,20 @@ export function NewScheduledTaskDialog(props: {
       })
 
       // Keep the form and its values when the request failed, so the user can fix and retry.
-      if (created) dialog.close()
+      if (created) {
+        dialog.close()
+
+        return
+      }
+
+      setForm("error", language.t("scheduled.create.failed"))
     } finally {
       setForm("submitting", false)
     }
   }
 
   return (
-    <Dialog>
+    <Dialog fit>
       <DialogHeader hideClose>
         <DialogTitleGroup
           title={language.t("scheduled.create.title")}
@@ -162,6 +170,14 @@ export function NewScheduledTaskDialog(props: {
           />
           <small>{language.t("scheduled.create.directory.hint")}</small>
         </label>
+
+        <Show when={form.error}>
+          {(message) => (
+            <p class="scheduled-form-error" role="alert">
+              {message()}
+            </p>
+          )}
+        </Show>
       </DialogBody>
 
       <DialogFooter>

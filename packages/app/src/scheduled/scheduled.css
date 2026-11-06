@@ -401,6 +401,13 @@
   color: var(--v2-text-text-faint);
 }
 
+.scheduled-form-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-state-fg-danger);
+}
+
 .scheduled-field .scheduled-mono {
   font-family: var(--v2-font-family-code);
 }

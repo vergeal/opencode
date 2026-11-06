@@ -159,6 +159,16 @@
   pointer-events: none;
 }
 
+.directory-picker-error {
+  grid-auto-flow: row;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  color: var(--v2-state-fg-danger);
+  font-size: 13px;
+  pointer-events: auto;
+}
+
 .directory-picker-selection {
   display: flex;
   overflow: hidden;

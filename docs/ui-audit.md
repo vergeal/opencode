@@ -2,7 +2,7 @@
 
 证据来源：仓库代码与 grep 输出（逐条带 `文件:行`）。**按本会话约束不做截图识别**，验收证据以代码行与命令输出为准。
 
-统计：条目 **160**，TODO **16**，DONE **144**。类别分布：结构 41（TODO 3 / DONE 38）、状态 37（13 / 24）、刻度 38（0 / 38）、交互 44（0 / 44）。
+统计：条目 **164**，TODO **14**，DONE **150**。类别分布：结构 45（TODO 3 / DONE 42）、状态 37（TODO 11 / DONE 26）、刻度 38（TODO 0 / DONE 38）、交互 44（TODO 0 / DONE 44）。
 
 表内 `T` 为 TODO 数，`D` 为 DONE 数。
 
@@ -11,13 +11,13 @@
 | shell | T0 / D4 | T3 / D0 | T0 / D4 | T0 / D6 | 未达标 |
 | home | T0 / D4 | T4 / D0 | T0 / D4 | T0 / D4 | 未达标 |
 | inbox | T0 / D3 | T0 / D2 | T0 / D3 | T0 / D3 | 达标 |
-| scheduled | T1 / D5 | T0 / D4 | T0 / D4 | T0 / D4 | 未达标 |
-| knowledge | T0 / D4 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
+| scheduled | T1 / D6 | T0 / D4 | T0 / D4 | T0 / D4 | 未达标 |
+| knowledge | T0 / D5 | T0 / D4 | T0 / D4 | T0 / D4 | 达标 |
 | settings | T0 / D4 | T1 / D3 | T0 / D4 | T0 / D4 | 未达标 |
-| servers | T0 / D3 | T0 / D4 | T0 / D3 | T0 / D4 | 达标 |
-| workspaces | T0 / D4 | T2 / D1 | T0 / D3 | T0 / D4 | 未达标 |
+| servers | T0 / D4 | T0 / D4 | T0 / D3 | T0 / D4 | 达标 |
+| workspaces | T0 / D4 | T0 / D3 | T0 / D3 | T0 / D4 | 达标 |
 | new-session | T2 / D1 | T1 / D2 | T0 / D3 | T0 / D3 | 未达标 |
-| session | T0 / D3 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
+| session | T0 / D4 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
 | composer | T0 / D3 | T1 / D2 | T0 / D3 | T0 / D4 | 未达标 |
 
 ## shell
@@ -100,6 +100,7 @@
 | SC-I3 | 交互 | 列表容器处理 ↑/↓/Home/End 移动焦点并同步选中，Enter 由行按钮原生触发 | 7.3 | packages/app/src/scheduled/route.tsx:307-334 | DONE |
 | SC-I4 | 交互 | 删除有 `variant="danger"` 二次确认 | 5.1 | packages/app/src/scheduled/route.tsx:486 | DONE |
 | SC-S5 | 结构 | 列表行结构改为「标题 + 右侧下次运行时间 / 触发描述 / 状态点 + 状态文字 + 运行次数」 | 5.2/6.1 | packages/app/src/scheduled/route.tsx:320,328 | DONE |
+| SC-S7 | 结构 | 创建弹窗改为 `fit` 并按 5.6 落在 640 宽；字段单列、标签在上、间距 16px，提交失败在弹窗内给出 danger 行 | 5.6 | packages/app/src/scheduled/new-dialog.tsx:96-180 | DONE |
 | SC-S6 | 结构 | 详情补「最近记录」区；接口只有 `lastFiredAt`/`lastOutcome`/`lastOutput`，按真实数据渲染一条并给出空态，不补假行 | 6.1 | packages/app/src/scheduled/route.tsx:401 | DONE |
 
 ## knowledge
@@ -109,6 +110,7 @@
 | KN-S1 | 结构 | 列表、文件区、预览区各自独立滚动 | 4.1/8 | packages/app/src/knowledge/route.tsx:452,730,850 | DONE |
 | KN-S2 | 结构 | 列表宽度可拖拽，未写死 | 4.1 | packages/app/src/knowledge/route.tsx:844 | DONE |
 | KN-S3 | 结构 | 详情区上限 420px，符合可读下限 | 4.1 | packages/app/src/knowledge/knowledge.css:256 | DONE |
+| KN-S5 | 结构 | 新建知识库的名称与说明补可见字段标签（原来只有 placeholder/aria-label），标签在上、字段单列 | 5.6 | packages/app/src/knowledge/new-library-dialog.tsx:30-58 | DONE |
 | KN-S4 | 结构 | 文件预览用 `<pre>`，代码字体与正文行高正确 | 3 | packages/app/src/knowledge/route.tsx:877 | DONE |
 | KN-T1 | 状态 | 空态有说明与「新建」动作 | 7.2 | packages/app/src/knowledge/route.tsx:458,511 | DONE |
 | KN-T2 | 状态 | 预览加载用 `Loader`，非 `Spinner` | 7.2 | packages/app/src/knowledge/route.tsx:873 | DONE |
@@ -150,6 +152,7 @@
 | --- | --- | --- | --- | --- | --- |
 | SV-S1 | 结构 | 连接页是单一 `main`，带 `aria-labelledby` | 10 | packages/app/src/servers/connect/screen.tsx:23 | DONE |
 | SV-S2 | 结构 | 实测两个入口互斥：无插件时为按钮，有插件时同一触发点变菜单 | 5.1 | packages/app/src/servers/registry/add-menu.tsx:13 | DONE |
+| SV-S4 | 结构 | 连接表单字段组间距 24px 改为 16px，落在 12–16 区间 | 5.6 | packages/app/src/servers/connect/dialog.tsx:115 | DONE |
 | SV-S3 | 结构 | 实测为单步表单，标准 5.6 要求步骤指示仅用于真正的多步流程 | 5.6 | packages/app/src/servers/connect/dialog.tsx:95 | DONE |
 | SV-T1 | 状态 | 连接流程有 `machine.ts` | 7.1 | packages/app/src/servers/connect/machine.ts | DONE |
 | SV-T2 | 状态 | 健康状态由 `health-machine` 派生 | 7.1 | packages/app/src/runtime/server/health-machine.ts | DONE |
@@ -172,8 +175,8 @@
 | WS-S3 | 结构 | 实测设置行统一 `--settings-row-min-height: 44px` | 4.2 | packages/app/src/settings/settings.css:11 | DONE |
 | WS-S4 | 结构 | 文件树与内容区各自滚动，符合主从分栏 | 4.1 | packages/app/src/workspaces/files/tree-machine.ts | DONE |
 | WS-T1 | 状态 | 文件树与内容各有独立 `machine.ts` | 7.1 | packages/app/src/workspaces/files/tree-machine.ts,content-machine.ts | DONE |
-| WS-T2 | 状态 | 目录选择加载态用 `Loader` | 7.2 | packages/app/src/workspaces/selection/dialog.tsx:670 | TODO |
-| WS-T3 | 状态 | 目录选择错误态没有弹窗内字段级错误 | 7.2 | packages/app/src/workspaces/selection/dialog.tsx:710 | TODO |
+| WS-T2 | 状态 | 目录选择加载态改为共享 `Loader`（`role=status` + `aria-label`），不再用纯文本 | 7.2 | packages/app/src/workspaces/selection/dialog.tsx:806-809 | DONE |
+| WS-T3 | 状态 | 目录读取失败改为弹窗内 danger 行 + `common.retry` 原地重试 | 7.2 | packages/app/src/workspaces/selection/dialog.tsx:810-822 | DONE |
 | WS-C1 | 刻度 | 第三方树行样式：字号 15px→13px、gap 6px→8px；`!important` 保留，理由写在 `unsafeCSS` 注释，属保留态覆盖豁免 | 2/3/4.2 | packages/app/src/workspaces/selection/dialog.tsx:558-580 | DONE |
 | WS-C2 | 刻度 | 目录选择边框 1px 改为 0.5px | 4.4 | packages/app/src/workspaces/selection/dialog.css:87 | DONE |
 | WS-C3 | 刻度 | 内联 `color-mix` 底色改为 `bg-v2-background-bg-layer-02`，字号改 12px + compact，内边距改 8px | 2 | packages/app/src/settings/workspaces/workspaces.tsx:655 | DONE |
@@ -205,6 +208,7 @@
 | --- | --- | --- | --- | --- | --- |
 | SS-S1 | 结构 | 侧栏面板宽度可拖拽，未写死 | 4.1 | packages/app/src/session/screen.tsx:506 | DONE |
 | SS-S2 | 结构 | 会话准备页补 `data-scrollable` | 8 | packages/app/src/session/route.tsx:77 | DONE |
+| SS-S4 | 结构 | 会话设置弹窗宽度 560px 改为 640px，落在 5.6 的 640/880 两档 | 5.6 | packages/app/src/session/settings-dialog.css:7-9 | DONE |
 | SS-S3 | 结构 | 实测时间线走 `ScrollView`，侧面板 `overflow-hidden` 内各自滚动，无共用滚动 | 8 | packages/app/src/session/screen.tsx:521 | DONE |
 | SS-T1 | 状态 | 时间线有 `machine.ts` 与分辨率状态机 | 7.1 | packages/app/src/session/timeline/machine.ts | DONE |
 | SS-T2 | 状态 | 输入队列有 `queue-machine.ts` | 7.1 | packages/app/src/session/composer/queue-machine.ts | DONE |
@@ -239,7 +243,7 @@
 
 | 冲突 | 文档与代码现状 | 处理 |
 | --- | --- | --- |
-| 弹窗宽度 | 标准 5.6 为 640–880；共享 `Dialog` 默认 480，`large` 640，`x-large` 980 | 按 5.6 采用 640/880，`x-large` 980 不用于普通表单；已在 B6 处理 |
+| 弹窗宽度 | 标准 5.6 为 640–880；共享 `Dialog` 默认 480，`large` 640，`x-large` 980 | B6 已把默认改 640、`x-large` 改 min(100vw-32, 880)，并把服务器连接、会话设置两个表单覆盖值改到 640；命令面板 compact、模型/位置选择浮层保留 480 紧凑宽度，它们不是表单弹窗 |
 | 菜单面板圆角 | 标准 4.3/5.7 为 8px；现有 `menu.css` 为 8px | 不冲突，按 8px 保留 |
 | 工具栏按钮数量 | 标准 5.1 最多 2 个 icon；实测水平标题栏只有首页、搜索 2 个（SH-S3 已改判 DONE），垂直侧栏的品牌区是命令面板快捷键文本，不属工具栏 | 无冲突 |
 | 状态点尺寸 | 标准 5.2 为 6px；`servers/registry/row.tsx` 用 `size-1.5`=6px | 一致，无需改 |
@@ -247,11 +251,12 @@
 | 服务器注册表行结构 | 标准 5.2 要求固定「图标 → 标题+状态点 → 副标题 → 元信息」；`packages/app` 内只有健康点组件，整行由 `packages/gui-plugins` 渲染，超出本轮可改范围（仅 app/ui/session-ui） | 原 SV-S4 条目移出计数，留待范围放开后按 5.2 重排 |
 | 收件箱页面数据源 | 标准 7.2 要求页面具备加载/错误/部分失败三态；`inbox/route.tsx` 目前没有 producer（`packages/app` 内无收件箱数据源，侧栏收件箱只聚合会话事件），无数据可驱动这三态 | 原 IB-T3 条目移出计数；页面保留主从骨架与空态，待收件箱数据源落地后按 7.2 补分支 |
 | 对话与输入区 15px | 标准第 3 节 UI 正文为 13px；`composer/editor/editor.tsx`、`session/timeline/message-timeline.tsx`、`session/timeline/working-activity.tsx`、`session/session-identity-header.tsx` 仍用 15px | 按会话约束不动输入框与对话排版，B4/B5 不改；如需统一，另开一批并同时复核虚拟列表测量 |
+| 弹窗默认焦点 | 标准 5.6 要求「弹窗打开焦点落在首个字段」，验收第 5 节要求「取消按钮默认聚焦」 | 表单弹窗（定时任务、知识库、服务器连接、目录选择、会话设置）保留首个字段 `autofocus`；破坏性确认弹窗按验收第 5 节把 `autofocus` 放在取消按钮 |
 | 运行历史条数 | 标准 6.1 要求「最近记录固定 5 条」；`Schedule.Info` 只提供 `lastFiredAt`、`lastOutcome`、`lastOutput`、`runCount`，没有运行历史数组，也没有 list-runs 端点（改端点属 schema/server，禁改） | `scheduled` 详情按真实数据渲染 1 条并给空态，不补 4 条假记录；需要服务端补 `schedule.runs` 后才谈 5 条 |
 
 ## 进度
 
-- 条目：160
-- TODO：16
-- DONE：144
+- 条目：164
+- TODO：14
+- DONE：150
 - 口径：每条一个可复核的代码位置，同一问题不重复立项；后续每完成一项把该行改成 DONE 并补齐 `文件:行`。

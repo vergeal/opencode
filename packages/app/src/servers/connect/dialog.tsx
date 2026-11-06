@@ -112,7 +112,7 @@ export const DialogServer: Component<{
             </Suspense>
           }
         >
-          <div class="flex w-full min-w-0 flex-col gap-6">
+          <div class="flex w-full min-w-0 flex-col gap-4">
             <Show when={view().signedOut}>
               <p class="settings-server-dialog-notice" role="status">
                 <Icon name="lock" size="small" />

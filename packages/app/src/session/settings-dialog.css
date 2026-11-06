@@ -5,7 +5,7 @@
    The dialog styles are unlayered and nested several levels deep, so these overrides repeat the container scope and
    win on specificity instead of depending on stylesheet order. */
 [data-component="dialog-v2"] [data-slot="dialog-container"].session-settings-dialog {
-  width: 560px;
+  width: 640px;
   max-width: calc(100vw - 32px);
 }
 
