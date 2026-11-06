@@ -40,6 +40,7 @@ import { QuestionTool } from "../tool/plugin/question.js"
 import { Tool } from "../tool.js"
 import { SessionAffinity } from "./affinity.js"
 import { SessionModelTransport } from "./model-transport.js"
+import { ProjectInstructions } from "./project-instructions.js"
 import { SessionRunnerModel } from "./runner/model.js"
 import { SessionSchema } from "./schema.js"
 import { SessionSystemPrompt } from "./system-prompt.js"
@@ -107,8 +108,9 @@ export const baseTranscript = (input: {
   readonly model: SessionRunnerModel.Resolved
   readonly tools: Tool.Snapshot
   readonly initial: ReadonlyArray<Instructions.Rendered>
+  /** The Project's own instructions, reread for every Step and rendered ahead of the baseline. */
   readonly project?: string
-  /** This Session's own instructions. They sit after the project's, since they are the most specific. */
+  /** This Session's own instructions, the most specific source in the request. */
   readonly sessionPrompt?: string
   readonly messages: ReadonlyArray<SessionMessage.Info>
 }) => {
@@ -123,7 +125,7 @@ export const baseTranscript = (input: {
           ? input.agent.system
           : SessionSystemPrompt.make(input.tools.definitions.map((tool) => tool.name)),
       ),
-      ...(input.project ? [SystemPart.make(projectBlock(input.project))] : []),
+      ...(input.project ? [SystemPart.make(ProjectInstructions.block(input.project))] : []),
       ...(input.sessionPrompt ? [SystemPart.make(sessionBlock(input.sessionPrompt))] : []),
       {
         ...SystemPart.make(Instructions.join(input.initial)),
@@ -133,16 +135,6 @@ export const baseTranscript = (input: {
     messages: toLLMMessages(input.messages, input.model.ref, providerMetadataKey),
   }
 }
-
-const projectBlock = (prompt: string) =>
-  [
-    "# Project instructions",
-    "",
-    "The project owner wrote these instructions for every session in this project.",
-    "They apply on top of your own instructions for as long as this project is the working directory.",
-    "",
-    prompt,
-  ].join("\n")
 
 const sessionBlock = (prompt: string) =>
   [

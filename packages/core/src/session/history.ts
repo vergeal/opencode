@@ -10,6 +10,7 @@ import { SessionMessage } from "./message.js"
 import type { SessionSchema } from "./schema.js"
 import { Instructions } from "../instructions/index.js"
 import { InstructionState } from "./instruction-state.js"
+import { ProjectInstructions } from "./project-instructions.js"
 import { SessionBlob } from "./blob.js"
 import { SessionRecentText } from "./recent-text.js"
 import { SessionMessageTable, SessionPartTable } from "./sql.js"
@@ -23,6 +24,10 @@ const decodeStoredUser = Schema.decodeUnknownEffect(SessionStored.User)
 const decodeMedia = Schema.decodeUnknownEffect(SessionMessage.MediaInfo)
 const decodePartSync = Schema.decodeUnknownSync(SessionMessage.AssistantContent)
 export const encodePart = Schema.encodeSync(SessionMessage.AssistantContent)
+
+// The Project's instructions always travel as their own system part, so they never enter the frozen baseline.
+const baseline = (parts: ReadonlyArray<Instructions.Rendered>) =>
+  parts.filter((part) => part.key !== ProjectInstructions.key)
 
 /**
  * Which completed compactions bound a history read. Local summaries always do. Native
@@ -293,7 +298,7 @@ export const entriesForRunner = Effect.fn("SessionHistory.entriesForRunner")(fun
       Effect.gen(function* () {
         const messages = yield* messageEntries(db, sessionID, boundary)
         return {
-          initial: yield* InstructionState.initial(db, sessionID, instructions),
+          initial: baseline(yield* InstructionState.initial(db, sessionID, instructions)),
           entries: messages,
         }
       }),
@@ -319,7 +324,7 @@ export const preview = Effect.fn("SessionHistory.preview")(function* (
         const settled = unsettled === -1 ? messages : messages.slice(0, unsettled)
         const assembled = yield* InstructionState.preview(db, sessionID, instructions, observed)
         return {
-          initial: assembled.initial,
+          initial: baseline(assembled.initial),
           messages: settled.map((entry) => entry.message),
           instructionUpdate: assembled.update,
         }

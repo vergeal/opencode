@@ -2,7 +2,7 @@ export * as SessionContext from "./context.js"
 
 import { Model } from "../model.js"
 import { Permission } from "../permission.js"
-import { Context, Effect, Layer } from "effect"
+import { Context, Effect, Layer, Schema } from "effect"
 import { Agent } from "../agent.js"
 import { CodeModeInstructions } from "../codemode/instructions.js"
 import { Database } from "../database/database.js"
@@ -22,6 +22,7 @@ import { SessionHistory } from "./history.js"
 import { InstructionEntry } from "./instruction-entry.js"
 import { SessionMessage } from "./message.js"
 import { SessionModelRequest } from "./model-request.js"
+import { ProjectInstructions } from "./project-instructions.js"
 import { SessionRunnerModel } from "./runner/model.js"
 import { SessionSchema } from "./schema.js"
 import { SessionStore } from "./store.js"
@@ -95,6 +96,21 @@ const layer = Layer.effect(
     const store = yield* SessionStore.Service
     const registry = yield* Tool.Service
 
+    // Detects edits to the Project's own instructions so they surface as a notice. The text itself never enters the
+    // baseline: `load` rereads it every Step and `baseTranscript` renders it as its own system part, so the next
+    // request always sees the newest instructions.
+    const projectInstructions = Instructions.make({
+      key: ProjectInstructions.key,
+      codec: Schema.toCodecJson(Schema.String),
+      read: project.get(location.project.id).pipe(
+        Effect.map((info) => {
+          const prompt = info?.prompt?.trim()
+          return prompt ? prompt : Instructions.removed
+        }),
+      ),
+      render: ProjectInstructions.render,
+    })
+
     const resolveModel = (session: SessionSchema.Info) => models.resolve(session, model.available)
 
     const selectTitle = Effect.fn("SessionContext.selectTitle")(function* (session: SessionSchema.Info) {
@@ -164,6 +180,7 @@ const layer = Layer.effect(
           loaded.mcp,
           loaded.references,
           loaded.skills,
+          projectInstructions,
           loaded.discovery,
           loaded.builtins,
           loaded.entries,
@@ -186,7 +203,7 @@ const layer = Layer.effect(
         agent: selection.agent,
         model,
         initial: history.initial,
-        // Reread on every Step so instructions written during a Session still reach its next request.
+        // Reread on every Step so an edit reaches the very next request as its own system part.
         project: (yield* project.get(location.project.id))?.prompt,
         messages: history.entries.map((entry) => entry.message),
         tools: selection.tools,

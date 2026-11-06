@@ -1486,14 +1486,9 @@ describe("SessionRunnerLLM", () => {
     expect(instructionEvents[1]?.metadata).toBeUndefined()
   })
 
-  scenario("reads the project's instructions for each request", function* (s) {
+  scenario("surfaces project instruction edits in the next request", function* (s) {
     yield* s.runPrompt("First")
-    expect(
-      s.requests
-        .at(-1)
-        ?.system.map((part) => part.text)
-        .some((text) => text.includes("# Project instructions")),
-    ).toBe(false)
+    expect(s.requests.at(-1)?.system.some((part) => part.text.includes("# Project instructions"))).toBe(false)
 
     // The fixture directory is virtual, so Location resolves it without persisting a row. Persist it here to model a
     // real Project, then set the prompt on every row the test could read.
@@ -1501,13 +1496,16 @@ describe("SessionRunnerLLM", () => {
     yield* s.db.update(ProjectTable).set({ prompt: "Prefer bun over npm." }).run().pipe(Effect.orDie)
 
     yield* s.runPrompt("Second")
-    const texts = s.requests.at(-1)?.system.map((part) => part.text) ?? []
-    const project = texts.findIndex((text) => text.startsWith("# Project instructions"))
+    const request = s.requests.at(-1)!
 
-    expect(project).toBeGreaterThan(-1)
-    expect(texts[project]).toContain("Prefer bun over npm.")
-    // Stable text sits ahead of the baseline, whose date and environment change and must not invalidate the cache.
-    expect(project).toBeLessThan(texts.findIndex((text) => text.includes(s.systemBaseline)))
+    // The newest text rides in the system prompt instead of the frozen baseline, so the next request is already
+    // synchronized rather than relying on the notice alone.
+    expect(
+      request.system.some(
+        (part) => part.text.includes("# Project instructions") && part.text.includes("Prefer bun over npm."),
+      ),
+    ).toBe(true)
+    expect(systemTexts(request).some((text) => text.includes("The project instructions changed"))).toBe(true)
   })
 
   scenario("reads the session's own instructions for each request", function* (s) {
@@ -1666,7 +1664,10 @@ describe("SessionRunnerLLM", () => {
         }),
       )
       yield* s.admit("Echo before moving")
-      yield* s.llm.push(TestLLM.toolCall("call-move", "echo", { text: "moving" }), TestLLM.text("Done", "text-after-move"))
+      yield* s.llm.push(
+        TestLLM.toolCall("call-move", "echo", { text: "moving" }),
+        TestLLM.text("Done", "text-after-move"),
+      )
       const tools = yield* s.blockTools()
       const run = yield* s.resume.pipe(Effect.forkChild)
       yield* tools.started
@@ -5827,7 +5828,11 @@ describe("SessionRunnerLLM", () => {
     expect(s.requests).toHaveLength(1)
     expect(yield* s.context).toMatchObject([
       Expected.user("Fail durably"),
-      { type: "assistant", finish: "error", error: { type: "provider.invalid-request", message: "Provider unavailable" } },
+      {
+        type: "assistant",
+        finish: "error",
+        error: { type: "provider.invalid-request", message: "Provider unavailable" },
+      },
     ])
   })
 
@@ -5839,7 +5844,11 @@ describe("SessionRunnerLLM", () => {
     expect(s.requests).toHaveLength(1)
     expect(yield* s.context).toMatchObject([
       Expected.user("Fail before step"),
-      { type: "assistant", finish: "error", error: { type: "provider.invalid-request", message: "Provider unavailable" } },
+      {
+        type: "assistant",
+        finish: "error",
+        error: { type: "provider.invalid-request", message: "Provider unavailable" },
+      },
     ])
   })
 
@@ -6167,7 +6176,10 @@ describe("SessionRunnerLLM", () => {
     // the window instead of rejecting it.
     s.currentModel = recoveryModel
     yield* s.llm.push(
-      TestLLM.complete({ reason: { normalized: "length" }, usage: { inputTokens: 199_994, nonCachedInputTokens: 199_994, outputTokens: 0 } }),
+      TestLLM.complete({
+        reason: { normalized: "length" },
+        usage: { inputTokens: 199_994, nonCachedInputTokens: 199_994, outputTokens: 0 },
+      }),
       TestLLM.text("## Objective\n- summary", "summary"),
       TestLLM.text("Done", "done"),
     )
