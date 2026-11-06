@@ -9,8 +9,8 @@
   outline-offset: -2px;
 }
 
-/* The steer action reads as a compact pill chip: a 13px label with a capsule fill when hovered or pressed. */
+/* The steer action reads as a compact chip: the shared 12.5px label in the standard 7px control shape. */
 [data-component="session-queue-panel"] [data-component="button-v2"][data-action="session-queue-steer"] {
-  border-radius: 9999px;
-  font-size: 13px;
+  border-radius: 7px;
+  font-size: 12.5px;
 }

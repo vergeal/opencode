@@ -181,12 +181,6 @@
 
   [data-slot="toast-v2-actions"] [data-component="button-v2"] {
     min-height: 24px;
-    font-size: 15px;
-    font-style: normal;
-    font-weight: 530;
-    line-height: 20px;
-    letter-spacing: -0.04px;
-    font-synthesis: none;
   }
 
   [data-slot="toast-v2-header"] {

@@ -1924,14 +1924,6 @@
     [data-component="tooltip-v2-trigger"] {
       width: 100%;
     }
-
-    [data-component="button-v2"] {
-      font-family: var(--v2-font-family-sans, "Inter", sans-serif);
-      font-weight: 530;
-      font-variation-settings:
-        "wght" 530,
-        "slnt" 0;
-    }
   }
 
   [data-slot="user-message-attachments"] + [data-slot="user-message-body"],

@@ -640,26 +640,12 @@
   margin-inline-start: auto;
 }
 
-/* The shared button ships a 15px/530 pill; the design uses one compact 12.5px control across the dialog. */
-.scheduled-create [data-component="button-v2"],
-.scheduled-page [data-component="button-v2"] {
-  border-radius: 7px;
-  font-size: 12.5px;
-  font-weight: 500;
-}
-
-.scheduled-page [data-component="button-v2"][data-size="small"] {
-  height: 26px;
-  padding: 0 9px;
-  font-size: 11.5px;
-}
-
 .scheduled-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 28px;
+  height: 30px;
   padding: 0 12px;
   border: 0.5px solid var(--v2-background-bg-accent);
   border-radius: 7px;
