@@ -309,7 +309,7 @@ function fitPath(value: string, width: number, font: string) {
 }
 
 const TRIGGER =
-  "flex h-7 items-center gap-1.5 rounded-sm text-start ps-1.5 pe-2 text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none"
+  "flex h-7 items-center gap-1.5 rounded-full text-start ps-1.5 pe-2 text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none"
 
 /** The composer tray: project and worktree pickers, Git context, and the session's directory. */
 function NewSessionLocation(props: {

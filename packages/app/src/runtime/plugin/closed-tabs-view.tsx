@@ -91,7 +91,7 @@ export function ClosedTabsSection(props: { entries: readonly ClosedSideTab[]; on
           <button
             type="button"
             data-slot="side-recently-closed-more"
-            class="flex h-8 w-fit items-center gap-1 rounded-[6px] px-2 text-[15px] font-[400] text-v2-text-text-muted hover:bg-v2-background-bg-layer-02 hover:text-v2-text-text-base"
+            class="flex h-8 w-fit items-center gap-1 rounded-full px-2 text-[15px] font-[400] text-v2-text-text-muted hover:bg-v2-background-bg-layer-02 hover:text-v2-text-text-base"
             onClick={(event) => {
               const section = event.currentTarget.parentElement
               setState("expanded", true)

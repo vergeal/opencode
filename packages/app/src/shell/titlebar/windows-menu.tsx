@@ -109,7 +109,7 @@ export function WindowsAppMenu(props: {
     <Menu appearance="standard" gutter={4} modal={false} placement="bottom-start">
       <div
         data-component="desktop-icon-button"
-        class="flex h-7 w-9 shrink-0 items-center justify-center rounded-[6px] px-1"
+        class="flex h-7 w-9 shrink-0 items-center justify-center rounded-full px-1"
       >
         <Menu.Trigger
           as={IconButton}

@@ -274,7 +274,6 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
                 <IconButton
                   data-action="session-queue-undo"
                   type="button"
-                  class="rounded-sm"
                   variant="ghost-muted"
                   icon={<Icon name="outline-undo" />}
                   disabled={props.queue.busy()}
@@ -288,7 +287,6 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
                 <IconButton
                   data-action="session-queue-remove"
                   type="button"
-                  class="rounded-sm"
                   variant="ghost-muted"
                   icon={<Icon name="outline-xmark" />}
                   disabled={props.queue.busy()}

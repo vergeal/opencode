@@ -219,7 +219,7 @@ export const DialogConnectProvider: Component<{
                 <Show when={!props.standalone || state.stepBack}>
                   <button
                     type="button"
-                    class="-my-0.5 -ms-0.5 flex size-5 shrink-0 items-center justify-center rounded-sm text-v2-icon-icon-muted hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none"
+                    class="-my-0.5 -ms-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-v2-icon-icon-muted hover:bg-v2-overlay-simple-overlay-hover focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none"
                     onClick={() => back.current()}
                     aria-label={language.t("common.goBack")}
                   >
