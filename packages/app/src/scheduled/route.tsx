@@ -7,11 +7,10 @@ import { Loader } from "@opencode/ui/loader"
 import { TextInput } from "@opencode/ui/text-input"
 import { getFilename } from "@opencode/util/path"
 import { Option, Schema } from "effect"
-import { For, Show, createEffect, createMemo, createSignal, on } from "solid-js"
+import { For, Match, Show, Switch, createEffect, createMemo, createSignal, on } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
-import { sessionHref } from "@/shell/routes/session"
 import { PageHeader, PagePanel, PageToolbar } from "@/shell/page"
 import { errorMessage } from "@/shell/layout/helpers"
 import { showToast } from "@/shell/notifications/toast"
@@ -22,6 +21,10 @@ import { NewScheduledTaskDialog, type NewTaskInput } from "./new-dialog"
 import "./scheduled.css"
 
 type Filter = "all" | "active" | "paused" | "failed"
+
+type RunLog = { id: string; at: number; text: string }
+
+type Logs = { status: "idle" } | { status: "loading" } | { status: "ready"; entries: RunLog[] } | { status: "failed" }
 
 const FILTERS: ReadonlyArray<Filter> = ["all", "active", "paused", "failed"]
 
@@ -104,18 +107,26 @@ export function ScheduledScreen() {
 
   const directoryOf = (task: ScheduleInfo) => (task.sessionID ? projects().get(task.sessionID) : undefined)
 
+  /** The projects a task can run in: the known worktrees, with the current session's folder when it is not one yet. */
+  const projectOptions = createMemo(() => {
+    const options = (context()?.projects.unique() ?? []).map((project) => ({
+      directory: project.worktree,
+      name: project.name || getFilename(project.worktree),
+    }))
+    const current = context()?.data.session.list()[0]?.location.directory
+
+    if (current && !options.some((option) => option.directory === current))
+      options.unshift({ directory: current, name: getFilename(current) })
+
+    return options
+  })
+
   const projectOf = (task: ScheduleInfo) => {
     const directory = directoryOf(task)
 
-    return directory ? getFilename(directory) : undefined
-  }
+    if (!directory) return undefined
 
-  const linkTo = (task: ScheduleInfo) => {
-    const conn = connection()
-
-    if (!conn || !task.sessionID) return undefined
-
-    return sessionHref(ServerConnection.key(conn), task.sessionID)
+    return projectOptions().find((option) => option.directory === directory)?.name ?? getFilename(directory)
   }
 
   const load = async () => {
@@ -131,6 +142,63 @@ export function ScheduledScreen() {
       dispatch({ type: "load.failed", message: errorMessage(error, language.t("common.requestFailed")) })
     }
   }
+
+  const [logs, setLogs] = createSignal<Logs>({ status: "idle" })
+
+  /** Every scheduled run leaves one assistant message in its backing session; that is the execution log. */
+  const loadLogs = async (task: ScheduleInfo) => {
+    const client = api()
+    const sessionID = task.sessionID
+
+    if (!client || !sessionID) {
+      setLogs({ status: "ready", entries: [] })
+
+      return
+    }
+
+    const taskID = task.id
+    setLogs({ status: "loading" })
+
+    try {
+      const result = await client.message.list({ sessionID, order: "desc", limit: 30 })
+
+      if (selected() !== taskID) return
+
+      setLogs({
+        status: "ready",
+        entries: result.data.flatMap((message) => {
+          if (message.type !== "assistant") return []
+
+          const text = message.content
+            .flatMap((part) => (part.type === "text" && part.text.trim() ? [part.text.trim()] : []))
+            .join("\n\n")
+
+          return text ? [{ id: message.id, at: message.time.created, text }] : []
+        }),
+      })
+    } catch {
+      if (selected() === taskID) setLogs({ status: "failed" })
+    }
+  }
+
+  createEffect(
+    on(
+      () => [selected(), state().status === "ready"] as const,
+      ([id, ready]) => {
+        if (!ready) return
+
+        const task = tasks().find((item) => item.id === id)
+
+        if (!task) {
+          setLogs({ status: "idle" })
+
+          return
+        }
+
+        void loadLogs(task)
+      },
+    ),
+  )
 
   createEffect(
     on(
@@ -164,6 +232,12 @@ export function ScheduledScreen() {
   )
 
   const current = createMemo(() => visible().find((task) => task.id === selected()))
+
+  const logEntries = () => {
+    const value = logs()
+
+    return value.status === "ready" ? value.entries : undefined
+  }
 
   createEffect(
     on(
@@ -219,6 +293,10 @@ export function ScheduledScreen() {
 
     try {
       await client.experimental.schedule.delete({ scheduleID: task.id })
+
+      // The backing session only exists for this task, so it goes with it instead of staying archived forever.
+      if (task.sessionID) await client.session.remove({ sessionID: task.sessionID }).catch(() => {})
+
       dispatch({ type: "task.removed", id: task.id })
 
       if (selected() === task.id) setSelected(undefined)
@@ -267,27 +345,43 @@ export function ScheduledScreen() {
         return false
       }
 
-      const session = await client.session.create({ location: { directory: input.directory } })
-
-      const created = await client.experimental.schedule.create({
-        sessionID: session.id,
-        prompt: input.prompt,
-        when: { cron: schedule.cron, tz: schedule.timezone },
+      const session = await client.session.create({
+        location: { directory: input.directory },
+        title: input.name,
+        permissions: input.permissions,
       })
 
-      // Create always enables, so "save without enabling" is one pause right after it.
-      const saved =
-        input.enabled === false ? await client.experimental.schedule.pause({ scheduleID: created.id }) : created
+      try {
+        const created = await client.experimental.schedule.create({
+          sessionID: session.id,
+          name: input.name,
+          prompt: input.prompt,
+          when: { cron: schedule.cron, tz: schedule.timezone },
+        })
 
-      replace(saved)
-      setSelected(saved.id)
-      setFilter("all")
-      setQuery("")
+        // Create always enables, so "save without enabling" is one pause right after it.
+        const saved =
+          input.enabled === false ? await client.experimental.schedule.pause({ scheduleID: created.id }) : created
 
-      // A create that lands before the first listing finished still has to appear.
-      if (state().status === "loading") void load()
+        // The task owns this session as its execution unit. Archiving keeps it out of conversations and tabs;
+        // its assistant messages are the execution log shown in the task detail.
+        await client.session.update({ sessionID: session.id, archived: true }).catch(() => {})
 
-      return true
+        replace(saved)
+        setSelected(saved.id)
+        setFilter("all")
+        setQuery("")
+
+        // A create that lands before the first listing finished still has to appear.
+        if (state().status === "loading") void load()
+
+        return true
+      } catch (error) {
+        // A task that never saved must not leave a visible empty session behind.
+        await client.session.remove({ sessionID: session.id }).catch(() => {})
+
+        throw error
+      }
     } catch (error) {
       const failure = error instanceof ClientError ? error : undefined
       const disabled = failure !== undefined && isDisabled(failure)
@@ -311,9 +405,11 @@ export function ScheduledScreen() {
   })
 
   const openNew = () => {
-    const directory = context()?.data.session.list()[0]?.location.directory ?? ""
+    const directory = projectOptions()[0]?.directory ?? ""
 
-    void dialog.show(() => <NewScheduledTaskDialog directory={directory} onCreate={create} onInfer={infer} />)
+    void dialog.show(() => (
+      <NewScheduledTaskDialog projects={projectOptions()} directory={directory} onCreate={create} onInfer={infer} />
+    ))
   }
 
   const confirmRemove = (task: ScheduleInfo) =>
@@ -598,16 +694,6 @@ export function ScheduledScreen() {
                     fallback={
                       <div class="scheduled-run">
                         <span class="scheduled-run-out">{language.t("scheduled.detail.recent.empty")}</span>
-                        <Show when={linkTo(task())}>
-                          {(href) => (
-                            <span class="scheduled-run-right">
-                              <a class="scheduled-run-link" href={href()}>
-                                {language.t("scheduled.detail.openSession")}
-                                <Icon name="arrow-up-right" size="small" />
-                              </a>
-                            </span>
-                          )}
-                        </Show>
                       </div>
                     }
                   >
@@ -627,14 +713,6 @@ export function ScheduledScreen() {
                               </span>
                             )}
                           </Show>
-                          <Show when={linkTo(task())}>
-                            {(href) => (
-                              <a class="scheduled-run-link" href={href()}>
-                                {language.t("scheduled.detail.openSession")}
-                                <Icon name="arrow-up-right" size="small" />
-                              </a>
-                            )}
-                          </Show>
                         </span>
                       </div>
                     )}
@@ -644,6 +722,51 @@ export function ScheduledScreen() {
                 <div class="scheduled-section">
                   <span class="scheduled-section-label">{language.t("scheduled.detail.prompt")}</span>
                   <pre class="scheduled-prompt">{promptOf(task())}</pre>
+                </div>
+
+                <div class="scheduled-section">
+                  <span class="scheduled-section-label">{language.t("scheduled.detail.logs")}</span>
+                  <Switch>
+                    <Match when={logs().status === "loading"}>
+                      <p class="scheduled-log-status" role="status">
+                        <Loader class="size-3.5" />
+                        {language.t("scheduled.detail.logs.loading")}
+                      </p>
+                    </Match>
+                    <Match when={logs().status === "failed"}>
+                      <div class="scheduled-log-status">
+                        <span>{language.t("scheduled.detail.logs.failed")}</span>
+                        <Button
+                          size="small"
+                          variant="neutral"
+                          onClick={() => {
+                            const value = current()
+
+                            if (value) void loadLogs(value)
+                          }}
+                        >
+                          {language.t("scheduled.retry")}
+                        </Button>
+                      </div>
+                    </Match>
+                    <Match when={logs().status === "ready"}>
+                      <Show
+                        when={logEntries()?.length}
+                        fallback={<p class="scheduled-log-status">{language.t("scheduled.detail.logs.empty")}</p>}
+                      >
+                        <div class="scheduled-logs">
+                          <For each={logEntries()}>
+                            {(entry) => (
+                              <article class="scheduled-log">
+                                <time class="scheduled-log-time">{formatTime(entry.at)}</time>
+                                <pre class="scheduled-log-text">{entry.text}</pre>
+                              </article>
+                            )}
+                          </For>
+                        </div>
+                      </Show>
+                    </Match>
+                  </Switch>
                 </div>
 
                 <Show when={task().lastOutput?.trim()}>
