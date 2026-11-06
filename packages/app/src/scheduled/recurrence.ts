@@ -79,6 +79,37 @@ export function whenOf(recurrence: Recurrence, tz: string): Schedule.WhenInput {
 }
 
 /**
+ * Keep the cadence the user picked and take the time the prompt described. Reading the prompt is only for the
+ * details the form does not ask for, so the visible choice always wins over a different inferred cadence.
+ */
+export function mergeRecurrence(choice: Recurrence, inferred: Recurrence | undefined): Recurrence {
+  if (!inferred) return choice
+
+  const time = timeOf(inferred)
+
+  switch (choice.kind) {
+    case "hourly":
+      return choice
+    case "daily":
+      return time ? { kind: "daily", time } : choice
+    case "weekly":
+      return {
+        kind: "weekly",
+        days: inferred.kind === "weekly" ? inferred.days : choice.days,
+        time: time ?? choice.time,
+      }
+    case "monthly":
+      return {
+        kind: "monthly",
+        day: inferred.kind === "monthly" ? inferred.day : choice.day,
+        time: time ?? choice.time,
+      }
+    case "cron":
+      return choice
+  }
+}
+
+/**
  * Read a cron back into a preset when it is one, so an inferred schedule fills the visible controls.
  * A six-field cron contributes its minute and up: the controls and the preview work in whole minutes.
  */

@@ -18,6 +18,7 @@ import { parseSchedule, schedulePrompt } from "./cron"
 import { describeOutcome, describeStatus, describeWhen, formatTime, taskName } from "./describe"
 import { tasksOf, transition, type TaskEvent, type TaskState } from "./machine"
 import { NewScheduledTaskDialog, type NewTaskInput } from "./new-dialog"
+import { mergeRecurrence, recurrenceOfCron, whenOf } from "./recurrence"
 import "./scheduled.css"
 
 type Filter = "all" | "active" | "paused" | "failed"
@@ -331,6 +332,14 @@ export function ScheduledScreen() {
     if (!client) return false
 
     try {
+      // Reading the prompt belongs to saving: the dialog only collected the cadence and the details the user
+      // cares about, and everything else about the time comes from the prompt here. Hourly and custom already
+      // describe their own time, so they do not need a model call.
+      const timed = input.recurrence.kind !== "hourly" && input.recurrence.kind !== "cron"
+      const inferred = timed ? await infer(input.prompt) : undefined
+      const recurrence = mergeRecurrence(input.recurrence, inferred ? recurrenceOfCron(inferred.cron) : undefined)
+      const tz = readTimeZone(inferred?.timezone) ?? input.tz
+
       const session = await client.session.create({
         location: { directory: input.directory },
         title: input.name,
@@ -342,7 +351,7 @@ export function ScheduledScreen() {
           sessionID: session.id,
           name: input.name,
           prompt: input.prompt,
-          when: input.when,
+          when: whenOf(recurrence, tz),
         })
 
         // New tasks start paused; the user enables one from the task list once it looks right.
@@ -393,7 +402,7 @@ export function ScheduledScreen() {
     const directory = projectOptions()[0]?.directory ?? ""
 
     void dialog.show(() => (
-      <NewScheduledTaskDialog projects={projectOptions()} directory={directory} onCreate={create} onInfer={infer} />
+      <NewScheduledTaskDialog projects={projectOptions()} directory={directory} onCreate={create} />
     ))
   }
 
@@ -768,6 +777,19 @@ export function ScheduledScreen() {
       </div>
     </PagePanel>
   )
+}
+
+/** The model replies with an IANA zone; anything else falls back to the zone the dialog already showed. */
+function readTimeZone(value: string | undefined) {
+  if (!value) return undefined
+
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: value })
+
+    return value
+  } catch {
+    return undefined
+  }
 }
 
 function DeleteDialog(props: { name: string; onConfirm: () => void }) {

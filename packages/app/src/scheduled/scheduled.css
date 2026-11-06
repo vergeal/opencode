@@ -576,14 +576,6 @@
   width: 100%;
 }
 
-.scheduled-create-form .scheduled-number {
-  width: 64px;
-}
-
-.scheduled-create-form .scheduled-time {
-  width: 116px;
-}
-
 .scheduled-create [data-component="textarea-v2"] {
   border-radius: 10px;
 }
@@ -694,61 +686,6 @@
   border: 0.5px solid var(--v2-border-border-muted);
   border-radius: 9px;
   background: var(--v2-background-bg-deep);
-}
-
-.scheduled-inline-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 28px;
-  font-size: 12px;
-  line-height: var(--line-height-compact);
-  color: var(--v2-text-text-muted);
-}
-
-.scheduled-inline-field > span:first-child {
-  flex: 1 1 auto;
-}
-
-.scheduled-inline-field > * {
-  flex: none;
-}
-
-.scheduled-weekdays {
-  display: flex;
-  gap: 4px;
-}
-
-.scheduled-weekday {
-  flex: 1 1 0;
-  height: 28px;
-  padding: 0;
-  border: 0.5px solid var(--v2-border-border-muted);
-  border-radius: 6px;
-  background: var(--v2-background-bg-base);
-  color: var(--v2-text-text-muted);
-  font-size: 11.5px;
-  line-height: var(--line-height-compact);
-  white-space: nowrap;
-  cursor: default;
-}
-
-@media (hover: hover) {
-  .scheduled-weekday:not([data-selected]):hover {
-    background: var(--v2-overlay-simple-overlay-hover);
-    color: var(--v2-text-text-base);
-  }
-}
-
-.scheduled-weekday[data-selected] {
-  border-color: transparent;
-  background: var(--v2-background-bg-inverse);
-  color: var(--v2-text-text-inverse);
-}
-
-.scheduled-weekday:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--v2-focus-ring-color);
 }
 
 /* Project and permission cards ---------------------------------------- */

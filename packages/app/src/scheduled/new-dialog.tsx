@@ -5,22 +5,12 @@ import { Icon } from "@opencode/ui/icon"
 import { Loader } from "@opencode/ui/loader"
 import { TextInput } from "@opencode/ui/text-input"
 import { Textarea } from "@opencode/ui/textarea"
-import { type Schedule } from "@opencode/schema/schedule"
 import { getFilename } from "@opencode/util/path"
-import { For, Match, Show, Switch, createEffect, createMemo, createSignal, on, onCleanup } from "solid-js"
+import { For, Show, createEffect, createMemo } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
-import { type ScheduleDraft, localTimeZone } from "./cron"
-import {
-  DEFAULT_RECURRENCE,
-  type Recurrence,
-  clockOf,
-  isValidCron,
-  nextRun,
-  recurrenceOfCron,
-  timeOf,
-  whenOf,
-} from "./recurrence"
+import { localTimeZone } from "./cron"
+import { DEFAULT_RECURRENCE, type Recurrence, isValidCron, nextRun } from "./recurrence"
 
 export type PermissionScope = "default" | "read-only"
 
@@ -34,20 +24,13 @@ export type NewTaskInput = {
   prompt: string
   directory: string
   permissions?: Array<{ action: string; resource: string; effect: "allow" | "deny" | "ask" }>
-  /** The schedule the visible controls already describe, so creating never reads the prompt again. */
-  when: Schedule.WhenInput
+  /** The cadence the user picked; the exact time is read from the prompt when the task is saved. */
+  recurrence: Recurrence
+  tz: string
 }
 
-type Inference =
-  | { status: "idle" }
-  | { status: "parsing"; prompt: string }
-  | { status: "ready"; prompt: string; schedule: ScheduleDraft }
-  | { status: "failed"; prompt: string }
-
-/** Short prompts cannot describe a time yet, so the dialog waits before asking the model. */
+/** Short prompts cannot describe a time yet. */
 const MIN_PROMPT = 4
-
-const DEBOUNCE = 700
 
 /** Read-only keeps every read open and closes the two actions that can change the project or run commands. */
 const READ_ONLY_PERMISSIONS = [
@@ -63,14 +46,10 @@ const FREQUENCY_OPTIONS = [
   { kind: "cron", label: "scheduled.create.frequency.custom" },
 ] as const
 
-/** ISO weekdays, Monday first; `Intl` renders the label in the interface language. */
-const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const
-
 export function NewScheduledTaskDialog(props: {
   projects: ReadonlyArray<ProjectOption>
   directory?: string
   onCreate: (input: NewTaskInput) => Promise<boolean>
-  onInfer: (prompt: string) => Promise<ScheduleDraft | undefined>
 }) {
   const dialog = useDialog()
   const language = useLanguage()
@@ -82,7 +61,6 @@ export function NewScheduledTaskDialog(props: {
     directory: string
     permission: PermissionScope
     recurrence: Recurrence
-    recurrenceTouched: boolean
     tz: string
     submitting: boolean
   }>({
@@ -92,75 +70,9 @@ export function NewScheduledTaskDialog(props: {
     directory: props.directory ?? props.projects[0]?.directory ?? "",
     permission: "default",
     recurrence: { ...DEFAULT_RECURRENCE },
-    recurrenceTouched: false,
     tz: localTimeZone(),
     submitting: false,
   })
-
-  const [inference, setInference] = createSignal<Inference>({ status: "idle" })
-
-  /** The parsing state only applies to the text currently in the field. */
-  const detected = () => {
-    const current = inference()
-
-    return current.status === "ready" && current.prompt === form.prompt.trim() ? current.schedule : undefined
-  }
-
-  const infer = async (prompt: string) => {
-    setInference({ status: "parsing", prompt })
-
-    const result = await props.onInfer(prompt)
-
-    // A result for a prompt the user already changed must not replace the newer state.
-    if (form.prompt.trim() !== prompt) return result
-
-    if (!result) {
-      setInference({ status: "failed", prompt })
-
-      return result
-    }
-
-    const recurrence = recurrenceOfCron(result.cron)
-
-    // A generated cron stays out of the controls when the form could not run it either.
-    if (recurrence.kind === "cron" && !isValidCron(recurrence.cron)) {
-      setInference({ status: "failed", prompt })
-
-      return result
-    }
-
-    // A recurrence the user already shaped by hand is theirs: the model only fills what is still untouched.
-    if (!form.recurrenceTouched) setForm("recurrence", recurrence)
-    if (!form.nameTouched) setForm("name", titleOf(form.prompt) ?? "")
-
-    const zone = readTimeZone(result.timezone)
-
-    if (zone) setForm("tz", zone)
-
-    setInference({ status: "ready", prompt, schedule: result })
-
-    return result
-  }
-
-  createEffect(
-    on(
-      () => form.prompt,
-      (value) => {
-        const prompt = value.trim()
-
-        if (prompt.length < MIN_PROMPT) {
-          setInference({ status: "idle" })
-
-          return
-        }
-
-        const timer = setTimeout(() => void infer(prompt), DEBOUNCE)
-
-        onCleanup(() => clearTimeout(timer))
-      },
-      { defer: true },
-    ),
-  )
 
   // The name follows the first line until the user edits it, so a task is never left unnamed.
   createEffect(() => {
@@ -169,93 +81,24 @@ export function NewScheduledTaskDialog(props: {
     setForm("name", titleOf(form.prompt) ?? "")
   })
 
-  const weekly = () => (form.recurrence.kind === "weekly" ? form.recurrence : undefined)
   const custom = () => (form.recurrence.kind === "cron" ? form.recurrence : undefined)
 
-  const clock = () => timeOf(form.recurrence) ?? "09:00"
-
-  const setTime = (time: string) => {
-    if (!/^\d{2}:\d{2}$/.test(time)) return
-
-    const current = form.recurrence
-
-    switch (current.kind) {
-      case "daily":
-        return setForm("recurrence", { kind: "daily", time })
-      case "weekly":
-        return setForm("recurrence", { kind: "weekly", days: current.days, time })
-      case "monthly":
-        return setForm("recurrence", { kind: "monthly", day: current.day, time })
-    }
-  }
-
   const chooseKind = (kind: Recurrence["kind"]) => {
-    setForm("recurrenceTouched", true)
-
-    const time = clock()
-
     switch (kind) {
       case "hourly":
-        return setForm("recurrence", {
-          kind: "hourly",
-          hours: form.recurrence.kind === "hourly" ? form.recurrence.hours : 1,
-        })
+        return setForm("recurrence", { kind: "hourly", hours: 1 })
       case "daily":
-        return setForm("recurrence", { kind: "daily", time })
+        return setForm("recurrence", { kind: "daily", time: "09:00" })
       case "weekly":
-        return setForm("recurrence", {
-          kind: "weekly",
-          days: weekly()?.days ?? [1],
-          time,
-        })
+        return setForm("recurrence", { kind: "weekly", days: [1], time: "09:00" })
       case "monthly":
-        return setForm("recurrence", {
-          kind: "monthly",
-          day: form.recurrence.kind === "monthly" ? form.recurrence.day : 1,
-          time,
-        })
+        return setForm("recurrence", { kind: "monthly", day: 1, time: "09:00" })
       case "cron":
-        return setForm("recurrence", {
-          kind: "cron",
-          cron: custom()?.cron ?? `${clockOf(time).minute} ${clockOf(time).hour} * * *`,
-        })
+        return setForm("recurrence", { kind: "cron", cron: "0 9 * * *" })
     }
   }
 
-  const setHours = (value: number) => {
-    if (!Number.isFinite(value)) return
-
-    setForm("recurrenceTouched", true)
-    setForm("recurrence", { kind: "hourly", hours: Math.min(24, Math.max(1, Math.round(value))) })
-  }
-
-  const setMonthDay = (value: number) => {
-    if (!Number.isFinite(value)) return
-
-    setForm("recurrenceTouched", true)
-    setForm("recurrence", { kind: "monthly", day: Math.min(31, Math.max(1, Math.round(value))), time: clock() })
-  }
-
-  const toggleDay = (day: number) => {
-    const current = weekly()
-
-    if (!current) return
-
-    const days = current.days.includes(day)
-      ? current.days.filter((value) => value !== day)
-      : [...current.days, day].sort((left, right) => left - right)
-
-    // A weekly task always repeats on at least one day; removing the last one leaves it in place.
-    if (days.length === 0) return
-
-    setForm("recurrenceTouched", true)
-    setForm("recurrence", { kind: "weekly", days, time: current.time })
-  }
-
-  const setCron = (cron: string) => {
-    setForm("recurrenceTouched", true)
-    setForm("recurrence", { kind: "cron", cron })
-  }
+  const setCron = (cron: string) => setForm("recurrence", { kind: "cron", cron })
 
   const validCron = () => form.recurrence.kind !== "cron" || isValidCron(form.recurrence.cron)
 
@@ -272,7 +115,8 @@ export function NewScheduledTaskDialog(props: {
         prompt: form.prompt.trim(),
         directory: form.directory.trim(),
         permissions: form.permission === "read-only" ? READ_ONLY_PERMISSIONS : undefined,
-        when: whenOf(form.recurrence, form.tz),
+        recurrence: form.recurrence,
+        tz: form.tz,
       })
 
       // Keep the form and its values when the request failed, so the user can fix and retry.
@@ -290,31 +134,20 @@ export function NewScheduledTaskDialog(props: {
     return props.projects.find((project) => project.directory === directory)?.name ?? getFilename(directory)
   }
 
-  const describeRecurrence = (recurrence: Recurrence) => {
+  const describeCadence = (recurrence: Recurrence) => {
     switch (recurrence.kind) {
       case "hourly":
-        return language.plural("scheduled.create.frequency.everyHours", recurrence.hours)
+        return language.t("scheduled.create.frequency.hourly")
       case "daily":
-        return language.t("scheduled.create.frequency.everyDay", { time: recurrence.time })
+        return language.t("scheduled.create.frequency.daily")
       case "weekly":
-        return language.t("scheduled.create.frequency.everyWeek", {
-          days: listFormat().format(recurrence.days.map(weekdayLabel)),
-          time: recurrence.time,
-        })
+        return language.t("scheduled.create.frequency.weekly")
       case "monthly":
-        return language.t("scheduled.create.frequency.everyMonth", {
-          day: recurrence.day,
-          time: recurrence.time,
-        })
+        return language.t("scheduled.create.frequency.monthly")
       case "cron":
         return language.t("scheduled.create.frequency.cron", { cron: recurrence.cron })
     }
   }
-
-  const weekdayFormat = createMemo(() => new Intl.DateTimeFormat(language.intl(), { weekday: "short" }))
-  const weekdayLabel = (day: number) => weekdayFormat().format(new Date(2024, 0, day))
-
-  const listFormat = createMemo(() => new Intl.ListFormat(language.intl(), { style: "long", type: "conjunction" }))
 
   const nextFormat = createMemo(
     () =>
@@ -328,7 +161,11 @@ export function NewScheduledTaskDialog(props: {
   )
 
   const nextLabel = createMemo(() => {
-    const date = nextRun(form.recurrence, new Date())
+    const recurrence = form.recurrence
+
+    if (recurrence.kind !== "cron") return undefined
+
+    const date = nextRun(recurrence, new Date())
 
     return date ? nextFormat().format(date) : undefined
   })
@@ -370,26 +207,6 @@ export function NewScheduledTaskDialog(props: {
               />
             </label>
 
-            <Switch>
-              <Match when={inference().status === "parsing"}>
-                <p class="scheduled-create-status" role="status">
-                  <Loader class="size-3.5" />
-                  {language.t("scheduled.create.parsing")}
-                </p>
-              </Match>
-              <Match when={detected() && !form.recurrenceTouched}>
-                <p class="scheduled-create-status" data-tone="success" role="status">
-                  <Icon name="check" size="small" />
-                  {language.t("scheduled.create.infer.ready")}
-                </p>
-              </Match>
-              <Match when={inference().status === "failed"}>
-                <p class="scheduled-create-status" role="status">
-                  {language.t("scheduled.create.infer.failed")}
-                </p>
-              </Match>
-            </Switch>
-
             <div class="scheduled-field">
               <span class="scheduled-field-label">{language.t("scheduled.create.schedule.label")}</span>
               <div
@@ -413,128 +230,30 @@ export function NewScheduledTaskDialog(props: {
                 </For>
               </div>
 
-              <div class="scheduled-schedule-detail">
-                <Show when={form.recurrence.kind === "hourly" && form.recurrence}>
-                  {(recurrence) => (
-                    <>
-                      <label class="scheduled-inline-field">
-                        <span>{language.t("scheduled.create.hours.label")}</span>
-                        <TextInput
-                          type="number"
-                          numeric
-                          min={1}
-                          max={24}
-                          value={recurrence().hours}
-                          class="scheduled-number"
-                          onInput={(event) => setHours(event.currentTarget.valueAsNumber)}
-                        />
-                        <span>{language.t("scheduled.create.hours.suffix")}</span>
-                      </label>
-                      <small class="scheduled-field-hint">{language.t("scheduled.create.hours.hint")}</small>
-                    </>
-                  )}
-                </Show>
-
-                <Show when={form.recurrence.kind === "daily"}>
-                  <label class="scheduled-inline-field">
-                    <span>{language.t("scheduled.create.time.label")}</span>
-                    <TextInput
-                      type="time"
-                      value={clock()}
-                      class="scheduled-time"
-                      onInput={(event) => setTime(event.currentTarget.value)}
-                    />
-                  </label>
-                </Show>
-
-                <Show when={weekly()}>
-                  {(recurrence) => (
-                    <>
-                      <div
-                        class="scheduled-weekdays"
-                        role="group"
-                        aria-label={language.t("scheduled.create.days.label")}
-                      >
-                        <For each={WEEKDAYS}>
-                          {(day) => (
-                            <button
-                              type="button"
-                              class="scheduled-weekday"
-                              aria-pressed={recurrence().days.includes(day)}
-                              data-selected={recurrence().days.includes(day) ? "" : undefined}
-                              onClick={() => toggleDay(day)}
-                            >
-                              {weekdayLabel(day)}
-                            </button>
-                          )}
-                        </For>
-                      </div>
-                      <label class="scheduled-inline-field">
-                        <span>{language.t("scheduled.create.time.label")}</span>
-                        <TextInput
-                          type="time"
-                          value={recurrence().time}
-                          class="scheduled-time"
-                          onInput={(event) => setTime(event.currentTarget.value)}
-                        />
-                      </label>
-                    </>
-                  )}
-                </Show>
-
-                <Show when={form.recurrence.kind === "monthly" && form.recurrence}>
-                  {(recurrence) => (
-                    <>
-                      <label class="scheduled-inline-field">
-                        <span>{language.t("scheduled.create.dayOfMonth.label")}</span>
-                        <TextInput
-                          type="number"
-                          numeric
-                          min={1}
-                          max={31}
-                          value={recurrence().day}
-                          class="scheduled-number"
-                          onInput={(event) => setMonthDay(event.currentTarget.valueAsNumber)}
-                        />
-                      </label>
-                      <label class="scheduled-inline-field">
-                        <span>{language.t("scheduled.create.time.label")}</span>
-                        <TextInput
-                          type="time"
-                          value={recurrence().time}
-                          class="scheduled-time"
-                          onInput={(event) => setTime(event.currentTarget.value)}
-                        />
-                      </label>
-                    </>
-                  )}
-                </Show>
-
-                <Show when={custom()}>
-                  {(recurrence) => (
-                    <>
-                      <label class="scheduled-field">
-                        <span class="scheduled-field-label">{language.t("scheduled.create.cron.label")}</span>
-                        <TextInput
-                          appearance="base"
-                          class="scheduled-mono"
-                          value={recurrence().cron}
-                          invalid={!isValidCron(recurrence().cron)}
-                          onInput={(event) => setCron(event.currentTarget.value)}
-                        />
-                      </label>
-                      <small
-                        class="scheduled-field-hint"
-                        data-tone={isValidCron(recurrence().cron) ? undefined : "danger"}
-                      >
-                        {isValidCron(recurrence().cron)
-                          ? language.t("scheduled.create.cron.hint")
-                          : language.t("scheduled.create.cron.invalid")}
-                      </small>
-                    </>
-                  )}
-                </Show>
-              </div>
+              <Show when={custom()}>
+                {(recurrence) => (
+                  <div class="scheduled-schedule-detail">
+                    <label class="scheduled-field">
+                      <span class="scheduled-field-label">{language.t("scheduled.create.cron.label")}</span>
+                      <TextInput
+                        appearance="base"
+                        class="scheduled-mono"
+                        value={recurrence().cron}
+                        invalid={!isValidCron(recurrence().cron)}
+                        onInput={(event) => setCron(event.currentTarget.value)}
+                      />
+                    </label>
+                    <small
+                      class="scheduled-field-hint"
+                      data-tone={isValidCron(recurrence().cron) ? undefined : "danger"}
+                    >
+                      {isValidCron(recurrence().cron)
+                        ? language.t("scheduled.create.cron.hint")
+                        : language.t("scheduled.create.cron.invalid")}
+                    </small>
+                  </div>
+                )}
+              </Show>
 
               <small class="scheduled-field-hint">{language.t("scheduled.create.schedule.hint")}</small>
             </div>
@@ -644,14 +363,19 @@ export function NewScheduledTaskDialog(props: {
               <div class="scheduled-preview-row">
                 <dt>{language.t("scheduled.create.preview.runs")}</dt>
                 <dd data-empty={validCron() ? undefined : ""}>
-                  {validCron() ? describeRecurrence(form.recurrence) : language.t("scheduled.create.preview.empty")}
+                  {validCron() ? describeCadence(form.recurrence) : language.t("scheduled.create.preview.empty")}
                 </dd>
               </div>
               <div class="scheduled-preview-row">
                 <dt>{language.t("scheduled.create.preview.next")}</dt>
-                <dd data-empty={nextLabel() ? undefined : ""}>
-                  {nextLabel() ?? language.t("scheduled.create.preview.empty")}
-                </dd>
+                <Show
+                  when={form.recurrence.kind === "cron"}
+                  fallback={<dd>{language.t("scheduled.create.preview.pending")}</dd>}
+                >
+                  <dd data-empty={nextLabel() ? undefined : ""}>
+                    {nextLabel() ?? language.t("scheduled.create.preview.empty")}
+                  </dd>
+                </Show>
               </div>
               <div class="scheduled-preview-row">
                 <dt>{language.t("scheduled.create.preview.zone")}</dt>
@@ -688,6 +412,12 @@ export function NewScheduledTaskDialog(props: {
       </DialogBody>
 
       <DialogFooter>
+        <Show when={form.submitting}>
+          <p class="scheduled-create-status" role="status">
+            <Loader class="size-3.5" />
+            {language.t("scheduled.create.saving")}
+          </p>
+        </Show>
         <div class="scheduled-create-actions">
           <Button variant="neutral" onClick={() => dialog.close()}>
             {language.t("common.cancel")}
@@ -708,15 +438,4 @@ function titleOf(prompt: string) {
     .find(Boolean)
 
   return line ? line.slice(0, 60) : undefined
-}
-
-/** The model replies with an IANA zone; anything else falls back to the zone already shown. */
-function readTimeZone(value: string) {
-  try {
-    new Intl.DateTimeFormat("en", { timeZone: value })
-
-    return value
-  } catch {
-    return undefined
-  }
 }
