@@ -5,7 +5,6 @@ import { AutoScroller, Feedback, PointerActivationConstraints } from "@dnd-kit/d
 import { RestrictToVerticalAxis } from "@dnd-kit/abstract/modifiers"
 import { RestrictToElement } from "@dnd-kit/dom/modifiers"
 import { arrayMove } from "@/runtime/array-move"
-import { Button } from "@opencode/ui/button"
 import { Icon } from "@opencode/ui/icon"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Loader } from "@opencode/ui/loader"
@@ -254,21 +253,21 @@ function SessionQueueRow(props: { queue: SessionQueueView; id: string; index: nu
             <Show when={!editing() && !entry().pending}>
               <Tooltip
                 placement="top"
-                inactive={!props.queue.working()}
-                value={language.t("session.queue.steerTooltip")}
+                value={
+                  props.queue.working() ? language.t("session.queue.steerTooltip") : language.t("session.queue.send")
+                }
               >
-                <Button
+                <IconButton
                   data-action="session-queue-steer"
                   type="button"
-                  size="small"
-                  variant="ghost-faint"
-                  icon="arrow-up"
+                  variant="ghost-muted"
+                  icon={<Icon name="arrow-up" />}
                   disabled={props.queue.busy()}
-                  class="gap-0.5 ps-1 ![font-weight:530] [&_[data-slot=icon-svg]]:text-v2-icon-icon-muted"
+                  aria-label={
+                    props.queue.working() ? language.t("session.queue.steer") : language.t("session.queue.send")
+                  }
                   onClick={() => void props.queue.steer(props.id)}
-                >
-                  {props.queue.working() ? language.t("session.queue.steer") : language.t("session.queue.send")}
-                </Button>
+                />
               </Tooltip>
               <Tooltip placement="top" value={language.t("session.queue.undo")}>
                 <IconButton
