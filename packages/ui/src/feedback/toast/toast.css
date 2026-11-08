@@ -1,3 +1,8 @@
+/*
+  A toast is a window-level banner: it floats over the app the way a macOS notification does, so it leans on the
+  material + elevation tokens instead of borders and flat fills. Severity lives in the icon, not in the surface.
+*/
+
 .toast-v2-region {
   z-index: 1000;
   max-width: min(320px, calc(100vw - 64px));
@@ -9,8 +14,8 @@
 .toast-v2 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20px;
-  column-gap: 12px;
-  row-gap: 12px;
+  column-gap: 10px;
+  row-gap: 8px;
   width: 320px;
   max-width: 100%;
   padding: 12px;
@@ -21,11 +26,13 @@
   outline: none;
   user-select: none;
   -webkit-user-select: none;
-  border-radius: 10px;
+  border-radius: 16px;
   color: var(--v2-text-text-base);
   background: var(--v2-material-surface-strong);
   backdrop-filter: var(--v2-material-blur-thick);
   box-shadow: var(--v2-elevation-floating);
+  /* The banner floats outside the app's inherited font stack, so pick the UI role explicitly. */
+  font-family: var(--v2-font-family-sans);
   transition:
     transform 280ms cubic-bezier(0.2, 0, 0, 1),
     opacity 160ms ease-out,
@@ -33,7 +40,7 @@
     box-shadow 160ms ease-out;
 
   &:has(> [data-icon]) {
-    grid-template-columns: 16px minmax(0, 1fr) 20px;
+    grid-template-columns: 20px minmax(0, 1fr) 20px;
   }
 
   &:focus-visible {
@@ -50,8 +57,13 @@
     opacity: 0;
   }
 
-  &[data-expanded="false"][data-front="false"] {
-    --y: translateY(calc(-1 * var(--toasts-before) * 9.5px)) scale(calc(1 - var(--toasts-before) * 0.05));
+  /* Behind the front toast the stack peeks away from the anchored edge: downward at the top, upward at the bottom. */
+  &[data-y-position="top"][data-expanded="false"][data-front="false"] {
+    --y: translateY(calc(var(--toasts-before) * 8px)) scale(calc(1 - var(--toasts-before) * 0.04));
+  }
+
+  &[data-y-position="bottom"][data-expanded="false"][data-front="false"] {
+    --y: translateY(calc(-1 * var(--toasts-before) * 8px)) scale(calc(1 - var(--toasts-before) * 0.04));
   }
 
   > [data-icon] {
@@ -61,9 +73,21 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
+    width: 20px;
     height: 20px;
+    border-radius: 4px;
+    background: var(--v2-background-bg-layer-02);
     color: var(--v2-icon-icon-base);
+  }
+
+  &.toast-v2--success > [data-icon] {
+    background: var(--v2-state-bg-success);
+    color: var(--v2-state-fg-success);
+  }
+
+  &.toast-v2--error > [data-icon] {
+    background: var(--v2-state-bg-danger);
+    color: var(--v2-state-fg-danger);
   }
 
   > [data-content] {
@@ -71,7 +95,7 @@
     grid-row: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     min-width: 0;
     overflow: hidden;
   }
@@ -89,6 +113,7 @@
     display: none;
   }
 
+  /* macOS keeps the dismiss affordance out of the way until the banner is pointed at or focused. */
   > [data-close-button] {
     grid-column: 2;
     grid-row: 1;
@@ -108,10 +133,20 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    opacity: 0;
+    transition:
+      opacity 90ms ease-out,
+      background-color 90ms ease-out,
+      color 90ms ease-out;
   }
 
   &:has(> [data-icon]) > [data-close-button] {
     grid-column: 3;
+  }
+
+  &:hover > [data-close-button],
+  &:focus-within > [data-close-button] {
+    opacity: 1;
   }
 
   > [data-close-button]:hover {
@@ -124,6 +159,7 @@
   }
 
   > [data-close-button]:focus-visible {
+    opacity: 1;
     outline: 3px solid var(--v2-focus-ring-color);
     outline-offset: 2px;
   }
@@ -131,8 +167,8 @@
   > [data-icon] > *,
   > [data-icon] svg,
   > [data-close-button] svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     display: block;
     flex-shrink: 0;
   }
@@ -143,10 +179,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 15px;
+    font-size: 13px;
     font-style: normal;
-    font-weight: 530;
-    line-height: 20px;
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
     font-synthesis: none;
     margin: 0;
@@ -158,10 +194,10 @@
     text-wrap-style: pretty;
     overflow-wrap: anywhere;
     word-break: break-word;
-    font-size: 15px;
+    font-size: 13px;
     font-style: normal;
     font-weight: 400;
-    line-height: 20px;
+    line-height: var(--line-height-base);
     letter-spacing: -0.04px;
     font-synthesis: none;
     margin: 0;
@@ -186,7 +222,7 @@
   [data-slot="toast-v2-header"] {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
   }
 
@@ -195,8 +231,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
+    width: 20px;
     height: 20px;
+    border-radius: 4px;
+    background: var(--v2-background-bg-layer-02);
     color: var(--v2-icon-icon-base);
   }
 
@@ -204,7 +242,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     min-width: 0;
     overflow: hidden;
   }

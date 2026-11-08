@@ -32,15 +32,20 @@ function ToastRegion(props: ToastRegionProps) {
     onCleanup(() => observer.disconnect())
   }
 
+  const rtl = () => isRTL(i18n.locale())
+
+  // Keep clear of the window titlebar, whose height follows the desktop zoom level via the overlay env var.
+  const topOffset = "calc(env(titlebar-area-height, 36px) + 12px)"
+
   return (
     <Portal ref={observe}>
       <Toaster
-        position={isRTL(i18n.locale()) ? "bottom-left" : "bottom-right"}
-        offset={isRTL(i18n.locale()) ? { left: 32, bottom: 48 } : { right: 32, bottom: 48 }}
-        mobileOffset={16}
-        gap={12}
+        position={rtl() ? "top-left" : "top-right"}
+        offset={rtl() ? { top: topOffset, left: 32 } : { top: topOffset, right: 32 }}
+        mobileOffset={{ top: "calc(env(safe-area-inset-top, 0px) + 44px)", left: 16, right: 16 }}
+        gap={10}
         duration={5000}
-        swipeDirections={["bottom"]}
+        swipeDirections={["top"]}
         className={["toast-v2-region", local.className, local.class].filter(Boolean).join(" ")}
         style={{ "--width": "320px", ...local.style }}
         toastOptions={{
