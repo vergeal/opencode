@@ -819,8 +819,36 @@ async function typeFenceLines(input: Locator, page: Page, lines: string[]) {
 
   for (const [index, line] of lines.entries()) {
     await page.keyboard.type(line)
-    if (index < lines.length - 1) await page.keyboard.press("Shift+Enter")
+    if (index >= lines.length - 1) continue
+
+    await page.keyboard.press("Shift+Enter")
+    // Let the idle render rebuild its decoration between lines, as it does for a real typist.
+    await page.waitForTimeout(200)
   }
+}
+
+for (const fence of ["```js", "```"]) {
+  story(`keeps typing after a committed ${fence} out of the hidden fence line`, async ({ mount, page }) => {
+    const component = await mount("opencode-composer-flow--empty-draft")
+    const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+    await input.click()
+    await page.keyboard.type(fence)
+    await page.keyboard.press("Shift+Enter")
+    // The idle render runs before the next key: this is the caret the user types into. Inside the
+    // transparent fence marker it paints the body invisible.
+    await page.waitForTimeout(300)
+    expect(
+      await input.evaluate(() => {
+        const node = window.getSelection()?.anchorNode
+        const element = node instanceof Element ? node : node?.parentElement
+
+        return !!element?.closest("[data-md-marker], [data-md-marker-block]")
+      }),
+    ).toBe(false)
+
+    await page.keyboard.type("hello")
+    await expect(input.locator("[data-md-code-block]")).toHaveText("hello")
+  })
 }
 
 story("keeps a language tag and a second fenced block intact while typing", async ({ mount, page }) => {

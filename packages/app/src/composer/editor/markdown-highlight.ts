@@ -739,9 +739,9 @@ function textOffset(editor: HTMLElement, node: Node, offset: number) {
   const entry = textNodes(editor).find((item) => item.node === node)
   if (entry) return entry.start + offset
 
-  const inside = textNodes(editor).filter((item) => node.contains(item.node))
-
-  return inside[0]?.start
+  // An element position (an empty block's placeholder, or a boundary between rendered segments) has no
+  // text node of its own; measure it the way a selection would.
+  return offsetOf(editor, node, offset)
 }
 
 function offsetOf(editor: HTMLElement, node: Node, offset: number) {
@@ -761,9 +761,7 @@ function restore(editor: HTMLElement, caret: Caret) {
   const nodes = textNodes(editor)
 
   if (caret.start === caret.end) {
-    // A collapsed caret prefers the end of the preceding text node: that keeps it after a hidden marker
-    // rather than in an empty node the browser may not treat as a real insertion point.
-    const at = endPoint(nodes, caret.start) ?? point(nodes, caret.start)
+    const at = caretPoint(nodes, caret.start)
     if (!at) return
     selection.setBaseAndExtent(at.node, at.offset, at.node, at.offset)
     keepCaretOutsideMention(editor)
@@ -778,6 +776,31 @@ function restore(editor: HTMLElement, caret: Caret) {
     selection.setBaseAndExtent(entry.from.node, entry.from.offset, entry.to.node, entry.to.offset)
   else selection.setBaseAndExtent(entry.to.node, entry.to.offset, entry.from.node, entry.from.offset)
   keepCaretOutsideMention(editor)
+}
+
+/**
+ * Where a collapsed caret lands in the rendered draft. It prefers the end of the preceding text node,
+ * which keeps it after a hidden marker instead of in an empty node, but never inside a hidden marker:
+ * text typed there joins the marker's range and paints transparent, so the draft looks empty.
+ */
+function caretPoint(nodes: ReturnType<typeof textNodes>, position: number) {
+  const at = endPoint(nodes, position) ?? point(nodes, position)
+  if (!at || !hiddenMarker(at.node)) return at
+
+  const visible = point(nodes, position)
+  if (visible && !hiddenMarker(visible.node)) return visible
+
+  // An empty fenced block has no text of its own, so the caret goes inside the block element itself.
+  const block = hiddenMarker(at.node)?.nextElementSibling
+  if (block instanceof HTMLElement && block.dataset.mdCodeBlock !== undefined) return { node: block, offset: 0 }
+
+  return at
+}
+
+function hiddenMarker(node: Node) {
+  return (node instanceof Element ? node : node.parentElement)?.closest<HTMLElement>(
+    "[data-md-marker], [data-md-marker-block]",
+  )
 }
 
 /**
@@ -1072,8 +1095,11 @@ function collect(text: string): Segment[] {
             // The fence line's own line break belongs to the marker too, so hiding the marker removes
             // the whole line box instead of leaving an empty 20px line above the block.
             const bodyStart = start + lines[0].length + (raw.length > lines[0].length ? 1 : 0)
+            // An open fence with no body yet still owns an empty block, so the caret has a visible place
+            // to land instead of being restored into the hidden fence line.
+            const bodyEnd = Math.max(bodyStart, start + trimmed.length)
             add(start, bodyStart, "marker")
-            add(bodyStart, closed ? start + lastBreak : start + trimmed.length, "codeblock")
+            add(bodyStart, closed ? start + lastBreak : bodyEnd, "codeblock")
             // Hide the closing fence with the line break in front of it. The line break after it joins the
             // marker too, otherwise it draws an empty line between the block and the next line.
             if (closed) {
