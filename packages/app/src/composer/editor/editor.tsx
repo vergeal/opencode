@@ -48,6 +48,7 @@ import type { ComposerEditorModel, ComposerSelectControl } from "./interaction"
 import { isAttachment } from "../prompt-parts"
 import { QuoteCommentEditor } from "./quote-comment"
 import { createMarkdownHighlight } from "./markdown-highlight"
+import { openFence } from "./fence"
 import "../attachments/attachments.css"
 import "./editor.css"
 import "@/shell/palette-menu.css"
@@ -375,15 +376,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
 
                 if (event instanceof InputEvent && event.isComposing) return
 
-                // Expanding a lone fence belongs to typing, and only a typed tick can open one. Checking
-                // on every keystroke cost two full-text scans; running it after a delete re-opened the
-                // block the user just tried to remove.
-                const completed =
-                  event instanceof InputEvent && event.inputType === "insertText" && event.data?.includes("`")
-                    ? completeCodeFence(element)
-                    : undefined
-
-                sync(element, completed ?? composerCursor(element))
+                sync(element, composerCursor(element))
                 keepCaretInView()
               }}
               // An IME reports its committed text in an input event that still carries `isComposing`, so the
@@ -420,6 +413,20 @@ export function ComposerEditor(props: ComposerEditorProps) {
                   return
                 }
 
+                // Committing a fence line is when a lone opening run becomes a whole block: expanding on the
+                // third tick swallowed a language tag and split a longer nested run.
+                if (event.key === "Enter" && event.shiftKey && !event.isComposing && event.keyCode !== 229) {
+                  const completed = completeCodeFence(event.currentTarget)
+
+                  if (completed !== undefined) {
+                    event.preventDefault()
+                    sync(event.currentTarget, completed)
+                    keepCaretInView()
+                  }
+
+                  return
+                }
+
                 // Safari delivers the Enter that confirms an IME candidate after compositionend, so only its
                 // keyCode 229 shows it belongs to the composition.
                 if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
@@ -436,7 +443,19 @@ export function ComposerEditor(props: ComposerEditorProps) {
               // autocorrection and capitalization around the Return.
               onBeforeInput={(event) => {
                 if (event.inputType !== "insertParagraph") return
+
+                const element = event.currentTarget
+                const completed = completeCodeFence(element)
                 event.preventDefault()
+
+                // The expansion wrote its own line break, so adding one here would leave a blank line.
+                if (completed !== undefined) {
+                  sync(element, completed)
+                  keepCaretInView()
+
+                  return
+                }
+
                 document.execCommand("insertLineBreak")
               }}
               onKeyUp={updateCursor}
@@ -770,8 +789,10 @@ function composerCursor(editor: HTMLDivElement) {
 }
 
 /**
- * Expands a lone ``` on a line into an empty fenced block with the caret on the body line.
- * Returns the caret after the edit, or undefined when the draft is unchanged.
+ * Expands a line that holds only an opening fence into an empty fenced block with the caret on the
+ * body line. Runs when the line is committed, not while its ticks are typed, so a language tag or a
+ * longer nested run reaches the draft intact. Returns the caret after the edit, or undefined when the
+ * draft is unchanged.
  */
 function completeCodeFence(editor: HTMLDivElement) {
   const selection = window.getSelection()
@@ -783,20 +804,18 @@ function completeCodeFence(editor: HTMLDivElement) {
   const text = editor.textContent ?? ""
   const cursor = composerCursor(editor)
   const lineStart = text.lastIndexOf("\n", cursor - 1) + 1
+  const line = /^[ \t]*(`{3,}|~{3,})[ \t]*$/.exec(text.slice(lineStart, cursor))
 
-  if (!/^[ \t]*```$/.test(text.slice(lineStart, cursor))) return
+  // A language tag or trailing text means the user is opening the block themselves.
+  if (!line) return
 
   if (text.slice(cursor).split("\n")[0].trim() !== "") return
 
-  // Inside an open fence the user is closing it, not opening another one.
-  const fences = text
-    .slice(0, lineStart)
-    .split("\n")
-    .filter((line) => /^[ \t]*```/.test(line)).length
+  // Inside an open fence this line closes it, so the block already exists.
+  if (openFence(text.slice(0, lineStart))) return
 
-  if (fences % 2 === 1) return
-
-  const body = document.createTextNode("\n\n```")
+  // Close the block with the run the user typed, so a nested fence keeps its own length.
+  const body = document.createTextNode(`\n\n${line[1]}`)
   const range = document.createRange()
   range.setStart(selection.anchorNode, selection.anchorOffset)
   range.collapse(true)

@@ -1,4 +1,5 @@
 import { lexMarkdown } from "@opencode/ui/context/marked-base"
+import { nextFence, type Fence } from "./fence"
 
 /** Highlight group names registered through the CSS Custom Highlight API. */
 const groups = {
@@ -904,16 +905,15 @@ function wrapRange(entry: ReturnType<typeof locate>, span: HTMLElement, expected
 
 /** Whether the draft has an unclosed inline fragment, whose boundary must follow ordinary typing. */
 function hasOpenFragment(text: string) {
-  let fenced = false
+  let open: Fence | undefined
 
   for (const line of text.split("\n")) {
-    // A fenced block's rows are code, not inline markdown: its three ticks and any ticks inside it are
+    const fence = nextFence(open, line)
+    open = fence.open
+
+    // A fenced block's rows are code, not inline markdown: its fence lines and any ticks inside it are
     // not an open fragment, and treating them as one rebuilt every decoration on every keystroke.
-    if (/^[ \t]*(?:`{3,}|~{3,})/.test(line)) {
-      fenced = !fenced
-      continue
-    }
-    if (fenced) continue
+    if (fence.marker || open) continue
 
     for (const mark of ["`", "~~", "**", "*", "_"]) {
       if (mark === "*" && line.includes("**")) continue

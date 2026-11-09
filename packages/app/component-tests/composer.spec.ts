@@ -1,3 +1,4 @@
+import type { Locator, Page } from "@playwright/test"
 import { expect, story } from "../../stories/playwright/story"
 
 story("cycles full prompts with plain arrows without opening the picker", async ({ mount, page }) => {
@@ -809,4 +810,43 @@ story.describe("mobile variant drawer", () => {
       await expect(high).toBeInViewport()
     })
   }
+})
+
+// Typing a fence line used to expand it as soon as the third tick landed, which swallowed the
+// language tag and split a longer nested run. Completion now waits for the line to be committed.
+async function typeFenceLines(input: Locator, page: Page, lines: string[]) {
+  await input.click()
+
+  for (const [index, line] of lines.entries()) {
+    await page.keyboard.type(line)
+    if (index < lines.length - 1) await page.keyboard.press("Shift+Enter")
+  }
+}
+
+story("keeps a language tag and a second fenced block intact while typing", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await typeFenceLines(input, page, ["```js", "a", "```", "", "hello", "", "```ts", "b", "```"])
+
+  await expect(input).toHaveText("```js\na\n```\n\nhello\n\n```ts\nb\n```")
+  await expect(input.locator("[data-md-code-block]")).toHaveCount(2)
+})
+
+story("keeps a longer nested fence intact while typing", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await typeFenceLines(input, page, ["````md", "```js", "const a = 1", "```", "````"])
+
+  await expect(input).toHaveText("````md\n```js\nconst a = 1\n```\n````")
+  await expect(input.locator("[data-md-code-block]")).toHaveCount(1)
+  await expect(input.locator("[data-md-code-block]")).toHaveText("```js\nconst a = 1\n```")
+})
+
+story("still expands a lone fence into an empty block on a committed line", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await typeFenceLines(input, page, ["```", "code"])
+
+  await expect(input).toHaveText("```\ncode\n```")
+  await expect(input.locator("[data-md-code-block]")).toHaveText("code")
 })
