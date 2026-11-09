@@ -1,6 +1,6 @@
-import { app, contentTracing, screen, type BrowserWindow } from "electron"
-import { Schema } from "effect"
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
+import { app, screen, type BrowserWindow, type Debugger, type WebContents } from "electron"
+import { Option, Schema } from "effect"
+import { mkdir, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { getHeapSpaceStatistics, getHeapStatistics, writeHeapSnapshot } from "node:v8"
 import type { Plugin } from "@opencode/plugin/gui/main"
@@ -75,8 +75,8 @@ const setup: Plugin.MainSetup = (ctx) => {
       system: process.getSystemMemoryInfo(),
     }
 
-    const native = await recordNative(directory)
     const windows = ctx.windows.list()
+    const native = await recordNative(windows[0]?.webContents, directory)
     const pages = await Promise.all(windows.map((window) => describeWindow(window)))
 
     // The server is another process, so it serializes its heap while the windows do. Windows go one at a time: a
@@ -235,20 +235,61 @@ const setup: Plugin.MainSetup = (ctx) => {
   })
 }
 
-// Chromium's own breakdown of every process's memory: what a heap snapshot cannot show (images, layout, compositor
-// layers, GPU). Fails when something else is tracing, such as DevTools recording a performance profile.
-async function recordNative(directory: string) {
-  const file = path.join(directory, "memory-infra.json")
+/** One `Tracing.dataCollected` notification: the chunk of legacy JSON events Chromium collected so far. */
+const TraceChunk = Schema.Struct({ value: Schema.Array(Schema.Unknown) })
 
-  return (
-    contentTracing
-      .startRecording(traceConfig)
-      // The first detailed dump arrives within a periodic interval of starting.
-      .then(() => new Promise((resolve) => setTimeout(resolve, 2_500)))
-      .then(() => contentTracing.stopRecording(file))
-      .then(async () => ({ file: path.basename(file), summary: summarize(await readFile(file, "utf8")) }))
-      .catch((error: Error) => ({ error: error.message }))
-  )
+const decodeTraceChunk = Schema.decodeUnknownOption(TraceChunk)
+
+/** Electron types a debugger message's payload as `any`; `decodeTraceChunk` parses it before use. */
+type DebuggerMessageListener = Parameters<Debugger["on"]>[1]
+
+// Chromium's own breakdown of every process's memory: what a heap snapshot cannot show (images, layout, compositor
+// layers, GPU). The DevTools tracing session is page-level but covers the browser, GPU and every renderer process.
+// Fails when something else is tracing, such as DevTools recording a performance profile.
+async function recordNative(contents: WebContents | undefined, directory: string) {
+  // Tracing needs a page to own the DevTools session; without a window there is nothing to attach to.
+  if (!contents) return { error: "No window is available to start tracing." }
+
+  const file = path.join(directory, "memory-infra.json")
+  const session = contents.debugger
+
+  if (session.isAttached()) return { error: "Another DevTools session is already attached to this window." }
+  const events: unknown[] = []
+  let finish = () => {}
+
+  const collected = new Promise<void>((resolve) => (finish = resolve))
+
+  const onMessage: DebuggerMessageListener = (_event, method, params) => {
+    if (method === "Tracing.dataCollected") {
+      const chunk = decodeTraceChunk(params)
+
+      if (Option.isSome(chunk)) events.push(...chunk.value.value)
+
+      return
+    }
+
+    if (method === "Tracing.tracingComplete") finish()
+  }
+
+  try {
+    session.attach("1.3")
+    session.on("message", onMessage)
+    await session.sendCommand("Tracing.start", { traceConfig })
+    // The first detailed dump arrives within a periodic interval of starting.
+    await new Promise((resolve) => setTimeout(resolve, 2_500))
+    await session.sendCommand("Tracing.end")
+    await collected
+    const trace = JSON.stringify({ traceEvents: events })
+    await writeFile(file, trace, { mode: 0o600 })
+
+    return { file: path.basename(file), summary: summarize(trace) }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : String(error) }
+  } finally {
+    session.removeListener("message", onMessage)
+
+    if (session.isAttached()) session.detach()
+  }
 }
 
 async function describeWindow(window: BrowserWindow) {

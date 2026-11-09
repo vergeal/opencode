@@ -1,10 +1,13 @@
 import { Option, Schema } from "effect"
 
-/** The trace config that makes Chromium dump every process's memory, broken down by allocator. */
+/**
+ * The DevTools Protocol `Tracing.start` config that makes Chromium dump every process's memory, broken down by
+ * allocator. Chromium converts these camelCase names to its own config keys.
+ */
 export const traceConfig = {
-  included_categories: ["disabled-by-default-memory-infra"],
-  excluded_categories: ["*"],
-  memory_dump_config: { triggers: [{ mode: "detailed", periodic_interval_ms: 1000 }] },
+  includedCategories: ["disabled-by-default-memory-infra"],
+  excludedCategories: ["*"],
+  memoryDumpConfig: { triggers: [{ mode: "detailed", periodicIntervalMs: 1000 }] },
 }
 
 /** One Chromium process in the summary. Sizes are MiB. */
@@ -62,7 +65,7 @@ const Event = Schema.Struct({
   ),
 })
 
-// Electron writes `{ traceEvents: [...] }`; events of other shapes are skipped one by one.
+// Chromium's DevTools tracing session writes `{ traceEvents: [...] }`; events of other shapes are skipped one by one.
 const decodeTrace = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.Struct({ traceEvents: Schema.Array(Schema.Unknown) })),
 )
@@ -72,7 +75,7 @@ const decodeEvent = Schema.decodeUnknownOption(Event)
 /**
  * Summarizes a memory-infra trace: for each process, the last detailed dump's totals and allocator sizes.
  *
- * @param json - The trace file's text, as `contentTracing.stopRecording` wrote it.
+ * @param json - The legacy JSON trace the DevTools tracing session collected, as `{ traceEvents: [...] }`.
  * @returns One entry per process that dumped, largest private footprint first.
  */
 export function summarize(json: string): ProcessMemory[] {
