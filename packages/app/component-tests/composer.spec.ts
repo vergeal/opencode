@@ -901,6 +901,30 @@ story("keeps a lone run of ticks visible while typing", async ({ mount, page }) 
   await expect(input.locator("[data-md-marker-block]")).toHaveCount(0)
 })
 
+story("keeps the caret visible after closing inline code", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await input.click()
+  await page.keyboard.type("`a`")
+  // The closing tick renders as a hidden marker; a caret restored inside it has no line box.
+  await page.waitForTimeout(300)
+
+  const caret = await input.evaluate(() => {
+    const selection = window.getSelection()
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : undefined
+    const node = selection?.anchorNode
+    const element = node instanceof Element ? node : node?.parentElement
+
+    return {
+      height: range?.getBoundingClientRect().height ?? 0,
+      marker: !!element?.closest("[data-md-marker]"),
+    }
+  })
+
+  expect(caret.marker).toBe(false)
+  expect(caret.height).toBeGreaterThan(0)
+})
+
 story("still expands a lone fence into an empty block on a committed line", async ({ mount, page }) => {
   const component = await mount("opencode-composer-flow--empty-draft")
   const input = component.getByRole("textbox", { name: "Prompt", exact: true })

@@ -232,16 +232,6 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     function hide(segment: Segment, block: boolean, lock: boolean) {
       const entry = locate(textNodes(editor), segment.start, segment.end)
       if (!entry) return
-      if (typeof window !== "undefined")
-        ((window as unknown as { __hide?: unknown[] }).__hide ??= []).push({
-          start: segment.start,
-          end: segment.end,
-          same: entry.from.node === entry.to.node,
-          node: entry.from.node.textContent,
-          fromOffset: entry.from.offset,
-          toNode: entry.to.node.textContent,
-          toOffset: entry.to.offset,
-        })
 
       const span = document.createElement("span")
       if (block) {
@@ -785,14 +775,38 @@ function restore(editor: HTMLElement, caret: Caret) {
  */
 function caretPoint(nodes: ReturnType<typeof textNodes>, position: number) {
   const at = endPoint(nodes, position) ?? point(nodes, position)
-  if (!at || !hiddenMarker(at.node)) return at
+  const marker = at ? hiddenMarker(at.node) : undefined
+  if (!at || !marker) return at
 
   const visible = point(nodes, position)
   if (visible && !hiddenMarker(visible.node)) return visible
 
-  // An empty fenced block has no text of its own, so the caret goes inside the block element itself.
-  const block = hiddenMarker(at.node)?.nextElementSibling
-  if (block instanceof HTMLElement && block.dataset.mdCodeBlock !== undefined) return { node: block, offset: 0 }
+  // A hidden marker has no text box, so a caret placed inside it has zero height and looks gone. Land on
+  // the next visible text instead, or the end of the previous rendered segment when nothing follows.
+  for (let node: Node | null = marker.nextSibling; node; node = node.nextSibling) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      if ((node as Text).data.length > 0) return { node, offset: 0 }
+      continue
+    }
+    if (node instanceof HTMLElement && !hiddenMarker(node)) {
+      const first = textNodes(node)[0]
+      if (first) return { node: first.node, offset: 0 }
+      if (node.dataset.mdCodeBlock !== undefined) return { node: node, offset: 0 }
+    }
+  }
+
+  for (let node: Node | null = marker.previousSibling; node; node = node.previousSibling) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node as Text
+      if (text.data.length > 0) return { node: text, offset: text.data.length }
+      continue
+    }
+    if (node instanceof HTMLElement && !hiddenMarker(node)) {
+      const last = textNodes(node).at(-1)
+      if (last) return { node: last.node, offset: last.end - last.start }
+      if (node.dataset.mdCodeBlock !== undefined) return { node: node, offset: 0 }
+    }
+  }
 
   return at
 }
