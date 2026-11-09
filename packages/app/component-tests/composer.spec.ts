@@ -933,3 +933,22 @@ story("still expands a lone fence into an empty block on a committed line", asyn
   await expect(input).toHaveText("```\ncode\n```")
   await expect(input.locator("[data-md-code-block]")).toHaveText("code")
 })
+
+for (const [label, lines] of [
+  ["plain text", ["hello"]],
+  ["a fenced block", ["```js", "const a = 1", "```", "tail"]],
+] as [string, string[]][]) {
+  story(`undoes a select-all delete of ${label}`, async ({ mount, page }) => {
+    const component = await mount("opencode-composer-flow--empty-draft")
+    const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+    await typeFenceLines(input, page, lines)
+    await page.waitForTimeout(300)
+
+    await page.keyboard.press("Control+a")
+    await page.keyboard.press("Backspace")
+    await expect(input).toHaveText("")
+
+    await page.keyboard.press("Control+z")
+    await expect(input).toHaveText(lines.join("\n"))
+  })
+}

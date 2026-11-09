@@ -25,6 +25,11 @@ type Token = { type: string; raw?: string; text?: string; tokens?: Token[]; item
  * editable DOM on every keystroke. */
 const IDLE = 150
 
+/** Source of the last full-draft delete. Native undo cannot restore it because the decoration spans leave
+ * no complete history entry, and the composer can replace its editor element, so this stays module level
+ * and the next undo reads it from here. */
+let deletedSource: string | undefined
+
 /**
  * Styles markdown in the composer.
  *
@@ -492,6 +497,33 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.isComposing) return
 
+    if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
+      const source = deletedSource
+      if (source === undefined) return
+
+      deletedSource = undefined
+      event.preventDefault()
+      event.stopPropagation()
+      undecorate(false)
+      editor.textContent = source
+      const end = textNodes(editor).at(-1)
+      if (end) window.getSelection()?.setBaseAndExtent(end.node, end.node.data.length, end.node, end.node.data.length)
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "historyUndo" }))
+
+      return
+    }
+
+    // Any other edit ends that one-shot restore; native undo handles it from there. Modifier keys must not
+    // clear it: Cmd/Ctrl arrives as its own keydown right before the undo key.
+    if (
+      event.key.length === 1 ||
+      event.key === "Backspace" ||
+      event.key === "Delete" ||
+      event.key === "Enter" ||
+      event.key === "Tab"
+    )
+      deletedSource = undefined
+
     // An empty fenced block has no text of its own, so backspace would step through its ticks one at a
     // time. Delete the whole block in one go instead, restoring the source first so the range is plain
     // text and the caret lands where the block started.
@@ -538,8 +570,6 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a") {
       event.preventDefault()
       selectedAll = true
-      if (typeof window !== "undefined")
-        (window as unknown as { __cmdA?: number }).__cmdA = ((window as unknown as { __cmdA?: number }).__cmdA ?? 0) + 1
       const range = document.createRange()
       range.selectNodeContents(editor)
       const selection = window.getSelection()
@@ -569,6 +599,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
 
         if (hidden && start !== undefined) {
           event.preventDefault()
+          deletedSource = source
           const next = source.slice(0, start) + source.slice(start + removed.length)
           editor.textContent = next
           editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
@@ -583,6 +614,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       if (selectedAll) {
         event.preventDefault()
         selectedAll = false
+        deletedSource = editor.textContent ?? ""
         editor.textContent = ""
         editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
 
