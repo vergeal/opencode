@@ -870,6 +870,23 @@ story("keeps a longer nested fence intact while typing", async ({ mount, page })
   await expect(input.locator("[data-md-code-block]")).toHaveText("```js\nconst a = 1\n```")
 })
 
+story("keeps a shorter fence line visible inside a longer open fence", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await typeFenceLines(input, page, ["````md", "```js", "x"])
+  await page.keyboard.press("Shift+Enter")
+  await page.waitForTimeout(300)
+  // A three-tick run cannot close a four-tick fence, so this line is body text. Treating it as the
+  // closing fence hid the whole line, and the character typed after it never showed up.
+  await page.keyboard.type("```")
+  // Let the idle render run: that is where the shorter run used to be taken for the closing fence.
+  await page.waitForTimeout(400)
+  await page.keyboard.type("y")
+
+  await expect(input).toHaveText("````md\n```js\nx\n```y")
+  await expect(input.locator("[data-md-code-block]")).toHaveText("```js\nx\n```y")
+})
+
 story("still expands a lone fence into an empty block on a committed line", async ({ mount, page }) => {
   const component = await mount("opencode-composer-flow--empty-draft")
   const input = component.getByRole("textbox", { name: "Prompt", exact: true })

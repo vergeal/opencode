@@ -1086,12 +1086,16 @@ function collect(text: string): Segment[] {
 
         case "code": {
           const lines = raw.split("\n")
-          const fenced = /^[ \t]*(?:`{3,}|~{3,})/.test(lines[0])
+          // A fence line only closes the block when it matches the opening run: the same character, at
+          // least as long, and nothing after it. A shorter run or another marker inside a longer fence
+          // is body text, so hiding it would swallow the line the user is typing on.
+          const fence = nextFence(undefined, lines[0]).open
           const trimmed = raw.replace(/\s+$/, "")
           const lastBreak = trimmed.lastIndexOf("\n")
-          const closed = lastBreak > 0 && /^[ \t]*(?:`{3,}|~{3,})[ \t]*$/.test(trimmed.slice(lastBreak + 1))
+          const closed =
+            !!fence && lastBreak > 0 && nextFence(fence, trimmed.slice(lastBreak + 1)).open === undefined
 
-          if (fenced) {
+          if (fence) {
             // The fence line's own line break belongs to the marker too, so hiding the marker removes
             // the whole line box instead of leaving an empty 20px line above the block.
             const bodyStart = start + lines[0].length + (raw.length > lines[0].length ? 1 : 0)
