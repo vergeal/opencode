@@ -887,6 +887,20 @@ story("keeps a shorter fence line visible inside a longer open fence", async ({ 
   await expect(input.locator("[data-md-code-block]")).toHaveText("```js\nx\n```y")
 })
 
+story("keeps a lone run of ticks visible while typing", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await input.click()
+  for (const char of ["`", "`", "`", "`"]) {
+    await page.keyboard.type(char)
+    // The tick renders on the next frame: that is where the run used to collapse into a hidden marker.
+    await page.waitForTimeout(150)
+  }
+
+  await expect(input).toHaveText("````")
+  await expect(input.locator("[data-md-marker-block]")).toHaveCount(0)
+})
+
 story("still expands a lone fence into an empty block on a committed line", async ({ mount, page }) => {
   const component = await mount("opencode-composer-flow--empty-draft")
   const input = component.getByRole("textbox", { name: "Prompt", exact: true })

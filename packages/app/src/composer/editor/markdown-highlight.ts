@@ -1095,7 +1095,10 @@ function collect(text: string): Segment[] {
           const closed =
             !!fence && lastBreak > 0 && nextFence(fence, trimmed.slice(lastBreak + 1)).open === undefined
 
-          if (fence) {
+          // Until the line is committed with a line break, the fence run is still the line the user is
+          // typing on. Collapsing it there hid the characters as they were typed, so a lone run stays
+          // as plain text and only becomes a block once there is a body line below it.
+          if (fence && lines.length > 1) {
             // The fence line's own line break belongs to the marker too, so hiding the marker removes
             // the whole line box instead of leaving an empty 20px line above the block.
             const bodyStart = start + lines[0].length + (raw.length > lines[0].length ? 1 : 0)
