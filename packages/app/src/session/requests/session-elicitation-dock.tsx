@@ -28,10 +28,13 @@ const inputTypes = { email: "email", uri: "url", date: "text", "date-time": "tex
 export function SessionElicitationDock(props: {
   request: FormInfo & { location?: LocationRef }
   onSubmit: () => void
+  /** The server the request belongs to, when it is not the routed one (for example a cross-server inbox item). */
+  data?: ReturnType<typeof useData>
 }) {
   const language = useLanguage()
   const platform = usePlatform()
-  const data = useData()
+  const current = useData()
+  const data = () => props.data ?? current
   const fields = createMemo(() => props.request.fields.filter((field) => !("hidden" in field && field.hidden)))
 
   const message = () => Option.getOrUndefined(decodeMessage(props.request.metadata?.message))
@@ -68,13 +71,13 @@ export function SessionElicitationDock(props: {
   const input = () => ({ sessionID: props.request.sessionID, formID: props.request.id })
 
   const reply = useMutation(() => ({
-    mutationFn: (answer: FormAnswer) => data.session.form.reply({ ...input(), answer }, props.request.location),
+    mutationFn: (answer: FormAnswer) => data().session.form.reply({ ...input(), answer }, props.request.location),
     onMutate: props.onSubmit,
     onError: fail,
   }))
 
   const cancel = useMutation(() => ({
-    mutationFn: () => data.session.form.cancel(input(), props.request.location),
+    mutationFn: () => data().session.form.cancel(input(), props.request.location),
     onMutate: props.onSubmit,
     onError: fail,
   }))
