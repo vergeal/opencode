@@ -59,7 +59,7 @@ export function createSessionRevert(input: {
   const stage = async (message: SessionMessageUser, previous: SessionMessageUser | undefined) => {
     const sessionID = input.session.identity.params.id
 
-    if (!sessionID) return
+    if (!sessionID) return false
     const owner = input.session.ownership.capture()
     const target = prompt.capture()
 
@@ -74,28 +74,30 @@ export function createSessionRevert(input: {
         return undefined
       })
 
-      if (!restored) return
+      if (!restored) return false
 
-      if (!(await request(() => server.api.session.inbox.cancel({ sessionID, inboxID: message.id })))) return
+      if (!(await request(() => server.api.session.inbox.cancel({ sessionID, inboxID: message.id })))) return false
       restore(target, message, restored)
       owner.run(() => input.setActiveMessage(previous))
 
-      return
+      return true
     }
 
     // Interrupt acknowledges before the execution settles, and staging a busy Session fails. The
     // local status can lag the server either way, so always settle first; both are idle no-ops.
     // Like the TUI, stop at the first failure instead of waiting on work that was never interrupted.
-    if (!(await request(() => server.api.session.interrupt({ sessionID })))) return
+    if (!(await request(() => server.api.session.interrupt({ sessionID })))) return false
 
-    if (!(await request(() => server.api.experimental.session.wait({ sessionID })))) return
+    if (!(await request(() => server.api.experimental.session.wait({ sessionID })))) return false
 
-    if (!(await request(() => server.api.session.revert.stage({ sessionID, messageID: message.id })))) return
+    if (!(await request(() => server.api.session.revert.stage({ sessionID, messageID: message.id })))) return false
 
     // Like the TUI, pending inputs are left alone: the revert hides them, committing it drops them,
     // and redo delivers them.
     restore(target, message)
     owner.run(() => input.setActiveMessage(previous))
+
+    return true
   }
 
   const to = async (messageID: string) => {
@@ -112,10 +114,12 @@ export function createSessionRevert(input: {
     const reverted = input.session.data.revertMessageID()
     const boundary = reverted ? messages.findIndex((message) => message.id === reverted) : messages.length
 
-    if (boundary <= 0) return
+    if (boundary <= 0) return false
     const message = messages[boundary - 1]
 
-    if (message) await stage(message, messages[boundary - 2])
+    if (!message) return false
+
+    return stage(message, messages[boundary - 2])
   }
 
   const redo = async () => {

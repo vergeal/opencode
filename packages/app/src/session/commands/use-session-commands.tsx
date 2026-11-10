@@ -38,6 +38,8 @@ export type SessionCommandContext = {
   }
   navigateMessageByOffset: (offset: number) => void
   revert: Pick<SessionRevert, "undo" | "redo">
+  // Undoes the last message and sends the restored draft again.
+  resend: () => void
   focusInput: () => void
   // The composer's model, which a compaction runs with.
   model: () => { id: string; providerID: string; variant?: string } | undefined
@@ -389,7 +391,15 @@ export const useSessionCommands = (actions: SessionCommandContext) => {
       description: language.t("command.session.undo.description"),
       slash: "undo",
       disabled: !actions.session.identity.params.id || actions.session.history.visibleUserMessages().length === 0,
-      onSelect: undo,
+      onSelect: () => void undo(),
+    }),
+    sessionCommand({
+      id: "session.resend",
+      title: language.t("command.session.resend"),
+      description: language.t("command.session.resend.description"),
+      slash: "resend",
+      disabled: !actions.session.identity.params.id || actions.session.history.visibleUserMessages().length === 0,
+      onSelect: actions.resend,
     }),
     sessionCommand({
       id: "session.redo",

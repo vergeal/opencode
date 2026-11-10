@@ -111,6 +111,8 @@ export const dict = {
   "command.permissions.autoaccept.project": "Auto-accept permissions for this project",
   "command.session.undo": "Undo",
   "command.session.undo.description": "Undo the last message",
+  "command.session.resend": "Resend",
+  "command.session.resend.description": "Undo the last message and send it again",
   "command.session.redo": "Redo",
   "command.session.redo.description": "Redo the last undone message",
   "command.session.compact": "Compact session",

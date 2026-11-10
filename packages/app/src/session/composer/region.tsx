@@ -5,7 +5,7 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { isScrollKeyTarget, scrollKey, scrollKeyOwner } from "@opencode/ui/scroll-view"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { useNavigate } from "@solidjs/router"
-import { createEffect, createMemo, on, onCleanup, onMount, Show, type Accessor } from "solid-js"
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, type Accessor } from "solid-js"
 import { Composer } from "@/composer/composer"
 import { VoiceComposer } from "@/voice/composer"
 import { useComposerState } from "@/composer/persistence"
@@ -244,6 +244,17 @@ export function createActiveSessionRegion(input: {
   })
 
   const revertMessage: NonNullable<SessionUserActions["revert"]> = ({ messageID }) => revert.to(messageID)
+
+  const [resendPending, setResendPending] = createSignal(false)
+
+  const resend = async () => {
+    setResendPending(false)
+
+    // An already undone message has its draft in the composer, so sending it again needs no second undo.
+    if (!input.session.data.revertMessageID() && !(await revert.undo())) return
+
+    setResendPending(true)
+  }
   const fork = useSessionFork()
   const forkMessage: NonNullable<SessionUserActions["fork"]> = (target) => fork(target).then(() => undefined)
 
@@ -316,6 +327,7 @@ export function createActiveSessionRegion(input: {
     },
     navigateMessageByOffset: input.timeline.actions.navigateMessage,
     revert,
+    resend: () => void resend(),
     focusInput: focus,
     model: () => {
       const selection = controls().model.selection
@@ -365,6 +377,18 @@ export function createActiveSessionRegion(input: {
           : undefined,
     ),
   )
+
+  // A slash command runs inside the submit state machine, which rejects another submit until it is idle. Send the
+  // restored draft as soon as the command settles instead of trying to nest a send inside it.
+  createEffect(() => {
+    if (!resendPending()) return
+    const composer = active()?.composer
+
+    if (composer?.view.submit.canSubmit?.() !== true) return
+
+    setResendPending(false)
+    composer.view.submit.onSubmit()
+  })
 
   const focusPrompt = () => {
     if (!promptRef) return

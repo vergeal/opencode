@@ -166,6 +166,8 @@ export const dict = {
 
   "command.session.undo": "撤销",
   "command.session.undo.description": "撤销上一条消息",
+  "command.session.resend": "重发",
+  "command.session.resend.description": "撤销上一条消息并重新发送",
   "command.session.redo": "重做",
   "command.session.redo.description": "重做上一条撤销的消息",
   "command.session.compact": "压缩会话",
