@@ -125,12 +125,12 @@ test("keeps read state across a reload", async ({ page }) => {
 
 test("reaches all four destinations from the keyboard", async ({ page }) => {
   await openInbox(page)
-  await page.keyboard.press("Control+3")
+  await page.keyboard.press("ControlOrMeta+3")
   await expect(page).toHaveURL(/\/knowledge$/)
-  await page.keyboard.press("Control+4")
+  await page.keyboard.press("ControlOrMeta+4")
   await expect(page).toHaveURL(/\/scheduled$/)
-  await page.keyboard.press("Control+2")
+  await page.keyboard.press("ControlOrMeta+2")
   await expect(page).toHaveURL(/\/inbox$/)
-  await page.keyboard.press("Control+1")
+  await page.keyboard.press("ControlOrMeta+1")
   await expect(page).toHaveURL(/\/$/)
 })
