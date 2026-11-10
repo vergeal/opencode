@@ -101,6 +101,10 @@ export interface MockServerConfig {
   eventRetry?: number
   // Idle event streams send a comment every 15 s like the real server. Set false only to test the client's stall watchdog.
   keepalive?: boolean
+  // Scheduled tasks the inbox polls. Omit for a server without the experimental.schedules switch (an empty list).
+  schedules?: unknown[] | (() => unknown[])
+  // Knowledge libraries the inbox polls, with their index status.
+  knowledge?: unknown[] | (() => unknown[])
   permissions?: unknown[] | (() => unknown[])
   // Requests only listed by `/api/session/:id/permission`, keyed by session ID.
   sessionPermissions?: Record<string, unknown[]>
@@ -655,6 +659,16 @@ function mockHandlers(
 
   return HttpApiBuilder.group(MockApi, "mock", (handlers) =>
     handlers
+      .handleRaw("schedule", () =>
+        Effect.succeed(
+          HttpServerResponse.jsonUnsafe({ data: resolve(config.schedules ?? []) }),
+        ),
+      )
+      .handleRaw("knowledge", () =>
+        Effect.succeed(
+          HttpServerResponse.jsonUnsafe(resolve(config.knowledge ?? [])),
+        ),
+      )
       .handleRaw("event", () => {
         const events = config.events?.()
         const retry = config.eventRetry === undefined ? "" : `retry: ${config.eventRetry}\n\n`
