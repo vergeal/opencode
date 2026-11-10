@@ -1,3 +1,4 @@
+import { useNavigate } from "@solidjs/router"
 import { Show, startTransition, Suspense, type ParentProps } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createMediaQuery } from "@solid-primitives/media"
@@ -17,6 +18,9 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { useGlobal } from "@/runtime/server/runtime"
 import { useServers } from "@/runtime/server/registry"
 import { useTabs } from "@/shell/tabs/tabs"
+import { useLayout } from "@/shell/state/layout"
+import { DestinationToggle } from "@/shell/titlebar/destination-toggle"
+import { createSessionInbox } from "@/shell/titlebar/inbox-model"
 import {
   CollapsedSidebarToggle,
   collapsedSidebarToggleEnd,
@@ -53,6 +57,13 @@ export default function Layout(props: ParentProps) {
   const global = useGlobal()
   const servers = useServers()
   const tabs = useTabs()
+  const navigate = useNavigate()
+  const layout = useLayout()
+  const sessionInbox = createSessionInbox()
+  const pendingInbox = () =>
+    sessionInbox
+      .entries()
+      .filter((entry) => entry.status === "approval" || entry.status === "input" || entry.status === "failed").length
   const mobile = createMediaQuery("(max-width: 767px)")
 
   const [state, setState] = createStore<{
@@ -175,6 +186,23 @@ export default function Layout(props: ParentProps) {
         ]
       : [],
   )
+  const destinations = [
+    { id: "destination.home", path: "/", titleKey: "home.title", keybind: "mod+1" },
+    { id: "destination.inbox", path: "/inbox", titleKey: "inbox.title", keybind: "mod+2" },
+    { id: "destination.knowledge", path: "/knowledge", titleKey: "knowledge.title", keybind: "mod+3" },
+    { id: "destination.scheduled", path: "/scheduled", titleKey: "scheduled.title", keybind: "mod+4" },
+  ] as const
+
+  command.register("destinations", () =>
+    destinations.map((item) => ({
+      id: item.id,
+      title: language.t(item.titleKey),
+      category: language.t("command.category.view"),
+      keybind: item.keybind,
+      onSelect: () => navigate(item.path),
+    })),
+  )
+
   // Every surface has a palette: routes with their own register under the same key, and the newest wins.
   command.register("palette", () => [
     {
@@ -337,6 +365,19 @@ export default function Layout(props: ParentProps) {
         </main>
         <CollapsedSidebarToggle />
       </div>
+      {/* Narrow screens move the destinations to the bottom edge, where a thumb reaches them. */}
+      <Show when={mobile()}>
+        <nav
+          data-slot="destination-bar"
+          class="relative z-10 flex shrink-0 items-stretch border-t border-v2-border-border-muted bg-v2-background-bg-base px-2 pt-1 pb-[env(safe-area-inset-bottom,0px)] [height:calc(52px+env(safe-area-inset-bottom,0px))] [&_[data-slot=destination-toggle]]:h-full [&_button]:h-full"
+        >
+          <DestinationToggle
+            pressed={(id) => layout.route().type === id}
+            pending={pendingInbox()}
+            onSelect={(id) => navigate(id === "home" ? "/" : `/${id}`)}
+          />
+        </nav>
+      </Show>
       {/* On touch devices the active composer moves its actions here: the bottom edge, or the top of the keyboard.
           Last in order, so it stays below a bottom titlebar (also order-last, but earlier in the DOM). */}
       <div data-slot="composer-touch-bar-mount" class="order-last shrink-0" />

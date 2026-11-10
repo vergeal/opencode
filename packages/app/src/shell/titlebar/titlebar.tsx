@@ -32,7 +32,8 @@ import { SessionTabAvatarView } from "@/shell/layout/session-tab-avatar"
 import { useSessionTabAvatarState } from "@/shell/layout/project-avatar-state"
 import { ActivityRing } from "@opencode/ui/activity-ring"
 import { RecentlyClosedTabsMenu } from "./recently-closed-tabs-menu"
-import { SidebarNav } from "./sidebar-nav"
+import { DestinationToggle } from "./destination-toggle"
+import { createSessionInbox } from "./inbox-model"
 import { useSettingsDialog } from "@/settings/command"
 import { TitlebarItems, useTitlebarItems } from "@/runtime/plugin/titlebar-items"
 import { SessionSettingsDialog } from "@/session/settings-dialog"
@@ -72,6 +73,13 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
 
   const openSettings = useSettingsDialog()
   const dialog = useDialog()
+  const sessionInbox = createSessionInbox()
+  const pendingInbox = createMemo(
+    () =>
+      sessionInbox
+        .entries()
+        .filter((entry) => entry.status === "approval" || entry.status === "input" || entry.status === "failed").length,
+  )
 
   const openSessionSettings = (server: ServerConnection.Key, session: SessionInfo) =>
     dialog.show(() => <SessionSettingsDialog server={server} session={session} />)
@@ -752,8 +760,17 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                   </div>
                                 </div>
                               </div>
-                              <SidebarNav
+                              {/* New session is the one primary action; the destinations above the list only switch views. */}
+                              <div class="flex w-full shrink-0 flex-col gap-1">
+                                <RecentlyClosedTabsMenu
+                                  vertical
+                                  onNewTab={openNewTab}
+                                  keybind={command.keybindParts("tab.new")}
+                                />
+                              </div>
+                              <DestinationToggle
                                 pressed={(id) => layout.route().type === id}
+                                pending={pendingInbox()}
                                 onSelect={(id) => {
                                   if (id === "home") {
                                     toggleHome()
@@ -764,15 +781,6 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
                                   navigate(`/${id}`)
                                 }}
                               />
-                              {/* The first row of the tab list is starting a session; the menu keeps recently closed
-                                  tabs reachable from the same row. */}
-                              <div class="flex w-full shrink-0 flex-col gap-1 pb-2">
-                                <RecentlyClosedTabsMenu
-                                  vertical
-                                  onNewTab={openNewTab}
-                                  keybind={command.keybindParts("tab.new")}
-                                />
-                              </div>
                             </Show>
                             <div class="flex min-h-0 flex-1 flex-col gap-1">
                               <Show

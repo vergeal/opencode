@@ -112,7 +112,7 @@ export function RecentlyClosedTabsMenu(props: {
           type="button"
           data-titlebar-tab-action
           data-action="vertical-tabs-new-session"
-          class="group flex h-7 w-full shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base"
+          class="group flex h-8 w-full shrink-0 items-center gap-2 rounded-[6px] px-2 text-[13px] leading-4 text-v2-text-text-faint hover:text-v2-text-text-base"
           onClick={props.onNewTab}
           aria-label={language.t("command.session.new")}
         >

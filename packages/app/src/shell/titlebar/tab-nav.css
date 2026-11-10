@@ -551,18 +551,9 @@
   color: var(--v2-text-text-base);
 }
 
-/* Navigation rows: 28px tall with an icon and a 13px label, matching the session rows' scale. */
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-nav"] [data-titlebar-tab-action] {
-  gap: 8px;
-  height: 28px;
-  border-radius: 9999px;
-  padding-inline: 8px;
-  font-size: 13px;
-  line-height: var(--line-height-compact);
-}
-
-[data-slot="vertical-tabs-sidebar"] [data-slot="sidebar-nav"] [data-titlebar-tab-action][data-state="pressed"] {
-  font-weight: 500;
+/* New session is the one primary action above the destinations, a size taller than a navigation row. */
+[data-slot="vertical-tabs-sidebar"] [data-action="vertical-tabs-new-session"] {
+  height: 32px;
 }
 
 /* The design leaves 18px between groups: 12px from the label inset plus 6px of group spacing. */
