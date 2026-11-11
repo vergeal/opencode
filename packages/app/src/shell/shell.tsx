@@ -1,4 +1,4 @@
-import { Show, Suspense, type ParentProps } from "solid-js"
+import { createSignal, onCleanup, onMount, Show, Suspense, type ParentProps } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { ToastRegion } from "@/shell/notifications/toast"
@@ -39,6 +39,14 @@ export default function Layout(props: ParentProps) {
   const navigate = useNavigate()
   const mobile = createMediaQuery("(max-width: 767px)")
   const sessionInbox = createSessionInbox()
+  // The chrome converts its screenshot height with the window's real density, which changes when the window
+  // moves between displays.
+  const [dpr, setDpr] = createSignal(window.devicePixelRatio || 1)
+  onMount(() => {
+    const update = () => setDpr(window.devicePixelRatio || 1)
+    window.addEventListener("resize", update)
+    onCleanup(() => window.removeEventListener("resize", update))
+  })
 
   const pendingInbox = () =>
     sessionInbox
@@ -123,7 +131,7 @@ export default function Layout(props: ParentProps) {
         data-slot="replica-shell-body"
         data-sidebar={sidebarOpen() ? "open" : "closed"}
         class="flex min-h-0 min-w-0 flex-1"
-        style={{ "--replica-dpr": String(window.devicePixelRatio || 1) }}
+        style={{ "--replica-dpr": String(dpr()) }}
       >
         <Show when={!mobile()}>
           <ReplicaRail />
