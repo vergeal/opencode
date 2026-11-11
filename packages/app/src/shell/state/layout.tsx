@@ -67,7 +67,8 @@ export type LayoutRoute =
 export const currentRoute = (pathname: string, search: string): LayoutRoute => {
   const parts = pathname.split("/").filter(Boolean)
 
-  if (parts.length === 0) return { type: "home" }
+  // The desktop dev server loads `/index.html`; treat it as the home route instead of throwing.
+  if (parts.length === 0 || (parts.length === 1 && parts[0] === "index.html")) return { type: "home" }
 
   if (parts[0] === "settings") return { type: "settings" }
 

@@ -134,3 +134,16 @@ test("replica v6 geometry", async ({ page }) => {
   expect(rail.background).toBe("rgb(238, 238, 238)")
   expect(rail.icon).toBe(true)
 })
+
+test("replica rail opens the inbox", async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 960 })
+  await mockWorkspace(page, {
+    name: "ReplicaInbox",
+    sessions: [{ id: "ses_replica_inbox", title: "收件箱入口" }],
+    seed: { locale: "zh" },
+  })
+  await page.goto("/")
+  await page.waitForSelector('[data-slot="replica-rail"]', { timeout: 15_000 })
+  await page.locator('[data-slot="replica-rail"] button[aria-label="历史"]').click()
+  await expect(page.locator('[data-slot="inbox-list"]')).toBeVisible({ timeout: 10_000 })
+})
