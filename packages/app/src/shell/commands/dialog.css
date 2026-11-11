@@ -108,7 +108,7 @@
 .command-palette-file-name {
   flex-shrink: 0;
   color: var(--v2-text-text-base);
-  font-weight: 530;
+  font-weight: 400;
   white-space: nowrap;
 }
 
@@ -138,6 +138,13 @@
 
 /* Like the project picker, results grow down from a stable search-field anchor. Other picker dialogs keep their layout. */
 [data-component="dialog-v2"]:has(.command-palette-compact) {
+  /* One scale for the palette: panel, row, and the icon controls inside a row. */
+  --command-palette-radius-panel: 12px;
+  --command-palette-radius-row: 8px;
+  --command-palette-radius-control: 6px;
+  --command-palette-row-height: 32px;
+  --command-palette-row-inset: 10px;
+
   align-items: flex-start;
 }
 
@@ -147,26 +154,29 @@
   max-height: min(calc(100vh - 96px), 480px);
   min-height: 0;
   margin-top: max(48px, calc((100vh - 480px) / 2));
+  border-radius: var(--command-palette-radius-panel);
   background: var(--v2-background-bg-base);
-  box-shadow: var(--v2-elevation-overlay);
+  /* A sheet lifts off the page by its ring and a low shadow, not a heavy drop shadow. */
+  box-shadow: var(--v2-elevation-floating);
 }
 
 .command-palette-compact {
   [data-slot="search-list-search"] {
     position: relative;
-    padding: 6px 6px 17px;
+    padding: 8px 8px 12px;
 
     &::after {
       position: absolute;
       inset-inline: 0;
-      bottom: 8px;
-      border-top: 0.5px solid var(--v2-border-border-base);
+      bottom: 6px;
+      border-top: 0.5px solid var(--v2-border-border-muted);
       content: "";
     }
 
     [data-component="text-input-v2"] {
-      height: 28px;
-      padding-inline-end: 6px;
+      height: 32px;
+      padding-inline-end: 8px;
+      border-radius: var(--command-palette-radius-control);
       background: transparent;
     }
 
@@ -174,43 +184,85 @@
       background: transparent;
     }
 
+    /* A neutral 1px inner ring. search-list.css zeroes the outline, so the field needs both width and colour. */
+    [data-component="text-input-v2"]:where(:focus-within):not([data-disabled], [data-invalid]) {
+      outline: 1px solid var(--v2-border-border-strong);
+      outline-offset: -1px;
+      box-shadow: none;
+    }
+
     [data-slot="text-input-v2-value"] {
-      gap: 6px;
+      gap: 8px;
     }
 
     [data-slot="text-input-v2-leading-icon"] {
-      padding-inline-start: 6px;
+      padding-inline-start: 8px;
+      color: var(--v2-icon-icon-muted);
+
+      :is(svg, [data-slot="icon-svg"]) {
+        width: 16px;
+        height: 16px;
+      }
     }
 
     [data-slot="text-input-v2-input"]::placeholder {
-      color: var(--v2-text-text-base);
-      opacity: 0.5;
+      color: var(--v2-text-text-faint);
+      opacity: 1;
     }
   }
 
   [data-slot="search-list-results"] {
-    padding: 0 6px 6px;
+    padding: 0 8px 8px;
   }
 
   [data-slot="search-list-section"] {
     gap: 4px;
 
     &:not(:last-child) {
-      padding-bottom: 4px;
+      padding-bottom: 8px;
     }
   }
 
+  /* The header bleeds to the viewport edge so rows scroll under an opaque band, while its text stays on the row spine. */
   [data-slot="search-list-header"] {
-    padding-inline: 12px;
+    margin-inline: -8px;
+    padding-inline: 18px;
+    color: var(--v2-text-text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: var(--line-height-compact);
+    letter-spacing: 0.01em;
   }
 
-  [data-slot="search-list-row"] {
-    padding-inline: 6px;
+  [data-slot="search-list-row"],
+  [data-slot="search-list-row"][data-size="compact"] {
+    height: var(--command-palette-row-height);
+    padding-inline: var(--command-palette-row-inset);
+    border-radius: var(--command-palette-radius-row);
+  }
 
-    &:is([data-active], :focus-visible) {
+  /* Pointer hover is a whisper. The row the field has chosen carries the neutral fill. */
+  @media (hover: hover) {
+    [data-component="search-list"] [data-slot="search-list-row"]:hover:not([data-active]) {
       background: var(--v2-overlay-simple-overlay-hover);
-      outline: none;
     }
+  }
+
+  [data-component="search-list"] [data-slot="search-list-row"][data-active] {
+    background: var(--v2-overlay-simple-overlay-pressed);
+    outline: none;
+  }
+
+  /* A row that takes focus itself (Tab) gets a quiet 1px ring; normally the search field owns focus. */
+  [data-component="search-list"] [data-slot="search-list-row"]:focus-visible {
+    background: var(--v2-overlay-simple-overlay-pressed);
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--v2-border-border-strong);
+  }
+
+  /* One weight for text, a medium group label, and no bold key caps. */
+  .palette-menu-title {
+    font-weight: 400;
   }
 
   .command-palette-row-text {
@@ -224,12 +276,29 @@
 
   .command-palette-description {
     flex: 1;
-    color: var(--v2-text-text-faint);
+    color: var(--v2-text-text-muted);
+    font-size: 13px;
+    line-height: 16px;
   }
-}
 
-[data-color-scheme="dark"] .command-palette-compact [data-slot="search-list-row"]:is([data-active], :focus-visible) {
-  background: var(--v2-overlay-simple-overlay-hover);
+  .command-palette-meta {
+    color: var(--v2-text-text-faint);
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  [data-component="keybind-v2"] [data-slot="keybind-v2-key"] {
+    border-radius: 4px;
+    background: var(--v2-background-bg-layer-02);
+  }
+
+  [data-component="keybind-v2"] [data-slot="keybind-v2-label"] {
+    font-weight: 500;
+  }
+
+  [data-slot="text-input-v2-icon-button"] {
+    border-radius: var(--command-palette-radius-control);
+  }
 }
 
 @media (max-width: 640px) {
