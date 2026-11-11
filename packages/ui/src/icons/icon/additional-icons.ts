@@ -110,6 +110,7 @@ export const additionalIcons = {
   "rail-home": `<path d="M3.5 9.5L10 3.5L16.5 9.5V16.5H12.5V12H7.5V16.5H3.5V9.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
   "rail-history": `<circle cx="10" cy="10" r="6.75" stroke="currentColor" stroke-width="1.5"/><path d="M10 6V10.25L13 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
   "rail-compass": `<circle cx="10" cy="10" r="6.75" stroke="currentColor" stroke-width="1.5"/><path d="M13 7L11.4 11.4L7 13L8.6 8.6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>`,
+  "rail-library": `<path d="M10 5.4C8.7 4.5 6.9 4.1 4.1 4.1V15.1C6.9 15.1 8.7 15.5 10 16.4C11.3 15.5 13.1 15.1 15.9 15.1V4.1C13.1 4.1 11.3 4.5 10 5.4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/><path d="M10 5.6V16.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
   "rail-more": `<circle cx="5" cy="10" r="1.2" fill="currentColor"/><circle cx="10" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/>`,
   "rail-download": `<path d="M10 3.5V12.5M6 8.5L10 12.5L14 8.5M4 16H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
   "arrow-undo-down": `<path d="M4.08333 11.0859L1.75 8.7526L4.08333 6.41927M2.33333 8.7526L12.5417 8.7526L12.5417 3.21094L7 3.21094" stroke="currentColor" stroke-width="1" stroke-linecap="square"/>`,

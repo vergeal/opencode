@@ -7,12 +7,18 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { useCommand } from "@/shell/commands/command"
 import { useLayout } from "@/shell/state/layout"
 
-type RailItem = { id: "home" | "history" | "explore" | "more"; icon: IconName; labelKey: string; path?: string }
+type RailItem = {
+  id: "home" | "history" | "explore" | "knowledge" | "more"
+  icon: IconName
+  labelKey: string
+  path?: string
+}
 
 const ITEMS: readonly RailItem[] = [
   { id: "home", icon: "rail-home", labelKey: "replica.rail.home", path: "/" },
   { id: "history", icon: "rail-history", labelKey: "replica.rail.history", path: "/inbox" },
-  { id: "explore", icon: "rail-compass", labelKey: "replica.rail.explore", path: "/knowledge" },
+  { id: "explore", icon: "rail-compass", labelKey: "replica.rail.explore", path: "/explore" },
+  { id: "knowledge", icon: "rail-library", labelKey: "replica.rail.knowledge", path: "/knowledge" },
   { id: "more", icon: "rail-more", labelKey: "replica.rail.more" },
 ]
 
@@ -33,7 +39,9 @@ export function ReplicaRail() {
 
     if (id === "history") return type === "inbox"
 
-    if (id === "explore") return type === "knowledge"
+    if (id === "explore") return type === "explore"
+
+    if (id === "knowledge") return type === "knowledge"
 
     return false
   }

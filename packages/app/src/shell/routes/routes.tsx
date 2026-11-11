@@ -23,6 +23,8 @@ const SettingsScreen = lazy(() => import("@/settings/shell").then((module) => ({
 
 const KnowledgeScreen = lazy(() => import("@/knowledge/route").then((module) => ({ default: module.KnowledgeScreen })))
 
+const ExploreScreen = lazy(() => import("@/explore/route").then((module) => ({ default: module.ExploreScreen })))
+
 const ScheduledScreen = lazy(() => import("@/scheduled/route").then((module) => ({ default: module.ScheduledScreen })))
 
 const InboxScreen = lazy(() => import("@/inbox/route").then((module) => ({ default: module.InboxScreen })))
@@ -51,6 +53,8 @@ export function preloadRoute(url: string) {
 
   if (pathname === "/knowledge") return KnowledgeScreen.preload().then(() => undefined)
 
+  if (pathname === "/explore") return ExploreScreen.preload().then(() => undefined)
+
   if (pathname === "/scheduled") return ScheduledScreen.preload().then(() => undefined)
 
   if (pathname === "/inbox") return InboxScreen.preload().then(() => undefined)
@@ -67,6 +71,7 @@ export function AppRoutes() {
       <Route path="/" component={Home} />
       <Route path="/settings" component={SettingsScreen} />
       <Route path="/knowledge" component={KnowledgeScreen} />
+      <Route path="/explore" component={ExploreScreen} />
       <Route path="/scheduled" component={ScheduledScreen} />
       <Route path="/inbox" component={InboxScreen} />
       <Route

@@ -263,7 +263,6 @@ export const serverSettings: Entry<SettingsServerTab | "servers">[] = [
     label: "settings.extensions.tab.plugins",
     keywords: "extension gui built-in",
   },
-  { tab: "extensions", subtab: "skills", label: "settings.extensions.tab.skills" },
   {
     tab: "servers",
     label: "settings.general.row.shell.title",

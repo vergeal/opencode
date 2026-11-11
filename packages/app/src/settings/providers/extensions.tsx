@@ -16,7 +16,6 @@ import { usePlatform } from "@/runtime/platform/platform"
 import { SettingsList } from "@/settings/list"
 import type { SettingsView } from "@/settings/surface"
 import { SettingsPageHeader } from "@/settings/page-header"
-import { SettingsSkills } from "@/settings/providers/skills"
 import "@/settings/settings.css"
 import "@/shell/search-list.css"
 
@@ -77,12 +76,6 @@ export const SettingsExtensions: Component<{
   // The desktop window runs the GUIs of its own server's plugins, so only that server's rows control them.
   const own = () => !!platform.plugins && ServerConnection.builtin(serverSdk.server)
 
-  createEffect(() => {
-    if (serverSdk.connection.status() !== "connected") return
-    void data.location.skill.sync(location()).catch(() => undefined)
-  })
-  const fill = () => (props.subtab ?? "mcps") === "skills"
-
   return (
     <>
       <SettingsPageHeader
@@ -91,20 +84,18 @@ export const SettingsExtensions: Component<{
         actions={props.headerAction}
       />
 
-      <div class="settings-tab-body" classList={{ "settings-tab-body--fill": fill() }}>
+      <div class="settings-tab-body">
         <Tabs
           variant="pill"
           value={props.subtab ?? "mcps"}
           onChange={(value) => {
-            if (value === "mcps" || value === "plugins" || value === "skills") props.onSubtab(value)
+            if (value === "mcps" || value === "plugins") props.onSubtab(value)
           }}
           class="settings-extensions-tabs settings-subtabs"
-          classList={{ "settings-extensions-tabs--fill": fill() }}
         >
           <Tabs.List>
             <Tabs.Trigger value="mcps">{language.t("settings.extensions.tab.mcps")}</Tabs.Trigger>
             <Tabs.Trigger value="plugins">{language.t("settings.extensions.tab.plugins")}</Tabs.Trigger>
-            <Tabs.Trigger value="skills">{language.t("settings.extensions.tab.skills")}</Tabs.Trigger>
           </Tabs.List>
 
           <Tabs.Content value="mcps">
@@ -202,10 +193,6 @@ export const SettingsExtensions: Component<{
               </div>
               <ExtensionPlugins plugins={pluginList.latest ?? []} own={own()} />
             </div>
-          </Tabs.Content>
-
-          <Tabs.Content value="skills">
-            <SettingsSkills directory={location().directory} />
           </Tabs.Content>
         </Tabs>
       </div>

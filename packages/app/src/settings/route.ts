@@ -94,7 +94,13 @@ export function parseSettingsView(
   if (!project && tab === "plugins") return { type: "root", tab: "extensions", server, subtab: "plugins", ...transient }
 
   if (!project && isRootTab(tab))
-    return { type: "root", tab, server, subtab: nested === "lsps" ? undefined : nested, ...transient }
+    return {
+      type: "root",
+      tab,
+      server,
+      subtab: nested === "lsps" || nested === "skills" ? undefined : nested,
+      ...transient,
+    }
 
   if (!project && pluginTabs && isPluginTab(tab, pluginTabs))
     return { type: "root", tab, server, subtab: undefined, ...transient }
