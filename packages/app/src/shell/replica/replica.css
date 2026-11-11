@@ -224,6 +224,8 @@
   border-radius: 0 var(--radius-panel) var(--radius-panel) 0;
   overflow: hidden;
   background: var(--color-main);
+  /* The conversation follows the appearance font the user selected; the chrome keeps the system stack. */
+  font-family: var(--font-family-sans, var(--font-family-ui));
 }
 
 /* v6 collapses the conversation column and the composer to the same 650px measure. */
