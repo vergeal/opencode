@@ -1087,7 +1087,7 @@ export const dict = {
   "replica.pin": "置顶",
   "replica.unpin": "取消置顶",
   "replica.project.empty": "还没有会话",
-  "replica.composer.placeholder": "使用 ChatGPT Work",
+  "replica.composer.placeholder": "使用 ChangHong Work",
   "replica.composer.add": "添加",
   "replica.composer.access": "完全访问",
   "replica.composer.model": "模型",

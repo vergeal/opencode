@@ -1532,7 +1532,7 @@ export const dict = {
   "replica.pin": "Pin",
   "replica.unpin": "Unpin",
   "replica.project.empty": "No conversations yet",
-  "replica.composer.placeholder": "Ask ChatGPT Work",
+  "replica.composer.placeholder": "Ask ChangHong Work",
   "replica.composer.add": "Add",
   "replica.composer.access": "Full access",
   "replica.composer.model": "Model",
