@@ -132,10 +132,11 @@
   border-left: 1px solid var(--color-divider);
 }
 
-/* The workbench floats between the window edges with rounded corners on both sides; the titlebar stays flush. */
+/* The navigation column and the conversation are one surface: rounded only on the window's left edge, open and
+   flush with the main background on the right. */
 [data-slot="replica-shell"] {
-  margin: 0 3px 3px;
-  border-radius: var(--radius-panel);
+  margin: 0 0 3px 3px;
+  border-radius: var(--radius-panel) 0 0 var(--radius-panel);
   overflow: hidden;
   display: grid;
   grid-template-columns:
