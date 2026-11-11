@@ -60,7 +60,7 @@ export function ReplicaWelcome() {
   return (
     <div class="relative min-h-0 flex-1">
       <div data-slot="replica-welcome" class="flex flex-col items-stretch">
-        <h1 class="mb-[18px] text-center text-[21px] leading-[28px] font-medium text-[var(--text-primary)]">
+        <h1 class="mb-[18px] text-center text-[21px] leading-[28px] font-medium text-[var(--color-text-main)]">
           {language.t("replica.welcome.title")}
         </h1>
 
@@ -76,7 +76,7 @@ export function ReplicaWelcome() {
             rows={1}
             aria-label={language.t("replica.composer.placeholder")}
             placeholder={language.t("replica.composer.placeholder")}
-            class="min-h-0 w-full flex-1 resize-none bg-transparent text-[12px] leading-[18px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-tertiary)]"
+            class="min-h-0 w-full flex-1 resize-none bg-transparent text-[12px] leading-[18px] text-[var(--color-text-main)] outline-none placeholder:text-[var(--color-text-placeholder)]"
           />
 
           <div class="flex h-5 items-center gap-1.5">
@@ -84,16 +84,16 @@ export function ReplicaWelcome() {
               type="button"
               data-replica-control
               aria-label={language.t("replica.composer.add")}
-              class="flex size-5 items-center justify-center rounded-full text-[var(--icon-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--icon-primary)]"
+              class="flex size-5 items-center justify-center rounded-full text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)]"
               onClick={attach}
             >
               <Icon name="plus" size="small" />
             </button>
-            <span class="flex items-center gap-1 text-[10px] leading-4 text-[var(--accent-warning)]">
+            <span class="flex items-center gap-1 text-[10px] leading-4 text-[var(--color-accent-orange)]">
               <Icon name="outline-hexagonal-warning" size="small" />
               {language.t("replica.composer.access")}
             </span>
-            <span class="ms-auto flex min-w-0 items-center gap-1 text-[10px] leading-4 text-[var(--text-secondary)]">
+            <span class="ms-auto flex min-w-0 items-center gap-1 text-[10px] leading-4 text-[var(--color-text-secondary)]">
               <span class="min-w-0 truncate">{language.t("replica.composer.model")}</span>
               <Icon name="chevron-down" size="small" class="shrink-0" />
             </span>
@@ -102,7 +102,7 @@ export function ReplicaWelcome() {
               data-replica-control
               aria-label={language.t("replica.composer.send")}
               disabled={!text().trim()}
-              class="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--send-button-bg)] text-[var(--send-button-fg)] disabled:opacity-50"
+              class="flex size-5 shrink-0 items-center justify-center rounded-full bg-[var(--color-send-bg)] text-[var(--color-send-fg)] disabled:opacity-50"
               onClick={send}
             >
               <Icon name="arrow-up" size="small" />
@@ -112,12 +112,12 @@ export function ReplicaWelcome() {
 
         <div
           data-slot="replica-utility-bar"
-          class="mt-0.5 flex items-center gap-4 px-2.5 text-[10px] leading-4 text-[var(--text-secondary)]"
+          class="mt-0.5 flex items-center gap-4 px-2.5 text-[10px] leading-4 text-[var(--color-text-secondary)]"
         >
           <button
             type="button"
             data-replica-control
-            class="flex min-w-0 items-center gap-1 rounded-[5px] hover:text-[var(--text-primary)]"
+            class="flex min-w-0 items-center gap-1 rounded-[5px] hover:text-[var(--color-text-main)]"
             onClick={attach}
           >
             <Icon name="folder" size="small" class="shrink-0" />
@@ -126,13 +126,13 @@ export function ReplicaWelcome() {
           <button
             type="button"
             data-replica-control
-            class="flex shrink-0 items-center gap-1 rounded-[5px] hover:text-[var(--text-primary)]"
+            class="flex shrink-0 items-center gap-1 rounded-[5px] hover:text-[var(--color-text-main)]"
             onClick={() => navigate("/settings")}
           >
             <Icon name="outline-hexagonal-warning" size="small" class="shrink-0" />
             {language.t("replica.composer.plugins")}
           </button>
-          <span class="ms-auto flex shrink-0 items-center text-[var(--icon-secondary)]">
+          <span class="ms-auto flex shrink-0 items-center text-[var(--color-icon-secondary)]">
             <Icon name="outline-console" size="small" />
           </span>
         </div>

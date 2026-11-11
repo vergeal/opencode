@@ -16,7 +16,10 @@ const ITEMS: readonly RailItem[] = [
   { id: "more", icon: "outline-dots", labelKey: "replica.rail.more" },
 ]
 
-/** The 36px first-level icon column. It holds four entries: home, history, explore and the command menu. */
+const BUTTON =
+  "flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)] data-[state=pressed]:bg-[var(--color-selected)] data-[state=pressed]:text-[var(--color-icon-primary)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]"
+
+/** The 46px first-level rail: four navigation entries, with updates and settings pinned to the bottom. */
 export function ReplicaRail() {
   const language = useLanguage()
   const layout = useLayout()
@@ -36,24 +39,51 @@ export function ReplicaRail() {
   }
 
   return (
-    <nav data-slot="replica-rail" aria-label={language.t("replica.rail.label")} class="flex flex-col items-center pt-2">
-      <For each={ITEMS}>
-        {(item) => (
-          <Tooltip placement="bottom" value={language.t(item.labelKey)}>
-            <button
-              type="button"
-              data-replica-control
-              data-state={active(item.id) ? "pressed" : undefined}
-              aria-pressed={active(item.id)}
-              aria-label={language.t(item.labelKey)}
-              class="mb-3 flex size-6 items-center justify-center rounded-[5px] text-[var(--icon-secondary)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--icon-secondary)]"
-              onClick={() => (item.path ? navigate(item.path) : command.trigger("command.palette"))}
-            >
-              <Icon name={item.icon} size="small" />
-            </button>
-          </Tooltip>
-        )}
-      </For>
+    <nav data-slot="replica-rail" data-ui="primary-rail" aria-label={language.t("replica.rail.label")}>
+      <div class="flex w-full flex-col items-center gap-1">
+        <For each={ITEMS}>
+          {(item) => (
+            <Tooltip placement="bottom" value={language.t(item.labelKey)}>
+              <button
+                type="button"
+                data-replica-control
+                data-state={active(item.id) ? "pressed" : undefined}
+                aria-pressed={active(item.id)}
+                aria-label={language.t(item.labelKey)}
+                class={BUTTON}
+                onClick={() => (item.path ? navigate(item.path) : command.trigger("command.palette"))}
+              >
+                <Icon name={item.icon} />
+              </button>
+            </Tooltip>
+          )}
+        </For>
+      </div>
+
+      <div data-slot="replica-rail-bottom" data-ui="primary-rail-bottom">
+        <Tooltip placement="bottom" value={language.t("replica.rail.updates")}>
+          <button
+            type="button"
+            data-replica-control
+            aria-label={language.t("replica.rail.updates")}
+            class="flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-accent-blue)] hover:bg-[var(--color-hover)]"
+            onClick={() => command.trigger("app.checkForUpdates")}
+          >
+            <Icon name="download" />
+          </button>
+        </Tooltip>
+        <Tooltip placement="bottom" value={language.t("replica.rail.settings")}>
+          <button
+            type="button"
+            data-replica-control
+            aria-label={language.t("replica.rail.settings")}
+            class={BUTTON}
+            onClick={() => navigate("/settings")}
+          >
+            <Icon name="settings-gear" />
+          </button>
+        </Tooltip>
+      </div>
     </nav>
   )
 }

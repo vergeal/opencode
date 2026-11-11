@@ -54,7 +54,7 @@ export function Composer(props: {
   }
 
   return (
-    <div class="flex flex-col gap-3">
+    <div data-ui="composer" class="flex flex-col gap-3">
       <ComposerEditor
         controller={props.model}
         borderUnderlay={props.borderUnderlay}

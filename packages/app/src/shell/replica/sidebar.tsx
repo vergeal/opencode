@@ -17,9 +17,13 @@ import { createSessionInbox, type InboxEntry } from "@/shell/titlebar/inbox-mode
 
 type ProjectGroup = { key: string; project: Project; entries: InboxEntry[] }
 
+const SECTION = "mb-0.5 px-2 text-[13px] leading-5 font-medium text-[var(--color-text-secondary)]"
+const ROW =
+  "flex w-full items-center rounded-[var(--radius-row)] px-2 text-start text-[14px] leading-5 text-[var(--color-text-primary)]"
+
 /**
- * The 21.4% navigation column. It mirrors the reference hierarchy: workspace header, new chat, the pinned
- * conversations, then the project folders with their conversations nested under the expanded one.
+ * The 300px navigation column: workspace header, new chat, pinned conversations, project folders with
+ * their conversations, and the recent list. Rows keep one 29px rhythm; only the background changes.
  */
 export function ReplicaSidebar() {
   const language = useLanguage()
@@ -58,7 +62,7 @@ export function ReplicaSidebar() {
 
       if (!ctx) return []
 
-      return ctx.projects.list().map((project) => ({ server, ctx, project }))
+      return ctx.projects.list().map((project) => ({ server, project }))
     })
 
     const byProject = new Map<string, InboxEntry[]>()
@@ -82,6 +86,16 @@ export function ReplicaSidebar() {
         (a, b) => b.session.time.updated - a.session.time.updated,
       ),
     }))
+  })
+
+  const recent = createMemo(() => {
+    const pinnedIDs = new Set(pins.ids())
+
+    return inbox
+      .entries()
+      .filter((entry) => !pinnedIDs.has(entry.session.id))
+      .toSorted((a, b) => b.session.time.updated - a.session.time.updated)
+      .slice(0, 8)
   })
 
   const currentTab = createMemo(() => {
@@ -126,16 +140,20 @@ export function ReplicaSidebar() {
   }
 
   return (
-    <aside data-slot="replica-sidebar" class="flex min-h-0 flex-col">
-      <div class="flex h-9 shrink-0 items-center gap-1 ps-4 pe-2">
+    <aside data-slot="replica-sidebar" data-ui="navigation-sidebar" class="flex min-h-0 flex-col">
+      <div
+        data-slot="replica-sidebar-header"
+        data-ui="sidebar-header"
+        class="flex h-[49px] shrink-0 items-center gap-1 ps-[14px] pe-2"
+      >
         <button
           type="button"
           data-replica-control
-          class="flex min-w-0 items-center gap-1 rounded-[var(--radius-xs)] px-1 py-0.5 text-[15px] leading-5 font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
+          class="flex min-w-0 items-center gap-2 rounded-[var(--radius-control)] px-1 py-0.5 text-[19px] leading-6 font-semibold text-[var(--color-text-main)] hover:bg-[var(--color-hover)]"
           onClick={() => command.trigger("command.palette")}
         >
           <span class="min-w-0 truncate">{language.t("replica.workspace.name")}</span>
-          <Icon name="fill-triangle-down" size="small" class="shrink-0 text-[var(--icon-secondary)]" />
+          <Icon name="fill-triangle-down" size="small" class="shrink-0 text-[var(--color-icon-secondary)]" />
         </button>
         <div class="ms-auto flex shrink-0 items-center gap-1">
           <Tooltip placement="bottom" value={language.t("inbox.title")}>
@@ -143,12 +161,15 @@ export function ReplicaSidebar() {
               type="button"
               data-replica-control
               aria-label={language.t("inbox.title")}
-              class="relative flex size-6 items-center justify-center rounded-[var(--radius-xs)] text-[var(--icon-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--icon-primary)]"
+              class="relative flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)]"
               onClick={() => navigate("/inbox")}
             >
-              <Icon name="notifications" size="small" />
+              <Icon name="notifications" />
               {pending() > 0 && (
-                <span class="absolute end-1 top-1 size-1.5 rounded-full bg-[var(--status-blue)]" aria-hidden="true" />
+                <span
+                  class="absolute end-1.5 top-1.5 size-[5px] rounded-full bg-[var(--color-accent-blue)]"
+                  aria-hidden="true"
+                />
               )}
             </button>
           </Tooltip>
@@ -157,10 +178,10 @@ export function ReplicaSidebar() {
               type="button"
               data-replica-control
               aria-label={language.t("command.session.search")}
-              class="flex size-6 items-center justify-center rounded-[var(--radius-xs)] text-[var(--icon-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--icon-primary)]"
+              class="flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)]"
               onClick={() => command.trigger("sessions.search")}
             >
-              <Icon name="magnifying-glass" size="small" />
+              <Icon name="magnifying-glass" />
             </button>
           </Tooltip>
         </div>
@@ -170,26 +191,25 @@ export function ReplicaSidebar() {
         type="button"
         data-replica-control
         data-slot="replica-new-chat"
-        class="mx-2 flex h-7 shrink-0 items-center gap-2.5 rounded-[var(--radius-row)] px-2.5 text-[14px] leading-5 text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
+        class="mx-2 flex h-[37px] shrink-0 items-center gap-2 rounded-[var(--radius-row)] px-2 text-[14px] leading-5 text-[var(--color-text-primary)] hover:bg-[var(--color-hover)]"
         onClick={newChat}
       >
-        <Icon name="edit" size="small" class="shrink-0 text-[var(--icon-secondary)]" />
+        <Icon name="edit" class="shrink-0 text-[var(--color-icon-secondary)]" />
         <span class="min-w-0 truncate">{language.t("replica.newChat")}</span>
       </button>
 
-      <div data-slot="replica-sidebar-scroll" class="mt-1 min-h-0 flex-1 overflow-y-auto px-4 pb-3">
+      <div data-slot="replica-sidebar-scroll" class="mt-1 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         <Show when={pinned().length > 0}>
           <section class="mb-2 flex flex-col">
-            <h2 class="mb-0.5 px-1 text-[12px] leading-5 font-medium text-[var(--text-secondary)]">
-              {language.t("replica.section.pinned")}
-            </h2>
+            <h2 class={SECTION}>{language.t("replica.section.pinned")}</h2>
             <For each={pinned()}>
               {(entry) => (
                 <button
                   type="button"
                   data-slot="replica-row"
+                  data-ui="sidebar-row"
                   data-state={active(entry) ? "pressed" : undefined}
-                  class="flex min-h-6 w-full items-center rounded-[var(--radius-row)] px-1 text-start text-[13px] leading-5 text-[var(--text-primary)]"
+                  class={ROW}
                   onClick={() => open(entry)}
                 >
                   <span class="min-w-0 truncate">{sessionLabel(entry.session)}</span>
@@ -200,9 +220,9 @@ export function ReplicaSidebar() {
         </Show>
 
         <section class="flex flex-col">
-          <h2 class="mb-0.5 flex items-center gap-0.5 px-1 text-[12px] leading-5 font-medium text-[var(--text-secondary)]">
+          <h2 class={`${SECTION} flex items-center gap-1`}>
             {language.t("replica.section.projects")}
-            <Icon name="fill-triangle-down" size="small" class="text-[var(--icon-secondary)]" />
+            <Icon name="fill-triangle-down" size="small" class="text-[var(--color-icon-secondary)]" />
           </h2>
 
           <For each={groups()}>
@@ -211,21 +231,22 @@ export function ReplicaSidebar() {
                 <button
                   type="button"
                   data-slot="replica-row"
+                  data-ui="sidebar-row"
                   data-state={expanded(group) ? "pressed" : undefined}
-                  class="flex min-h-[26px] w-full items-center gap-2 rounded-[var(--radius-row)] px-1 text-start text-[13px] leading-5 text-[var(--text-primary)]"
+                  class={`${ROW} h-[30px] gap-2`}
                   aria-expanded={expanded(group)}
                   onClick={() => {
                     setState("ready", true)
                     setState("expanded", group.key, (value) => !value)
                   }}
                 >
-                  <Icon name="folder" size="small" class="shrink-0 text-[var(--icon-secondary)]" />
+                  <Icon name="folder" class="shrink-0 text-[var(--color-icon-secondary)]" />
                   <span class="min-w-0 flex-1 truncate">{displayName(group.project)}</span>
                   <Show when={expanded(group)}>
                     <Icon
                       name="fill-triangle-down"
                       size="small"
-                      class="shrink-0 text-[var(--icon-secondary)]"
+                      class="shrink-0 text-[var(--color-icon-secondary)]"
                       style={{ transform: "rotate(180deg)" }}
                     />
                   </Show>
@@ -235,32 +256,32 @@ export function ReplicaSidebar() {
                   <Show
                     when={group.entries.length > 0}
                     fallback={
-                      <p class="ps-[22px] pe-1 py-1 text-[12px] leading-5 text-[var(--text-tertiary)]">
+                      <p class="ps-[21px] pe-2 py-1 text-[12px] leading-5 text-[var(--color-text-tertiary)]">
                         {language.t("replica.project.empty")}
                       </p>
                     }
                   >
-                    <div class="flex flex-col ps-[22px]">
+                    <div class="flex flex-col ps-[21px]">
                       <For each={group.entries}>
                         {(entry) => (
                           <div
                             data-slot="replica-row"
+                            data-ui="sidebar-row"
                             data-state={active(entry) ? "pressed" : undefined}
-                            class="group flex min-h-6 w-full items-center rounded-[var(--radius-row)] pe-1"
+                            class="group flex w-full items-center rounded-[var(--radius-row)] pe-2"
                           >
                             <button
                               type="button"
-                              class="flex min-w-0 flex-1 items-center px-1 text-start text-[13px] leading-5 text-[var(--text-primary)]"
+                              class="flex min-w-0 flex-1 items-center px-2 text-start text-[14px] leading-5 text-[var(--color-text-primary)]"
                               onClick={() => open(entry)}
                             >
                               <span class="min-w-0 truncate">{sessionLabel(entry.session)}</span>
                             </button>
                             <button
                               type="button"
-                              data-slot="replica-row-action"
                               data-replica-control
                               aria-label={language.t(pins.isPinned(entry.session.id) ? "replica.unpin" : "replica.pin")}
-                              class="flex h-5 shrink-0 items-center rounded-[var(--radius-xs)] px-1 text-[10px] leading-4 text-[var(--icon-secondary)] hover:bg-[var(--surface-selected)] hover:text-[var(--icon-primary)]"
+                              class="flex h-5 shrink-0 items-center rounded-[var(--radius-row)] px-1 text-[10px] leading-4 text-[var(--color-icon-secondary)] opacity-0 hover:bg-[var(--color-selected)] group-hover:opacity-100 group-data-[state=pressed]:opacity-100"
                               onClick={() => pins.toggle(entry.session.id)}
                             >
                               {language.t(pins.isPinned(entry.session.id) ? "replica.unpin" : "replica.pin")}
@@ -275,6 +296,26 @@ export function ReplicaSidebar() {
             )}
           </For>
         </section>
+
+        <Show when={recent().length > 0}>
+          <section class="mt-2 flex flex-col">
+            <h2 class={SECTION}>{language.t("replica.section.recent")}</h2>
+            <For each={recent()}>
+              {(entry) => (
+                <button
+                  type="button"
+                  data-slot="replica-row"
+                  data-ui="sidebar-row"
+                  data-state={active(entry) ? "pressed" : undefined}
+                  class={ROW}
+                  onClick={() => open(entry)}
+                >
+                  <span class="min-w-0 truncate">{sessionLabel(entry.session)}</span>
+                </button>
+              )}
+            </For>
+          </section>
+        </Show>
       </div>
     </aside>
   )

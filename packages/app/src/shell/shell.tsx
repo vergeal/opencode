@@ -1,4 +1,4 @@
-import { createSignal, onCleanup, onMount, Show, Suspense, type ParentProps } from "solid-js"
+import { createSignal, Show, Suspense, type ParentProps } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { ToastRegion } from "@/shell/notifications/toast"
@@ -9,7 +9,7 @@ import { PluginSlot } from "@/runtime/plugin/render"
 import { COMMAND_SEARCH_ID, useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useGlobal } from "@/runtime/server/runtime"
-import { useServers } from "@/runtime/server/registry"
+import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 import { useNavigate } from "@solidjs/router"
@@ -40,14 +40,6 @@ export default function Layout(props: ParentProps) {
   const navigate = useNavigate()
   const mobile = createMediaQuery("(max-width: 767px)")
   const sessionInbox = createSessionInbox()
-  // The chrome converts its screenshot height with the window's real density, which changes when the window
-  // moves between displays.
-  const [dpr, setDpr] = createSignal(window.devicePixelRatio || 1)
-  onMount(() => {
-    const update = () => setDpr(window.devicePixelRatio || 1)
-    window.addEventListener("resize", update)
-    onCleanup(() => window.removeEventListener("resize", update))
-  })
 
   const pendingInbox = () =>
     sessionInbox
@@ -125,34 +117,47 @@ export default function Layout(props: ParentProps) {
     },
   ])
 
+  const newChat = () => {
+    const conn = global.servers.list()[0]
+
+    if (!conn) return
+    const key = ServerConnection.key(conn)
+    const ctx = global.serverCtx(key)
+
+    if (!ctx) return
+    const directory = ctx.projects.last()?.worktree ?? ctx.projects.list()[0]?.worktree
+
+    if (!directory) return
+    void tabs.newDraft({ server: key, directory })
+  }
+
   return (
     <div
       data-replica
-      class="relative flex min-h-0 min-w-0 flex-1 select-none flex-col bg-[var(--main-bg)] [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
+      class="relative flex min-h-0 min-w-0 flex-1 select-none flex-col [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
+      style={{
+        "--navigation-sidebar-width-current": sidebarWidth() ? `${sidebarWidth()}px` : undefined,
+      }}
     >
-      <ReplicaTitleBar sidebarOpen={sidebarOpen()} onToggleSidebar={toggleSidebar} />
+      <ReplicaTitleBar
+        sidebarOpen={sidebarOpen()}
+        onToggleSidebar={toggleSidebar}
+        onMore={() => command.trigger("command.palette")}
+        onView={() => navigate("/settings")}
+        onAdd={newChat}
+      />
 
-      <div
-        data-slot="replica-shell-body"
-        data-sidebar={sidebarOpen() ? "open" : "closed"}
-        class="flex min-h-0 min-w-0 flex-1"
-        style={{ "--replica-dpr": String(dpr()) }}
-      >
-        <div data-slot="replica-workbench">
-          <Show when={!mobile()}>
-            <ReplicaRail />
+      <div data-slot="replica-shell">
+        <Show when={!mobile()}>
+          <ReplicaRail />
           <Show when={sidebarOpen()}>
-            <div
-              data-slot="replica-sidebar-slot"
-              class="relative flex min-h-0"
-              style={{ flex: sidebarWidth() ? `0 0 ${sidebarWidth()}px` : undefined }}
-            >
+            <div data-slot="replica-sidebar-slot" class="relative flex min-h-0 min-w-0">
               <ReplicaSidebar />
               <ResizeHandle
                 direction="horizontal"
                 edge="end"
                 size={sidebarSize()}
-                min={180}
+                min={220}
                 max={480}
                 onResize={setSidebarWidth}
               />
@@ -162,8 +167,9 @@ export default function Layout(props: ParentProps) {
 
         <main
           data-slot="replica-main"
+          data-ui="main-workspace"
           data-welcome={welcome() ? "" : undefined}
-          class="relative flex min-h-0 min-w-0 flex-1 flex-col"
+          class="relative flex min-h-0 min-w-0 flex-col"
           style={{
             "--shell-inline-inset": "0px",
             "--shell-top-inset": "0px",
@@ -181,14 +187,13 @@ export default function Layout(props: ParentProps) {
           >
             <ReplicaWelcome />
           </Show>
-          </main>
-        </div>
+        </main>
       </div>
 
       <Show when={mobile()}>
         <nav
           data-slot="destination-bar"
-          class="relative z-10 flex shrink-0 items-stretch border-t border-[var(--border-subtle)] bg-[var(--app-chrome)] px-2 pt-1 pb-[env(safe-area-inset-bottom,0px)] [height:calc(52px+env(safe-area-inset-bottom,0px))] [&_[data-slot=destination-toggle]]:h-full [&_button]:h-full"
+          class="relative z-10 flex shrink-0 items-stretch border-t border-[var(--color-divider)] bg-[var(--color-titlebar)] px-2 pt-1 pb-[env(safe-area-inset-bottom,0px)] [height:calc(52px+env(safe-area-inset-bottom,0px))] [&_[data-slot=destination-toggle]]:h-full [&_button]:h-full"
         >
           <DestinationToggle
             pressed={(id) => layout.route().type === id}

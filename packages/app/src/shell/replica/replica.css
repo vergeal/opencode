@@ -1,77 +1,116 @@
-/* The replica workbench, v3: proportional three-column frame, five radius tiers, and the welcome anchor
-   measured from the reference screenshot (2000x926) rather than the earlier fixed-pixel guesses. */
+/* v6 workbench: the window is one continuous surface. Three columns share the frame with the titlebar,
+   and every size below comes from the v6 token table rather than ad-hoc component values. */
 [data-replica] {
-  --app-chrome: #f3f5f4;
-  --rail-bg: #f0f2f1;
-  --sidebar-bg: #fafcfb;
-  --main-bg: #ffffff;
-  --surface-muted: #f3f5f4;
-  --surface-hover: #f1f3f2;
-  --surface-selected: #edefef;
-  --border-subtle: #e8ecea;
-  --text-primary: #242625;
-  --text-secondary: #727875;
-  --text-tertiary: #aeb4b1;
-  --icon-primary: #303633;
-  --icon-secondary: #858b87;
-  --accent-warning: #f05b24;
-  --status-blue: #65b5f5;
-  --send-button-bg: #929695;
-  --send-button-fg: #ffffff;
+  --titlebar-height: 39px;
+  --primary-rail-width: 46px;
+  --navigation-sidebar-width: 300px;
+  --navigation-sidebar-width-current: var(--navigation-sidebar-width);
 
-  /* The native traffic lights end at y=26; the panel then leaves its 3px gutter below them. */
-  --app-chrome-height: 26px;
+  --sidebar-header-height: 49px;
+  --sidebar-header-padding-inline: 14px;
+  --sidebar-list-gutter-inline: 8px;
+  --sidebar-row-padding-inline: 8px;
+  --sidebar-new-chat-height: 37px;
+  --sidebar-section-height: 25px;
+  --sidebar-row-height: 29px;
+  --sidebar-project-row-height: 30px;
+  --sidebar-child-indent: 21px;
+  --sidebar-section-gap: 8px;
 
-  --radius-xs: 6px;
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
-  --radius-window: 22px;
-  --radius-dialog: 18px;
-  --radius-panel: 16px;
-  --radius-card: 12px;
-  --radius-control: 10px;
+  --conversation-content-max-width: 650px;
+  --composer-max-width: 650px;
+  --composer-height: 88px;
+  --composer-bottom-gap: 14px;
+  --composer-radius: 19px;
+
+  --font-family-ui:
+    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-family-mono: "SFMono-Regular", "SF Mono", Menlo, Monaco, monospace;
+  --font-size-workspace-title: 19px;
+  --font-size-sidebar: 14px;
+  --font-size-section: 13px;
+  --font-size-body: 14px;
+  --font-size-secondary: 12px;
+
+  --color-titlebar: #f4f4f4;
+  --color-rail: #f3f3f3;
+  --color-sidebar: #fbfbfb;
+  --color-main: #ffffff;
+  --color-composer: #ffffff;
+  --color-hover: #f3f3f3;
+  --color-selected: #eeeeee;
+  --color-muted-surface: #f7f7f7;
+  --color-border: #e8e8e8;
+  --color-divider: #eeeeee;
+  --color-text-primary: #3a3e3f;
+  --color-text-main: #242424;
+  --color-text-secondary: #858585;
+  --color-text-tertiary: #999999;
+  --color-text-placeholder: #bfc0c2;
+  --color-icon-primary: #383c3d;
+  --color-icon-secondary: #858b89;
+  --color-accent-blue: #69b6f7;
+  --color-accent-orange: #ed641b;
+  --color-send-bg: #929596;
+  --color-send-fg: #ffffff;
+
   --radius-row: 8px;
-  --radius-pill: 999px;
+  --radius-control: 10px;
+  --radius-card: 12px;
+  --radius-popover: 12px;
+  --radius-panel: 16px;
+  --radius-message: 17px;
+  --radius-composer: 19px;
+  --radius-dialog: 18px;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
+  --shadow-composer: 0 3px 16px rgba(0, 0, 0, 0.045);
+  --shadow-popover: 0 6px 24px rgba(0, 0, 0, 0.1);
+  --shadow-dialog: 0 16px 44px rgba(0, 0, 0, 0.15);
 
-  font-family:
-    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB",
-    "Microsoft YaHei", sans-serif;
-  color: var(--text-primary);
-  background: var(--app-chrome);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-main);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-ui);
+  font-size: var(--font-size-body);
+  font-weight: 400;
+  letter-spacing: 0;
+  font-kerning: normal;
+  font-optical-sizing: auto;
 }
 
 [data-color-scheme="dark"] [data-replica] {
-  --app-chrome: var(--v2-background-bg-deep);
-  --rail-bg: var(--v2-background-bg-deep);
-  --sidebar-bg: var(--v2-background-bg-base);
-  --main-bg: var(--v2-background-bg-base);
-  --surface-muted: var(--v2-background-bg-layer-01);
-  --surface-hover: var(--v2-overlay-simple-overlay-hover);
-  --surface-selected: var(--v2-overlay-simple-overlay-pressed);
-  --border-subtle: var(--v2-border-border-muted);
-  --text-primary: var(--v2-text-text-base);
-  --text-secondary: var(--v2-text-text-muted);
-  --text-tertiary: var(--v2-text-text-faint);
-  --icon-primary: var(--v2-icon-icon-base);
-  --icon-secondary: var(--v2-icon-icon-muted);
-  --send-button-bg: var(--v2-background-bg-layer-04);
-  --send-button-fg: var(--v2-text-text-contrast);
+  --color-titlebar: var(--v2-background-bg-deep);
+  --color-rail: var(--v2-background-bg-deep);
+  --color-sidebar: var(--v2-background-bg-base);
+  --color-main: var(--v2-background-bg-base);
+  --color-composer: var(--v2-background-bg-layer-01);
+  --color-hover: var(--v2-overlay-simple-overlay-hover);
+  --color-selected: var(--v2-overlay-simple-overlay-pressed);
+  --color-border: var(--v2-border-border-muted);
+  --color-divider: var(--v2-border-border-muted);
+  --color-text-primary: var(--v2-text-text-base);
+  --color-text-main: var(--v2-text-text-base);
+  --color-text-secondary: var(--v2-text-text-muted);
+  --color-text-tertiary: var(--v2-text-text-faint);
+  --color-text-placeholder: var(--v2-text-text-faint);
+  --color-icon-primary: var(--v2-icon-icon-base);
+  --color-icon-secondary: var(--v2-icon-icon-muted);
+  --color-send-bg: var(--v2-background-bg-layer-04);
+  --color-send-fg: var(--v2-text-text-contrast);
 }
 
+/* One titlebar split at the sidebar boundary: window controls on the left, conversation title on the right. */
 [data-slot="replica-titlebar"] {
-  height: var(--app-chrome-height);
-  background: var(--app-chrome);
+  display: grid;
+  grid-template-columns: calc(var(--primary-rail-width) + var(--navigation-sidebar-width-current)) minmax(0, 1fr);
+  height: var(--titlebar-height);
+  min-height: var(--titlebar-height);
+  background: var(--color-titlebar);
+  border-bottom: 1px solid var(--color-divider);
   -webkit-app-region: drag;
 }
 
@@ -79,128 +118,180 @@
   -webkit-app-region: no-drag;
 }
 
-/* The reference splits the window 3.2% / 21.4% / 75.4%. Keep the ratio, with floors so a narrow window
-   collapses the sidebar instead of squeezing it into an unusable strip. */
-[data-slot="replica-shell-body"] {
+[data-slot="replica-titlebar-left"] {
   display: flex;
+  align-items: center;
   min-width: 0;
-  min-height: 0;
-  padding: 3px;
 }
 
-/* One rounded surface holds the rail, the navigation column and the workspace; the columns are its
-   children and only their 1px dividers separate them, so no pair of corner radii can leave a notch. */
-[data-slot="replica-workbench"] {
+[data-slot="replica-titlebar-main"] {
   display: flex;
+  align-items: center;
+  min-width: 0;
+  padding-inline: 18px;
+  border-left: 1px solid var(--color-divider);
+}
+
+[data-slot="replica-shell"] {
+  display: grid;
+  grid-template-columns:
+    var(--primary-rail-width)
+    var(--navigation-sidebar-width-current)
+    minmax(0, 1fr);
   flex: 1;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--main-bg);
-}
-
-[data-slot="replica-rail"] {
-  flex: 0 0 3.2%;
-  min-width: 28px;
-  background: var(--rail-bg);
-  border-inline-end: 1px solid var(--border-subtle);
 }
 
 [data-slot="replica-sidebar-slot"] {
-  flex: 0 0 21.4%;
-  min-width: 180px;
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+[data-slot="replica-rail"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding-block: 7px 14px;
+  background: var(--color-rail);
+  border-right: 1px solid var(--color-divider);
+}
+
+[data-slot="replica-rail-bottom"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
 }
 
 [data-slot="replica-sidebar"] {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   width: 100%;
-  background: var(--sidebar-bg);
-  border-inline-end: 1px solid var(--border-subtle);
-  overflow: hidden;
-}
-
-[data-slot="replica-main"] {
-  background: var(--main-bg);
   min-width: 0;
-}
-
-/* Sidebar rows: 13px type, 8px radius only on hover/selection, never a card per row. */
-[data-slot="replica-row"] {
-  min-height: 26px;
-  border-radius: var(--radius-row);
-}
-
-[data-slot="replica-row"][data-state="pressed"] {
-  background: var(--surface-selected);
-}
-
-[data-slot="replica-row"]:hover {
-  background: var(--surface-hover);
-}
-
-[data-slot="replica-row"]:is([data-state="pressed"], :hover) [data-slot="replica-row-action"] {
-  opacity: 1;
-}
-
-[data-slot="replica-row-action"] {
-  opacity: 0;
-}
-
-/* Welcome group: 54.5% into the main column and 64% down, as measured on the reference. */
-[data-slot="replica-welcome"] {
-  position: absolute;
-  inset-inline-start: 54.5%;
-  inset-block-start: 64%;
-  /* 52.5% of the main column matches the 790-physical-pixel card at both DPR 1 and DPR 2; a fixed
-     400px ceiling would only hold on a 2x display. */
-  width: 52.5%;
-  transform: translate(-50%, -50%);
-}
-
-[data-slot="replica-compose-card"] {
-  height: 62px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.025);
-}
-
-[data-color-scheme="dark"] [data-slot="replica-compose-card"] {
-  background: var(--v2-background-bg-layer-01);
-  box-shadow: none;
-}
-
-[data-slot="replica-utility-bar"] {
-  height: 26px;
-  border-radius: var(--radius-lg);
-  background: var(--surface-muted);
+  min-height: 0;
+  background: var(--color-sidebar);
+  border-right: 1px solid var(--color-divider);
 }
 
 [data-slot="replica-sidebar-scroll"] {
   scrollbar-width: thin;
-  scrollbar-color: var(--border-subtle) transparent;
+  scrollbar-color: var(--color-border) transparent;
 }
 
-/* Floating surfaces outside the three-column frame follow the v3 radius tiers. */
-[data-replica] [data-slot="dialog-content"],
-[data-replica] [data-component="dialog"] {
-  border-radius: var(--radius-dialog);
+[data-slot="replica-sidebar"] [data-slot="replica-row"] {
+  height: var(--sidebar-row-height);
+  min-height: var(--sidebar-row-height);
+  margin: 0;
+  padding: 0 var(--sidebar-row-padding-inline);
+  border: 0;
+  border-radius: var(--radius-row);
+  font-size: var(--font-size-sidebar);
+  font-weight: 400;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+[data-slot="replica-sidebar"] [data-slot="replica-row"][data-state="pressed"],
+[data-slot="replica-sidebar"] [data-slot="replica-row"]:hover {
+  background: var(--color-selected);
+}
+
+/* The v6 window bar carries the conversation title; the timeline's duplicate title row is not rendered. */
+[data-replica] [data-session-title],
+[data-replica] .session-header-fade {
+  display: none;
+}
+
+[data-slot="replica-main"] {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-main);
+}
+
+/* v6 collapses the conversation column and the composer to the same 650px measure. */
+[data-replica] {
+  --container-session: 674px;
+}
+
+/* The conversation scroll area owns its own scrollbar; the window never scrolls. */
+[data-slot="replica-compose-card"] {
+  height: 88px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-composer);
+  background: var(--color-composer);
+  box-shadow: var(--shadow-composer);
+}
+
+[data-slot="replica-utility-bar"] {
+  height: 26px;
+  border-radius: var(--radius-card);
+  background: var(--color-muted-surface);
+}
+
+[data-slot="replica-main"] [data-component="session-composer-dock"] > div {
+  max-width: 684px;
+}
+
+[data-slot="replica-main"] [data-component="session-composer-dock"] {
+  padding-bottom: 14px;
+}
+
+/* The v6 card is 88px tall: the editor holds a 45px input region and the toolbar keeps its own row. */
+[data-slot="replica-main"] [data-component="composer-editor"] {
+  min-height: 45px;
+}
+
+[data-slot="replica-main"] [data-component="session-composer-dock"] {
+  pointer-events: none;
+}
+
+[data-replica] [data-ui="composer"] {
+  background: var(--color-composer);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-composer);
+  box-shadow: var(--shadow-composer);
+}
+
+/* The v6 idle composer is a single 88px card: the editor keeps the full width and the toolbar sits under it. */
+[data-replica] [data-component="composer-editor"] {
+  min-height: 0;
+}
+
+[data-replica] [data-slot="replica-welcome"] {
+  position: absolute;
+  inset-inline-start: 54.5%;
+  inset-block-start: 64%;
+  width: min(650px, calc(100% - 48px));
+  transform: translate(-50%, -50%);
 }
 
 @media (max-width: 767px) {
-  [data-slot="replica-rail"],
-  [data-slot="replica-sidebar-slot"] {
+  [data-slot="replica-titlebar"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  [data-slot="replica-titlebar-left"] {
     display: none;
   }
 
-  [data-slot="replica-shell-body"] {
-    padding: 3px;
+  [data-slot="replica-shell"] {
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  [data-slot="replica-welcome"] {
-    inset-inline-start: 50%;
-    width: calc(100% - 32px);
+  [data-slot="replica-rail"],
+  [data-slot="replica-sidebar"] {
+    display: none;
   }
 }
