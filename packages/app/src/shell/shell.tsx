@@ -1,15 +1,8 @@
-import { useNavigate } from "@solidjs/router"
-import { Show, startTransition, Suspense, type ParentProps } from "solid-js"
-import { createStore } from "solid-js/store"
+import { Show, Suspense, type ParentProps } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
-import { ResizeHandle } from "@opencode/ui/resize-handle"
 import { useDialog } from "@opencode/ui/context/dialog"
-import { prefersReducedMotion } from "@opencode/ui/motion"
-import { Titlebar } from "@/shell/titlebar/titlebar"
-import { usePlatform } from "@/runtime/platform/platform"
 import { ToastRegion } from "@/shell/notifications/toast"
 import { UploadToastHost } from "@/composer/attachments/uploads"
-import { useSettingsSurface } from "@/settings/surface"
 import { useSettings } from "@/settings/model"
 import { PluginServerCover } from "@/runtime/plugin/server-shell"
 import { PluginSlot } from "@/runtime/plugin/render"
@@ -19,37 +12,22 @@ import { useGlobal } from "@/runtime/server/runtime"
 import { useServers } from "@/runtime/server/registry"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
+import { useNavigate } from "@solidjs/router"
 import { DestinationToggle } from "@/shell/titlebar/destination-toggle"
 import { createSessionInbox } from "@/shell/titlebar/inbox-model"
-import {
-  CollapsedSidebarToggle,
-  collapsedSidebarToggleEnd,
-  measureSidebarToggles,
-  paintCollapsedSlots,
-} from "@/shell/sidebar-toggle"
-import { createPanelMotion, guardClosingFocus, panelOpacity, setPanelResizing } from "@/shell/panel-motion"
-import { createSidebarPeek } from "@/shell/sidebar-peek"
-import { windowDragEnabled } from "@/session/header/drag-area"
-
-type SidebarPose = { closed: number; peek: number | undefined }
+import { ReplicaRail } from "./replica/rail"
+import { ReplicaSidebar } from "./replica/sidebar"
+import { ReplicaTitleBar } from "./replica/titlebar"
+import { ReplicaWelcome } from "./replica/welcome"
+import "./replica/replica.css"
 
 export const sidebarToggleCommand = { id: "sidebar.toggle", keybind: "mod+shift+b" }
 
-const SIDEBAR_WIDTH_MIN = 224
-
-const SIDEBAR_WIDTH_DEFAULT_RATIO = 0.2
-
-const SIDEBAR_WIDTH_MAX_RATIO = 0.4
-
-/** The navigation column takes a fifth of the window, within a usable minimum and a draggable maximum. */
-const sidebarMaxWidth = (viewport: number) => Math.max(640, Math.round(viewport * SIDEBAR_WIDTH_MAX_RATIO))
-
-const defaultSidebarWidth = (viewport: number) =>
-  Math.min(sidebarMaxWidth(viewport), Math.max(SIDEBAR_WIDTH_MIN, Math.round(viewport * SIDEBAR_WIDTH_DEFAULT_RATIO)))
-
+/**
+ * The replica workbench frame: a 27px window bar over a 36px rail, a 239px sidebar and the remaining white
+ * canvas. Pages keep their routes and data; the empty home route shows the new-conversation welcome.
+ */
 export default function Layout(props: ParentProps) {
-  const platform = usePlatform()
-  const settings = useSettingsSurface()
   const preferences = useSettings()
   const command = useCommand()
   const language = useLanguage()
@@ -57,135 +35,29 @@ export default function Layout(props: ParentProps) {
   const global = useGlobal()
   const servers = useServers()
   const tabs = useTabs()
-  const navigate = useNavigate()
   const layout = useLayout()
+  const navigate = useNavigate()
+  const mobile = createMediaQuery("(max-width: 767px)")
   const sessionInbox = createSessionInbox()
+
   const pendingInbox = () =>
     sessionInbox
       .entries()
       .filter((entry) => entry.status === "approval" || entry.status === "input" || entry.status === "failed").length
-  const mobile = createMediaQuery("(max-width: 767px)")
 
-  const [state, setState] = createStore<{
-    tabsWidth: number
-    tabsMount: HTMLElement | undefined
-    tabsAside: HTMLElement | undefined
-    tabsPanel: HTMLElement | undefined
-  }>({
-    // The navigation column defaults to a quarter of the window, still draggable for anyone who wants more.
-    tabsWidth: defaultSidebarWidth(window.innerWidth),
-    tabsMount: undefined,
-    tabsAside: undefined,
-    tabsPanel: undefined,
-  })
+  const sidebarOpen = () => preferences.appearance.sidebarOpen()
+  const toggleSidebar = () => preferences.appearance.setSidebarOpen(!sidebarOpen())
+  const welcome = () => layout.route().type === "home"
 
-  const verticalTabs = () => preferences.appearance.tabLayout() !== "horizontal" && !mobile()
-
-  const organizedSidebar = () =>
-    preferences.appearance.tabLayout() === "vertical" && preferences.general.sidebarOrganize() === "projects"
-
-  const toggleSidebar = () => preferences.appearance.setSidebarOpen(!preferences.appearance.sidebarOpen())
-
-  // How far closed the docked sidebar is, and how far in its peek has it, undefined while it isn't peeking.
-  const sidebar: SidebarPose = {
-    closed: preferences.appearance.sidebarOpen() ? 0 : 1,
-    peek: undefined,
-  }
-
-  let peekSurface: HTMLDivElement | undefined
-  let peekHome: HTMLElement | null | undefined
-
-  // The docked sidebar and its peek are one sidebar, shown as far in as whichever has it further.
-  const sidebarHidden = () => (sidebar.peek === undefined ? sidebar.closed : Math.min(sidebar.closed, 1 - sidebar.peek))
-
-  // A peek slides the contents in its own box, where docking slides them by sizing the aside. Reduced motion fades
-  // them in place instead.
-  const paintSidebarContents = () => {
-    const mount = state.tabsMount
-
-    if (!mount) return
-    const peeking = sidebar.peek !== undefined
-    const hidden = sidebarHidden()
-    const fade = peeking && prefersReducedMotion()
-    const rtl = document.documentElement.dir === "rtl"
-    const shift = peeking && !fade && hidden > 0 ? `translateX(${(rtl ? 100 : -100) * hidden}%)` : ""
-    const opacity = fade ? (hidden === 0 ? "" : `${1 - hidden}`) : panelOpacity(hidden)
-    mount.style.opacity = opacity
-    mount.style.transform = shift
-
-    if (peekSurface) {
-      // Lifted while it floats, and settling as a dock lands. It fades with the contents, so its hairline and shadow,
-      // which reach past its end edge, leave with them rather than lingering at the window's edge.
-      peekSurface.style.opacity = peeking ? `${sidebar.closed * Number(opacity || 1)}` : ""
-      peekSurface.style.transform = shift
-    }
-
-    // Without traffic lights, Home starts the sidebar's header right where the collapsed toggle floats over a peek, so
-    // it steps past the toggle until a dock carries the toggle to the header's end.
-    if (peeking && peekHome === undefined)
-      peekHome = mount.querySelector<HTMLElement>('[data-slot="sidebar-header"][data-home] > :first-child')
-
-    if (peekHome)
-      peekHome.style.transform = peeking
-        ? `translateX(calc(${(rtl ? -1 : 1) * sidebar.closed} * (${collapsedSidebarToggleEnd}px - var(--sidebar-inset-start))))`
-        : ""
-
-    if (!peeking) peekHome = undefined
-  }
-
-  const sidebarMotion = createPanelMotion({
-    open: preferences.appearance.sidebarOpen,
-    // The aside's real width moves main's edge with the sidebar's; its contents keep their width, pinned to that edge.
-    paint: (closed) => {
-      sidebar.closed = closed
-      const aside = state.tabsAside
-
-      if (aside) aside.style.width = `${state.tabsWidth * (1 - closed)}px`
-
-      // Dims the contents, background included, as they leave and brightens them as they arrive.
-      paintSidebarContents()
-      paintCollapsedSlots(closed)
+  command.register("sidebar", () => [
+    {
+      ...sidebarToggleCommand,
+      title: language.t("command.sidebar.toggle"),
+      category: language.t("command.category.view"),
+      onSelect: toggleSidebar,
     },
-    measure: () => measureSidebarToggles(state.tabsWidth * sidebarHidden()),
-    // A dock from a peek already shows the sidebar, so reduced motion has nothing to fade in.
-    element: () => (peek.handedOff() ? undefined : state.tabsPanel),
-    distance: () => state.tabsWidth,
-  })
+  ])
 
-  const peek = createSidebarPeek({
-    available: () => verticalTabs() && !preferences.appearance.sidebarOpen() && !sidebarMotion.present(),
-    open: preferences.appearance.sidebarOpen,
-    aside: () => state.tabsAside,
-    panel: () => state.tabsPanel,
-    paint: (shown) => {
-      sidebar.peek = shown
-      paintSidebarContents()
-    },
-    whenDocked: sidebarMotion.whenSettled,
-  })
-
-  guardClosingFocus({
-    root: () => state.tabsAside,
-    closing: () => !preferences.appearance.sidebarOpen() && sidebarMotion.present(),
-    // The toggle that reopens the sidebar, outside it.
-    target: () =>
-      [...document.querySelectorAll<HTMLElement>('button[aria-controls="vertical-tabs-sidebar"]')].find(
-        (button) => !state.tabsAside?.contains(button),
-      ),
-  })
-
-  command.register("sidebar", () =>
-    verticalTabs()
-      ? [
-          {
-            ...sidebarToggleCommand,
-            title: language.t("command.sidebar.toggle"),
-            category: language.t("command.category.view"),
-            onSelect: toggleSidebar,
-          },
-        ]
-      : [],
-  )
   const destinations = [
     { id: "destination.home", path: "/", titleKey: "home.title", keybind: "mod+1" },
     { id: "destination.inbox", path: "/inbox", titleKey: "inbox.title", keybind: "mod+2" },
@@ -203,7 +75,6 @@ export default function Layout(props: ParentProps) {
     })),
   )
 
-  // Every surface has a palette: routes with their own register under the same key, and the newest wins.
   command.register("palette", () => [
     {
       id: "command.palette",
@@ -222,9 +93,7 @@ export default function Layout(props: ParentProps) {
               const sessionID = entry.sessionID
               const server = entry.server
               global.serverCtx(server)?.projects.touch(entry.project?.worktree ?? entry.directory)
-              void startTransition(() => {
-                tabs.select(tabs.addSessionTab({ server, sessionId: sessionID }))
-              })
+              void tabs.select(tabs.addSessionTab({ server, sessionId: sessionID }))
             }}
           />
         ))
@@ -242,134 +111,38 @@ export default function Layout(props: ParentProps) {
       },
     },
   ])
-  const bottomTitlebar = () => mobile() && preferences.general.mobileTitlebarPosition() === "bottom"
-  const dragInset = () => windowDragEnabled(platform) && !mobile()
 
   return (
     <div
-      class="relative bg-v2-background-bg-deep flex-1 min-h-0 min-w-0 flex flex-col select-none [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
-      style={{
-        // The workbench design butts the 250 sidebar against the 255 content panel with a single
-        // hairline, so vertical tabs drop the shell's floating inset entirely.
-        "--shell-inline-inset": verticalTabs() ? "0px" : mobile() ? "1px" : "8px",
-        // The panel follows the same rule: flush edges in the workbench layout, rounded when floating.
-        "--shell-panel-radius": verticalTabs() ? "0px" : "10px",
-        "--session-header-inset-end": verticalTabs() ? "10px" : "12px",
-        "--sidebar-inset-start": "11px",
-        "--sidebar-inset-end": "3px",
-        "--sidebar-divider-bleed":
-          preferences.appearance.tabLayout() === "inbox" || organizedSidebar() ? "var(--shell-inline-inset)" : "0px",
-        // A bottom mobile titlebar leaves main's top edge to the safe area. Native Windows chrome supplies the gap;
-        // retain outer-outline clearance.
-        "--shell-top-inset": verticalTabs()
-          ? "0px"
-          : bottomTitlebar()
-            ? "0px"
-            : platform.platform === "desktop" && platform.os === "windows"
-              ? "1px"
-              : "8px",
-        "--shell-bottom-inset": verticalTabs()
-          ? "0px"
-          : bottomTitlebar()
-            ? "8px"
-            : "max(0px, calc(8px - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))))",
-      }}
+      data-replica
+      class="relative flex min-h-0 min-w-0 flex-1 select-none flex-col bg-[var(--main-bg)] [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
     >
-      <Titlebar verticalTabs={verticalTabs() ? { mount: state.tabsMount } : undefined} />
-      <div class="relative flex flex-1 min-h-0 min-w-0 flex-row">
-        {/* The empty inset above the panels moves the window, as the titlebar does. */}
-        <Show when={dragInset()}>
-          <div
-            data-slot="shell-drag-inset"
-            aria-hidden="true"
-            class="absolute inset-x-0 top-0 h-[max(8px,var(--shell-top-inset,8px))]"
-            data-tauri-drag-region
-          />
+      <ReplicaTitleBar sidebarOpen={sidebarOpen()} onToggleSidebar={toggleSidebar} />
+
+      <div class="flex min-h-0 min-w-0 flex-1">
+        <Show when={sidebarOpen() && !mobile()}>
+          <ReplicaRail />
+          <ReplicaSidebar />
         </Show>
-        <Show when={verticalTabs()}>
-          <aside
-            id="vertical-tabs-sidebar"
-            data-slot="vertical-tabs-sidebar"
-            data-state={preferences.appearance.sidebarOpen() ? "open" : "closed"}
-            data-peek={peek.shown() ? "" : undefined}
-            style={{ "--sidebar-peek-width": `${state.tabsWidth}px` }}
-            ref={(element) => setState("tabsAside", element)}
-            class="relative z-10 h-full min-h-0 shrink-0 border-e border-v2-border-border-muted bg-v2-background-bg-deep"
+
+        <main data-slot="replica-main" class="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          <Show
+            when={welcome()}
+            fallback={
+              <PluginServerCover>
+                <Suspense>{props.children}</Suspense>
+              </PluginServerCover>
+            }
           >
-            {/* Skipped rather than display: none or inert, so neither direction restyles the sidebar's contents and
-                  a reopen reuses their layout. */}
-            <div
-              ref={(element) => setState("tabsPanel", element)}
-              data-slot="vertical-tabs-panel"
-              class="absolute inset-0 overflow-clip [contain:layout_style_paint] [overflow-clip-margin:var(--sidebar-divider-bleed,0px)]"
-              classList={{
-                "z-20": organizedSidebar(),
-                "[content-visibility:hidden]": !sidebarMotion.present() && !peek.shown(),
-              }}
-            >
-              {/* Under a peek's contents, so they dim over the sidebar's own background, as when docking, rather than
-                  showing the content beneath through them. */}
-              <div
-                ref={peekSurface}
-                data-slot="vertical-tabs-peek-surface"
-                aria-hidden="true"
-                class="pointer-events-none absolute inset-y-0 end-0 bg-v2-background-bg-deep shadow-[var(--v2-elevation-floating)]"
-                style={{ width: `${state.tabsWidth}px` }}
-              />
-              <div
-                ref={(element) => setState("tabsMount", element)}
-                data-slot="vertical-tabs-mount"
-                class="absolute inset-y-0 end-0 contain-strict [overflow-clip-margin:var(--sidebar-divider-bleed,0px)] will-change-[opacity] flex min-h-0 flex-col bg-v2-background-bg-deep pe-2.5 ps-2.5 pb-[var(--shell-bottom-inset,8px)] pt-[max(12px,var(--shell-top-inset,8px))]"
-                style={{
-                  width: `${state.tabsWidth}px`,
-                  "padding-bottom": "max(10px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
-                }}
-              />
-            </div>
-            {/* Takes the pointer while the sidebar closes, without restyling its contents. */}
-            <div
-              class="absolute inset-0 z-20"
-              classList={{ hidden: preferences.appearance.sidebarOpen() || !sidebarMotion.present() }}
-            />
-            <Show when={preferences.appearance.sidebarOpen()}>
-              <ResizeHandle
-                direction="horizontal"
-                size={state.tabsWidth}
-                min={136}
-                max={sidebarMaxWidth(window.innerWidth)}
-                onResize={(width) => setState("tabsWidth", width)}
-                onDraggingChange={setPanelResizing}
-              />
-            </Show>
-          </aside>
-        </Show>
-        {/* Size containment collapses percentage-height descendants in WebKit. */}
-        <main
-          class="flex-1 min-h-0 min-w-0 overflow-x-hidden flex flex-col items-start contain-content"
-          style={{
-            background: verticalTabs() ? "var(--v2-background-bg-base)" : undefined,
-            "padding-top": bottomTitlebar() ? "env(safe-area-inset-top, 0px)" : "0px",
-            // A docked composer touch bar takes over the safe area.
-            "padding-bottom":
-              bottomTitlebar() || settings.active()
-                ? "0px"
-                : "var(--shell-safe-area-bottom, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)))",
-            "--settings-bottom-inset": bottomTitlebar()
-              ? "40px"
-              : "var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))",
-          }}
-        >
-          <PluginServerCover>
-            <Suspense>{props.children}</Suspense>
-          </PluginServerCover>
+            <ReplicaWelcome />
+          </Show>
         </main>
-        <CollapsedSidebarToggle />
       </div>
-      {/* Narrow screens move the destinations to the bottom edge, where a thumb reaches them. */}
+
       <Show when={mobile()}>
         <nav
           data-slot="destination-bar"
-          class="relative z-10 flex shrink-0 items-stretch border-t border-v2-border-border-muted bg-v2-background-bg-base px-2 pt-1 pb-[env(safe-area-inset-bottom,0px)] [height:calc(52px+env(safe-area-inset-bottom,0px))] [&_[data-slot=destination-toggle]]:h-full [&_button]:h-full"
+          class="relative z-10 flex shrink-0 items-stretch border-t border-[var(--border-subtle)] bg-[var(--app-chrome)] px-2 pt-1 pb-[env(safe-area-inset-bottom,0px)] [height:calc(52px+env(safe-area-inset-bottom,0px))] [&_[data-slot=destination-toggle]]:h-full [&_button]:h-full"
         >
           <DestinationToggle
             pressed={(id) => layout.route().type === id}
@@ -378,8 +151,7 @@ export default function Layout(props: ParentProps) {
           />
         </nav>
       </Show>
-      {/* On touch devices the active composer moves its actions here: the bottom edge, or the top of the keyboard.
-          Last in order, so it stays below a bottom titlebar (also order-last, but earlier in the DOM). */}
+
       <div data-slot="composer-touch-bar-mount" class="order-last shrink-0" />
       <PluginSlot at="window.bottom" input={{}} />
       <ToastRegion />
