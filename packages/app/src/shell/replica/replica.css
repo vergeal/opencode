@@ -147,7 +147,7 @@
   min-width: 0;
   min-height: 0;
   margin-block: 4px;
-  border: 0;
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-panel);
   overflow: hidden;
   background: var(--color-main);
@@ -186,7 +186,7 @@
   width: 100%;
   min-width: 0;
   min-height: 0;
-  background: var(--color-rail);
+  background: var(--color-sidebar);
 }
 
 [data-slot="replica-sidebar-scroll"] {
