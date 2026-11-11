@@ -15,6 +15,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { useSettings } from "@/settings/model"
 import { WindowsAppMenu } from "./windows-menu"
 import { applyPath, backPath, forwardPath, type HistoryLocation } from "./history"
+import { goBackCommand, goForwardCommand } from "./history-commands"
 import { TitlebarTabStrip } from "@/shell/titlebar/tab-strip"
 import { macVerticalTrafficLights, SidebarToggle } from "@/shell/sidebar-toggle"
 import { SidebarInbox } from "@/shell/titlebar/inbox"
@@ -45,9 +46,7 @@ export const newTabCommand = { id: "tab.new", keybind: "mod+t,mod+n" }
 /** Search projects: a draft searches in place; everywhere else it opens a new draft with the project picker open. */
 export const projectSearchCommand = { id: "project.select", keybind: "mod+shift+o" }
 
-export const goBackCommand = { id: "common.goBack", keybind: "mod+[" }
-
-export const goForwardCommand = { id: "common.goForward", keybind: "mod+]" }
+export { goBackCommand, goForwardCommand }
 
 const titlebarHeight = 36
 

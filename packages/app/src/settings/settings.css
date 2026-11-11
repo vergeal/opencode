@@ -53,9 +53,38 @@
   padding-inline: max(0px, calc((100% - 1048px) / 2));
 }
 
+/* In the replica workbench Settings is the main workspace, not a page inside one: it shares the workbench surface
+   with the conversation sidebar instead of drawing a second rounded card beside it. The second-level navigation
+   stays inside this workspace, so the columns remain rail, conversations and Settings. */
+[data-replica] .settings-screen {
+  width: 100%;
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  --settings-nav-item-radius: 8px;
+}
+
+/* The navigation reads as part of the workbench: the same row colors as the conversation sidebar. */
+[data-replica] .settings-nav-groups [data-slot="tabs-v2-trigger-wrapper"] {
+  color: var(--color-text-secondary);
+}
+
+[data-replica] .settings-nav-groups [data-slot="tabs-v2-trigger-wrapper"]:has([data-selected]) {
+  background: var(--color-selected);
+  color: var(--color-text-main);
+}
+
+@media (hover: hover) {
+  [data-replica] .settings-nav-groups [data-slot="tabs-v2-trigger-wrapper"]:not(:has([data-selected])):hover {
+    background: var(--color-hover);
+    color: var(--color-text-main);
+  }
+}
+
 @media (max-width: 767px) {
   .settings-screen {
-    --settings-mobile-inner-inset: 8px;
+    --settings-mobile-inner-inset: 16px;
   }
 }
 

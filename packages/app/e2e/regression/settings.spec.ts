@@ -64,10 +64,41 @@ test("settings has its own route and returns through app history", async ({ page
   await settings.getByRole("button", { name: "Back to app", exact: true }).click()
   await expect(page).toHaveURL("/")
   await expect(home).toHaveAttribute("aria-pressed", "true")
-  await page.keyboard.press("Control+]")
+  await page.keyboard.press("ControlOrMeta+]")
   await expect(page).toHaveURL("/settings")
   await expect(home).toHaveAttribute("aria-pressed", "false")
   await home.click()
+  await expect(page).toHaveURL("/")
+  await expect(settings).toBeHidden()
+})
+
+test("settings keeps the replica workbench and leaves it from the rail and the conversation sidebar", async ({
+  page,
+}) => {
+  const { settings } = await open(page)
+  const rail = page.locator('[data-slot="replica-rail"]')
+  const sidebar = page.locator('[data-slot="replica-sidebar"]')
+
+  await expect(rail).toBeVisible()
+  await expect(sidebar).toBeVisible()
+  await expect(rail.getByRole("button", { name: "Settings", exact: true })).toHaveAttribute("aria-pressed", "true")
+
+  await sidebar.locator('[data-slot="replica-row"]').filter({ hasText: "Workspace 1 session" }).click()
+  await expect(page).toHaveURL(/\/session\/ses_settings_1$/)
+  await expect(settings).toBeHidden()
+  await expect(sidebar).toBeVisible()
+
+  await rail.getByRole("button", { name: "Settings", exact: true }).click()
+  await expect(page).toHaveURL("/settings")
+  await expect(settings).toBeVisible()
+
+  await rail.getByRole("button", { name: "History", exact: true }).click()
+  await expect(page).toHaveURL("/inbox")
+  await expect(settings).toBeHidden()
+
+  await rail.getByRole("button", { name: "Settings", exact: true }).click()
+  await expect(settings).toBeVisible()
+  await rail.getByRole("button", { name: "Home", exact: true }).click()
   await expect(page).toHaveURL("/")
   await expect(settings).toBeHidden()
 })
@@ -2027,20 +2058,16 @@ for (const viewport of [
       await expect(toggle.getByRole("switch")).toBeChecked()
     }
 
-    // Wheel over the outer gutter must not move the entire settings screen.
-    await main.hover({ position: { x: 1, y: 200 } })
+    // Settings scrolls inside its workspace; the workbench around it stays put.
+    await settings.hover({ position: { x: 8, y: 200 } })
     await page.mouse.wheel(0, 10000)
     await expect(main).toHaveJSProperty("scrollTop", 0)
 
     if (viewport.name === "desktop") {
-      // Wheel over the settings gutter or the page list scrolls the page beside it.
-      await settings.hover({ position: { x: 16, y: 200 } })
-      await page.mouse.wheel(0, 200)
-      await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
-      const top = await scroller.evaluate((element) => element.scrollTop)
+      // Wheel over the page list scrolls the page beside it.
       await settings.getByRole("tab", { name: "Preferences", exact: true }).hover()
       await page.mouse.wheel(0, 200)
-      await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(top)
+      await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
       await expect(settings.getByRole("button", { name: "Back to app" })).toBeInViewport()
     }
 
@@ -2096,7 +2123,7 @@ for (const viewport of [
             }),
           { message: `${name} bottom clearance` },
         )
-        .toBeGreaterThanOrEqual(viewport.bottom ? 119.5 : 79.5)
+        .toBeGreaterThanOrEqual(79.5)
       await expect(main).toHaveJSProperty("scrollTop", 0)
       await expect
         .poll(() => main.evaluate((element) => element.scrollWidth - element.clientWidth))

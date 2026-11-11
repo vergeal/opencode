@@ -4,6 +4,7 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { ToastRegion } from "@/shell/notifications/toast"
 import { UploadToastHost } from "@/composer/attachments/uploads"
 import { useSettings } from "@/settings/model"
+import { useSettingsDialog } from "@/settings/command"
 import { PluginServerCover } from "@/runtime/plugin/server-shell"
 import { PluginSlot } from "@/runtime/plugin/render"
 import { COMMAND_SEARCH_ID, useCommand } from "@/shell/commands/command"
@@ -15,6 +16,7 @@ import { useLayout } from "@/shell/state/layout"
 import { useNavigate } from "@solidjs/router"
 import { ResizeHandle } from "@opencode/ui/resize-handle"
 import { DestinationToggle } from "@/shell/titlebar/destination-toggle"
+import { goBackCommand, goForwardCommand } from "@/shell/titlebar/history-commands"
 import { createSessionInbox } from "@/shell/titlebar/inbox-model"
 import { ReplicaRail } from "./replica/rail"
 import { ReplicaSidebar } from "./replica/sidebar"
@@ -32,6 +34,7 @@ export default function Layout(props: ParentProps) {
   const preferences = useSettings()
   const command = useCommand()
   const language = useLanguage()
+  const openSettings = useSettingsDialog()
   const dialog = useDialog()
   const global = useGlobal()
   const servers = useServers()
@@ -60,6 +63,21 @@ export default function Layout(props: ParentProps) {
       title: language.t("command.sidebar.toggle"),
       category: language.t("command.category.view"),
       onSelect: toggleSidebar,
+    },
+  ])
+
+  command.register("history", () => [
+    {
+      ...goBackCommand,
+      title: language.t("common.goBack"),
+      category: language.t("command.category.view"),
+      onSelect: () => window.history.back(),
+    },
+    {
+      ...goForwardCommand,
+      title: language.t("common.goForward"),
+      category: language.t("command.category.view"),
+      onSelect: () => window.history.forward(),
     },
   ])
 
@@ -143,7 +161,7 @@ export default function Layout(props: ParentProps) {
         sidebarOpen={sidebarOpen()}
         onToggleSidebar={toggleSidebar}
         onMore={() => command.trigger("command.palette")}
-        onView={() => navigate("/settings")}
+        onView={openSettings}
         onAdd={newChat}
       />
 
