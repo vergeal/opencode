@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { sessionHref } from "../utils/app"
+import { sessionHref, T0 } from "../utils/app"
 import { mockWorkspace } from "../utils/workspace"
 
 test.use({ serviceWorkers: "block" })
@@ -23,6 +23,12 @@ test("replica v6 geometry", async ({ page }) => {
       { id: "ses_replica_v6", title: "选择本地 Ollama 模型" },
       { id: "ses_replica_v6_b", title: "梳理 Electron 对话展示流程" },
       { id: "ses_replica_v6_c", title: "评估 Electron 应用逆向可行性" },
+      {
+        id: "ses_replica_v6_failed",
+        title: "失败的会话",
+        outcome: "failed",
+        time: { created: T0, updated: T0 + 2_000, idle: T0 + 2_000 },
+      },
     ],
     seed: { locale: "zh" },
   })
@@ -127,6 +133,7 @@ test("replica v6 geometry", async ({ page }) => {
   near(extra.composerEditor?.width, 650, 8)
   expect(extra.titleText).toBe("选择本地 Ollama 模型")
   expect(sidebar.text).not.toContain("项目")
+  expect(sidebar.text).toContain("失败")
   expect(sidebar.rows.length).toBeGreaterThan(1)
   expect(sidebar.rows.every((row) => row.icon)).toBe(true)
   expect(sidebar.rows[1]!.y - sidebar.rows[0]!.y).toBeCloseTo(31, 0)

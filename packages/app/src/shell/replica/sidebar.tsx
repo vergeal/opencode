@@ -1,6 +1,5 @@
 import { createMemo, For, Show } from "solid-js"
 import { useNavigate } from "@solidjs/router"
-import { ActivityRing } from "@opencode/ui/activity-ring"
 import { Icon } from "@opencode/ui/icon"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -22,11 +21,12 @@ const ROW =
 
 const LIST = "flex flex-col gap-[2px]"
 
-const DOT: Record<Exclude<InboxStatus, "ready" | "working">, string> = {
-  approval: "bg-[var(--color-accent-orange)]",
-  input: "bg-[var(--color-accent-orange)]",
-  failed: "bg-[var(--v2-state-fg-danger)]",
-  done: "bg-[var(--color-accent-blue)]",
+const STATUS_COLOR: Record<Exclude<InboxStatus, "ready">, string> = {
+  approval: "text-[var(--color-accent-orange)]",
+  input: "text-[var(--color-accent-orange)]",
+  working: "text-[var(--color-text-secondary)]",
+  failed: "text-[var(--v2-state-fg-danger)]",
+  done: "text-[var(--color-accent-blue)]",
 }
 
 const STATUS_LABEL = {
@@ -48,25 +48,17 @@ function StatusMark(props: { status: InboxStatus }) {
     return value === "ready" ? undefined : STATUS_LABEL[value]
   }
 
-  const dot = () => {
+  const color = () => {
     const value = status()
 
-    return value === "ready" || value === "working" ? undefined : DOT[value]
+    return value === "ready" ? undefined : STATUS_COLOR[value]
   }
 
   return (
-    <Show when={status() !== "ready"}>
-      <span class="ms-auto flex shrink-0 items-center gap-1.5">
-        <Show when={label()}>
-          {(key) => <span class="sr-only">{language.t(key())}</span>}
-        </Show>
-        <Show
-          when={status() === "working"}
-          fallback={<Show when={dot()}>{(color) => <span aria-hidden="true" class={`size-[7px] shrink-0 rounded-full ${color()}`} />}</Show>}
-        >
-          <ActivityRing class="size-3.5 shrink-0 text-[var(--color-icon-secondary)]" />
-        </Show>
-      </span>
+    <Show when={label()}>
+      {(key) => (
+        <span class={`ms-auto shrink-0 text-[11px] leading-4 ${color() ?? ""}`}>{language.t(key())}</span>
+      )}
     </Show>
   )
 }
