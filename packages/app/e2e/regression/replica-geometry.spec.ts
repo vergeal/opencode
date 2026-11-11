@@ -114,7 +114,19 @@ test("replica v6 geometry", async ({ page }) => {
     }
   })
 
-  console.log("REPLICA_V6", JSON.stringify({ metrics, extra, sidebar, rail }, null, 2))
+  const backgrounds = await page.evaluate(() => {
+    const color = (element: Element | null) => (element ? getComputedStyle(element).backgroundColor : null)
+
+    return {
+      app: color(document.querySelector("[data-replica]")),
+      shell: color(document.querySelector('[data-slot="replica-shell"]')),
+      workbench: color(document.querySelector('[data-slot="replica-workbench"]')),
+      root: color(document.getElementById("root")),
+      body: color(document.body),
+    }
+  })
+
+  console.log("REPLICA_V6", JSON.stringify({ metrics, extra, sidebar, rail, backgrounds }, null, 2))
   await page.screenshot({ path: "e2e/test-results/replica-v6-2048x1281.png" })
 
   const at = (selector: string) => metrics.find((entry) => entry.selector === selector)
@@ -140,6 +152,7 @@ test("replica v6 geometry", async ({ page }) => {
   expect(rail.state).toBe("pressed")
   expect(rail.background).toBe("rgb(238, 238, 238)")
   expect(rail.icon).toBe(true)
+  expect(backgrounds.app).toBe("rgb(243, 243, 243)")
 })
 
 test("replica rail opens the inbox", async ({ page }) => {
