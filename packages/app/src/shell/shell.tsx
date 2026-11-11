@@ -150,7 +150,10 @@ export default function Layout(props: ParentProps) {
       <div data-slot="replica-shell">
         <Show when={!mobile()}>
           <ReplicaRail />
-          <Show when={sidebarOpen()}>
+        </Show>
+
+        <div data-slot="replica-workbench">
+          <Show when={!mobile() && sidebarOpen()}>
             <div data-slot="replica-sidebar-slot" class="relative flex min-h-0 min-w-0">
               <ReplicaSidebar />
               <ResizeHandle
@@ -163,9 +166,8 @@ export default function Layout(props: ParentProps) {
               />
             </div>
           </Show>
-        </Show>
 
-        <main
+          <main
           data-slot="replica-main"
           data-ui="main-workspace"
           data-welcome={welcome() ? "" : undefined}
@@ -187,7 +189,8 @@ export default function Layout(props: ParentProps) {
           >
             <ReplicaWelcome />
           </Show>
-        </main>
+          </main>
+        </div>
       </div>
 
       <Show when={mobile()}>
