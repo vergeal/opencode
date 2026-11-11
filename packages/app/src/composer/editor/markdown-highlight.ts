@@ -25,10 +25,9 @@ type Token = { type: string; raw?: string; text?: string; tokens?: Token[]; item
  * editable DOM on every keystroke. */
 const IDLE = 150
 
-/** Source of the last full-draft delete. Native undo cannot restore it because the decoration spans leave
- * no complete history entry, and the composer can replace its editor element, so this stays module level
- * and the next undo reads it from here. */
-let deletedSource: string | undefined
+/** One source-level undo step: the draft and caret as they were before an edit. Rendering rewrites the
+ * editor's nodes, so this lives outside the browser's own history. */
+type Snapshot = { text: string; caret: Caret | undefined }
 
 /**
  * Styles markdown in the composer.
@@ -115,6 +114,58 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     decorating = false
     if (caret) restore(editor, caret)
     refreshPaint()
+  }
+
+  // Rendering rewrites the editor's child nodes, which drops the browser's undo entry for the edit that came
+  // before it, so Cmd/Ctrl+Z stopped working once the draft was decorated. Keep a source-level history
+  // instead: each undo restores plain text, which the next render decorates again.
+  let lastEditAt = 0
+  const past: Snapshot[] = []
+  let future: Snapshot[] = []
+
+  // Continuous typing is one undo step, the way the browser merges it; a caret move or another kind of edit
+  // starts a new one.
+  const record = (mergeable: boolean) => {
+    const now = performance.now()
+    const continues = mergeable && past.length > 0 && now - lastEditAt < 700
+    lastEditAt = now
+    if (continues) return
+
+    past.push({ text: editor.textContent ?? "", caret: capture(editor) })
+    if (past.length > 40) past.shift()
+    future = []
+  }
+
+  const applySnapshot = (snapshot: Snapshot) => {
+    undecorate(false)
+    editor.textContent = snapshot.text
+    lastEditAt = 0
+
+    if (snapshot.caret) restore(editor, snapshot.caret)
+    else {
+      const at = caretPoint(textNodes(editor), 0)
+      if (at) window.getSelection()?.setBaseAndExtent(at.node, at.offset, at.node, at.offset)
+      else window.getSelection()?.collapse(editor, 0)
+    }
+
+    // The draft lives outside this element, so the controller only learns about the restore from an input event.
+    editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "historyUndo" }))
+  }
+
+  const undoStep = () => {
+    const snapshot = past.pop()
+    if (!snapshot) return
+
+    future.push({ text: editor.textContent ?? "", caret: capture(editor) })
+    applySnapshot(snapshot)
+  }
+
+  const redoStep = () => {
+    const snapshot = future.pop()
+    if (!snapshot) return
+
+    past.push({ text: editor.textContent ?? "", caret: capture(editor) })
+    applySnapshot(snapshot)
   }
 
   // Render from the end of the draft, so wrapping one fragment cannot move the offsets of the next one.
@@ -497,32 +548,43 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.isComposing) return
 
-    if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
-      const source = deletedSource
-      if (source === undefined) return
+    if ((event.metaKey || event.ctrlKey) && !event.altKey && event.key.toLowerCase() === "z") {
+      const redo = event.shiftKey
 
-      deletedSource = undefined
+      // Nothing recorded yet: leave the key to the browser, which still owns earlier history.
+      if (redo ? future.length === 0 : past.length === 0) return
+
       event.preventDefault()
       event.stopPropagation()
-      undecorate(false)
-      editor.textContent = source
-      const end = textNodes(editor).at(-1)
-      if (end) window.getSelection()?.setBaseAndExtent(end.node, end.node.data.length, end.node, end.node.data.length)
-      editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "historyUndo" }))
+      if (redo) redoStep()
+      else undoStep()
 
       return
     }
 
-    // Any other edit ends that one-shot restore; native undo handles it from there. Modifier keys must not
-    // clear it: Cmd/Ctrl arrives as its own keydown right before the undo key.
+    // Windows and Linux redo.
+    if (event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && event.key.toLowerCase() === "y") {
+      if (future.length === 0) return
+
+      event.preventDefault()
+      event.stopPropagation()
+      redoStep()
+
+      return
+    }
+
+    // Moving the caret ends the run that continuous typing shares one undo step with.
     if (
-      event.key.length === 1 ||
-      event.key === "Backspace" ||
-      event.key === "Delete" ||
-      event.key === "Enter" ||
-      event.key === "Tab"
+      event.key === "ArrowLeft" ||
+      event.key === "ArrowRight" ||
+      event.key === "ArrowUp" ||
+      event.key === "ArrowDown" ||
+      event.key === "Home" ||
+      event.key === "End" ||
+      event.key === "PageUp" ||
+      event.key === "PageDown"
     )
-      deletedSource = undefined
+      lastEditAt = 0
 
     // An empty fenced block has no text of its own, so backspace would step through its ticks one at a
     // time. Delete the whole block in one go instead, restoring the source first so the range is plain
@@ -599,7 +661,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
 
         if (hidden && start !== undefined) {
           event.preventDefault()
-          deletedSource = source
+          record(false)
           const next = source.slice(0, start) + source.slice(start + removed.length)
           editor.textContent = next
           editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
@@ -614,7 +676,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       if (selectedAll) {
         event.preventDefault()
         selectedAll = false
-        deletedSource = editor.textContent ?? ""
+        record(false)
         editor.textContent = ""
         editor.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "deleteContentBackward" }))
 
@@ -695,10 +757,27 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   const onFocus = () => schedule()
   const onPointerDown = () => {
     selectedAll = false
+    // A click moves the caret, so the next edit starts its own undo step.
+    lastEditAt = 0
   }
   const onBlur = () => decorate()
 
+  // The browser announces the edit before it lands, which is where the undo step's starting point is saved.
+  // Paste, drops and line breaks keep their own step; continuous typing merges into the previous one.
+  const onBeforeInput = (event: InputEvent) => {
+    if (event.isComposing) return
+    if (event.inputType === "historyUndo" || event.inputType === "historyRedo") return
+
+    record(
+      event.inputType === "insertText" ||
+        event.inputType === "insertCompositionText" ||
+        event.inputType === "deleteContentBackward" ||
+        event.inputType === "deleteContentForward",
+    )
+  }
+
   editor.addEventListener("input", onInput)
+  editor.addEventListener("beforeinput", onBeforeInput)
   // Capture phase: select-all has to run before the editor's own handler and the browser's block-scoped
   // behaviour.
   editor.addEventListener("keydown", onKeyDown, true)
@@ -718,6 +797,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       disposed = true
       observer.disconnect()
       editor.removeEventListener("input", onInput)
+      editor.removeEventListener("beforeinput", onBeforeInput)
       editor.removeEventListener("keydown", onKeyDown, true)
       editor.removeEventListener("compositionstart", onCompositionStart)
       editor.removeEventListener("compositionend", onCompositionEnd)

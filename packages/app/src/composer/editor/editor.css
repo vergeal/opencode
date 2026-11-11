@@ -94,11 +94,15 @@
 }
 
 /* Inline code renders as a chip over the text. The side pad stays in the flow: paying it back with a
-   negative margin made the tint overlap the neighbouring characters. */
+   negative margin made the tint overlap the neighbouring characters. A tint of the text colour is lighter
+   on the white draft than the layer-02 fill; layer-02 still carries the chip on a dark surface. */
 [data-component="composer-editor"] [data-md-code] {
   padding-inline: 4px;
   border-radius: 4px;
-  background: var(--v2-background-bg-layer-02);
+  background: light-dark(
+    color-mix(in oklch, var(--v2-text-text-base) 10%, transparent),
+    var(--v2-background-bg-layer-02)
+  );
 }
 
 /* A code tick only paints the markdown; it must not occupy a character box or the draft reads as if
