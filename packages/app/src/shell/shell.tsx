@@ -13,6 +13,7 @@ import { useServers } from "@/runtime/server/registry"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 import { useNavigate } from "@solidjs/router"
+import { ResizeHandle } from "@opencode/ui/resize-handle"
 import { DestinationToggle } from "@/shell/titlebar/destination-toggle"
 import { createSessionInbox } from "@/shell/titlebar/inbox-model"
 import { ReplicaRail } from "./replica/rail"
@@ -52,6 +53,10 @@ export default function Layout(props: ParentProps) {
     sessionInbox
       .entries()
       .filter((entry) => entry.status === "approval" || entry.status === "input" || entry.status === "failed").length
+
+  // Untouched, the sidebar keeps the reference 21.4%; dragging pins an explicit pixel width.
+  const [sidebarWidth, setSidebarWidth] = createSignal<number>()
+  const sidebarSize = () => sidebarWidth() ?? Math.round(window.innerWidth * 0.214)
 
   const sidebarOpen = () => preferences.appearance.sidebarOpen()
   const toggleSidebar = () => preferences.appearance.setSidebarOpen(!sidebarOpen())
@@ -136,11 +141,35 @@ export default function Layout(props: ParentProps) {
         <Show when={!mobile()}>
           <ReplicaRail />
           <Show when={sidebarOpen()}>
-            <ReplicaSidebar />
+            <div
+              data-slot="replica-sidebar-slot"
+              class="relative flex min-h-0"
+              style={{ flex: sidebarWidth() ? `0 0 ${sidebarWidth()}px` : undefined }}
+            >
+              <ReplicaSidebar />
+              <ResizeHandle
+                direction="horizontal"
+                edge="end"
+                size={sidebarSize()}
+                min={180}
+                max={480}
+                onResize={setSidebarWidth}
+              />
+            </div>
           </Show>
         </Show>
 
-        <main data-slot="replica-main" class="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <main
+          data-slot="replica-main"
+          data-welcome={welcome() ? "" : undefined}
+          class="relative flex min-h-0 min-w-0 flex-1 flex-col"
+          style={{
+            "--shell-inline-inset": "0px",
+            "--shell-top-inset": "0px",
+            "--shell-bottom-inset": "0px",
+            "--shell-panel-radius": "12px",
+          }}
+        >
           <Show
             when={welcome()}
             fallback={

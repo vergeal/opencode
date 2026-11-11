@@ -48,7 +48,7 @@
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", sans-serif;
   color: var(--text-primary);
-  background: var(--main-bg);
+  background: var(--app-chrome);
 }
 
 [data-color-scheme="dark"] [data-replica] {
@@ -94,17 +94,30 @@
   border-inline-end: 1px solid var(--border-subtle);
 }
 
-[data-slot="replica-sidebar"] {
+[data-slot="replica-sidebar-slot"] {
   flex: 0 0 21.4%;
   min-width: 180px;
+}
+
+/* The navigation panel is one rounded surface flush with the main column: no gutter, only its 1px edge. */
+[data-slot="replica-sidebar"] {
+  flex: 1 1 auto;
+  width: 100%;
   background: var(--sidebar-bg);
-  border-inline-end: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
 [data-slot="replica-main"] {
   background: var(--main-bg);
   min-width: 0;
+}
+
+/* The conversation surface floats on the chrome tint so its rounded corners stay visible; the welcome page
+   stays pure white. */
+[data-slot="replica-main"]:not([data-welcome]) {
+  background: var(--app-chrome);
 }
 
 /* Sidebar rows: 13px type, 8px radius only on hover/selection, never a card per row. */
@@ -172,7 +185,7 @@
 
 @media (max-width: 767px) {
   [data-slot="replica-rail"],
-  [data-slot="replica-sidebar"] {
+  [data-slot="replica-sidebar-slot"] {
     display: none;
   }
 
