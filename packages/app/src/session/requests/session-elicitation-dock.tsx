@@ -33,8 +33,8 @@ export function SessionElicitationDock(props: {
 }) {
   const language = useLanguage()
   const platform = usePlatform()
-  const current = useData()
-  const data = () => props.data ?? current
+  // The routed server owns the session timeline; an inbox item can belong to another server and passes its own data.
+  const data = () => props.data ?? useData()
   const fields = createMemo(() => props.request.fields.filter((field) => !("hidden" in field && field.hidden)))
 
   const message = () => Option.getOrUndefined(decodeMessage(props.request.metadata?.message))
