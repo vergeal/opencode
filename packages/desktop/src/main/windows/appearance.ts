@@ -12,13 +12,25 @@ import { emitIpcEvent } from "../ipc-events"
 import type { DesktopPaths } from "../paths"
 import { BACKGROUND_COLOR_KEY, PINCH_ZOOM_ENABLED_KEY, ZOOM_LEVEL_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
-import { platformFrame, savedBackgroundColor, storedBackgroundColor, storedZoomLevel, titlebarOverlay, tone } from "./defaults"
+import {
+  platformFrame,
+  savedBackgroundColor,
+  storedBackgroundColor,
+  storedZoomLevel,
+  titlebarOverlay,
+  tone,
+} from "./defaults"
 
 const titlebarThemes = new WeakMap<BrowserWindow, Partial<TitlebarTheme>>()
 
 const pinchZoomEnabled = new WeakMap<BrowserWindow, boolean>()
 
 const maxZoomLevel = 10
+
+/** macOS windows sit on a blurred material; the other platforms paint an opaque theme colour. */
+function translucentWindow() {
+  return process.platform === "darwin"
+}
 
 const minZoomLevel = 0.2
 
@@ -28,7 +40,7 @@ export function windowAppearance(path: Path.Path, paths: DesktopPaths.Resolved) 
   return {
     title: "OpenCode",
     icon: iconPath(path, paths),
-    backgroundColor: backgroundColor ?? storedBackgroundColor(),
+    backgroundColor: translucentWindow() ? "#00000000" : (backgroundColor ?? storedBackgroundColor()),
     ...platformFrame(tone(), storedZoomLevel()),
     webPreferences: {
       preload: paths.preloadPath,
@@ -51,6 +63,8 @@ export function setBackgroundColor(color: string) {
   // settings file on each set, so only persist a change.
   if (getBackgroundColor() !== color) getStore().set(BACKGROUND_COLOR_KEY, color)
   backgroundColor = color
+  // macOS keeps the window transparent so the vibrancy layer shows through the replica chrome.
+  if (translucentWindow()) return
   BrowserWindow.getAllWindows().forEach((win) => {
     win.setBackgroundColor(color)
 

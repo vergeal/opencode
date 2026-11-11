@@ -1,7 +1,7 @@
-import { createEffect, createMemo, Match, onCleanup, Show, Switch, untrack } from "solid-js"
-import { createStore, unwrap } from "solid-js/store"
+import { createEffect, createMemo, Match, onCleanup, Show, Switch } from "solid-js"
+import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
-import { useLocation, useNavigate } from "@solidjs/router"
+import { useNavigate } from "@solidjs/router"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Icon } from "@opencode/ui/icon"
@@ -14,8 +14,8 @@ import { useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useSettings } from "@/settings/model"
 import { WindowsAppMenu } from "./windows-menu"
-import { applyPath, backPath, forwardPath, type HistoryLocation } from "./history"
 import { goBackCommand, goForwardCommand } from "./history-commands"
+import { createTitlebarHistory } from "./history-store"
 import { TitlebarTabStrip } from "@/shell/titlebar/tab-strip"
 import { macVerticalTrafficLights, SidebarToggle } from "@/shell/sidebar-toggle"
 import { SidebarInbox } from "@/shell/titlebar/inbox"
@@ -83,7 +83,6 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
   const openSessionSettings = (server: ServerConnection.Key, session: SessionInfo) =>
     dialog.show(() => <SessionSettingsDialog server={server} session={session} />)
   const navigate = useNavigate()
-  const location = useLocation()
   const mobile = createMediaQuery("(max-width: 767px)")
   const bottom = createMemo(() => mobile() && settings.general.mobileTitlebarPosition() === "bottom")
   const mobileTop = createMemo(() => platform.platform === "web" && mobile() && !bottom())
@@ -143,47 +142,13 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
     onCleanup(() => cancelAnimationFrame(frame))
   })
 
-  const [history, setHistory] = createStore<{
-    stack: HistoryLocation[]
-    index: number
-    action: "back" | "forward" | undefined
-  }>({
-    stack: [],
-    index: 0,
-    action: undefined,
-  })
-
-  const path = () => `${location.pathname}${location.search}${location.hash}`
-
-  createEffect(() => {
-    const current = { url: path(), state: location.state }
-
-    untrack(() => {
-      const next = applyPath(history, current)
-
-      if (next === history) return
-      setHistory(next)
-    })
-  })
+  const history = createTitlebarHistory()
 
   const titlebarItems = useTitlebarItems()
   const hideVerticalTitlebar = createMemo(() => !!props.verticalTabs && !windows())
 
-  const back = () => {
-    const next = backPath(history)
-
-    if (!next) return
-    setHistory(next.state)
-    navigate(next.to.url, { state: unwrap(next.to.state) })
-  }
-
-  const forward = () => {
-    const next = forwardPath(history)
-
-    if (!next) return
-    setHistory(next.state)
-    navigate(next.to.url, { state: unwrap(next.to.state) })
-  }
+  const back = history.back
+  const forward = history.forward
 
   command.register(() => [
     {
@@ -505,7 +470,7 @@ export function Titlebar(props: { verticalTabs?: { mount?: HTMLElement } }) {
             }
 
             createEffect(() => {
-              path()
+              history.path()
               mobile()
               setMobileTabs("open", false)
             })

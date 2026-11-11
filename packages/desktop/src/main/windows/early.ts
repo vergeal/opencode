@@ -94,7 +94,7 @@ export function createEarlyWindow() {
     autoHideMenuBar: true,
     title: "OpenCode",
     icon: path.join(icons, `icon.${process.platform === "win32" ? "ico" : "png"}`),
-    backgroundColor: storedBackgroundColor(),
+    backgroundColor: process.platform === "darwin" ? "#00000000" : storedBackgroundColor(),
     ...platformFrame(tone(), zoom),
     webPreferences: {
       preload: path.join(root, "../preload/index.cjs"),

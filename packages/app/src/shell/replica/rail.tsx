@@ -6,6 +6,7 @@ import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useCommand } from "@/shell/commands/command"
 import { useSettingsDialog } from "@/settings/command"
+import { tabHref, tabKey, tabMatchesRoute, useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 
 type RailItem = {
@@ -19,9 +20,27 @@ type RailItem = {
 const ITEMS: readonly RailItem[] = [
   { id: "home", icon: "rail-home", iconActive: "rail-home-active", labelKey: "replica.rail.home", path: "/" },
   { id: "inbox", icon: "rail-inbox", iconActive: "rail-inbox-active", labelKey: "replica.rail.inbox", path: "/inbox" },
-  { id: "scheduled", icon: "rail-history", iconActive: "rail-history-active", labelKey: "replica.rail.scheduled", path: "/scheduled" },
-  { id: "explore", icon: "rail-compass", iconActive: "rail-compass-active", labelKey: "replica.rail.explore", path: "/explore" },
-  { id: "knowledge", icon: "rail-library", iconActive: "rail-library-active", labelKey: "replica.rail.knowledge", path: "/knowledge" },
+  {
+    id: "scheduled",
+    icon: "rail-history",
+    iconActive: "rail-history-active",
+    labelKey: "replica.rail.scheduled",
+    path: "/scheduled",
+  },
+  {
+    id: "explore",
+    icon: "rail-compass",
+    iconActive: "rail-compass-active",
+    labelKey: "replica.rail.explore",
+    path: "/explore",
+  },
+  {
+    id: "knowledge",
+    icon: "rail-library",
+    iconActive: "rail-library-active",
+    labelKey: "replica.rail.knowledge",
+    path: "/knowledge",
+  },
   { id: "more", icon: "rail-more", labelKey: "replica.rail.more" },
 ]
 
@@ -34,6 +53,7 @@ export function ReplicaRail() {
   const layout = useLayout()
   const navigate = useNavigate()
   const command = useCommand()
+  const tabs = useTabs()
   const openSettings = useSettingsDialog()
 
   const active = (id: RailItem["id"]) => {
@@ -52,6 +72,25 @@ export function ReplicaRail() {
     return false
   }
 
+  // Home keeps the conversation at hand: from anywhere else it returns to the last open conversation, and only
+  // an empty tab history falls back to the new-chat page. On Home itself there is nothing to do.
+  const goHome = () => {
+    const route = layout.route()
+
+    if (route.type === "home") return
+
+    const key = tabs.recentKey()
+    const recent = key ? tabs.store.find((tab) => tabKey(tab) === key) : undefined
+
+    if (recent && !tabMatchesRoute(recent, route)) {
+      navigate(tabHref(recent))
+
+      return
+    }
+
+    navigate("/")
+  }
+
   return (
     <nav data-slot="replica-rail" data-ui="primary-rail" aria-label={language.t("replica.rail.label")}>
       <div class="flex w-full flex-col items-center gap-1">
@@ -65,7 +104,16 @@ export function ReplicaRail() {
                 aria-pressed={active(item.id)}
                 aria-label={language.t(item.labelKey)}
                 class={BUTTON}
-                onClick={() => (item.path ? navigate(item.path) : command.trigger("command.palette"))}
+                onClick={() => {
+                  if (item.id === "home") {
+                    goHome()
+
+                    return
+                  }
+
+                  if (item.path) navigate(item.path)
+                  else command.trigger("command.palette")
+                }}
               >
                 <Icon name={active(item.id) && item.iconActive ? item.iconActive : item.icon} />
               </button>

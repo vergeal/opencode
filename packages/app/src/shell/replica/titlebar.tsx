@@ -7,10 +7,13 @@ import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { useGlobal } from "@/runtime/server/runtime"
+import { useCommand } from "@/shell/commands/command"
+import { goBackCommand, goForwardCommand } from "@/shell/titlebar/history-commands"
+import { createTitlebarHistory } from "@/shell/titlebar/history-store"
 import { useLayout } from "@/shell/state/layout"
 
 const BUTTON =
-  "flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]"
+  "flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)] disabled:opacity-40 disabled:pointer-events-none"
 
 /**
  * The window bar, split at the sidebar boundary. The left half owns the traffic lights and navigation
@@ -27,10 +30,27 @@ export function ReplicaTitleBar(props: {
   const platform = usePlatform()
   const layout = useLayout()
   const global = useGlobal()
+  const command = useCommand()
+  const history = createTitlebarHistory()
   const mac = () => platform.platform === "desktop" && platform.os === "macos"
 
-  const back = () => window.history.back()
-  const forward = () => window.history.forward()
+  const back = history.back
+  const forward = history.forward
+
+  command.register(() => [
+    {
+      ...goBackCommand,
+      title: language.t("common.goBack"),
+      category: language.t("command.category.view"),
+      onSelect: back,
+    },
+    {
+      ...goForwardCommand,
+      title: language.t("common.goForward"),
+      category: language.t("command.category.view"),
+      onSelect: forward,
+    },
+  ])
 
   const conversation = () => {
     const route = layout.route()
@@ -45,6 +65,11 @@ export function ReplicaTitleBar(props: {
 
   const cny = createMemo(() => createCNY(language.locale()))
 
+  // Shown beside the ring the way the reference reads: 15万 in Chinese, 150K in English.
+  const compact = createMemo(
+    () => new Intl.NumberFormat(language.locale(), { notation: "compact", maximumFractionDigits: 1 }),
+  )
+
   // Same accounting as the context panel: context after the last compaction, spend across the session family.
   const usage = () => {
     const route = layout.route()
@@ -54,10 +79,7 @@ export function ReplicaTitleBar(props: {
     const session = ctx?.data.session.get(route.sessionId)
 
     if (!ctx || !session) return
-    const message = lastAssistantWithUsage(
-      ctx.data.session.message.list(session.id),
-      session.revert?.messageID,
-    )
+    const message = lastAssistantWithUsage(ctx.data.session.message.list(session.id), session.revert?.messageID)
 
     if (!message) return
     const directory = session.location.directory
@@ -77,9 +99,7 @@ export function ReplicaTitleBar(props: {
     const spend = flashCostBreakdown(
       session.parentID
         ? [session.tokens]
-        : (family.length ? family : [session.id]).flatMap(
-            (id) => ctx.data.session.get(id)?.tokens ?? [],
-          ),
+        : (family.length ? family : [session.id]).flatMap((id) => ctx.data.session.get(id)?.tokens ?? []),
     )
 
     return {
@@ -101,6 +121,7 @@ export function ReplicaTitleBar(props: {
           data-replica-control
           class={BUTTON}
           aria-label={language.t("replica.titlebar.back")}
+          disabled={!history.canBack()}
           onClick={back}
         >
           <Icon name="outline-arrow-left" size="small" />
@@ -110,6 +131,7 @@ export function ReplicaTitleBar(props: {
           data-replica-control
           class={BUTTON}
           aria-label={language.t("replica.titlebar.forward")}
+          disabled={!history.canForward()}
           onClick={forward}
         >
           <Icon name="outline-arrow-right" size="small" />
@@ -151,39 +173,44 @@ export function ReplicaTitleBar(props: {
 
         <Show when={usage()}>
           {(value) => (
-            <Tooltip
-              placement="bottom"
-              value={
-                <div class="flex flex-col gap-0.5 text-start">
-                  <span>
-                    {language.t("replica.context.tokens")}: {value().tokens.toLocaleString(language.locale())}
-                  </span>
-                  <span>
-                    {language.t("replica.context.cost")}: {cny()(value().cost)}
-                  </span>
-                  <span>
-                    {language.t("replica.context.usage")}: {value().usage}%
-                  </span>
-                </div>
-              }
-            >
-              <span
-                data-ui="titlebar-context-usage"
-                class="ms-auto flex shrink-0 items-center gap-2 ps-3 text-[12px] leading-4 text-[var(--color-text-secondary)]"
+            <div class="ms-auto flex shrink-0 items-center">
+              <Tooltip
+                placement="bottom"
+                value={
+                  <div class="flex flex-col gap-0.5 text-start">
+                    <span>
+                      {language.t("replica.context.tokens")}: {value().tokens.toLocaleString(language.locale())}
+                    </span>
+                    <span>
+                      {language.t("replica.context.cost")}: {cny()(value().cost)}
+                    </span>
+                    <span>
+                      {language.t("replica.context.usage")}: {value().usage}%
+                    </span>
+                  </div>
+                }
               >
-                <ProgressCircle
-                  appearance="indicator"
-                  size={16}
-                  strokeWidth={2}
-                  percentage={value().usage}
-                  style={{
-                    "--progress-circle-background": "var(--color-border)",
-                    "--progress-circle-progress": "var(--color-icon-primary)",
-                  }}
-                />
-                <span class="shrink-0 tabular-nums">{cny()(value().cost)}</span>
-              </span>
-            </Tooltip>
+                <span
+                  data-ui="titlebar-context-usage"
+                  class="flex shrink-0 items-center gap-2 ps-3 text-[12px] leading-4 text-[var(--color-text-secondary)]"
+                >
+                  <ProgressCircle
+                    appearance="indicator"
+                    size={16}
+                    strokeWidth={2}
+                    percentage={value().usage}
+                    style={{
+                      "--progress-circle-background": "var(--color-border)",
+                      "--progress-circle-progress": "var(--color-icon-primary)",
+                    }}
+                  />
+                  <span data-ui="titlebar-context-tokens" class="shrink-0 tabular-nums">
+                    {compact().format(value().tokens)}
+                  </span>
+                  <span class="shrink-0 tabular-nums text-[var(--color-text-tertiary)]">{cny()(value().cost)}</span>
+                </span>
+              </Tooltip>
+            </div>
           )}
         </Show>
       </div>

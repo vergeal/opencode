@@ -24,8 +24,7 @@
   --composer-bottom-gap: 14px;
   --composer-radius: 19px;
 
-  --font-family-ui:
-    -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-family-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
   --font-family-mono: "SFMono-Regular", "SF Mono", Menlo, Monaco, monospace;
   --font-size-workspace-title: 19px;
   --font-size-sidebar: 14px;
@@ -88,8 +87,8 @@
 
 /* Dark mode steps the three surfaces down: the window frame (29), the navigation column (21), the work area (17). */
 [data-color-scheme="dark"] [data-replica] {
-  --color-titlebar: rgb(29 29 29);
-  --color-rail: rgb(29 29 29);
+  --color-titlebar: rgb(29 29 29 / 80%);
+  --color-rail: rgb(29 29 29 / 80%);
   --color-sidebar: rgb(21 21 21);
   --color-main: rgb(17 17 17);
   --color-composer: var(--v2-background-bg-layer-01);
@@ -111,12 +110,20 @@
 }
 
 /* One titlebar split at the sidebar boundary: window controls on the left, conversation title on the right. */
+/* On macOS the window is a blurred material, so the page root gives up its opaque fill and the frame
+   colour above sits directly on the desktop. Other platforms keep the painted root. */
+html[data-replica-window="translucent"] #root:has([data-replica]) {
+  background: transparent;
+}
+
 [data-slot="replica-titlebar"] {
   display: grid;
   grid-template-columns: calc(var(--primary-rail-width) + var(--navigation-sidebar-width-current)) minmax(0, 1fr);
   height: var(--titlebar-height);
   min-height: var(--titlebar-height);
   background: var(--color-titlebar);
+  /* Collapsing the sidebar slides this column with it instead of snapping the boundary. */
+  transition: grid-template-columns 220ms cubic-bezier(0.2, 0, 0, 1);
   /* The window bar has no rule against the content below; only the surface color separates them. */
   /* The window bar follows the appearance font instead of the replica's system stack. */
   font-family: var(--font-family-sans, var(--font-family-ui));
@@ -137,7 +144,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  padding-inline: 18px;
+  padding-inline: 18px 14px;
 }
 
 [data-slot="replica-shell"] {
@@ -167,6 +174,22 @@
   flex: 0 0 var(--navigation-sidebar-width-current);
   min-width: 0;
   min-height: 0;
+  transition:
+    flex-basis 220ms cubic-bezier(0.2, 0, 0, 1),
+    opacity 160ms ease;
+}
+
+/* Collapsed, the column keeps its element so the width can animate; its contents are clipped and inert. */
+[data-slot="replica-sidebar-slot"][data-collapsed] {
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Dragging writes the width every frame, so the transition would lag behind the pointer. */
+[data-replica][data-resizing] [data-slot="replica-titlebar"],
+[data-replica][data-resizing] [data-slot="replica-sidebar-slot"] {
+  transition: none;
 }
 
 [data-slot="replica-rail"] {

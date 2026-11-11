@@ -1,4 +1,4 @@
-import { createSignal, Show, Suspense, type ParentProps } from "solid-js"
+import { createEffect, createSignal, Show, Suspense, type ParentProps } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { ToastRegion } from "@/shell/notifications/toast"
@@ -9,6 +9,7 @@ import { PluginServerCover } from "@/runtime/plugin/server-shell"
 import { PluginSlot } from "@/runtime/plugin/render"
 import { COMMAND_SEARCH_ID, useCommand } from "@/shell/commands/command"
 import { useLanguage } from "@/runtime/i18n/language"
+import { usePlatform } from "@/runtime/platform/platform"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useTabs } from "@/shell/tabs/tabs"
@@ -16,7 +17,6 @@ import { useLayout } from "@/shell/state/layout"
 import { useNavigate } from "@solidjs/router"
 import { ResizeHandle } from "@opencode/ui/resize-handle"
 import { DestinationToggle } from "@/shell/titlebar/destination-toggle"
-import { goBackCommand, goForwardCommand } from "@/shell/titlebar/history-commands"
 import { createSessionInbox } from "@/shell/titlebar/inbox-model"
 import { InboxProvider } from "@/inbox/context"
 import { KnowledgeProvider } from "@/knowledge/context"
@@ -49,6 +49,7 @@ function ReplicaLayer(props: ParentProps) {
   const preferences = useSettings()
   const command = useCommand()
   const language = useLanguage()
+  const platform = usePlatform()
   const openSettings = useSettingsDialog()
   const dialog = useDialog()
   const global = useGlobal()
@@ -66,7 +67,15 @@ function ReplicaLayer(props: ParentProps) {
 
   // The v6 column is 300px until dragging pins an explicit width, so the resize handle starts from the width
   // the sidebar is really laid out at instead of snapping to another value on the first move.
+  // The macOS window sits on a blurred material, so the page root drops its opaque theme fill and the
+  // translucent frame shows the desktop instead. Other platforms keep the painted background.
+  createEffect(() => {
+    document.documentElement.dataset.replicaWindow =
+      platform.platform === "desktop" && platform.os === "macos" ? "translucent" : "opaque"
+  })
+
   const [sidebarWidth, setSidebarWidth] = createSignal<number>()
+  const [resizing, setResizing] = createSignal(false)
   const sidebarSize = () => sidebarWidth() ?? 300
 
   const sidebarOpen = () => preferences.appearance.sidebarOpen()
@@ -81,21 +90,6 @@ function ReplicaLayer(props: ParentProps) {
       title: language.t("command.sidebar.toggle"),
       category: language.t("command.category.view"),
       onSelect: toggleSidebar,
-    },
-  ])
-
-  command.register("history", () => [
-    {
-      ...goBackCommand,
-      title: language.t("common.goBack"),
-      category: language.t("command.category.view"),
-      onSelect: () => window.history.back(),
-    },
-    {
-      ...goForwardCommand,
-      title: language.t("common.goForward"),
-      category: language.t("command.category.view"),
-      onSelect: () => window.history.forward(),
     },
   ])
 
@@ -171,8 +165,9 @@ function ReplicaLayer(props: ParentProps) {
     <div
       data-replica
       class="relative flex min-h-0 min-w-0 flex-1 select-none flex-col [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
+      data-resizing={resizing() ? "" : undefined}
       style={{
-        "--navigation-sidebar-width-current": sidebarWidth() ? `${sidebarWidth()}px` : undefined,
+        "--navigation-sidebar-width-current": showSidebar() ? `${sidebarSize()}px` : "0px",
       }}
     >
       <ReplicaTitleBar
@@ -189,9 +184,13 @@ function ReplicaLayer(props: ParentProps) {
         </Show>
 
         <div data-slot="replica-workbench">
-          <Show when={showSidebar()}>
-            <div data-slot="replica-sidebar-slot" class="relative flex min-h-0 min-w-0">
-              <ReplicaSidebar />
+          <div
+            data-slot="replica-sidebar-slot"
+            data-collapsed={showSidebar() ? undefined : ""}
+            class="relative flex min-h-0 min-w-0"
+          >
+            <ReplicaSidebar />
+            <Show when={showSidebar()}>
               <ResizeHandle
                 direction="horizontal"
                 edge="end"
@@ -199,32 +198,33 @@ function ReplicaLayer(props: ParentProps) {
                 min={220}
                 max={480}
                 onResize={setSidebarWidth}
+                onDraggingChange={setResizing}
               />
-            </div>
-          </Show>
+            </Show>
+          </div>
 
           <main
-          data-slot="replica-main"
-          data-ui="main-workspace"
-          data-welcome={welcome() ? "" : undefined}
-          class="relative flex min-h-0 min-w-0 flex-col"
-          style={{
-            "--shell-inline-inset": "0px",
-            "--shell-top-inset": "0px",
-            "--shell-bottom-inset": "0px",
-            "--shell-panel-radius": "0px",
-          }}
-        >
-          <Show
-            when={welcome()}
-            fallback={
-              <PluginServerCover>
-                <Suspense>{props.children}</Suspense>
-              </PluginServerCover>
-            }
+            data-slot="replica-main"
+            data-ui="main-workspace"
+            data-welcome={welcome() ? "" : undefined}
+            class="relative flex min-h-0 min-w-0 flex-col"
+            style={{
+              "--shell-inline-inset": "0px",
+              "--shell-top-inset": "0px",
+              "--shell-bottom-inset": "0px",
+              "--shell-panel-radius": "0px",
+            }}
           >
-            <ReplicaWelcome />
-          </Show>
+            <Show
+              when={welcome()}
+              fallback={
+                <PluginServerCover>
+                  <Suspense>{props.children}</Suspense>
+                </PluginServerCover>
+              }
+            >
+              <ReplicaWelcome />
+            </Show>
           </main>
         </div>
       </div>

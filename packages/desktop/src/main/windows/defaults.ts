@@ -61,6 +61,9 @@ export function platformFrame(mode: "light" | "dark", zoom: number) {
   if (process.platform === "darwin") {
     frame.titleBarStyle = "hidden"
     frame.trafficLightPosition = { x: 14, y: 14 }
+    // The replica shell draws its own translucent window frame, so the desktop shows through it.
+    frame.vibrancy = "under-window"
+    frame.visualEffectState = "active"
   }
 
   if (process.platform === "win32") {
