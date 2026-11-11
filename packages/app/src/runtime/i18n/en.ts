@@ -1450,7 +1450,7 @@ export const dict = {
   "usage.retry": "Try again",
 
   "knowledge.title": "Knowledge",
-  "replica.workspace.name": "ChatGPT Work",
+  "replica.workspace.name": "ChangHong Work",
   "replica.newChat": "New chat",
   "replica.welcome.title": "What should we build?",
   "replica.section.recent": "Recent",

@@ -1005,7 +1005,7 @@ export const dict = {
   "settings.search.clear": "清除搜索",
 
   "knowledge.title": "知识库",
-  "replica.workspace.name": "ChatGPT Work",
+  "replica.workspace.name": "ChangHong Work",
   "replica.newChat": "新聊天",
   "replica.welcome.title": "我们要做什么？",
   "replica.section.recent": "最近",
