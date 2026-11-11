@@ -18,18 +18,19 @@ export default function NewSessionPage(props: { draftId: string }) {
   const tabs = useTabs()
   const layout = useLayout()
 
+  const draftId = () => search.draftId ?? props.draftId
   const draftTab = createMemo(() =>
-    tabs.store.find((tab): tab is DraftTab => tab.type === "draft" && tab.draftID === search.draftId),
+    tabs.store.find((tab): tab is DraftTab => tab.type === "draft" && tab.draftID === draftId()),
   )
 
   const workspace = createNewSessionWorkspaceController({
     selectedWorktree: () => draftTab()?.worktree,
     selectedBranch: () => draftTab()?.branch,
     setSelectedWorktree: (worktree) => {
-      if (search.draftId) tabs.updateDraft(search.draftId, { worktree })
+      if (draftId()) tabs.updateDraft(draftId(), { worktree })
     },
     setSelectedBranch: (branch) => {
-      if (search.draftId) tabs.updateDraft(search.draftId, { branch })
+      if (draftId()) tabs.updateDraft(draftId(), { branch })
     },
   })
 

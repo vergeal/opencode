@@ -69,11 +69,11 @@ export function ReplicaRail() {
   }
 
   // Home keeps the conversation at hand: from anywhere else it returns to the last open conversation, and only
-  // an empty tab history falls back to the new-chat page. On Home itself there is nothing to do.
+  // an empty tab history falls back to the new-chat page. A draft already is that page, so Home does nothing there.
   const goHome = () => {
     const route = layout.route()
 
-    if (route.type === "home") return
+    if (route.type === "home" || route.type === "draft") return
 
     const key = tabs.recentKey()
     const recent = key ? tabs.store.find((tab) => tabKey(tab) === key) : undefined

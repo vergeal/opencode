@@ -26,12 +26,13 @@ export function DraftRoute() {
       keyed
       fallback={tabs.ready() && <Navigate href="/" />}
     >
-      {(draft) => <ResolvedDraftRoute draft={draft} />}
+      {(draft) => <DraftPage draft={draft} />}
     </Show>
   )
 }
 
-function ResolvedDraftRoute(props: { draft: DraftTab }) {
+/** The draft page with its server and data providers, for the route and for Home, which shows it in place. */
+export function DraftPage(props: { draft: DraftTab }) {
   const global = useGlobal()
   const conn = createMemo(() => global.servers.list().find((item) => ServerConnection.key(item) === props.draft.server))
 

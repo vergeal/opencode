@@ -1,4 +1,4 @@
-import { createEffect, createSignal, Show, Suspense, type ParentProps } from "solid-js"
+import { createEffect, createSignal, lazy, Show, Suspense, type ParentProps } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { ToastRegion } from "@/shell/notifications/toast"
@@ -12,7 +12,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
-import { useTabs } from "@/shell/tabs/tabs"
+import { useTabs, type DraftTab } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 import { useNavigate } from "@solidjs/router"
 import { ResizeHandle } from "@opencode/ui/resize-handle"
@@ -24,8 +24,9 @@ import { ScheduledProvider } from "@/scheduled/context"
 import { ReplicaRail } from "./replica/rail"
 import { ReplicaSidebar } from "./replica/sidebar"
 import { ReplicaTitleBar } from "./replica/titlebar"
-import { ReplicaWelcome } from "./replica/welcome"
 import "./replica/replica.css"
+
+const DraftPage = lazy(() => import("@/new-session/route").then((module) => ({ default: module.DraftPage })))
 
 export const sidebarToggleCommand = { id: "sidebar.toggle", keybind: "mod+shift+b" }
 
@@ -42,6 +43,50 @@ export default function Layout(props: ParentProps) {
         </KnowledgeProvider>
       </ScheduledProvider>
     </InboxProvider>
+  )
+}
+
+/**
+ * Home is the new-chat page itself: the ChangHong wordmark and the composer, rendered in place instead of a
+ * separate welcome screen. It opens the most recent draft, or starts one when none is open.
+ */
+function HomeNewChat() {
+  const tabs = useTabs()
+  const global = useGlobal()
+  const [draft, setDraft] = createSignal<DraftTab>()
+
+  createEffect(() => {
+    if (!tabs.ready()) return
+
+    const open = tabs.store.findLast((tab): tab is DraftTab => tab.type === "draft")
+
+    if (open) {
+      setDraft(open)
+
+      return
+    }
+
+    const conn = global.servers.list()[0]
+    if (!conn) return
+    const ctx = global.serverCtx(ServerConnection.key(conn))
+    if (!ctx) return
+
+    const directory = ctx.projects.last()?.worktree ?? ctx.projects.list()[0]?.worktree
+    if (!directory) return
+
+    void tabs
+      .newDraft({ server: ServerConnection.key(conn), directory }, undefined, undefined, { navigate: false })
+      .then((tab) => setDraft(tab))
+  })
+
+  return (
+    <Show when={draft()}>
+      {(value) => (
+        <Suspense>
+          <DraftPage draft={value()} />
+        </Suspense>
+      )}
+    </Show>
   )
 }
 
@@ -206,7 +251,6 @@ function ReplicaLayer(props: ParentProps) {
           <main
             data-slot="replica-main"
             data-ui="main-workspace"
-            data-welcome={welcome() ? "" : undefined}
             class="relative flex min-h-0 min-w-0 flex-col"
             style={{
               "--shell-inline-inset": "0px",
@@ -223,7 +267,7 @@ function ReplicaLayer(props: ParentProps) {
                 </PluginServerCover>
               }
             >
-              <ReplicaWelcome />
+              <HomeNewChat />
             </Show>
           </main>
         </div>

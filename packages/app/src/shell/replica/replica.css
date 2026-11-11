@@ -352,14 +352,6 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   min-height: 0;
 }
 
-[data-replica] [data-slot="replica-welcome"] {
-  position: absolute;
-  inset-inline-start: 54.5%;
-  inset-block-start: 64%;
-  width: min(var(--container-session, 650px), calc(100% - 48px));
-  transform: translate(-50%, -50%);
-}
-
 @media (max-width: 767px) {
   [data-slot="replica-titlebar"] {
     grid-template-columns: minmax(0, 1fr);
