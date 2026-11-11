@@ -19,7 +19,11 @@ test("replica v6 geometry", async ({ page }) => {
   await page.setViewportSize({ width: 1536, height: 960 })
   await mockWorkspace(page, {
     name: "ReplicaV6",
-    sessions: [{ id: "ses_replica_v6", title: "选择本地 Ollama 模型" }],
+    sessions: [
+      { id: "ses_replica_v6", title: "选择本地 Ollama 模型" },
+      { id: "ses_replica_v6_b", title: "梳理 Electron 对话展示流程" },
+      { id: "ses_replica_v6_c", title: "评估 Electron 应用逆向可行性" },
+    ],
     seed: { locale: "zh" },
   })
   await page.goto(sessionHref("ses_replica_v6"))
@@ -76,7 +80,24 @@ test("replica v6 geometry", async ({ page }) => {
     }
   })
 
-  console.log("REPLICA_V6", JSON.stringify({ metrics, extra }, null, 2))
+  const sidebar = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('[data-ui="sidebar-row"]')].slice(0, 3)
+
+    return {
+      text: document.querySelector('[data-ui="navigation-sidebar"]')?.textContent ?? "",
+      rows: rows.map((row) => {
+        const rect = row.getBoundingClientRect()
+
+        return {
+          y: Math.round(rect.y * 10) / 10,
+          height: Math.round(rect.height * 10) / 10,
+          icon: !!row.firstElementChild && row.firstElementChild.textContent === "",
+        }
+      }),
+    }
+  })
+
+  console.log("REPLICA_V6", JSON.stringify({ metrics, extra, sidebar }, null, 2))
   await page.screenshot({ path: "e2e/test-results/replica-v6-2048x1281.png" })
 
   const at = (selector: string) => metrics.find((entry) => entry.selector === selector)
@@ -94,4 +115,8 @@ test("replica v6 geometry", async ({ page }) => {
   near(at('[data-ui="sidebar-row"]')?.height, 29, 1)
   near(extra.composerEditor?.width, 650, 8)
   expect(extra.titleText).toBe("选择本地 Ollama 模型")
+  expect(sidebar.text).not.toContain("项目")
+  expect(sidebar.rows.length).toBeGreaterThan(1)
+  expect(sidebar.rows.every((row) => row.icon)).toBe(true)
+  expect(sidebar.rows[1]!.y - sidebar.rows[0]!.y).toBeCloseTo(31, 0)
 })
