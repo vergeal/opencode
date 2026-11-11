@@ -5,6 +5,8 @@ import { ServerConnection } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
 import { useCommand } from "@/shell/commands/command"
 import { useTabs } from "@/shell/tabs/tabs"
+import { useLayout } from "@/shell/state/layout"
+import { createMemo } from "solid-js"
 import { useNavigate } from "@solidjs/router"
 import { createSessionInbox } from "@/shell/titlebar/inbox-model"
 import { SidebarOrganized } from "@/shell/titlebar/sidebar-organized"
@@ -18,7 +20,19 @@ export function ReplicaSidebar() {
   const navigate = useNavigate()
   const command = useCommand()
   const tabs = useTabs()
+  const layout = useLayout()
   const global = useGlobal()
+
+  // The route already names the open tab; look it up locally instead of running a second route sync.
+  const currentTab = createMemo(() => {
+    const route = layout.route()
+
+    if (route.type === "session") return tabs.sessionTab(route.server, route.sessionId)
+
+    if (route.type === "draft")
+      return tabs.store.find((item) => item.type === "draft" && item.draftID === route.draftID)
+  })
+
   const inbox = createSessionInbox()
 
   const pending = () =>
@@ -93,7 +107,7 @@ export function ReplicaSidebar() {
       </button>
 
       <div class="min-h-0 flex-1">
-        <SidebarOrganized currentTab={undefined}>
+        <SidebarOrganized currentTab={currentTab()}>
           {() => <></>}
         </SidebarOrganized>
       </div>
