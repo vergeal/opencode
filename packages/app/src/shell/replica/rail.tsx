@@ -12,32 +12,28 @@ import { useLayout } from "@/shell/state/layout"
 type RailItem = {
   id: "home" | "inbox" | "scheduled" | "explore" | "knowledge" | "more"
   icon: IconName
-  iconActive?: IconName
   labelKey: string
   path?: string
 }
 
 const ITEMS: readonly RailItem[] = [
-  { id: "home", icon: "rail-home", iconActive: "rail-home-active", labelKey: "replica.rail.home", path: "/" },
-  { id: "inbox", icon: "rail-inbox", iconActive: "rail-inbox-active", labelKey: "replica.rail.inbox", path: "/inbox" },
+  { id: "home", icon: "rail-home", labelKey: "replica.rail.home", path: "/" },
+  { id: "inbox", icon: "rail-inbox", labelKey: "replica.rail.inbox", path: "/inbox" },
   {
     id: "scheduled",
     icon: "rail-history",
-    iconActive: "rail-history-active",
     labelKey: "replica.rail.scheduled",
     path: "/scheduled",
   },
   {
     id: "explore",
     icon: "rail-compass",
-    iconActive: "rail-compass-active",
     labelKey: "replica.rail.explore",
     path: "/explore",
   },
   {
     id: "knowledge",
     icon: "rail-library",
-    iconActive: "rail-library-active",
     labelKey: "replica.rail.knowledge",
     path: "/knowledge",
   },
@@ -45,7 +41,7 @@ const ITEMS: readonly RailItem[] = [
 ]
 
 const BUTTON =
-  "flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)] data-[state=pressed]:bg-[var(--color-selected)] data-[state=pressed]:text-black focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]"
+  "flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)] data-[state=pressed]:bg-[var(--color-selected)] data-[state=pressed]:text-[var(--color-icon-primary)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]"
 
 /** The 46px first-level rail: four navigation entries, with updates and settings pinned to the bottom. */
 export function ReplicaRail() {
@@ -115,7 +111,7 @@ export function ReplicaRail() {
                   else command.trigger("command.palette")
                 }}
               >
-                <Icon name={active(item.id) && item.iconActive ? item.iconActive : item.icon} />
+                <Icon name={item.icon} />
               </button>
             </Tooltip>
           )}

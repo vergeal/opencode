@@ -3,6 +3,9 @@
 [data-replica] {
   --titlebar-height: 39px;
   --primary-rail-width: 46px;
+  /* The window controls keep this much room even when the sidebar collapses, so the traffic lights and the
+     three buttons never run under the title. */
+  --titlebar-left-min: 176px;
   --navigation-sidebar-width: 300px;
   --navigation-sidebar-width-current: var(--navigation-sidebar-width);
 
@@ -118,7 +121,9 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
 
 [data-slot="replica-titlebar"] {
   display: grid;
-  grid-template-columns: calc(var(--primary-rail-width) + var(--navigation-sidebar-width-current)) minmax(0, 1fr);
+  grid-template-columns:
+    max(calc(var(--primary-rail-width) + var(--navigation-sidebar-width-current)), var(--titlebar-left-min))
+    minmax(0, 1fr);
   height: var(--titlebar-height);
   min-height: var(--titlebar-height);
   background: var(--color-titlebar);
