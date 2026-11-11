@@ -1101,6 +1101,7 @@ export const dict = {
   "replica.context.tokens": "Token",
   "replica.context.cost": "花费",
   "replica.context.usage": "上下文",
+  "replica.context.open": "打开上下文用量",
   "replica.rail.label": "一级导航",
   "replica.rail.home": "首页",
   "replica.rail.history": "历史",

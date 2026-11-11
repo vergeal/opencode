@@ -6,11 +6,15 @@ import { ProgressCircle } from "@opencode/ui/progress-circle"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
+import { base64Encode } from "@opencode/util/encode"
 import { useGlobal } from "@/runtime/server/runtime"
+import { useServers } from "@/runtime/server/registry"
+import { SessionRouteKey, SessionStateKey } from "@/runtime/server/scope"
 import { useCommand } from "@/shell/commands/command"
 import { goBackCommand, goForwardCommand } from "@/shell/titlebar/history-commands"
 import { createTitlebarHistory } from "@/shell/titlebar/history-store"
 import { useLayout } from "@/shell/state/layout"
+import { findSessionTab, useTabs } from "@/shell/tabs/tabs"
 
 const BUTTON =
   "flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)] disabled:opacity-40 disabled:pointer-events-none"
@@ -30,6 +34,8 @@ export function ReplicaTitleBar(props: {
   const platform = usePlatform()
   const layout = useLayout()
   const global = useGlobal()
+  const servers = useServers()
+  const tabs = useTabs()
   const command = useCommand()
   const history = createTitlebarHistory()
   const mac = () => platform.platform === "desktop" && platform.os === "macos"
@@ -64,6 +70,28 @@ export function ReplicaTitleBar(props: {
   }
 
   const cny = createMemo(() => createCNY(language.locale()))
+
+  // The ring, the token count and the spend are one control: clicking it opens the built-in context panel next
+  // to the conversation, the same panel the plugin's own indicator opens.
+  const openContext = () => {
+    const route = layout.route()
+
+    if (route.type !== "session") return
+    const session = global.serverCtx(route.server)?.data.session.get(route.sessionId)
+
+    if (!session) return
+
+    layout.panel.open(
+      SessionStateKey.from(
+        servers.scope(route.server),
+        SessionRouteKey.fromRoute(base64Encode(session.location.directory), session.id),
+      ),
+      "context:main",
+    )
+
+    const tab = findSessionTab(tabs.store, route.server, route.sessionId)
+    if (tab) tabs.setRegion(tab, "side", true)
+  }
 
   // Shown beside the ring the way the reference reads: 15万 in Chinese, 150K in English.
   const compact = createMemo(
@@ -190,9 +218,13 @@ export function ReplicaTitleBar(props: {
                   </div>
                 }
               >
-                <span
-                  data-ui="titlebar-context-usage"
-                  class="flex shrink-0 items-center gap-2 ps-3 text-[12px] leading-4 text-[var(--color-text-secondary)]"
+                <button
+                  type="button"
+                  data-ui="titlebar-context"
+                  data-replica-control
+                  aria-label={language.t("replica.context.open")}
+                  class="flex h-6 shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-[12px] leading-4 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-hover)] hover:text-[var(--color-text-main)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-border)]"
+                  onClick={openContext}
                 >
                   <ProgressCircle
                     appearance="indicator"
@@ -208,7 +240,7 @@ export function ReplicaTitleBar(props: {
                     {compact().format(value().tokens)}
                   </span>
                   <span class="shrink-0 tabular-nums text-[var(--color-text-tertiary)]">{cny()(value().cost)}</span>
-                </span>
+                </button>
               </Tooltip>
             </div>
           )}

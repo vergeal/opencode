@@ -1546,6 +1546,7 @@ export const dict = {
   "replica.context.tokens": "Tokens",
   "replica.context.cost": "Cost",
   "replica.context.usage": "Context",
+  "replica.context.open": "Open context usage",
   "replica.rail.label": "Primary navigation",
   "replica.rail.home": "Home",
   "replica.rail.history": "History",
