@@ -133,10 +133,10 @@ test("the narrow layout floats the results in the shared search list popover", a
     'No results for "zzzzzzzzzz"',
   )
 
-  // The message's text, not just its box, sits in the middle of the popover.
+  // The empty state's content — the message and its clear action — sits in the middle of the popover.
   const offset = await body.evaluate((element) => {
     const range = document.createRange()
-    range.selectNodeContents(element.querySelector('[role="status"]')!)
+    range.selectNodeContents(element.querySelector(".settings-search-empty-panel")!)
     const text = range.getBoundingClientRect()
     const box = element.getBoundingClientRect()
 
@@ -425,12 +425,12 @@ test("multi-server results follow the selected server and keep the query on retu
   await expect(view.results.getByRole("option")).toHaveCount(1)
   await view.search.clear()
   await view.settings.getByRole("tab", { name: "Providers", exact: true }).click()
-  await view.settings.getByRole("button", { name: "Server This computer", exact: true }).click()
-  await page.getByRole("menuitemradio", { name: "Build server", exact: true }).click()
+  await view.settings.getByRole("button", { name: "Server This computer" }).click()
+  await page.getByRole("menuitemradio", { name: "Build server" }).click()
 
   await view.search.fill("MCPs")
   await view.results.getByRole("option", { name: "MCPs, Build server, Extensions", exact: true }).click()
-  await expect(view.settings.getByRole("button", { name: "Server Build server", exact: true })).toBeVisible()
+  await expect(view.settings.getByRole("button", { name: "Server Build server" })).toBeVisible()
   await expect(view.settings.getByRole("tab", { name: "MCPs", exact: true })).toHaveAttribute("aria-selected", "true")
   await view.search.fill("Remote app name")
   await expect(view.results.getByRole("option")).toHaveCount(1)

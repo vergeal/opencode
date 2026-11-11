@@ -175,6 +175,12 @@ const Group = HttpApiGroup.make("mock")
   .add(HttpApiEndpoint.get("schedule", "/api/experimental/schedule", { success: Json }))
   .add(HttpApiEndpoint.get("knowledge", "/api/experimental/knowledge", { success: Json }))
   .add(
+    HttpApiEndpoint.get("knowledgeAssigned", "/api/experimental/knowledge/assigned/:projectID", {
+      params: { projectID: Schema.String },
+      success: Json,
+    }),
+  )
+  .add(
     HttpApiEndpoint.post("mcpConnect", "/api/experimental/mcp/:server/connect", {
       params: { server: Schema.String },
       success: NoContent,

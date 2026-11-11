@@ -71,7 +71,7 @@ async function openInbox(page: Page) {
   await page.goto("/inbox")
 }
 
-const rows = (page: Page) => page.locator('[data-slot="inbox-row"]')
+const rows = (page: Page) => page.locator('[data-ui="inbox-row"]')
 
 const permission = { id: "per_inbox", sessionID: approvalSession, action: "bash", resources: ["rm -rf build"] }
 
@@ -79,11 +79,11 @@ test("lists the five kinds of inbox items", async ({ page }) => {
   await openInbox(page)
   await expect(rows(page)).toHaveCount(5)
 
-  await expect(page.locator('[data-kind="approval"]')).toContainText("Approval needed: bash")
-  await expect(page.locator('[data-kind="question"]')).toContainText("Choose a database needs an answer")
-  await expect(page.locator('[data-kind="failure"]').filter({ hasText: "Broken build" })).toBeVisible()
-  await expect(page.locator('[data-kind="output"]')).toContainText("All systems nominal")
-  await expect(page.locator('[data-kind="result"]')).toContainText("Knowledge base reindexed")
+  await expect(page.locator('[data-ui="inbox-row"][data-kind="approval"]')).toContainText("Approval needed: bash")
+  await expect(page.locator('[data-ui="inbox-row"][data-kind="question"]')).toContainText("Choose a database needs an answer")
+  await expect(page.locator('[data-ui="inbox-row"][data-kind="failure"]')).toContainText("Broken build failed")
+  await expect(page.locator('[data-ui="inbox-row"][data-kind="output"]')).toContainText("Nightly report produced an output")
+  await expect(page.locator('[data-ui="inbox-row"][data-kind="result"]')).toContainText("Knowledge base reindexed")
 
   await expect(page.getByRole("button", { name: /Pending/ })).toContainText("3")
   await expect(page.getByRole("button", { name: /Failed/ })).toContainText("1")
@@ -92,7 +92,7 @@ test("lists the five kinds of inbox items", async ({ page }) => {
 
 test("approving once turns the row into done", async ({ page }) => {
   await openInbox(page)
-  const approval = page.locator('[data-kind="approval"]')
+  const approval = page.locator('[data-ui="inbox-row"][data-kind="approval"]')
   await approval.click()
   await expect(page.locator("[data-slot='inbox-detail']")).toContainText("Approval needed: bash")
 
@@ -102,7 +102,7 @@ test("approving once turns the row into done", async ({ page }) => {
 
 test("answering a form turns the question into done", async ({ page }) => {
   await openInbox(page)
-  const question = page.locator('[data-kind="question"]')
+  const question = page.locator('[data-ui="inbox-row"][data-kind="question"]')
   await question.click()
   await page.getByRole("textbox", { name: "Database" }).fill("sqlite")
   await page.getByRole("button", { name: "Submit" }).click()
@@ -112,7 +112,7 @@ test("answering a form turns the question into done", async ({ page }) => {
 
 test("keeps read state across a reload", async ({ page }) => {
   await openInbox(page)
-  const result = page.locator('[data-kind="result"]')
+  const result = page.locator('[data-ui="inbox-row"][data-kind="result"]')
   await expect(result.locator('[data-slot="inbox-unread"]')).toHaveCount(1)
 
   await result.click()
@@ -120,7 +120,7 @@ test("keeps read state across a reload", async ({ page }) => {
 
   await page.reload()
   await expect(rows(page)).toHaveCount(5)
-  await expect(page.locator('[data-kind="result"] [data-slot="inbox-unread"]')).toHaveCount(0)
+  await expect(page.locator('[data-ui="inbox-row"][data-kind="result"] [data-slot="inbox-unread"]')).toHaveCount(0)
 })
 
 test("reaches all four destinations from the keyboard", async ({ page }) => {

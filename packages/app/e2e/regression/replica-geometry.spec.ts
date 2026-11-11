@@ -76,6 +76,9 @@ test("replica v6 geometry", async ({ page }) => {
     const title = document.querySelector('[data-ui="titlebar-title"]')
     const dock = document.querySelector('[data-component="session-composer-dock"]')
     const editor = document.querySelector('[data-component="composer-editor"]')
+    const newChat = document.querySelector('[data-slot="replica-new-chat"]')
+    const titlebar = document.querySelector('[data-ui="window-titlebar"]')
+    const sidebar = document.querySelector('[data-ui="navigation-sidebar"]')
 
     return {
       viewport: { width: innerWidth, height: innerHeight, dpr: devicePixelRatio },
@@ -83,11 +86,19 @@ test("replica v6 geometry", async ({ page }) => {
       url: location.href,
       composerDock: box(dock),
       composerEditor: box(editor),
+      newChat: box(newChat),
+      titlebarFont: titlebar ? getComputedStyle(titlebar).fontFamily : null,
+      sidebarFont: sidebar ? getComputedStyle(sidebar).fontFamily : null,
+      titlebarChatIcon: !!titlebar?.querySelector('use[href="#opencode-v2-icon-titlebar-chat"]'),
     }
   })
 
   const sidebar = await page.evaluate(() => {
     const rows = [...document.querySelectorAll('[data-ui="sidebar-row"]')].slice(0, 3)
+    const failed = [...document.querySelectorAll('[data-ui="sidebar-row"]')].find((row) =>
+      row.textContent?.includes("失败的会话"),
+    )
+    const dot = failed?.querySelector("span.rounded-full")
 
     return {
       text: document.querySelector('[data-ui="navigation-sidebar"]')?.textContent ?? "",
@@ -100,6 +111,12 @@ test("replica v6 geometry", async ({ page }) => {
           icon: !!row.firstElementChild && row.firstElementChild.textContent === "",
         }
       }),
+      failed: failed
+        ? {
+            title: failed.querySelector("span.truncate")?.textContent,
+            dot: dot ? Math.round(dot.getBoundingClientRect().width * 10) / 10 : null,
+          }
+        : null,
     }
   })
 
@@ -143,16 +160,20 @@ test("replica v6 geometry", async ({ page }) => {
   near(at('[data-ui="sidebar-header"]')?.height, 49, 1)
   near(at('[data-ui="sidebar-row"]')?.height, 29, 1)
   near(extra.composerEditor?.width, 650, 8)
+  near(extra.newChat?.height, 31, 1)
+  expect(extra.titlebarFont).toBe(extra.sidebarFont)
+  expect(extra.titlebarChatIcon).toBe(true)
   expect(extra.titleText).toBe("选择本地 Ollama 模型")
   expect(sidebar.text).not.toContain("项目")
-  expect(sidebar.text).toContain("失败")
+  expect(sidebar.failed?.title).toBe("失败的会话")
+  expect(sidebar.failed?.dot).toBe(6)
   expect(sidebar.rows.length).toBeGreaterThan(1)
   expect(sidebar.rows.every((row) => row.icon)).toBe(true)
   expect(sidebar.rows[1]!.y - sidebar.rows[0]!.y).toBeCloseTo(31, 0)
   expect(rail.state).toBe("pressed")
   expect(rail.background).toBe("rgb(238, 238, 238)")
   expect(rail.icon).toBe(true)
-  expect(backgrounds.app).toBe("rgb(243, 243, 243)")
+  expect(backgrounds.app).toBe("rgba(246, 246, 246, 0.9)")
 })
 
 test("replica rail opens the inbox", async ({ page }) => {
@@ -164,6 +185,48 @@ test("replica rail opens the inbox", async ({ page }) => {
   })
   await page.goto("/")
   await page.waitForSelector('[data-slot="replica-rail"]', { timeout: 15_000 })
-  await page.locator('[data-slot="replica-rail"] button[aria-label="历史"]').click()
-  await expect(page.locator('[data-slot="inbox-list"]')).toBeVisible({ timeout: 10_000 })
+  await page.locator('[data-slot="replica-rail"] button[aria-label="收件箱"]').click()
+  await expect(page).toHaveURL(/\/inbox$/)
+  await expect(page.locator('[data-slot="replica-sidebar-title"]')).toHaveText("收件箱")
+  await expect(page.getByRole("button", { name: "全部标记已读" })).toBeVisible()
+  await expect(page.locator('[data-ui="workspace-content"]')).toContainText("选择一项")
+})
+
+test("replica rail switches the navigation column per destination", async ({ page }) => {
+  await page.setViewportSize({ width: 1536, height: 960 })
+  await mockWorkspace(page, {
+    name: "ReplicaDestinations",
+    sessions: [{ id: "ses_replica_dest", title: "目的地" }],
+    schedules: [
+      {
+        id: "sch_replica_dest",
+        name: "Nightly report",
+        when: { type: "cron", cron: "0 3 * * *" },
+        tz: "UTC",
+        action: { type: "prompt", prompt: "report" },
+        status: "active",
+        runCount: 1,
+        time: { created: T0, updated: T0 + 4_000 },
+      },
+    ],
+    seed: { locale: "zh" },
+  })
+  await page.goto("/")
+  await page.waitForSelector('[data-slot="replica-rail"]', { timeout: 15_000 })
+
+  await page.locator('[data-slot="replica-rail"] button[aria-label="定时任务"]').click()
+  await expect(page).toHaveURL(/\/scheduled$/)
+  await expect(page.locator('[data-slot="replica-sidebar-title"]')).toHaveText("定时任务")
+  await expect(page.locator('[data-ui="scheduled-row"]')).toContainText("Nightly report")
+  await expect(page.locator('[data-ui="workspace-content"]')).toContainText("Nightly report")
+
+  await page.locator('[data-slot="replica-rail"] button[aria-label="探索"]').click()
+  await expect(page).toHaveURL(/\/knowledge$/)
+  await expect(page.locator('[data-slot="replica-sidebar-title"]')).toHaveText("探索")
+  await expect(page.locator('[data-ui="navigation-sidebar"]').getByRole("button", { name: "新建知识库" })).toBeVisible()
+
+  await page.locator('[data-slot="replica-rail"] button[aria-label="设置"]').click()
+  await expect(page).toHaveURL(/\/settings/)
+  await expect(page.getByTestId("settings-screen")).toBeVisible()
+  await expect(page.locator('[data-ui="navigation-sidebar"]')).toHaveCount(0)
 })

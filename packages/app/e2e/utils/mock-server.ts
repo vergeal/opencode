@@ -669,6 +669,8 @@ function mockHandlers(
           HttpServerResponse.jsonUnsafe(resolve(config.knowledge ?? [])),
         ),
       )
+      // The settings page lists which libraries a project may search; nothing is assigned by default.
+      .handleRaw("knowledgeAssigned", () => Effect.succeed(HttpServerResponse.jsonUnsafe([])))
       .handleRaw("event", () => {
         const events = config.events?.()
         const retry = config.eventRetry === undefined ? "" : `retry: ${config.eventRetry}\n\n`
