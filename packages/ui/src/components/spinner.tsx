@@ -1,21 +1,13 @@
-import { For, splitProps, type ComponentProps, type JSX } from "solid-js"
+import { splitProps, type ComponentProps, type JSX } from "solid-js"
 import { syncSpinPhase } from "../hooks/spin-phase"
-import { radarDots, radarKeyframes, radarLoop } from "./spinner-radar"
 
-// Every AI activity spinner (busy session tabs, the activity chip, subagents, tool cards) shows Soft Radar. Non-AI
-// loading uses Loader.
-
-const keyframes = "spinner-radar"
-
-const dots = radarDots()
-
-// The keyframes are added to the document once, the first time a spinner renders.
-let added = false
+// Every AI activity spinner (busy session tabs, the activity chip, subagents, tool cards) shows this thin ring.
+// Non-AI loading uses Loader.
 
 /**
- * Each dot is its own SVG over the whole box, drawn exactly where it sat in one SVG. The compositor runs the opacity
- * animation of an SVG element but not of a shape inside one, so a spinner no longer restyles and repaints on every
- * frame. `width` and `height` size it like an SVG's attributes, below any CSS size.
+ * A 16-unit viewBox keeps the ring crisp at every size. The track sits under a quarter arc that the compositor
+ * rotates, so a spinner only transforms and never restyles or repaints.
+ * `width` and `height` size it like an SVG's attributes, below any CSS size.
  */
 export function Spinner(
   props: Omit<ComponentProps<"span">, "style"> & {
@@ -26,13 +18,6 @@ export function Spinner(
   },
 ) {
   const [local, rest] = splitProps(props, ["class", "classList", "data-component", "width", "height", "style"])
-
-  if (!added) {
-    added = true
-    const style = document.createElement("style")
-    style.textContent = radarKeyframes(keyframes)
-    document.head.append(style)
-  }
 
   return (
     <span
@@ -47,22 +32,18 @@ export function Spinner(
         "--spinner-height": local.height === undefined ? undefined : `${local.height}px`,
       }}
     >
-      <For each={dots}>
-        {(dot) => (
-          <svg
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            style={{
-              "--still": dot.still,
-              animation: dot.steady
-                ? undefined
-                : `${keyframes}-${dot.shape} calc(${radarLoop}s * var(--spinner-time, 1)) linear calc(${-radarLoop * (1 - dot.at)}s * var(--spinner-time, 1)) infinite`,
-            }}
-          >
-            <rect x={dot.x} y={dot.y} width={dot.size} height={dot.size} rx={dot.size * 0.24} />
-          </svg>
-        )}
-      </For>
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" opacity="0.18" />
+        <circle
+          cx="8"
+          cy="8"
+          r="6"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-dasharray="10 27.7"
+        />
+      </svg>
     </span>
   )
 }

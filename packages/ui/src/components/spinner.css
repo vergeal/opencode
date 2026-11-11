@@ -13,22 +13,28 @@
   flex-shrink: 0;
 }
 
-/* Each dot rests at its frozen pose, so reduced motion only has to stop the animation. */
+/* One ring, rotated by the compositor. `--spinner-time` scales the loop, as the story's speed control expects. */
 [data-slot="spinner-dots"] > svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   overflow: visible;
-  opacity: var(--still);
+  animation: spinner-ring calc(0.9s * var(--spinner-time, 1)) linear infinite;
 }
 
-/* syncSpinPhase marks spinners out of view; `!important` beats the inline animation each dot carries. */
+@keyframes spinner-ring {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* syncSpinPhase marks spinners out of view; `!important` beats the animation the ring carries. */
 [data-slot="spinner-dots"][data-offscreen] > svg {
   animation-play-state: paused !important;
 }
 
 :root[data-motion="reduce"] [data-slot="spinner-dots"] > svg {
-  /* Beats the inline animation each dot carries. */
+  /* Beats the animation the ring carries; the ring stays as a still arc. */
   animation: none !important;
 }

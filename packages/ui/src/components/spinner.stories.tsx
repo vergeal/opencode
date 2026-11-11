@@ -1,14 +1,14 @@
 import { Spinner } from "./spinner"
 
 const docs = `### Overview
-Dot-matrix indicator for AI activity: a running session, turn, subagent or tool. Busy session tabs, \`ActivityRing\`
+Rotating ring for AI activity: a running session, turn, subagent or tool. Busy session tabs, \`ActivityRing\`
 and the session progress indicator render it. Other loading states use \`Loader\`.
 
 ### Variants and states
-- Soft Radar: a lit head sweeps each ring of a 5×5 grid, leaving a fading trail, around a steady centre.
+- One thin ring: a quarter arc turns over a faint track.
 
 ### Behavior
-- CSS animation only. Every dot shares one loop, and \`syncSpinPhase\` pins every instance to the same start, so
+- CSS animation only. Every ring shares one loop, and \`syncSpinPhase\` pins every instance to the same start, so
   spinners on screen stay in phase.
 - Reduced motion freezes it on a still pose.
 
