@@ -19,8 +19,8 @@
   --send-button-bg: #929695;
   --send-button-fg: #ffffff;
 
-  /* A screenshot pixel height for the chrome; CSS pixels divide by the window's real DPR. */
-  --app-chrome-physical: 48px;
+  /* The native traffic lights end at y=26; the panel then leaves its 3px gutter below them. */
+  --app-chrome-height: 26px;
 
   --radius-xs: 6px;
   --radius-sm: 8px;
@@ -70,7 +70,7 @@
 }
 
 [data-slot="replica-titlebar"] {
-  height: calc(var(--app-chrome-physical) / var(--replica-dpr, 1));
+  height: var(--app-chrome-height);
   background: var(--app-chrome);
   -webkit-app-region: drag;
 }
@@ -85,7 +85,7 @@
   display: flex;
   min-width: 0;
   min-height: 0;
-  padding: 0 8px 8px;
+  padding: 3px;
 }
 
 /* One rounded surface holds the rail, the navigation column and the workspace; the columns are its
@@ -196,7 +196,7 @@
   }
 
   [data-slot="replica-shell-body"] {
-    padding: 0 4px 4px;
+    padding: 3px;
   }
 
   [data-slot="replica-welcome"] {
