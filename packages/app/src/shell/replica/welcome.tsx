@@ -1,10 +1,10 @@
 import { createSignal } from "solid-js"
-import { useNavigate } from "@solidjs/router"
 import { Icon } from "@opencode/ui/icon"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
 import { useTabs } from "@/shell/tabs/tabs"
+import { useSettingsDialog } from "@/settings/command"
 
 /**
  * The blank new-conversation state: one title, one input card and the utility bar under it, all on the main
@@ -12,7 +12,7 @@ import { useTabs } from "@/shell/tabs/tabs"
  */
 export function ReplicaWelcome() {
   const language = useLanguage()
-  const navigate = useNavigate()
+  const openSettings = useSettingsDialog()
   const tabs = useTabs()
   const global = useGlobal()
   const [text, setText] = createSignal("")
@@ -127,7 +127,7 @@ export function ReplicaWelcome() {
             type="button"
             data-replica-control
             class="flex shrink-0 items-center gap-1 rounded-[5px] hover:text-[var(--color-text-main)]"
-            onClick={() => navigate("/settings")}
+            onClick={openSettings}
           >
             <Icon name="outline-hexagonal-warning" size="small" class="shrink-0" />
             {language.t("replica.composer.plugins")}

@@ -5,7 +5,6 @@ import { createSimpleContext } from "@opencode/ui/context"
 import { useLayout, type LayoutRoute } from "@/shell/state/layout"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useServers } from "@/runtime/server/registry"
-import { useCommand } from "@/shell/commands/command"
 import { createSettingsPages } from "@/runtime/plugin/settings-pages"
 import { useSettingsServers } from "./servers/inventory"
 import {
@@ -36,7 +35,6 @@ export const { use: useSettingsSurface, provider: SettingsSurfaceProvider } = cr
   init: () => {
     const navigate = useNavigate()
     const layout = useLayout()
-    const command = useCommand()
     const servers = useSettingsServers()
     const registry = useServers()
     const tabs = useTabs()
@@ -131,6 +129,14 @@ export const { use: useSettingsSurface, provider: SettingsSurfaceProvider } = cr
       ),
     )
 
+    // The replica shell has no titlebar history stack, so leaving Settings returns through the browser history
+    // entry that opened it. A direct visit has nothing behind it and lands on Home.
+    const close = () => {
+      if (!open()) return
+      if (location.state?.settings?.route) return window.history.back()
+      navigate("/")
+    }
+
     return {
       active: open,
       route: source,
@@ -211,16 +217,14 @@ export const { use: useSettingsSurface, provider: SettingsSurfaceProvider } = cr
         const current = view()
 
         if (current.type === "root") {
-          command.trigger("common.goBack")
+          close()
 
           return
         }
 
         show({ type: "root", tab: "projects", server: current.server })
       },
-      close() {
-        if (open()) command.trigger("common.goBack")
-      },
+      close,
     }
   },
 })

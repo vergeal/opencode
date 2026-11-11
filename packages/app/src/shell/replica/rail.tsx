@@ -5,6 +5,7 @@ import type { IconName } from "@opencode/ui/icons/catalog"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useCommand } from "@/shell/commands/command"
+import { useSettingsDialog } from "@/settings/command"
 import { useLayout } from "@/shell/state/layout"
 
 type RailItem = {
@@ -33,6 +34,7 @@ export function ReplicaRail() {
   const layout = useLayout()
   const navigate = useNavigate()
   const command = useCommand()
+  const openSettings = useSettingsDialog()
 
   const active = (id: RailItem["id"]) => {
     const type = layout.route().type
@@ -92,7 +94,7 @@ export function ReplicaRail() {
             aria-pressed={layout.route().type === "settings"}
             aria-label={language.t("replica.rail.settings")}
             class={BUTTON}
-            onClick={() => navigate("/settings")}
+            onClick={openSettings}
           >
             <Icon name="settings-gear" />
           </button>
