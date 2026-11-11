@@ -188,7 +188,6 @@
   min-width: 0;
   min-height: 0;
   background: var(--color-sidebar);
-  border-right: 1px solid var(--color-divider);
 }
 
 [data-slot="replica-sidebar-scroll"] {
