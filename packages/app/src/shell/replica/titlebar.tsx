@@ -72,7 +72,7 @@ export function ReplicaTitleBar(props: {
 
       <div data-slot="replica-titlebar-main" data-ui="titlebar-main">
         <span class="flex min-w-0 items-center gap-2.5">
-          <Icon name="bubble-5" size="small" class="shrink-0 text-[var(--color-icon-secondary)]" />
+          <Icon name="comment" size="small" class="shrink-0 text-[var(--color-icon-secondary)]" />
           <span
             class="min-w-0 truncate text-[14px] leading-[17px] font-medium text-[var(--color-text-main)]"
             data-ui="titlebar-title"

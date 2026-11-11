@@ -10,10 +10,10 @@ import { useLayout } from "@/shell/state/layout"
 type RailItem = { id: "home" | "history" | "explore" | "more"; icon: IconName; labelKey: string; path?: string }
 
 const ITEMS: readonly RailItem[] = [
-  { id: "home", icon: "workspace", labelKey: "replica.rail.home", path: "/" },
-  { id: "history", icon: "outline-list-changelog", labelKey: "replica.rail.history", path: "/inbox" },
-  { id: "explore", icon: "outline-globe", labelKey: "replica.rail.explore", path: "/knowledge" },
-  { id: "more", icon: "outline-dots", labelKey: "replica.rail.more" },
+  { id: "home", icon: "rail-home", labelKey: "replica.rail.home", path: "/" },
+  { id: "history", icon: "rail-history", labelKey: "replica.rail.history", path: "/inbox" },
+  { id: "explore", icon: "rail-compass", labelKey: "replica.rail.explore", path: "/knowledge" },
+  { id: "more", icon: "rail-more", labelKey: "replica.rail.more" },
 ]
 
 const BUTTON =
@@ -29,7 +29,7 @@ export function ReplicaRail() {
   const active = (id: RailItem["id"]) => {
     const type = layout.route().type
 
-    if (id === "home") return type === "home"
+    if (id === "home") return type === "home" || type === "session" || type === "draft"
 
     if (id === "history") return type === "inbox"
 
@@ -69,7 +69,7 @@ export function ReplicaRail() {
             class="flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-accent-blue)] hover:bg-[var(--color-hover)]"
             onClick={() => command.trigger("app.checkForUpdates")}
           >
-            <Icon name="download" />
+            <Icon name="rail-download" />
           </button>
         </Tooltip>
         <Tooltip placement="bottom" value={language.t("replica.rail.settings")}>

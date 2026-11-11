@@ -161,7 +161,7 @@ export function ReplicaSidebar() {
           onClick={() => command.trigger("command.palette")}
         >
           <span class="min-w-0 truncate">{language.t("replica.workspace.name")}</span>
-          <Icon name="fill-triangle-down" size="small" class="shrink-0 text-[var(--color-icon-secondary)]" />
+          <Icon name="chevron-down" size="small" class="shrink-0 text-[var(--color-icon-secondary)]" />
         </button>
         <div class="ms-auto flex shrink-0 items-center gap-1">
           <Tooltip placement="bottom" value={language.t("inbox.title")}>

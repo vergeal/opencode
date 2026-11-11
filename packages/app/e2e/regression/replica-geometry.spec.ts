@@ -97,7 +97,18 @@ test("replica v6 geometry", async ({ page }) => {
     }
   })
 
-  console.log("REPLICA_V6", JSON.stringify({ metrics, extra, sidebar }, null, 2))
+  const rail = await page.evaluate(() => {
+    const button = document.querySelector('[data-ui="primary-rail"] button')
+    const style = button ? getComputedStyle(button) : undefined
+
+    return {
+      state: button?.getAttribute("data-state"),
+      background: style?.backgroundColor,
+      icon: !!button?.querySelector("svg"),
+    }
+  })
+
+  console.log("REPLICA_V6", JSON.stringify({ metrics, extra, sidebar, rail }, null, 2))
   await page.screenshot({ path: "e2e/test-results/replica-v6-2048x1281.png" })
 
   const at = (selector: string) => metrics.find((entry) => entry.selector === selector)
@@ -119,4 +130,7 @@ test("replica v6 geometry", async ({ page }) => {
   expect(sidebar.rows.length).toBeGreaterThan(1)
   expect(sidebar.rows.every((row) => row.icon)).toBe(true)
   expect(sidebar.rows[1]!.y - sidebar.rows[0]!.y).toBeCloseTo(31, 0)
+  expect(rail.state).toBe("pressed")
+  expect(rail.background).toBe("rgb(238, 238, 238)")
+  expect(rail.icon).toBe(true)
 })

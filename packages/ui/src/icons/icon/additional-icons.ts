@@ -107,6 +107,11 @@ export const additionalIcons = {
   extensions: `<path d="M8 6.75047V9.25047M10.668 6.75047V9.25047M5.33398 6.75047V9.25047M1.33398 2.44531V13.5553H14.6673V2.44531H1.33398Z" stroke="currentColor" stroke-linecap="square"/>`,
   cube: `<path d="M10 2.5L16.5 6.25V13.75L10 17.5L3.5 13.75V6.25L10 2.5Z" stroke="currentColor"/><path d="M10 10L16.5 6.25M10 10V17.5M10 10L3.5 6.25" stroke="currentColor"/>`,
   "post-skill": `<rect x="2.5" y="3.5" width="15" height="13" rx="1.5" stroke="currentColor"/><path d="M5.5 7.5H10.5M5.5 10.5H14.5" stroke="currentColor"/>`,
+  "rail-home": `<path d="M3.5 9.5L10 3.5L16.5 9.5V16.5H12.5V12H7.5V16.5H3.5V9.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+  "rail-history": `<circle cx="10" cy="10" r="6.75" stroke="currentColor" stroke-width="1.5"/><path d="M10 6V10.25L13 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+  "rail-compass": `<circle cx="10" cy="10" r="6.75" stroke="currentColor" stroke-width="1.5"/><path d="M13 7L11.4 11.4L7 13L8.6 8.6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>`,
+  "rail-more": `<circle cx="5" cy="10" r="1.2" fill="currentColor"/><circle cx="10" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/>`,
+  "rail-download": `<path d="M10 3.5V12.5M6 8.5L10 12.5L14 8.5M4 16H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>`,
   "arrow-undo-down": `<path d="M4.08333 11.0859L1.75 8.7526L4.08333 6.41927M2.33333 8.7526L12.5417 8.7526L12.5417 3.21094L7 3.21094" stroke="currentColor" stroke-width="1" stroke-linecap="square"/>`,
 }
 
