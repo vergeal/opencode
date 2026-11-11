@@ -1749,9 +1749,8 @@
     [data-component="button-v2"] {
       font-family: var(--v2-font-family-sans, "Inter", sans-serif);
       font-weight: 500;
-      font-variation-settings:
-        "wght" 530,
-        "slnt" 0;
+      /* Only the slant axis: a weight axis here would override font-weight. */
+      font-variation-settings: "slnt" 0;
     }
   }
 

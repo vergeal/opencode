@@ -178,7 +178,7 @@ export function Meta(props: { note: BetaNote; open: (href: string) => void; clas
   return (
     <Show when={props.note.author || props.note.pr}>
       <div
-        class={`flex min-w-0 flex-wrap items-center gap-x-1.5 ${props.class ?? "text-[13px] leading-4 font-[400] text-v2-text-text-faint"}`}
+        class={`flex min-w-0 flex-wrap items-center gap-x-1.5 ${props.class ?? "text-[13px] leading-4 text-v2-text-text-faint"}`}
       >
         <Show when={props.note.author}>
           {(author) => (
