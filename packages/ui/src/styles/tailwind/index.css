@@ -53,9 +53,9 @@
   --container-6xl: 72rem;
   --container-7xl: 80rem;
   /* Shared by the session timeline, composer dock, and drop target so their edges stay aligned.
-     The composer dock's 12px gutter leaves the design's 720px composer. The timeline width setting
-     overrides it below. */
-  --container-session: 744px;
+     The values scale with the viewport so a large display gets a wider reading measure, and the
+     timeline width setting overrides the default below. */
+  --container-session: min(840px, 55vw);
 
   --font-sans: var(--font-family-sans);
   --font-sans--font-feature-settings: var(--font-family-sans--font-feature-settings);
@@ -102,12 +102,12 @@
 
 @import "./colors.css";
 
-/* With Inter at 14px, after the timeline's 24px side padding, these give about 66 characters per line
-   (the classic optimum for scanning prose); the 744px default gives about 105 and 1000px about 144. */
+/* Each step keeps a readable measure but grows with the window: focused stays narrow on a big display
+   while wide only reaches its full reading width when there is room for it. */
 :root[data-timeline-width="focused"] {
-  --container-session: 488px;
+  --container-session: min(560px, 48vw);
 }
 
 :root[data-timeline-width="wide"] {
-  --container-session: 1000px;
+  --container-session: min(1240px, 72vw);
 }
