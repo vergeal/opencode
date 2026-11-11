@@ -85,6 +85,20 @@
   display: flex;
   min-width: 0;
   min-height: 0;
+  padding: 0 8px 8px;
+}
+
+/* One rounded surface holds the rail, the navigation column and the workspace; the columns are its
+   children and only their 1px dividers separate them, so no pair of corner radii can leave a notch. */
+[data-slot="replica-workbench"] {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--main-bg);
 }
 
 [data-slot="replica-rail"] {
@@ -99,25 +113,17 @@
   min-width: 180px;
 }
 
-/* The navigation panel is one rounded surface flush with the main column: no gutter, only its 1px edge. */
 [data-slot="replica-sidebar"] {
   flex: 1 1 auto;
   width: 100%;
   background: var(--sidebar-bg);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-inline-end: 1px solid var(--border-subtle);
   overflow: hidden;
 }
 
 [data-slot="replica-main"] {
   background: var(--main-bg);
   min-width: 0;
-}
-
-/* The conversation surface floats on the chrome tint so its rounded corners stay visible; the welcome page
-   stays pure white. */
-[data-slot="replica-main"]:not([data-welcome]) {
-  background: var(--app-chrome);
 }
 
 /* Sidebar rows: 13px type, 8px radius only on hover/selection, never a card per row. */
@@ -187,6 +193,10 @@
   [data-slot="replica-rail"],
   [data-slot="replica-sidebar-slot"] {
     display: none;
+  }
+
+  [data-slot="replica-shell-body"] {
+    padding: 0 4px 4px;
   }
 
   [data-slot="replica-welcome"] {

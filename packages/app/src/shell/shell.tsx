@@ -138,8 +138,9 @@ export default function Layout(props: ParentProps) {
         class="flex min-h-0 min-w-0 flex-1"
         style={{ "--replica-dpr": String(dpr()) }}
       >
-        <Show when={!mobile()}>
-          <ReplicaRail />
+        <div data-slot="replica-workbench">
+          <Show when={!mobile()}>
+            <ReplicaRail />
           <Show when={sidebarOpen()}>
             <div
               data-slot="replica-sidebar-slot"
@@ -167,7 +168,7 @@ export default function Layout(props: ParentProps) {
             "--shell-inline-inset": "0px",
             "--shell-top-inset": "0px",
             "--shell-bottom-inset": "0px",
-            "--shell-panel-radius": "12px",
+            "--shell-panel-radius": "0px",
           }}
         >
           <Show
@@ -180,7 +181,8 @@ export default function Layout(props: ParentProps) {
           >
             <ReplicaWelcome />
           </Show>
-        </main>
+          </main>
+        </div>
       </div>
 
       <Show when={mobile()}>
