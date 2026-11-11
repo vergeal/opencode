@@ -32,8 +32,12 @@
   --markdown-inline-code-color: var(--v2-text-text-code-accent);
   --markdown-code-background: var(--v2-background-bg-layer-02);
   /* The layer-02 fill sat within 1.1:1 of a white message surface, so inline chips read as bare text.
-     Mixing the text colour keeps the chip visible on light surfaces and matches layer-02 in dark themes. */
-  --markdown-inline-code-background: color-mix(in oklch, var(--v2-text-text-base) 14%, transparent);
+     Mixing the text colour keeps the chip visible on light surfaces and matches layer-02 in dark themes.
+     Light mode uses a lighter tint: the same weight as layer-02 read too dark next to body text. */
+  --markdown-inline-code-background: light-dark(
+    color-mix(in oklch, var(--v2-text-text-base) 10%, transparent),
+    color-mix(in oklch, var(--v2-text-text-base) 14%, transparent)
+  );
   --markdown-shell-code-background: var(--v2-background-bg-layer-02);
   --markdown-shell-code-border: var(--v2-border-border-muted);
   --markdown-shell-code-color: var(--v2-text-text-base);

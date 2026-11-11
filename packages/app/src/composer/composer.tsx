@@ -202,7 +202,7 @@ function ComposerModelControl(props: {
                 <button
                   type="button"
                   data-slot="composer-model-row"
-                  class="flex h-7 w-full items-center justify-between gap-2 rounded-full px-1.5 text-start text-[13px] leading-5 transition-colors hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-v2-border-border-focus"
+                  class="flex h-7 w-full items-center justify-between gap-2 rounded-full px-1.5 text-start text-[13px] leading-5 transition-colors hover:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none"
                   onClick={() => {
                     setStore("open", false)
                     open(1)
