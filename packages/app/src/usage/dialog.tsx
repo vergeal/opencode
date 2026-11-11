@@ -65,7 +65,7 @@ export function DialogUsage(props: {
               </Match>
               <Match when={state.failed}>
                 <div class="flex flex-col items-center gap-3">
-                  <span class="text-[15px] leading-text-compact font-[440] tracking-[-0.04px] text-v2-text-text-muted">
+                  <span class="text-[15px] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted">
                     {language.t("usage.error")}
                   </span>
                   <Button variant="neutral" onClick={load}>
@@ -76,7 +76,7 @@ export function DialogUsage(props: {
               <Match when={true}>
                 <Panel gap={8}>
                   <Item>
-                    <Line class="font-[530] text-v2-text-text-base">{language.t("usage.signedOut.title")}</Line>
+                    <Line class="font-medium text-v2-text-text-base">{language.t("usage.signedOut.title")}</Line>
                     <Line class="text-v2-text-text-muted">{language.t("usage.signedOut.body")}</Line>
                   </Item>
                 </Panel>
@@ -232,8 +232,8 @@ export function UsageDialogContent(props: {
           <div data-slot="usage-callout" class="flex items-stretch gap-0.5 px-4">
             <div class="w-0.5 shrink-0 bg-v2-state-fg-danger" />
             <div class="flex flex-1 flex-col gap-1.5 rounded-r-md bg-v2-state-bg-danger p-3">
-              <Line class="font-[530] text-[var(--usage-reached)]">{callout(value()).title}</Line>
-              <p class="m-0 text-[15px] leading-text-base font-[440] tracking-[-0.04px] text-[var(--usage-reached)]">
+              <Line class="font-medium text-[var(--usage-reached)]">{callout(value()).title}</Line>
+              <p class="m-0 text-[15px] leading-text-base tracking-[-0.04px] text-[var(--usage-reached)]">
                 {callout(value()).body}
               </p>
             </div>
@@ -266,7 +266,7 @@ export function UsageDialogContent(props: {
           fallback={
             <Panel gap={8}>
               <Item>
-                <Line class="font-[530] text-v2-text-text-base">{language.t("usage.empty.title")}</Line>
+                <Line class="font-medium text-v2-text-text-base">{language.t("usage.empty.title")}</Line>
                 <Line class="text-v2-text-text-muted">
                   {language.t("usage.empty.body", { workspace: workspace() })}
                 </Line>
@@ -284,8 +284,8 @@ export function UsageDialogContent(props: {
                   <Item>
                     <div class="flex items-start justify-between self-stretch">
                       <div class="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <Line class="font-[530] text-v2-text-text-base">{label(row.label)}</Line>
-                        <p class="m-0 text-[15px] leading-text-compact font-[440] tracking-[-0.04px] text-v2-text-text-muted">
+                        <Line class="font-medium text-v2-text-text-base">{label(row.label)}</Line>
+                        <p class="m-0 text-[15px] leading-text-compact tracking-[-0.04px] text-v2-text-text-muted">
                           {scope(row)}
                         </p>
                       </div>
@@ -314,8 +314,8 @@ export function UsageDialogContent(props: {
               {(value) => (
                 <div class="flex items-center gap-4 self-stretch px-4">
                   <div class="flex min-w-0 flex-1 flex-col gap-1">
-                    <Line class="font-[530] text-v2-text-text-base">{action(value()).title}</Line>
-                    <p class="m-0 text-[15px] leading-text-base font-[440] tracking-[-0.04px] text-v2-text-text-muted">
+                    <Line class="font-medium text-v2-text-text-base">{action(value()).title}</Line>
+                    <p class="m-0 text-[15px] leading-text-base tracking-[-0.04px] text-v2-text-text-muted">
                       {action(value()).body}
                     </p>
                   </div>
@@ -358,7 +358,7 @@ function Section(props: { label: string; badge?: string; dimmed?: boolean; child
         <Line class="text-v2-text-text-muted">{props.label}</Line>
         <Show when={props.badge}>
           {(badge) => (
-            <span class="flex h-4 items-center rounded-[2px] bg-v2-background-bg-layer-03 px-1 text-[12px] leading-text-tight font-[530] tracking-[0.05px] text-v2-text-text-muted">
+            <span class="flex h-4 items-center rounded-[2px] bg-v2-background-bg-layer-03 px-1 text-[12px] leading-text-tight font-medium tracking-[0.05px] text-v2-text-text-muted">
               {badge()}
             </span>
           )}
@@ -392,7 +392,7 @@ function Divider() {
 function Line(props: { class?: string; children: JSX.Element }) {
   return (
     <span
-      class={`min-w-0 truncate text-[15px] leading-text-compact font-[440] tracking-[-0.04px] ${props.class ?? ""}`}
+      class={`min-w-0 truncate text-[15px] leading-text-compact tracking-[-0.04px] ${props.class ?? ""}`}
     >
       {props.children}
     </span>
@@ -404,7 +404,7 @@ function GoItem(props: { row: GoRow; used: string; children: JSX.Element }) {
   return (
     <Item>
       <div class="flex items-center justify-between self-stretch">
-        <Line class="font-[530] text-v2-text-text-base">{language.t(`usage.go.${props.row.window}`)}</Line>
+        <Line class="font-medium text-v2-text-text-base">{language.t(`usage.go.${props.row.window}`)}</Line>
         <Spend status={props.used} reached={props.row.limited}>
           {props.children}
         </Spend>
@@ -418,7 +418,7 @@ function Spend(props: { status: string; reached: boolean; children: JSX.Element 
   return (
     <div class="flex shrink-0 items-center gap-1.5">
       <Line
-        class={`font-[530] tabular-nums ${props.reached ? "text-[var(--usage-reached)]" : "text-v2-text-text-base"}`}
+        class={`font-medium tabular-nums ${props.reached ? "text-[var(--usage-reached)]" : "text-v2-text-text-base"}`}
       >
         {props.status}
       </Line>

@@ -83,7 +83,7 @@ export function ComposerDropzone(props: {
             >
               <Icon name="arrow-up" size="normal" class="text-v2-icon-icon-muted" />
             </div>
-            <div class="text-[17px] font-[530] leading-6 text-v2-text-text-base">{presence.value()}</div>
+            <div class="text-[17px] font-medium leading-6 text-v2-text-text-base">{presence.value()}</div>
           </div>
         </div>
       </Show>

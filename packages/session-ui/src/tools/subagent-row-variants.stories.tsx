@@ -51,7 +51,7 @@ const sketchRows = [
 function Frame(props: { title: string; children: JSX.Element }) {
   return (
     <section class="mx-auto w-full max-w-[720px] px-6 py-4">
-      <h2 class="mb-3 text-[13px] leading-text-compact font-[530] text-v2-text-text-muted">{props.title}</h2>
+      <h2 class="mb-3 text-[13px] leading-text-compact font-medium text-v2-text-text-muted">{props.title}</h2>
       {props.children}
     </section>
   )
@@ -94,10 +94,10 @@ function PlainLabel() {
       <For each={sketchRows}>
         {(row) => (
           <div class="h-9 flex items-center gap-2 text-[13px] leading-text-compact tracking-[-0.04px]">
-            <span class="font-[530] text-v2-text-text-base">
+            <span class="font-medium text-v2-text-text-base">
               <TextShimmer as="span" text={row.title} active={row.running} />
             </span>
-            <span class="font-[440] text-v2-text-text-muted">{row.subtitle}</span>
+            <span class=" text-v2-text-text-muted">{row.subtitle}</span>
           </div>
         )}
       </For>

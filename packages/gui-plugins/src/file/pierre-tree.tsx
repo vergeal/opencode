@@ -81,7 +81,7 @@ const TREE_UNSAFE_CSS = `
   [data-item-section="content"] { flex: 1 0 auto; max-width: none; overflow: visible; white-space: nowrap; }
   [data-item-section="decoration"] { flex: 0 0 auto; color: var(--v2-text-text-weak, var(--v2-text-text-muted)); font-size: 13px; font-weight: 400; }
   [data-item-section="git"] {
-    font-size: 12px; font-weight: 530; line-height: 1; letter-spacing: -0.04px;
+    font-size: 12px; font-weight: 500; line-height: 1; letter-spacing: -0.04px;
     font-variant-numeric: tabular-nums lining-nums; font-feature-settings: "tnum" on, "lnum" on;
   }
   /* Every row ends in its change letter or an empty lane that sticks inside the pane while long rows scroll. It fades

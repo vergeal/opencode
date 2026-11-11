@@ -40,7 +40,7 @@ export function ConsoleAuthorization(props: {
                 dir="ltr"
                 role="group"
                 aria-label={language.t("provider.connect.console.deviceCode.label", { code: code() })}
-                class="flex max-w-full gap-1 self-start font-mono text-xl font-[530] text-v2-text-text-base tabular-nums"
+                class="flex max-w-full gap-1 self-start font-mono text-xl font-medium text-v2-text-text-base tabular-nums"
               >
                 <For each={code().split("")}>
                   {(character) => (

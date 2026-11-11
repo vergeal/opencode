@@ -293,7 +293,7 @@ story("renders user image, file attachment, file reference, and agent reference"
 
   for (const mention of await timeline.locator("[data-highlight]").all()) {
     await expect(mention).toHaveCSS("color", accent)
-    await expect(mention).toHaveCSS("font-weight", "440")
+    await expect(mention).toHaveCSS("font-weight", "400")
   }
 
   for (const prefix of await timeline.locator('[data-slot="user-message-mention-prefix"]').all()) {

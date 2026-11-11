@@ -151,7 +151,7 @@ export function SortableTerminalTab(props: {
                 onBlur={save}
                 onKeyDown={keydown}
                 onMouseDown={(e) => e.stopPropagation()}
-                class="bg-transparent border-none outline-none min-w-0 flex-1 p-0 text-[15px] leading-4 tracking-[-0.04px] text-v2-text-text-base [font-weight:440] [font-variation-settings:'slnt'_0] [font-variant-numeric:tabular-nums]"
+                class="bg-transparent border-none outline-none min-w-0 flex-1 p-0 text-[15px] leading-4 tracking-[-0.04px] text-v2-text-text-base [font-weight: 400] [font-variation-settings:'slnt'_0] [font-variant-numeric:tabular-nums]"
               />
             </div>
           </Show>

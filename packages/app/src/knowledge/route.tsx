@@ -407,7 +407,7 @@ export function KnowledgeScreen() {
                           <span class="knowledge-card-icon">
                             <Icon name="file-document" size="small" />
                           </span>
-                          <span class="min-w-0 truncate text-[15px] leading-[var(--line-height-base)] font-medium">
+                          <span class="min-w-0 truncate text-[15px] leading-[var(--line-height-base)]">
                             {library.name}
                           </span>
                         </span>
@@ -877,7 +877,7 @@ function ImportPanel(props: {
       <div class="knowledge-progress-card">
         <div class="flex items-center gap-2">
           <Loader class="size-4 shrink-0 text-v2-icon-icon-muted" />
-          <span class="min-w-0 flex-1 truncate text-[13px] leading-[var(--line-height-compact)] font-medium">
+          <span class="min-w-0 flex-1 truncate text-[13px] leading-[var(--line-height-compact)]">
             {stageLabel(stage())}
           </span>
           <Show when={share() !== undefined}>

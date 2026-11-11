@@ -567,7 +567,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
           box-shadow: none !important;
           color: var(--v2-text-text-muted) !important;
           font-size: 15px !important;
-          font-weight: 440 !important;
+          font-weight: 400 !important;
           letter-spacing: -0.04px !important;
         }
         button[data-type="item"]:hover {
@@ -589,7 +589,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
             var(--v2-background-bg-base) !important;
           box-shadow: inset 0 0 0 0.5px var(--v2-border-border-base) !important;
           color: var(--v2-text-text-base) !important;
-          font-weight: 530 !important;
+          font-weight: 500 !important;
         }
         button[data-type="item"]:focus-visible {
           outline: none !important;
@@ -636,7 +636,7 @@ export function DirectoryPickerDialog(props: DirectoryPickerDialogProps) {
           background: var(--v2-background-bg-layer-03);
           color: var(--v2-text-text-muted);
           font-size: 12px;
-          font-weight: 530;
+          font-weight: 500;
           line-height: 14px;
           letter-spacing: 0.05px;
         }

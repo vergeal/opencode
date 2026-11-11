@@ -202,7 +202,7 @@
     [data-highlight="file"],
     [data-highlight="agent"] {
       color: var(--v2-text-text-accent);
-      font-weight: 440;
+      font-weight: 400;
       direction: ltr;
       unicode-bidi: isolate;
     }
@@ -310,7 +310,7 @@
   [data-slot="user-message-meta-tail"] {
     font-family: var(--v2-font-family-sans);
     font-size: 13px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: 0.05px;
     color: var(--v2-text-text-faint);
@@ -500,7 +500,7 @@
     white-space: nowrap;
     font-family: var(--v2-font-family-sans);
     font-size: 13px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: 0.05px;
     color: var(--v2-text-text-faint);
@@ -719,7 +719,7 @@
     [data-slot="bash-pre"] code {
       display: block;
       font-family: var(--v2-font-family-code);
-      font-weight: 440;
+      font-weight: 400;
       line-height: var(--line-height-base);
       letter-spacing: -0.04px;
     }
@@ -826,7 +826,7 @@
   width: 100%;
   font-family: var(--v2-font-family-code);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-base);
   letter-spacing: -0.04px;
   color: var(--v2-text-text-muted);
@@ -994,7 +994,7 @@
 
   [data-slot="execute-details-section-label"] {
     font-size: 15px;
-    font-weight: 530;
+    font-weight: 500;
     color: var(--v2-text-text-muted);
   }
 
@@ -1072,7 +1072,7 @@
   width: fit-content;
   font-family: var(--font-family-sans);
   font-size: 15px;
-  font-weight: var(--font-weight-regular, 440);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
   color: var(--v2-text-text-faint, #808080);
@@ -1136,7 +1136,7 @@
     color: var(--v2-text-text-muted);
     font-family: var(--v2-font-family-sans);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
 
@@ -1234,7 +1234,7 @@
     [data-slot="context-tool-group-matches"] {
       font-family: var(--v2-font-family-sans);
       font-size: 15px;
-      font-weight: 440;
+      font-weight: 400;
       line-height: var(--line-height-compact);
       letter-spacing: -0.04px;
     }
@@ -1429,7 +1429,7 @@
     code {
       font-family: var(--v2-font-family-code);
       font-size: 15px;
-      font-weight: 440;
+      font-weight: 400;
       line-height: var(--line-height-base);
       letter-spacing: -0.04px;
     }
@@ -1617,7 +1617,7 @@
 
   [data-slot="tool-loaded-label"] {
     flex-shrink: 0;
-    font-weight: 530;
+    font-weight: 500;
   }
 
   [data-slot="tool-loaded-value"] {
@@ -1625,13 +1625,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 440;
+    font-weight: 400;
   }
 
   [data-slot="tool-loaded-kind"] {
     flex-shrink: 0;
     margin-inline-start: -2px;
-    font-weight: 440;
+    font-weight: 400;
     color: var(--v2-text-text-muted);
   }
 }
@@ -1721,7 +1721,7 @@
 }
 
 :root body [data-component="user-message"] {
-  font-weight: 440;
+  font-weight: 400;
 
   [data-slot="user-message-text"] {
     background: var(--v2-background-bg-layer-02);
@@ -1748,7 +1748,7 @@
 
     [data-component="button-v2"] {
       font-family: var(--v2-font-family-sans, "Inter", sans-serif);
-      font-weight: 530;
+      font-weight: 500;
       font-variation-settings:
         "wght" 530,
         "slnt" 0;

@@ -12,7 +12,7 @@
   [data-slot="basic-tool-tool-title"] {
     font-family: var(--v2-font-family-sans);
     font-size: 15px;
-    font-weight: 530;
+    font-weight: 500;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
     color: var(--v2-text-text-base);
@@ -21,7 +21,7 @@
   [data-slot="basic-tool-tool-subtitle"] {
     font-family: var(--v2-font-family-sans);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
     color: var(--v2-text-text-muted);
@@ -30,7 +30,7 @@
   [data-slot="tool-error-card-summary"] {
     font-family: var(--v2-font-family-sans);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
     color: var(--v2-state-fg-danger);
@@ -102,7 +102,7 @@
     margin: 0;
     font-family: var(--v2-font-family-sans);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-base);
     letter-spacing: -0.04px;
     white-space: pre-wrap;

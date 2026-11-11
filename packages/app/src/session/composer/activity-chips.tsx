@@ -143,7 +143,7 @@ export function SessionActivityChips(props: {
             type="button"
             data-slot="session-activity-chip"
             aria-label={label()}
-            class="pointer-events-auto flex h-7 min-w-0 max-w-full items-center gap-2 rounded-[12px] border-[0.5px] border-v2-border-border-muted bg-v2-background-bg-base ps-2.5 pe-2.5 text-[15px] font-[440] leading-text-compact tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none duration-150 ease-out motion-reduce:animate-none"
+            class="pointer-events-auto flex h-7 min-w-0 max-w-full items-center gap-2 rounded-[12px] border-[0.5px] border-v2-border-border-muted bg-v2-background-bg-base ps-2.5 pe-2.5 text-[15px] leading-text-compact tracking-[-0.04px] whitespace-nowrap tabular-nums text-v2-text-text-base shadow-[var(--v2-elevation-raised)] outline-none duration-150 ease-out motion-reduce:animate-none"
             classList={{ "animate-in fade-in": enter() }}
           >
             <SessionProgressIndicatorV2 class="shrink-0" />
@@ -175,7 +175,7 @@ export function SessionActivityChips(props: {
                 {(item) => (
                   <Menu.Item {...row(item)}>
                     <SessionProgressIndicatorV2 class="shrink-0 text-v2-icon-icon-muted" />
-                    <span class="shrink-0 font-[530]">
+                    <span class="shrink-0 font-medium">
                       <bdi>
                         {item.agent
                           ? `${item.agent[0].toUpperCase()}${item.agent.slice(1)}`

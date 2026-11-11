@@ -136,7 +136,7 @@
 .new-session-location-count {
   color: var(--v2-text-text-faint);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   font-variant-numeric: tabular-nums;
 }

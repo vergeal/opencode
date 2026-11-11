@@ -303,7 +303,7 @@ function NewSessionLocation(props: {
   const fitted = createMemo(() => fitPath(path() ?? "", layout.width, layout.font))
 
   return (
-    <div class="relative flex min-h-9 min-w-0 items-center gap-3 ps-2 pe-1.5 text-[15px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px]">
+    <div class="relative flex min-h-9 min-w-0 items-center gap-3 ps-2 pe-1.5 text-[15px] leading-[var(--line-height-compact)] tracking-[-0.04px]">
       <div class="flex min-w-0 max-w-full flex-wrap items-center gap-1 py-1.5">
         <Tooltip
           appearance={props.onboarding ? "large" : undefined}
@@ -312,11 +312,11 @@ function NewSessionLocation(props: {
           value={
             props.onboarding ? (
               <div class="flex flex-col gap-1 text-start">
-                <div class="flex items-center gap-1.5 font-[530] text-v2-text-text-base">
+                <div class="flex items-center gap-1.5 font-medium text-v2-text-text-base">
                   <Icon name="outline-worktree" size="small" class="shrink-0 text-v2-text-text-accent" />
                   <span>{language.t("workspace.onboarding.title")}</span>
                 </div>
-                <span class="font-[440] text-v2-text-text-muted">{language.t("workspace.onboarding.description")}</span>
+                <span class=" text-v2-text-text-muted">{language.t("workspace.onboarding.description")}</span>
               </div>
             ) : (
               language.t("session.new.workspace.trigger.tooltip")

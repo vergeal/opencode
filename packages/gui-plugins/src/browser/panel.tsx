@@ -893,10 +893,10 @@ export default function SessionBrowserPane(props: {
                 <div class="mx-auto flex max-w-[360px] flex-col items-center gap-4 px-6 pt-20 text-center">
                   <Icon name="outline-globe" size="large" class="text-v2-icon-icon-muted" />
                   <div class="flex flex-col gap-2">
-                    <div class="text-[15px] font-[530] leading-[var(--line-height-compact)] text-v2-text-text-base">
+                    <div class="text-[15px] font-medium leading-[var(--line-height-compact)] text-v2-text-text-base">
                       {plugin.t("home.title")}
                     </div>
-                    <div class="text-[15px] font-[440] leading-[var(--line-height-compact)] text-v2-text-text-muted">
+                    <div class="text-[15px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
                       {plugin.t("home.description")}
                     </div>
                   </div>
@@ -906,7 +906,7 @@ export default function SessionBrowserPane(props: {
               {/* The pages the browser showed last; the side panel's new tab view offers the other tabs. One visit is
                   enough to list; the list stops at a handful. */}
               <div class="mx-auto flex w-full max-w-[608px] flex-col gap-4 px-6 pt-12 pb-10">
-                <div class="text-[15px] font-[440] leading-[var(--line-height-compact)] text-v2-text-text-muted">
+                <div class="text-[15px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
                   {plugin.t("home.recent")}
                 </div>
                 <div class="flex flex-col gap-2">

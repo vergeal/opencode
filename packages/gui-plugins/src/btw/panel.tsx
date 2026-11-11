@@ -151,7 +151,7 @@ export default function SessionBtwPanel(props: { btw: BtwModel; session: Mounted
               <div
                 data-component="session-working"
                 role="status"
-                class="flex h-9 items-center pt-3 text-[15px] font-[530] leading-text-compact"
+                class="flex h-9 items-center pt-3 text-[15px] font-medium leading-text-compact"
               >
                 <TextShimmer text={ctx.t("session.timeline.working")} active />
               </div>

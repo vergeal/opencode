@@ -26,7 +26,7 @@ export function TimelineSeparator(props: {
   return (
     <div class="flex h-8 w-full items-center gap-3 text-v2-text-text-faint">
       <span class="h-px min-w-0 flex-1" style={{ "background-image": gradient }} />
-      <span class="flex min-w-0 items-center gap-1 text-[15px] font-[440] leading-text-compact tracking-[-0.04px]">
+      <span class="flex min-w-0 items-center gap-1 text-[15px] leading-text-compact tracking-[-0.04px]">
         <Show when={props.providerID}>
           {(providerID) => <ProviderIcon id={providerID()} class="text-v2-icon-icon-faint" aria-hidden="true" />}
         </Show>

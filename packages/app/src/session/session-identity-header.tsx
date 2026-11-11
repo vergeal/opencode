@@ -255,7 +255,7 @@ export function SessionLocation(props: {
                 variant={getProjectAvatarVariant(props.project?.icon?.color)}
                 generated={getProjectAvatarGenerated(props.project)}
               />
-              <bdi dir="auto" class="min-w-0 truncate font-[530]">
+              <bdi dir="auto" class="min-w-0 truncate font-medium">
                 {projectName()}
               </bdi>
             </Menu.Item>
@@ -434,7 +434,7 @@ export function SessionLocation(props: {
 
 function SessionLocationDetail(props: ParentProps<{ icon: ComponentProps<typeof Icon>["name"] }>) {
   return (
-    <div class="flex h-7 min-w-0 items-center gap-2 px-3 text-[15px] font-[440] leading-[var(--line-height-compact)] tracking-[-0.04px] text-v2-text-text-base">
+    <div class="flex h-7 min-w-0 items-center gap-2 px-3 text-[15px] leading-[var(--line-height-compact)] tracking-[-0.04px] text-v2-text-text-base">
       <Icon name={props.icon} class="shrink-0 text-v2-icon-icon-muted" />
       <span class="flex min-w-0 truncate">{props.children}</span>
     </div>
@@ -486,7 +486,7 @@ export function SessionAncestorTrail(props: {
                 data-slot={ancestor.direct ? "session-title-parent" : "session-title-ancestor"}
                 data-session-id={ancestor.id}
                 title={ancestor.title}
-                class="max-w-[min(200px,40vw)] shrink-0 truncate text-[15px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-faint transition-colors hover:text-v2-text-text-muted"
+                class="max-w-[min(200px,40vw)] shrink-0 truncate text-[15px] font-medium leading-4 tracking-[-0.04px] text-v2-text-text-faint transition-colors hover:text-v2-text-text-muted"
                 classList={{ "ps-1": index() === 0 }}
                 onClick={() => open(props.sessionID, ancestor.id)}
               >
@@ -628,7 +628,7 @@ export function SessionIdentityHeader(props: { sessionID: string; session?: Sess
               <h1
                 data-slot={parentID() ? "session-title-child" : undefined}
                 dir="auto"
-                class="w-fit truncate rounded-[6px] px-1 py-1.5 text-[15px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base"
+                class="w-fit truncate rounded-[6px] px-1 py-1.5 text-[15px] font-medium leading-4 tracking-[-0.04px] text-v2-text-text-base"
                 classList={{ "max-w-[45%] shrink-0": !!parentID() }}
               >
                 {value()}

@@ -192,7 +192,7 @@ export function SessionLocationMissing(props: { sessionID: string; projectID: st
                       value={state.search}
                       placeholder={language.t("session.new.workspace.search.placeholder")}
                       aria-label={language.t("session.new.workspace.search.placeholder")}
-                      class="h-7 min-w-0 flex-1 border-0 bg-transparent text-[15px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-base outline-none placeholder:text-v2-text-text-faint"
+                      class="h-7 min-w-0 flex-1 border-0 bg-transparent text-[15px] leading-5 tracking-[-0.04px] text-v2-text-text-base outline-none placeholder:text-v2-text-text-faint"
                       onInput={(event) => setState("search", event.currentTarget.value)}
                       onKeyDown={(event) => {
                         if (
@@ -208,7 +208,7 @@ export function SessionLocationMissing(props: { sessionID: string; projectID: st
                   </div>
                 </Show>
                 <Show when={state.search.trim() && visibleWorktrees().length === 0}>
-                  <div class="px-3 py-4 text-center text-[15px] font-[440] leading-5 text-v2-text-text-muted">
+                  <div class="px-3 py-4 text-center text-[15px] leading-5 text-v2-text-text-muted">
                     {language.t("session.new.workspace.search.empty")}
                   </div>
                 </Show>

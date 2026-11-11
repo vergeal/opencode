@@ -107,7 +107,7 @@ export function SessionFileBrowserTab(props: {
   return (
     <SessionFilePanelV2
       toolbar={!props.mobile && !props.placeholder && !sidebarOpened()}
-      toolbarStart={<span class="truncate font-[530]">{title()}</span>}
+      toolbarStart={<span class="truncate font-medium">{title()}</span>}
       sidebarCollapsed={!sidebarOpened()}
       sidebarToggleGap={10}
       sidebarToggle={
@@ -123,7 +123,7 @@ export function SessionFileBrowserTab(props: {
         <SessionReviewV2Sidebar
           open={sidebarOpened()}
           transition={props.state.transition()}
-          title={<span class="truncate font-[530]">{title()}</span>}
+          title={<span class="truncate font-medium">{title()}</span>}
           filter={filter()}
           onFilterChange={setFilter}
           onFilterKeyDown={onFilterKeyDown}

@@ -219,7 +219,7 @@ function Avatar(props: { name: string; src?: string }) {
   return (
     <span
       aria-hidden="true"
-      class="relative grid size-3.5 shrink-0 place-items-center overflow-hidden rounded-full bg-v2-background-bg-layer-02 text-[8px] leading-none font-[530] text-v2-text-text-muted uppercase after:absolute after:inset-0 after:rounded-full after:shadow-[inset_0_0_0_0.5px_var(--v2-border-border-base)]"
+      class="relative grid size-3.5 shrink-0 place-items-center overflow-hidden rounded-full bg-v2-background-bg-layer-02 text-[8px] leading-none font-medium text-v2-text-text-muted uppercase after:absolute after:inset-0 after:rounded-full after:shadow-[inset_0_0_0_0.5px_var(--v2-border-border-base)]"
     >
       {Array.from(props.name.trim())[0]}
       <Show when={props.src}>

@@ -46,17 +46,17 @@ export function ModelDetails(props: {
     <Show
       when={props.compact}
       fallback={
-        <div class="w-[188px] max-w-[calc(100vw-24px)] font-[440] text-v2-text-text-muted">
+        <div class="w-[188px] max-w-[calc(100vw-24px)] text-v2-text-text-muted">
           <div class="border-b-[0.5px] border-v2-border-border-base py-0.5">
             <div class="flex h-6 min-w-0 items-center gap-1.5 px-2">
               <ProviderModelIcon provider={props.model.provider} class="!size-3.5 shrink-0" />
-              <bdi class="min-w-0 truncate font-[530]">{props.model.name}</bdi>
+              <bdi class="min-w-0 truncate font-medium">{props.model.name}</bdi>
             </div>
           </div>
           <div class="flex flex-col gap-1.5 py-1">
             <dl>
               <div class="flex h-6 min-w-0 items-center gap-2 px-2">
-                <dt class="min-w-0 flex-1 truncate font-[530] text-v2-text-text-faint">
+                <dt class="min-w-0 flex-1 truncate font-medium text-v2-text-text-faint">
                   {language.t("model.tooltip.provider")}
                 </dt>
                 <dd class="min-w-0 truncate text-end">
@@ -64,7 +64,7 @@ export function ModelDetails(props: {
                 </dd>
               </div>
               <div class="flex h-6 min-w-0 items-center gap-2 px-2">
-                <dt class="min-w-0 flex-1 truncate font-[530] text-v2-text-text-faint">
+                <dt class="min-w-0 flex-1 truncate font-medium text-v2-text-text-faint">
                   {language.t("model.tooltip.context.label")}
                 </dt>
                 <dd class="shrink-0">{props.model.limit.context.toLocaleString(language.intl())}</dd>
@@ -76,7 +76,7 @@ export function ModelDetails(props: {
                   <div class="mx-2 border-t-[0.5px] border-v2-border-border-base" />
                   <dl>
                     <div class="flex h-6 min-w-0 items-center gap-2 px-2">
-                      <dt class="min-w-0 flex-1 truncate font-[530] text-v2-text-text-faint">
+                      <dt class="min-w-0 flex-1 truncate font-medium text-v2-text-text-faint">
                         {language.t("model.details.left")}
                       </dt>
                       <dd class="shrink-0 tabular-nums" classList={{ "text-v2-state-fg-danger": usage().reached }}>
@@ -84,7 +84,7 @@ export function ModelDetails(props: {
                       </dd>
                     </div>
                     <div class="flex h-6 min-w-0 items-center gap-2 px-2">
-                      <dt class="min-w-0 flex-1 truncate font-[530] text-v2-text-text-faint">
+                      <dt class="min-w-0 flex-1 truncate font-medium text-v2-text-text-faint">
                         {language.t("model.details.resets")}
                       </dt>
                       <dd class="min-w-0 truncate text-end">{usage().resets}</dd>
@@ -99,7 +99,7 @@ export function ModelDetails(props: {
                 {(type) => (
                   <div class="flex h-6 min-w-0 items-center gap-1.5 px-2">
                     <Icon name={inputIcons[type]} size="small" class="shrink-0 text-v2-icon-icon-muted" />
-                    <dt class="min-w-0 flex-1 truncate font-[530] text-v2-text-text-faint">{label(type)}</dt>
+                    <dt class="min-w-0 flex-1 truncate font-medium text-v2-text-text-faint">{label(type)}</dt>
                     <dd class="shrink-0">
                       {props.model.capabilities.input[type] && props.model.capabilities.output[type]
                         ? language.t("model.details.inputOutput")
@@ -113,7 +113,7 @@ export function ModelDetails(props: {
               <Show when={props.model.capabilities.reasoning}>
                 <div class="flex h-6 min-w-0 items-center gap-1.5 px-2">
                   <Icon name="outline-brain" size="small" class="shrink-0 text-v2-icon-icon-muted" />
-                  <dt class="min-w-0 flex-1 truncate font-[530] text-v2-text-text-faint">
+                  <dt class="min-w-0 flex-1 truncate font-medium text-v2-text-text-faint">
                     {language.t("model.tooltip.reasoning")}
                   </dt>
                   <dd class="flex shrink-0">
@@ -129,7 +129,7 @@ export function ModelDetails(props: {
               <Show when={props.model.capabilities.toolcall}>
                 <div class="flex h-6 min-w-0 items-center gap-1.5 px-2">
                   <Icon name="outline-console" size="small" class="shrink-0 text-v2-icon-icon-muted" />
-                  <dt class="min-w-0 flex-1 truncate font-[530] text-v2-text-text-faint">
+                  <dt class="min-w-0 flex-1 truncate font-medium text-v2-text-text-faint">
                     {language.t("model.details.tools")}
                   </dt>
                   <dd class="flex shrink-0">
@@ -148,7 +148,7 @@ export function ModelDetails(props: {
       }
     >
       <div
-        class="px-3 py-2 text-[13px] font-[440] leading-5 text-v2-text-text-muted"
+        class="px-3 py-2 text-[13px] leading-5 text-v2-text-text-muted"
         classList={{ "border-t border-v2-border-border-muted": !props.standalone }}
       >
         <bdi class="block">

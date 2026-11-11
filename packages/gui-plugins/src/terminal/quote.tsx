@@ -190,7 +190,7 @@ export function TerminalQuote(props: { term: Term; container: HTMLElement; targe
             onMouseDown={(event) => event.preventDefault()}
           >
             <Show when={state.truncated}>
-              <span class="px-2 text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted [font-weight:440]">
+              <span class="px-2 text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted [font-weight: 400]">
                 {plugin.t("quote.tooLong")}
               </span>
             </Show>

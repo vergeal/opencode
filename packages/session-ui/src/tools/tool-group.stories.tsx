@@ -219,7 +219,7 @@ export const StickyHeader = {
       >
         <div class="pointer-events-none sticky top-0 z-30 w-full pb-4">
           <div class="pointer-events-auto bg-v2-background-bg-base pe-3 ps-2.5">
-            <div class="flex h-12 items-center px-1 text-[13px] font-[530] leading-4 tracking-[-0.04px] text-v2-text-text-base">
+            <div class="flex h-12 items-center px-1 text-[13px] font-medium leading-4 tracking-[-0.04px] text-v2-text-text-base">
               Trace stacked review history
             </div>
           </div>

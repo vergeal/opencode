@@ -32,7 +32,7 @@ export function ReviewTitle(props: { review: ReviewModel }) {
         }
       >
         {(only) => (
-          <span class="inline-flex h-6 items-center ps-2 pe-1 text-[15px] leading-[var(--line-height-compact)] font-[530] tracking-[-0.04px] text-v2-text-text-base">
+          <span class="inline-flex h-6 items-center ps-2 pe-1 text-[15px] leading-[var(--line-height-compact)] font-medium tracking-[-0.04px] text-v2-text-text-base">
             {label(only())}
           </span>
         )}

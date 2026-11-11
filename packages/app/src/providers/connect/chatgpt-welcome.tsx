@@ -13,7 +13,7 @@ export function DialogChatGPTPlanWelcome() {
     <Dialog fit containerClass="!w-[min(calc(100vw_-_32px),390px)] !rounded-xl">
       <div class="flex w-full flex-col items-center px-8 pb-8 pt-9 text-center [font-family:var(--v2-font-family-sans)]">
         <ProviderIcon id="openai" class="!size-12 text-v2-icon-icon-base" aria-hidden="true" />
-        <div class="mt-6 max-w-[270px] text-[22px] font-[530] leading-7 tracking-[-0.3px] text-v2-text-text-base">
+        <div class="mt-6 max-w-[270px] text-[22px] font-medium leading-7 tracking-[-0.3px] text-v2-text-text-base">
           <DialogTitle>
             <bdi dir="auto">{language.t("provider.connect.chatgptWelcome.title")}</bdi>
           </DialogTitle>

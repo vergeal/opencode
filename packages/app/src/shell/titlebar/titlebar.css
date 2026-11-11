@@ -86,12 +86,12 @@
 
 [data-slot="mobile-tabs-drawer"] [data-titlebar-tab] [data-slot="tab-title"] {
   color: var(--v2-text-text-base);
-  font-weight: 530;
+  font-weight: 500;
 }
 
 [data-slot="mobile-tabs-drawer"] [data-titlebar-tab] [data-slot="tab-project"] {
   color: var(--v2-text-text-faint);
-  font-weight: 440;
+  font-weight: 400;
 }
 
 [data-slot="titlebar-tab-item"] a {

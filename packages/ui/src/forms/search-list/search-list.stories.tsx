@@ -53,7 +53,7 @@ function SearchListStory(props: { sections: number; rows: number; sticky: boolea
         {(row, attrs) => (
           <button type="button" {...attrs}>
             <span class="flex min-w-0 items-center gap-1.5 text-[13px] leading-4 tracking-[-0.04px]">
-              <span class="truncate font-[530] text-v2-text-text-base">
+              <span class="truncate font-medium text-v2-text-text-base">
                 <SearchHighlight text={row().title} />
               </span>
               <span class="truncate text-v2-text-text-muted">

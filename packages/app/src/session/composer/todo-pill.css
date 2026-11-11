@@ -72,7 +72,7 @@
     background: var(--v2-overlay-simple-overlay-hover);
 
     [data-slot="session-todo-text"] {
-      font-weight: 530;
+      font-weight: 500;
     }
   }
 

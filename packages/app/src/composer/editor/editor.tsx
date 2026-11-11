@@ -298,7 +298,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
               spellcheck={state.mode === "normal"}
               // @ts-expect-error
               autocomplete="off"
-              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-4 pe-[var(--composer-scroll-end)] pt-4 pb-2 text-[15px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+              class="relative z-10 block w-full whitespace-pre-wrap bg-transparent ps-4 pe-[var(--composer-scroll-end)] pt-4 pb-2 text-[15px] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
               classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell", "opacity-50": props.disabled }}
               style={{
                 "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -370,7 +370,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             <Show when={!props.controller.value()}>
               <div
                 dir={state.mode === "normal" ? "auto" : "ltr"}
-                class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[var(--composer-scroll-end)] pt-4 text-[15px] font-[440] leading-5 text-v2-text-text-faint"
+                class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[var(--composer-scroll-end)] pt-4 text-[15px] leading-5 text-v2-text-text-faint"
                 classList={{ "font-mono! tracking-[-0.04px]": state.mode === "shell" }}
                 style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
               >
@@ -1073,7 +1073,7 @@ function ComposerEditorSelect(props: {
               as={Button}
               variant="ghost-muted"
               size="normal"
-              class={`max-w-[220px] justify-start ![font-weight:440] ${props.class ?? ""}`}
+              class={`max-w-[220px] justify-start ![font-weight: 400] ${props.class ?? ""}`}
               aria-label={props.title}
             >
               {content()}
@@ -1100,7 +1100,7 @@ function ComposerEditorSelect(props: {
           }}
           variant="ghost-muted"
           size="normal"
-          class={`max-w-[220px] justify-start ![font-weight:440] ${props.class ?? ""}`}
+          class={`max-w-[220px] justify-start ![font-weight: 400] ${props.class ?? ""}`}
           aria-label={props.title}
           aria-haspopup="dialog"
           aria-expanded={store.open}
@@ -1122,7 +1122,7 @@ function ComposerEditorSelect(props: {
                   {(option) => (
                     <Button
                       variant="ghost"
-                      class="w-full !h-10 !justify-start !rounded-none !px-3 !font-[440] capitalize focus-visible:!outline-offset-[-2px]"
+                      class="w-full !h-10 !justify-start !rounded-none !px-3 capitalize focus-visible:!outline-offset-[-2px]"
                       aria-pressed={props.current === option.id}
                       data-state={props.current === option.id ? "pressed" : undefined}
                       onClick={() => {
@@ -1273,7 +1273,7 @@ function ComposerEditorPopover(props: {
                       class="palette-menu-title flex-1 text-start"
                       style={{
                         "font-family": props.history === "shell" ? "var(--font-family-mono)" : undefined,
-                        "font-weight": props.history === "shell" ? 440 : "var(--font-weight-regular)",
+                        "font-weight": props.history === "shell" ? 400 : "var(--font-weight-regular)",
                       }}
                     >
                       {item.label || item.description || i18n.t("ui.promptInput.history.contextOnly")}
@@ -1382,7 +1382,7 @@ function ComposerEditorAlternateDelivery(props: { controller: ComposerEditorMode
             type="button"
             variant="ghost-faint"
             size="small"
-            class="me-3 gap-1.5 px-1.5 ![font-weight:530]"
+            class="me-3 gap-1.5 px-1.5 ![font-weight: 500]"
             onClick={() => props.controller.submit({ alternate: true })}
           >
             {delivery === "steer" ? i18n.t("ui.promptInput.steer") : i18n.t("ui.promptInput.queue")}

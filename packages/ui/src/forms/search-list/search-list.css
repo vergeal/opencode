@@ -126,7 +126,7 @@
     background: var(--search-list-surface);
     color: var(--v2-text-text-muted);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
     user-select: none;
@@ -175,7 +175,7 @@
     place-items: center;
     color: var(--v2-text-text-muted);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
   }
@@ -186,7 +186,7 @@
     padding: 4px 18px 12px;
     color: var(--v2-text-text-muted);
     font-size: 15px;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
   }

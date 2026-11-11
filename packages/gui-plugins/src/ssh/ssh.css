@@ -42,14 +42,14 @@
 
 .settings-server-dialog-label {
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
 
 .settings-server-dialog-error {
   font-size: 12px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 1;
   color: var(--v2-state-fg-danger);
 }

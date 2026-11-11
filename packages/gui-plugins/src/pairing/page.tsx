@@ -353,7 +353,7 @@ function DialogPairing(props: {
           >
             <Loader class="size-5 text-v2-icon-icon-muted" />
             <Show when={!tunnel.isSuccess}>
-              <span class="text-[15px] font-[530] leading-[var(--line-height-compact)] text-v2-text-text-base">
+              <span class="text-[15px] font-medium leading-[var(--line-height-compact)] text-v2-text-text-base">
                 {ctx.t("setup.title")}
               </span>
               <span class="text-12-regular leading-[var(--line-height-compact)] text-v2-text-text-muted">

@@ -139,7 +139,7 @@
   border-radius: 4px;
   color: var(--v2-text-text-muted);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
 }
 
@@ -210,7 +210,7 @@
   padding-block: 80px calc(80px + var(--settings-bottom-inset, 0px));
   color: var(--v2-text-text-muted);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-base);
   letter-spacing: -0.04px;
   text-align: center;
@@ -337,12 +337,12 @@
   justify-content: space-between;
   gap: 12px;
   color: var(--v2-text-text-base);
-  font-weight: 540;
+  font-weight: 500;
 }
 
 .settings-notice-heading span {
   color: var(--v2-text-text-faint);
-  font-weight: 440;
+  font-weight: 400;
 }
 
 .settings-notice-heading a {
@@ -385,7 +385,7 @@
 .settings-crates h4 {
   margin-top: 8px;
   color: var(--v2-text-text-base);
-  font-weight: 540;
+  font-weight: 500;
 }
 
 .settings-crate-list {
@@ -423,7 +423,7 @@
 
 .settings-crate-heading strong {
   color: var(--v2-text-text-base);
-  font-weight: 540;
+  font-weight: 500;
 }
 
 .settings-crate p {
@@ -528,7 +528,7 @@
 
 .settings-tab-title {
   font-size: 17px;
-  font-weight: 640;
+  font-weight: 500;
   line-height: var(--line-height-base);
   color: var(--v2-text-text-base);
 }
@@ -566,7 +566,7 @@
 .settings-server-switcher-label {
   flex-shrink: 0;
   color: var(--v2-text-text-muted);
-  font-weight: 440;
+  font-weight: 400;
 }
 
 .settings-server-switcher-name {
@@ -621,7 +621,7 @@
 .settings-server-unavailable-title {
   color: var(--v2-text-text-base);
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
 }
 
@@ -671,7 +671,7 @@
 .settings-section-title {
   padding: 0;
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
@@ -731,7 +731,7 @@
 [data-slot="settings-row-title"] {
   font-style: normal;
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
   color: var(--v2-text-text-base);
@@ -741,7 +741,7 @@
 [data-slot="settings-row-description"] {
   margin-block: -3.5px;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 20px;
   color: var(--v2-text-text-muted);
 }
@@ -965,7 +965,7 @@
   background: transparent;
   color: var(--v2-text-text-muted);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   cursor: pointer;
 }
@@ -1011,7 +1011,7 @@
   background: transparent;
   color: var(--v2-text-text-base);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   text-align: start;
   cursor: pointer;
@@ -1098,7 +1098,7 @@
 
 .settings-provider-name {
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
@@ -1106,7 +1106,7 @@
 .settings-provider-description {
   margin: 0;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 20px;
   color: var(--v2-text-text-muted);
 }
@@ -1114,7 +1114,7 @@
 .settings-provider-empty {
   padding-block: var(--settings-list-row-padding, 20px);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);
 }
@@ -1122,7 +1122,7 @@
 .settings-provider-env-hint {
   padding-inline-end: 12px;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);
   opacity: 0;
@@ -1155,7 +1155,7 @@
 .settings-provider-account-input {
   max-width: min(240px, 45%);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 20px;
   color: var(--v2-text-text-base);
 }
@@ -1189,7 +1189,7 @@
   border: 0;
   background: transparent;
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-accent);
   cursor: pointer;
@@ -1402,7 +1402,7 @@
 
 .settings-models-group-title {
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
 }
 
@@ -1485,7 +1485,7 @@
   min-width: 0;
   overflow: hidden;
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1588,7 +1588,7 @@
   min-width: 0;
   overflow: hidden;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1602,7 +1602,7 @@
   gap: 4px;
   padding-block: 48px;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);
   text-align: center;
@@ -1637,7 +1637,7 @@
 }
 
 .settings-shortcuts [data-component="settings-list"] > div > span {
-  font-weight: 440;
+  font-weight: 400;
   font-size: 15px;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
@@ -1692,14 +1692,14 @@
 
 .settings-servers-name {
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
 
 .settings-servers-meta {
   font-size: 12px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 1;
   color: var(--v2-text-text-muted);
 }
@@ -1857,7 +1857,7 @@
   color: var(--v2-text-text-base);
   font-family: inherit;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
   text-overflow: ellipsis;
@@ -1869,12 +1869,12 @@
 
 .settings-workspaces-path-name {
   color: var(--v2-text-text-base);
-  font-weight: 530;
+  font-weight: 500;
 }
 
 .settings-workspaces-meta {
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-faint);
 }
@@ -1887,7 +1887,7 @@
 .settings-workspaces-more {
   flex-shrink: 0;
   font-size: 12px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 1;
   color: var(--v2-text-text-faint);
 }
@@ -1915,7 +1915,7 @@
   padding-block: 10px;
   padding-inline: 12px 16px;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 18px;
   color: var(--v2-text-text-base);
 }
@@ -1945,14 +1945,14 @@
   align-items: flex-start;
   gap: 4px;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-muted);
 }
 
 .settings-workspaces-empty-title {
   color: var(--v2-text-text-base);
-  font-weight: 530;
+  font-weight: 500;
 }
 
 @media (max-width: 639px) {
@@ -2059,14 +2059,14 @@
 
 .settings-server-dialog-label {
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   color: var(--v2-text-text-base);
 }
 
 .settings-server-dialog-error {
   font-size: 12px;
-  font-weight: 440;
+  font-weight: 400;
   /* Pairing errors are full sentences that wrap. */
   line-height: var(--line-height-compact);
   color: var(--v2-state-fg-danger);
@@ -2129,7 +2129,7 @@
   flex-shrink: 0;
   justify-content: flex-end;
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
 }
 
@@ -2163,7 +2163,7 @@
   margin-inline-start: -5px;
   padding-inline: 5px;
   font-size: 12px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: 18px;
   letter-spacing: 0.05px;
 }
@@ -2178,7 +2178,7 @@
 
 .settings-extension-name {
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
 }
 

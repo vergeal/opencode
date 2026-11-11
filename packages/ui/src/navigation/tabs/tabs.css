@@ -304,7 +304,7 @@
     [data-slot="terminal-tab-title"] {
       font-family: var(--font-family-sans);
       font-style: normal;
-      font-weight: 440;
+      font-weight: 400;
       font-size: 15px;
       line-height: 18px;
       letter-spacing: -0.04px;
@@ -526,7 +526,7 @@
   [data-slot="tabs-trigger"] {
     font-family: var(--font-family-sans);
     font-style: normal;
-    font-weight: 440;
+    font-weight: 400;
     font-size: 15px;
     line-height: 18px;
     letter-spacing: -0.04px;

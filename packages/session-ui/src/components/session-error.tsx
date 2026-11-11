@@ -16,7 +16,7 @@ export function SessionErrorMessage(props: { message: string }) {
 
   return (
     <>
-      <Show when={content().title}>{(title) => <strong class="font-[530]">{title()}</strong>}</Show>
+      <Show when={content().title}>{(title) => <strong class="font-medium">{title()}</strong>}</Show>
       {content().detail}
     </>
   )

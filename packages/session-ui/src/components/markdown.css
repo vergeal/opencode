@@ -79,7 +79,7 @@
   h1 {
     font-size: 17px;
     color: var(--v2-text-text-base);
-    font-weight: 600;
+    font-weight: 500;
     margin-top: 28px;
     margin-bottom: 12px;
     line-height: var(--line-height-large);
@@ -88,7 +88,7 @@
   h2 {
     font-size: 17px;
     color: var(--v2-text-text-base);
-    font-weight: 600;
+    font-weight: 500;
     margin-top: 24px;
     margin-bottom: 10px;
     line-height: var(--line-height-large);
@@ -97,7 +97,7 @@
   h3 {
     font-size: 16px;
     color: var(--v2-text-text-base);
-    font-weight: var(--font-weight-bold);
+    font-weight: 500;
     margin-top: 20px;
     margin-bottom: 8px;
     line-height: var(--line-height-large);
@@ -120,11 +120,11 @@
     margin-top: 0;
   }
 
-  /* Emphasis & Strong: Neutral strong color */
+  /* Emphasis & Strong: Neutral strong color. This is the one place bold is warranted. */
   strong,
   b {
     color: var(--v2-text-text-base);
-    font-weight: var(--font-weight-bold);
+    font-weight: 600;
   }
 
   /* Paragraphs */
@@ -427,7 +427,7 @@
     color: var(--v2-text-text-base);
     font-size: 15px;
     font-variant-numeric: tabular-nums;
-    font-weight: 440;
+    font-weight: 400;
     line-height: var(--line-height-compact);
     letter-spacing: -0.04px;
   }
@@ -519,7 +519,7 @@
     color: var(--v2-text-text-base);
     user-select: none;
     font-size: 12px;
-    font-weight: 530;
+    font-weight: 500;
     line-height: 14px;
     letter-spacing: 0.05px;
     font-variant-numeric: tabular-nums;

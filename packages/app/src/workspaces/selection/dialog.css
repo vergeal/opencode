@@ -10,7 +10,7 @@
   overflow: hidden;
   color: var(--v2-text-text-muted);
   font-size: 12px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-tight);
   letter-spacing: 0.05px;
   text-overflow: ellipsis;
@@ -57,7 +57,7 @@
 .directory-picker-recent-label {
   color: var(--v2-text-text-base);
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
   user-select: none;
@@ -172,7 +172,7 @@
   min-width: 0;
   color: var(--v2-text-text-faint);
   font-size: 15px;
-  font-weight: 440;
+  font-weight: 400;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
   text-overflow: ellipsis;

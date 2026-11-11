@@ -79,7 +79,7 @@ export default function DialogThirdPartyNotices() {
                           </span>
                           <span>
                             <For each={crate.license.split(/([\s()]+)/)}>
-                              {(part) => (applied.has(part) ? <strong>{part}</strong> : part)}
+                              {(part) => (applied.has(part) ? <strong class="font-medium">{part}</strong> : part)}
                             </For>
                           </span>
                         </div>

@@ -75,7 +75,7 @@
   overflow: hidden;
   color: var(--v2-text-text-base);
   font-size: 15px;
-  font-weight: 530;
+  font-weight: 500;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;
   text-overflow: ellipsis;
