@@ -132,7 +132,11 @@
   border-left: 1px solid var(--color-divider);
 }
 
+/* The workbench floats between the window edges with rounded corners on both sides; the titlebar stays flush. */
 [data-slot="replica-shell"] {
+  margin: 0 3px 3px;
+  border-radius: var(--radius-panel);
+  overflow: hidden;
   display: grid;
   grid-template-columns:
     var(--primary-rail-width)
