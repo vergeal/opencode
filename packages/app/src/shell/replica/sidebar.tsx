@@ -1,11 +1,12 @@
-import { createMemo, For, Show } from "solid-js"
+import { createEffect, createMemo, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
+import { makeEventListener } from "@solid-primitives/event-listener"
 import { useNavigate } from "@solidjs/router"
+import { ActivityRing } from "@opencode/ui/activity-ring"
 import { Icon } from "@opencode/ui/icon"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
-import type { Project } from "@/runtime/server/types"
 import { useCommand } from "@/shell/commands/command"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { usePinnedSessions } from "@/session/pins"
@@ -13,20 +14,16 @@ import { sessionLabel } from "@/session/title"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 import { createSessionInbox, type InboxEntry, type InboxStatus } from "@/shell/titlebar/inbox-model"
+import { InboxNav } from "./sidebar-inbox"
+import { KnowledgeNav } from "./sidebar-knowledge"
+import { ScheduledNav } from "./sidebar-scheduled"
+import { HEADER, LIST, PRIMARY, ROW, SECTION } from "./sidebar-tokens"
 
-const SECTION = "mb-1 px-2 text-[13px] leading-5 font-medium text-[var(--color-text-secondary)]"
-
-const ROW =
-  "flex h-[29px] w-full items-center gap-2 rounded-[var(--radius-row)] px-2 text-start text-[14px] leading-5 text-[var(--color-text-primary)]"
-
-const LIST = "flex flex-col gap-[2px]"
-
-const STATUS_COLOR: Record<Exclude<InboxStatus, "ready">, string> = {
-  approval: "text-[var(--color-accent-orange)]",
-  input: "text-[var(--color-accent-orange)]",
-  working: "text-[var(--color-text-secondary)]",
-  failed: "text-[var(--v2-state-fg-danger)]",
-  done: "text-[var(--color-accent-blue)]",
+const DOT: Record<Exclude<InboxStatus, "ready" | "working">, string> = {
+  approval: "bg-[var(--v2-state-fg-warning)]",
+  input: "bg-[var(--v2-state-fg-warning)]",
+  failed: "bg-[var(--v2-state-fg-danger)]",
+  done: "bg-[var(--v2-state-fg-success)]",
 }
 
 const STATUS_LABEL = {
@@ -40,34 +37,203 @@ const STATUS_LABEL = {
 /** The run state at the end of a conversation row: a ring while working, one dot once the result lands. */
 function StatusMark(props: { status: InboxStatus }) {
   const language = useLanguage()
-  const status = () => props.status
 
   const label = () => {
-    const value = status()
+    const value = props.status
 
-    return value === "ready" ? undefined : STATUS_LABEL[value]
-  }
+    if (value === "ready") return
 
-  const color = () => {
-    const value = status()
-
-    return value === "ready" ? undefined : STATUS_COLOR[value]
+    return STATUS_LABEL[value]
   }
 
   return (
     <Show when={label()}>
       {(key) => (
-        <span class={`ms-auto shrink-0 text-[11px] leading-4 ${color() ?? ""}`}>{language.t(key())}</span>
+        <span class="ms-auto flex shrink-0 items-center" title={language.t(key())}>
+          <Show
+            when={props.status === "working"}
+            fallback={
+              <span
+                aria-hidden="true"
+                class={`size-[6px] shrink-0 rounded-full ${DOT[props.status as Exclude<InboxStatus, "ready" | "working">]}`}
+              />
+            }
+          >
+            <ActivityRing class="size-3.5 shrink-0 text-[var(--color-icon-secondary)]" />
+          </Show>
+          <span class="sr-only">{language.t(key())}</span>
+        </span>
       )}
     </Show>
   )
 }
 
-/**
- * The 300px navigation column. Conversation-first: pinned conversations, then recent ones, each row carrying
- * its project's icon. Rows sit 2px apart so a selected background never reads as one continuous block.
- */
+/** The navigation column of the workbench: each destination owns the list that leads into its workspace. */
 export function ReplicaSidebar() {
+  const layout = useLayout()
+
+  return (
+    <aside data-slot="replica-sidebar" data-ui="navigation-sidebar" class="flex min-h-0 flex-col">
+      <Switch>
+        <Match when={layout.route().type === "inbox"}>
+          <InboxNav />
+        </Match>
+        <Match when={layout.route().type === "scheduled"}>
+          <ScheduledNav />
+        </Match>
+        <Match when={layout.route().type === "knowledge"}>
+          <KnowledgeNav />
+        </Match>
+        <Match when={true}>
+          <ConversationNav />
+        </Match>
+      </Switch>
+    </aside>
+  )
+}
+
+/**
+ * The home destination: pinned conversations, then recent ones, each row carrying its project's icon. Rows sit
+ * 2px apart so a selected background never reads as one continuous block.
+ */
+/** One session row: click opens it, double-click on the title renames it in place. */
+function SessionRow(props: { entry: InboxEntry; active: boolean; onOpen: (entry: InboxEntry) => void }) {
+  const [renaming, setRenaming] = createSignal(false)
+  let label!: HTMLSpanElement
+
+  const project = () => props.entry.ctx.projects.forSession(props.entry.session)
+
+  createEffect(() => {
+    const value = sessionLabel(props.entry.session)
+
+    if (!label || renaming()) return
+    label.textContent = value
+  })
+
+  const beginRename = (event: MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (renaming()) return
+    label.textContent = sessionLabel(props.entry.session)
+    setRenaming(true)
+
+    requestAnimationFrame(() => {
+      label.focus()
+      const range = document.createRange()
+      range.selectNodeContents(label)
+      const selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+    })
+  }
+
+  const commit = async (save: boolean) => {
+    if (!renaming()) return
+
+    const original = sessionLabel(props.entry.session)
+    const next = (label.textContent ?? "").trim()
+    setRenaming(false)
+    label.textContent = original
+
+    if (!save || !next || next === original) return
+    const ctx = props.entry.ctx
+    const id = props.entry.session.id
+
+    await ctx.sdk.api.session
+      .update({ sessionID: id, title: next })
+      .then(() => {
+        ctx.data.session.remember({ ...(ctx.data.session.get(id) ?? props.entry.session), title: next })
+        // A rename advances time.updated server-side, so re-read the canonical record.
+        ctx.data.session.invalidate(id)
+        void ctx.data.session.sync(id).catch(() => undefined)
+      })
+      .catch(() => undefined)
+  }
+
+  createEffect(() => {
+    if (!renaming()) return
+
+    const cleanup = makeEventListener(
+      document,
+      "pointerdown",
+      (event) => {
+        const target = event.target
+
+        if (!(target instanceof Node)) return
+        if (label.contains(target)) return
+        void commit(true)
+      },
+      { capture: true },
+    )
+
+    onCleanup(cleanup)
+  })
+
+  return (
+    <div
+      data-slot="replica-row"
+      data-ui="sidebar-row"
+      data-state={props.active ? "pressed" : undefined}
+      data-renaming={renaming() ? "" : undefined}
+      role="button"
+      tabindex={renaming() ? undefined : 0}
+      class={`${ROW} outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]`}
+      onClick={() => {
+        if (renaming()) return
+        props.onOpen(props.entry)
+      }}
+      onKeyDown={(event) => {
+        if (renaming() || event.key !== "Enter") return
+        event.preventDefault()
+        props.onOpen(props.entry)
+      }}
+    >
+      <Show
+        when={project()}
+        fallback={<Icon name="folder" class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />}
+      >
+        {(project) => <ProjectIcon project={project()} class="size-4 shrink-0" />}
+      </Show>
+      <span
+        ref={label}
+        data-slot="replica-row-title"
+        dir="auto"
+        class="min-w-0 flex-1 outline-none"
+        classList={{ truncate: !renaming(), "cursor-text select-text": renaming() }}
+        contenteditable={renaming() ? "plaintext-only" : undefined}
+        onDblClick={beginRename}
+        onKeyDown={(event) => {
+          if (!renaming()) return
+          event.stopPropagation()
+
+          if (event.key === "Enter") {
+            event.preventDefault()
+            void commit(true)
+
+            return
+          }
+
+          if (event.key !== "Escape") return
+          event.preventDefault()
+          void commit(false)
+        }}
+        onBlur={() => void commit(true)}
+        onPointerDown={(event) => {
+          if (renaming()) event.stopPropagation()
+        }}
+        onClick={(event) => {
+          if (!renaming()) return
+          event.preventDefault()
+          event.stopPropagation()
+        }}
+      />
+      <StatusMark status={props.entry.status} />
+    </div>
+  )
+}
+
+function ConversationNav() {
   const language = useLanguage()
   const navigate = useNavigate()
   const command = useCommand()
@@ -117,8 +283,6 @@ export function ReplicaSidebar() {
     return !!tab && tab.type === "session" && tab.server === entry.server && tab.sessionId === entry.session.id
   }
 
-  const project = (entry: InboxEntry): Project | undefined => entry.ctx.projects.forSession(entry.session)
-
   const newChat = () => {
     const conn = global.servers.list()[0]
 
@@ -140,12 +304,8 @@ export function ReplicaSidebar() {
   }
 
   return (
-    <aside data-slot="replica-sidebar" data-ui="navigation-sidebar" class="flex min-h-0 flex-col">
-      <div
-        data-slot="replica-sidebar-header"
-        data-ui="sidebar-header"
-        class="flex h-[49px] shrink-0 items-center gap-1 ps-[14px] pe-2"
-      >
+    <>
+      <div data-slot="replica-sidebar-header" data-ui="sidebar-header" class={HEADER}>
         <button
           type="button"
           data-replica-control
@@ -173,27 +333,10 @@ export function ReplicaSidebar() {
               )}
             </button>
           </Tooltip>
-          <Tooltip placement="bottom" value={language.t("command.session.search")}>
-            <button
-              type="button"
-              data-replica-control
-              aria-label={language.t("command.session.search")}
-              class="flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)]"
-              onClick={() => command.trigger("sessions.search")}
-            >
-              <Icon name="magnifying-glass" />
-            </button>
-          </Tooltip>
         </div>
       </div>
 
-      <button
-        type="button"
-        data-replica-control
-        data-slot="replica-new-chat"
-        class="mx-2 flex h-[37px] shrink-0 items-center gap-2 rounded-[var(--radius-row)] px-2 text-[14px] leading-5 text-[var(--color-text-primary)] hover:bg-[var(--color-hover)]"
-        onClick={newChat}
-      >
+      <button type="button" data-replica-control data-slot="replica-new-chat" class={PRIMARY} onClick={newChat}>
         <Icon name="edit" class="shrink-0 text-[var(--color-icon-secondary)]" />
         <span class="min-w-0 truncate">{language.t("replica.newChat")}</span>
       </button>
@@ -204,57 +347,23 @@ export function ReplicaSidebar() {
             <h2 class={SECTION}>{language.t("replica.section.pinned")}</h2>
             <div class={LIST}>
               <For each={pinned()}>
-                {(entry) => (
-                  <button
-                    type="button"
-                    data-slot="replica-row"
-                    data-ui="sidebar-row"
-                    data-state={active(entry) ? "pressed" : undefined}
-                    class={ROW}
-                    onClick={() => open(entry)}
-                  >
-                    <Show
-                      when={project(entry)}
-                      fallback={<Icon name="folder" class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />}
-                    >
-                      {(project) => <ProjectIcon project={project()} class="size-4 shrink-0" />}
-                    </Show>
-                    <span class="min-w-0 flex-1 truncate">{sessionLabel(entry.session)}</span>
-                    <StatusMark status={entry.status} />
-                  </button>
-                )}
+                {(entry) => <SessionRow entry={entry} active={active(entry)} onOpen={open} />}
               </For>
             </div>
           </section>
         )}
 
-        <section class="flex flex-col">
-          <h2 class={SECTION}>{language.t("replica.section.recent")}</h2>
-          <div class={LIST}>
-            <For each={recent()}>
-              {(entry) => (
-                <button
-                  type="button"
-                  data-slot="replica-row"
-                  data-ui="sidebar-row"
-                  data-state={active(entry) ? "pressed" : undefined}
-                  class={ROW}
-                  onClick={() => open(entry)}
-                >
-                  <Show
-                    when={project(entry)}
-                    fallback={<Icon name="folder" class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />}
-                  >
-                    {(project) => <ProjectIcon project={project()} class="size-4 shrink-0" />}
-                  </Show>
-                  <span class="min-w-0 flex-1 truncate">{sessionLabel(entry.session)}</span>
-                  <StatusMark status={entry.status} />
-                </button>
-              )}
-            </For>
-          </div>
-        </section>
+        <Show when={recent().length > 0}>
+          <section class="flex flex-col">
+            <h2 class={SECTION}>{language.t("replica.section.recent")}</h2>
+            <div class={LIST}>
+              <For each={recent()}>
+                {(entry) => <SessionRow entry={entry} active={active(entry)} onOpen={open} />}
+              </For>
+            </div>
+          </section>
+        </Show>
       </div>
-    </aside>
+    </>
   )
 }

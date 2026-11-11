@@ -10,7 +10,7 @@
   --sidebar-header-padding-inline: 14px;
   --sidebar-list-gutter-inline: 8px;
   --sidebar-row-padding-inline: 8px;
-  --sidebar-new-chat-height: 37px;
+  --sidebar-new-chat-height: 31px;
   --sidebar-section-height: 25px;
   --sidebar-row-height: 29px;
   --sidebar-project-row-height: 30px;
@@ -18,6 +18,7 @@
   --sidebar-section-gap: 8px;
 
   --conversation-content-max-width: 650px;
+  --workspace-content-max-width: 820px;
   --composer-max-width: 650px;
   --composer-height: 88px;
   --composer-bottom-gap: 14px;
@@ -32,13 +33,15 @@
   --font-size-body: 14px;
   --font-size-secondary: 12px;
 
-  --color-titlebar: #f4f4f4;
-  --color-rail: #f3f3f3;
-  --color-sidebar: #fbfbfb;
+  /* The window backdrop, titlebar and navigation column share one soft grey with a hint of translucency. */
+  --color-titlebar: rgb(246 246 246 / 80%);
+  --color-rail: rgb(246 246 246 / 80%);
+  --color-sidebar: rgb(252 252 252);
   --color-main: #ffffff;
   --color-composer: #ffffff;
+  --replica-composer-fill: #ffffff;
   --color-hover: #f3f3f3;
-  --color-selected: #eeeeee;
+  --color-selected: #e2e2e2;
   --color-muted-surface: #f7f7f7;
   --color-border: #e8e8e8;
   --color-divider: #eeeeee;
@@ -63,7 +66,8 @@
   --radius-composer: 19px;
   --radius-dialog: 18px;
 
-  --shadow-composer: 0 3px 16px rgba(0, 0, 0, 0.045);
+  /* The dock leaves 14px under the card; a taller blur would be clipped by the work area's bottom edge. */
+  --shadow-composer: 0 2px 12px rgba(0, 0, 0, 0.05);
   --shadow-popover: 0 6px 24px rgba(0, 0, 0, 0.1);
   --shadow-dialog: 0 16px 44px rgba(0, 0, 0, 0.15);
 
@@ -82,14 +86,17 @@
   font-optical-sizing: auto;
 }
 
+/* Dark mode steps the three surfaces down: the window frame (29), the navigation column (21), the work area (17). */
 [data-color-scheme="dark"] [data-replica] {
-  --color-titlebar: var(--v2-background-bg-deep);
-  --color-rail: var(--v2-background-bg-deep);
-  --color-sidebar: var(--v2-background-bg-base);
-  --color-main: var(--v2-background-bg-base);
+  --color-titlebar: rgb(29 29 29);
+  --color-rail: rgb(29 29 29);
+  --color-sidebar: rgb(21 21 21);
+  --color-main: rgb(17 17 17);
   --color-composer: var(--v2-background-bg-layer-01);
-  --color-hover: var(--v2-overlay-simple-overlay-hover);
-  --color-selected: var(--v2-overlay-simple-overlay-pressed);
+  --replica-composer-fill: var(--v2-background-bg-layer-01);
+  --color-hover: rgb(255 255 255 / 7%);
+  /* Pressed rows need a clear step above the 21-value navigation surface, not an 8% wash. */
+  --color-selected: rgb(255 255 255 / 14%);
   --color-border: var(--v2-border-border-muted);
   --color-divider: var(--v2-border-border-muted);
   --color-text-primary: var(--v2-text-text-base);
@@ -110,7 +117,9 @@
   height: var(--titlebar-height);
   min-height: var(--titlebar-height);
   background: var(--color-titlebar);
-  border-bottom: 1px solid var(--color-divider);
+  /* The window bar has no rule against the content below; only the surface color separates them. */
+  /* The window bar follows the appearance font instead of the replica's system stack. */
+  font-family: var(--font-family-sans, var(--font-family-ui));
   -webkit-app-region: drag;
 }
 
@@ -129,7 +138,6 @@
   align-items: center;
   min-width: 0;
   padding-inline: 18px;
-  border-left: 1px solid var(--color-divider);
 }
 
 [data-slot="replica-shell"] {
@@ -209,12 +217,16 @@
   white-space: nowrap;
 }
 
-[data-slot="replica-sidebar"] [data-slot="replica-row"][data-state="pressed"],
 [data-slot="replica-sidebar"] [data-slot="replica-row"]:hover {
+  background: var(--color-hover);
+}
+
+[data-slot="replica-sidebar"] [data-slot="replica-row"][data-state="pressed"],
+[data-slot="replica-sidebar"] [data-slot="replica-row"][data-state="pressed"]:hover {
   background: var(--color-selected);
 }
 
-/* The v6 window bar carries the conversation title; the timeline's duplicate title row is not rendered. */
+/* The window bar carries the conversation name and the context usage; the timeline's title row is not rendered. */
 [data-replica] [data-session-title],
 [data-replica] .session-header-fade {
   display: none;
@@ -233,9 +245,11 @@
   font-family: var(--font-family-sans, var(--font-family-ui));
 }
 
-/* v6 collapses the conversation column and the composer to the same 650px measure. */
-[data-replica] {
-  --container-session: 674px;
+/* Workspace content keeps a readable measure instead of stretching across the whole panel. */
+[data-slot="replica-main"] [data-ui="workspace-content"] {
+  width: 100%;
+  max-width: var(--workspace-content-max-width);
+  margin-inline: auto;
 }
 
 /* The conversation scroll area owns its own scrollbar; the window never scrolls. */
@@ -254,7 +268,7 @@
 }
 
 [data-slot="replica-main"] [data-component="session-composer-dock"] > div {
-  max-width: 684px;
+  max-width: var(--container-session, 684px);
 }
 
 [data-slot="replica-main"] [data-component="session-composer-dock"] {
@@ -270,11 +284,39 @@
   pointer-events: none;
 }
 
-[data-replica] [data-ui="composer"] {
-  background: var(--color-composer);
+[data-replica] [data-ui="composer"],
+[data-replica] [data-slot="replica-compose-card"] {
+  /* The input card is one flat fill: the editor's edge fades and toolbar inherit it instead of a grey layer. */
+  --v2-background-bg-layer-01: var(--replica-composer-fill);
+  --v2-background-bg-base: var(--replica-composer-fill);
+  background: var(--replica-composer-fill);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-composer);
   box-shadow: var(--shadow-composer);
+}
+
+/* The shell owns the card edge: the border, radius and shadow are drawn once on the wrapper, so the shared
+   composer form keeps no edge of its own and its 0.5px inset hairline cannot drift inside the rounded corner. */
+[data-replica] [data-component="composer"],
+[data-replica] [data-component="composer"]:has([data-component="composer-editor"]:focus) {
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The docking underlay sits behind the same card, so it takes the card's radius and fill instead of the shared
+   12px rounded surface that peeked out at the corners. */
+[data-replica] [data-slot="composer-morph"][data-dock-border-underlay],
+[data-color-scheme="dark"] [data-replica] [data-slot="composer-morph"][data-dock-border-underlay] {
+  border-radius: var(--radius-composer);
+  background: var(--replica-composer-fill);
+}
+
+/* The model chip is a quiet label, not a form control: no blue focus ring when it opens its menu. */
+[data-replica] [data-action="composer-model"]:is(:focus-visible, [data-state="focus"]),
+[data-replica] [data-slot="composer-model-row"]:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* The v6 idle composer is a single 88px card: the editor keeps the full width and the toolbar sits under it. */
@@ -286,7 +328,7 @@
   position: absolute;
   inset-inline-start: 54.5%;
   inset-block-start: 64%;
-  width: min(650px, calc(100% - 48px));
+  width: min(var(--container-session, 650px), calc(100% - 48px));
   transform: translate(-50%, -50%);
 }
 

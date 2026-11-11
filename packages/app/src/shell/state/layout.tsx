@@ -64,6 +64,15 @@ export type LayoutRoute =
   | { type: "draft"; draftID: string }
   | { type: "session"; sessionId: string; server: ServerConnection.Key }
 
+/** The destination navigation keeps its filter and selection while the user moves between destinations. */
+export const INBOX_FILTERS = ["all", "pending", "failed", "done"] as const
+
+export const SCHEDULED_FILTERS = ["all", "active", "paused", "failed"] as const
+
+export type InboxFilter = (typeof INBOX_FILTERS)[number]
+
+export type ScheduledFilter = (typeof SCHEDULED_FILTERS)[number]
+
 export const currentRoute = (pathname: string, search: string): LayoutRoute => {
   const parts = pathname.split("/").filter(Boolean)
 
@@ -266,6 +275,18 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       sessionTabTarget: {},
     })
 
+    // Destination navigation state: which destination filter is active and which row is open. It is not persisted,
+    // so a reload starts each destination at its default while moving between destinations keeps the context.
+    const [destination, setDestination] = createStore<{
+      inbox: { filter: InboxFilter; selected: string | undefined }
+      scheduled: { filter: ScheduledFilter; selected: string | undefined }
+      knowledge: { library: string | undefined }
+    }>({
+      inbox: { filter: "all", selected: undefined },
+      scheduled: { filter: "all", selected: undefined },
+      knowledge: { library: undefined },
+    })
+
     /** Writes a session's strip and selection, carrying pane placement over from the stored strip. */
     const writeTabs = (session: string, next: SessionTabs, preview?: { value: string | undefined }) =>
       untrack(() => {
@@ -448,6 +469,35 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
     return {
       route: useCurrentRoute(),
       ready,
+      /** Per-destination navigation state, shared by the sidebar and the destination page. */
+      destination: {
+        inbox: {
+          filter: createMemo(() => destination.inbox.filter),
+          setFilter(filter: InboxFilter) {
+            setDestination("inbox", "filter", filter)
+          },
+          selected: createMemo(() => destination.inbox.selected),
+          setSelected(key: string | undefined) {
+            setDestination("inbox", "selected", key)
+          },
+        },
+        scheduled: {
+          filter: createMemo(() => destination.scheduled.filter),
+          setFilter(filter: ScheduledFilter) {
+            setDestination("scheduled", "filter", filter)
+          },
+          selected: createMemo(() => destination.scheduled.selected),
+          setSelected(id: string | undefined) {
+            setDestination("scheduled", "selected", id)
+          },
+        },
+        knowledge: {
+          library: createMemo(() => destination.knowledge.library),
+          setLibrary(id: string | undefined) {
+            setDestination("knowledge", "library", id)
+          },
+        },
+      },
       home: {
         selection: createMemo(() => store.home.selection),
         setSelection(selection: HomeProjectSelection) {

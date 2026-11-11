@@ -7,17 +7,24 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { useCommand } from "@/shell/commands/command"
 import { useLayout } from "@/shell/state/layout"
 
-type RailItem = { id: "home" | "history" | "explore" | "more"; icon: IconName; labelKey: string; path?: string }
+type RailItem = {
+  id: "home" | "inbox" | "scheduled" | "explore" | "more"
+  icon: IconName
+  iconActive?: IconName
+  labelKey: string
+  path?: string
+}
 
 const ITEMS: readonly RailItem[] = [
-  { id: "home", icon: "rail-home", labelKey: "replica.rail.home", path: "/" },
-  { id: "history", icon: "rail-history", labelKey: "replica.rail.history", path: "/inbox" },
-  { id: "explore", icon: "rail-compass", labelKey: "replica.rail.explore", path: "/knowledge" },
+  { id: "home", icon: "rail-home", iconActive: "rail-home-active", labelKey: "replica.rail.home", path: "/" },
+  { id: "inbox", icon: "rail-inbox", iconActive: "rail-inbox-active", labelKey: "replica.rail.inbox", path: "/inbox" },
+  { id: "scheduled", icon: "rail-history", iconActive: "rail-history-active", labelKey: "replica.rail.scheduled", path: "/scheduled" },
+  { id: "explore", icon: "rail-compass", iconActive: "rail-compass-active", labelKey: "replica.rail.explore", path: "/knowledge" },
   { id: "more", icon: "rail-more", labelKey: "replica.rail.more" },
 ]
 
 const BUTTON =
-  "flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)] data-[state=pressed]:bg-[var(--color-selected)] data-[state=pressed]:text-[var(--color-icon-primary)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]"
+  "flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-icon-secondary)] hover:bg-[var(--color-hover)] hover:text-[var(--color-icon-primary)] data-[state=pressed]:bg-[var(--color-selected)] data-[state=pressed]:text-black focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]"
 
 /** The 46px first-level rail: four navigation entries, with updates and settings pinned to the bottom. */
 export function ReplicaRail() {
@@ -31,7 +38,9 @@ export function ReplicaRail() {
 
     if (id === "home") return type === "home" || type === "session" || type === "draft"
 
-    if (id === "history") return type === "inbox"
+    if (id === "inbox") return type === "inbox"
+
+    if (id === "scheduled") return type === "scheduled"
 
     if (id === "explore") return type === "knowledge"
 
@@ -53,7 +62,7 @@ export function ReplicaRail() {
                 class={BUTTON}
                 onClick={() => (item.path ? navigate(item.path) : command.trigger("command.palette"))}
               >
-                <Icon name={item.icon} />
+                <Icon name={active(item.id) && item.iconActive ? item.iconActive : item.icon} />
               </button>
             </Tooltip>
           )}
@@ -76,6 +85,8 @@ export function ReplicaRail() {
           <button
             type="button"
             data-replica-control
+            data-state={layout.route().type === "settings" ? "pressed" : undefined}
+            aria-pressed={layout.route().type === "settings"}
             aria-label={language.t("replica.rail.settings")}
             class={BUTTON}
             onClick={() => navigate("/settings")}

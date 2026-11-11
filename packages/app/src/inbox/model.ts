@@ -272,8 +272,8 @@ export function createInbox() {
   }))
 
   // Items this client finished. The source drops a request once it is answered, so the row would otherwise vanish
-  // instead of moving to Done.
-  const [resolved, setResolved] = createStore<Record<string, true>>({})
+  // instead of moving to Done. Keeping the item itself, not only its key, lets the row survive that refetch.
+  const [resolved, setResolved] = createStore<Record<string, InboxItem>>({})
   const [state, setState] = persisted(Persist.global("inbox.seen"), Seen, { seen: {} })
 
   const sessionItems = createMemo(() =>
@@ -340,20 +340,38 @@ export function createInbox() {
     ),
   )
 
-  const items = createMemo(() =>
-    [...sessionItems(), ...scheduleItems(), ...knowledgeItems()]
+  const items = createMemo(() => {
+    const live = [...sessionItems(), ...scheduleItems(), ...knowledgeItems()]
+    const liveKeys = new Set(live.map((item) => item.key))
+    const answered = Object.values(resolved).filter((item) => !liveKeys.has(item.key))
+
+    return [...live, ...answered]
       .map((item) => (resolved[item.key] ? { ...item, status: "done" as const } : item))
-      .toSorted((a, b) => b.createdAt - a.createdAt),
-  )
+      .toSorted((a, b) => b.createdAt - a.createdAt)
+  })
 
   /** The item is answered or handed off here, so keep it visible as Done until the next launch. */
-  const resolve = (item: InboxItem) => setResolved(item.key, true)
+  const resolve = (item: InboxItem) => setResolved(item.key, { ...item })
 
   const unread = (item: InboxItem) => !state.seen[item.key]
 
   const markSeen = (item: InboxItem) => {
     if (state.seen[item.key]) return
     setState("seen", item.key, Date.now())
+  }
+
+  /** Marks a whole filtered list read at once; the sidebar's "mark all read" action uses it. */
+  const markAllSeen = (target: InboxItem[]) => {
+    const unreadItems = target.filter((item) => !state.seen[item.key])
+
+    if (unreadItems.length === 0) return
+    setState("seen", (seen) => {
+      const next = { ...seen }
+
+      for (const item of unreadItems) next[item.key] = Date.now()
+
+      return next
+    })
   }
 
   // A request can belong to a child session, so match the root the item was mapped from.
@@ -428,6 +446,7 @@ export function createInbox() {
     count: (status: InboxStatus) => items().filter((item) => item.status === status).length,
     unread,
     markSeen,
+    markAllSeen,
     resolve,
     entry,
     openSession,

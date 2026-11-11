@@ -16,6 +16,9 @@ import { useNavigate } from "@solidjs/router"
 import { ResizeHandle } from "@opencode/ui/resize-handle"
 import { DestinationToggle } from "@/shell/titlebar/destination-toggle"
 import { createSessionInbox } from "@/shell/titlebar/inbox-model"
+import { InboxProvider } from "@/inbox/context"
+import { KnowledgeProvider } from "@/knowledge/context"
+import { ScheduledProvider } from "@/scheduled/context"
 import { ReplicaRail } from "./replica/rail"
 import { ReplicaSidebar } from "./replica/sidebar"
 import { ReplicaTitleBar } from "./replica/titlebar"
@@ -29,6 +32,18 @@ export const sidebarToggleCommand = { id: "sidebar.toggle", keybind: "mod+shift+
  * canvas. Pages keep their routes and data; the empty home route shows the new-conversation welcome.
  */
 export default function Layout(props: ParentProps) {
+  return (
+    <InboxProvider>
+      <ScheduledProvider>
+        <KnowledgeProvider>
+          <ReplicaLayer {...props} />
+        </KnowledgeProvider>
+      </ScheduledProvider>
+    </InboxProvider>
+  )
+}
+
+function ReplicaLayer(props: ParentProps) {
   const preferences = useSettings()
   const command = useCommand()
   const language = useLanguage()
@@ -46,12 +61,15 @@ export default function Layout(props: ParentProps) {
       .entries()
       .filter((entry) => entry.status === "approval" || entry.status === "input" || entry.status === "failed").length
 
-  // Untouched, the sidebar keeps the reference 21.4%; dragging pins an explicit pixel width.
+  // The v6 column is 300px until dragging pins an explicit width, so the resize handle starts from the width
+  // the sidebar is really laid out at instead of snapping to another value on the first move.
   const [sidebarWidth, setSidebarWidth] = createSignal<number>()
-  const sidebarSize = () => sidebarWidth() ?? Math.round(window.innerWidth * 0.214)
+  const sidebarSize = () => sidebarWidth() ?? 300
 
   const sidebarOpen = () => preferences.appearance.sidebarOpen()
   const toggleSidebar = () => preferences.appearance.setSidebarOpen(!sidebarOpen())
+  // Settings ships its own category column and search, so the navigation sidebar would duplicate it.
+  const showSidebar = () => !mobile() && sidebarOpen() && layout.route().type !== "settings"
   const welcome = () => layout.route().type === "home"
 
   command.register("sidebar", () => [
@@ -153,7 +171,7 @@ export default function Layout(props: ParentProps) {
         </Show>
 
         <div data-slot="replica-workbench">
-          <Show when={!mobile() && sidebarOpen()}>
+          <Show when={showSidebar()}>
             <div data-slot="replica-sidebar-slot" class="relative flex min-h-0 min-w-0">
               <ReplicaSidebar />
               <ResizeHandle
