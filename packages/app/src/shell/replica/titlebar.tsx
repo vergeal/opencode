@@ -7,8 +7,6 @@ import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { useGlobal } from "@/runtime/server/runtime"
-import { useCommand } from "@/shell/commands/command"
-import { goBackCommand, goForwardCommand } from "@/shell/titlebar/titlebar"
 import { useLayout } from "@/shell/state/layout"
 
 const BUTTON =
@@ -29,26 +27,10 @@ export function ReplicaTitleBar(props: {
   const platform = usePlatform()
   const layout = useLayout()
   const global = useGlobal()
-  const command = useCommand()
   const mac = () => platform.platform === "desktop" && platform.os === "macos"
 
   const back = () => window.history.back()
   const forward = () => window.history.forward()
-
-  command.register(() => [
-    {
-      ...goBackCommand,
-      title: language.t("common.goBack"),
-      category: language.t("command.category.view"),
-      onSelect: back,
-    },
-    {
-      ...goForwardCommand,
-      title: language.t("common.goForward"),
-      category: language.t("command.category.view"),
-      onSelect: forward,
-    },
-  ])
 
   const conversation = () => {
     const route = layout.route()
