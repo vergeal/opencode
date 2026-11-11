@@ -119,10 +119,17 @@ export default function Layout(props: ParentProps) {
     >
       <ReplicaTitleBar sidebarOpen={sidebarOpen()} onToggleSidebar={toggleSidebar} />
 
-      <div class="flex min-h-0 min-w-0 flex-1">
-        <Show when={sidebarOpen() && !mobile()}>
+      <div
+        data-slot="replica-shell-body"
+        data-sidebar={sidebarOpen() ? "open" : "closed"}
+        class="flex min-h-0 min-w-0 flex-1"
+        style={{ "--replica-dpr": String(window.devicePixelRatio || 1) }}
+      >
+        <Show when={!mobile()}>
           <ReplicaRail />
-          <ReplicaSidebar />
+          <Show when={sidebarOpen()}>
+            <ReplicaSidebar />
+          </Show>
         </Show>
 
         <main data-slot="replica-main" class="relative flex min-h-0 min-w-0 flex-1 flex-col">

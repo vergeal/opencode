@@ -1,5 +1,5 @@
-/* The replica workbench: token set and three-column frame from the design spec.
-   These tokens intentionally differ from --v2-*; the replica surface owns its own scale. */
+/* The replica workbench, v3: proportional three-column frame, five radius tiers, and the welcome anchor
+   measured from the reference screenshot (2000x926) rather than the earlier fixed-pixel guesses. */
 [data-replica] {
   --app-chrome: #f3f5f4;
   --rail-bg: #f0f2f1;
@@ -8,25 +8,41 @@
   --surface-muted: #f3f5f4;
   --surface-hover: #f1f3f2;
   --surface-selected: #edefef;
-  --border-subtle: #e9ecea;
+  --border-subtle: #e8ecea;
   --text-primary: #242625;
   --text-secondary: #727875;
   --text-tertiary: #aeb4b1;
-  --icon-primary: #242725;
+  --icon-primary: #303633;
   --icon-secondary: #858b87;
   --accent-warning: #f05b24;
   --status-blue: #65b5f5;
   --send-button-bg: #929695;
   --send-button-fg: #ffffff;
 
-  --app-chrome-height: 27px;
-  --primary-rail-width: 36px;
-  --sidebar-width: 239px;
+  /* A screenshot pixel height for the chrome; CSS pixels divide by the window's real DPR. */
+  --app-chrome-physical: 48px;
 
-  --replica-radius-xs: 4px;
-  --replica-radius-sm: 7px;
-  --replica-radius-md: 10px;
-  --replica-radius-lg: 14px;
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-window: 22px;
+  --radius-dialog: 18px;
+  --radius-panel: 16px;
+  --radius-card: 12px;
+  --radius-control: 10px;
+  --radius-row: 8px;
+  --radius-pill: 999px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
 
   font-family:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Hiragino Sans GB",
@@ -35,8 +51,6 @@
   background: var(--main-bg);
 }
 
-/* The design defines no dark palette. Keep the same three surfaces and text roles on the app's dark tokens so a
-   theme switch never leaves a white sheet with black text. */
 [data-color-scheme="dark"] [data-replica] {
   --app-chrome: var(--v2-background-bg-deep);
   --rail-bg: var(--v2-background-bg-deep);
@@ -56,7 +70,7 @@
 }
 
 [data-slot="replica-titlebar"] {
-  height: var(--app-chrome-height);
+  height: calc(var(--app-chrome-physical) / var(--replica-dpr, 1));
   background: var(--app-chrome);
   -webkit-app-region: drag;
 }
@@ -65,16 +79,27 @@
   -webkit-app-region: no-drag;
 }
 
+/* The reference splits the window 3.2% / 21.4% / 75.4%. Keep the ratio, with floors so a narrow window
+   collapses the sidebar instead of squeezing it into an unusable strip. */
+[data-slot="replica-shell-body"] {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
 [data-slot="replica-rail"] {
-  width: var(--primary-rail-width);
+  flex: 0 0 3.2%;
+  min-width: 28px;
   background: var(--rail-bg);
   border-inline-end: 1px solid var(--border-subtle);
 }
 
 [data-slot="replica-sidebar"] {
-  width: var(--sidebar-width);
+  flex: 0 0 21.4%;
+  min-width: 180px;
   background: var(--sidebar-bg);
   border-inline-end: 1px solid var(--border-subtle);
+  overflow: hidden;
 }
 
 [data-slot="replica-main"] {
@@ -82,62 +107,45 @@
   min-width: 0;
 }
 
-/* Rows inside the sidebar come from the existing project/session tree. Point its v2 roles at the replica palette
-   so the reused tree reads with the replica's text and hover weights without restyling every row. */
-[data-slot="replica-sidebar"] {
-  --v2-text-text-base: var(--text-primary);
-  --v2-text-text-muted: var(--text-secondary);
-  --v2-text-text-faint: var(--text-secondary);
-  --v2-text-text-contrast: var(--text-primary);
-  --v2-icon-icon-base: var(--icon-primary);
-  --v2-icon-icon-muted: var(--icon-secondary);
-  --v2-background-bg-base: var(--sidebar-bg);
-  --v2-background-bg-deep: var(--sidebar-bg);
-  --v2-border-border-muted: var(--border-subtle);
-  --v2-border-border-focus: var(--icon-secondary);
-  --v2-overlay-simple-overlay-hover: var(--surface-hover);
-  --v2-overlay-simple-overlay-pressed: var(--surface-selected);
+/* Sidebar rows: 13px type, 8px radius only on hover/selection, never a card per row. */
+[data-slot="replica-row"] {
+  min-height: 26px;
+  border-radius: var(--radius-row);
 }
 
-/* The sidebar scrolls on its own; the workspace header stays put above it. */
-[data-slot="replica-sidebar-scroll"] {
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-subtle) transparent;
-}
-
-[data-slot="replica-rail"] button[data-state="pressed"] {
+[data-slot="replica-row"][data-state="pressed"] {
   background: var(--surface-selected);
-  color: var(--icon-primary);
 }
 
-[data-slot="replica-rail"] button:hover {
-  color: var(--icon-primary);
+[data-slot="replica-row"]:hover {
   background: var(--surface-hover);
 }
 
-[data-slot="replica-sidebar"] [data-titlebar-tab-action] {
-  border-radius: var(--replica-radius-sm);
+[data-slot="replica-row"]:is([data-state="pressed"], :hover) [data-slot="replica-row-action"] {
+  opacity: 1;
 }
 
-[data-slot="replica-sidebar"] [data-titlebar-tab-action][data-state="pressed"] {
-  background: var(--surface-selected);
+[data-slot="replica-row-action"] {
+  opacity: 0;
 }
 
-/* Welcome anchor: the center axis sits 63% into the main column, not its geometric center. */
+/* Welcome group: 54.5% into the main column and 64% down, as measured on the reference. */
 [data-slot="replica-welcome"] {
   position: absolute;
-  inset-inline-start: 63%;
-  inset-block-start: 58%;
-  width: min(440px, calc(100% - 32px));
+  inset-inline-start: 54.5%;
+  inset-block-start: 64%;
+  /* 52.5% of the main column matches the 790-physical-pixel card at both DPR 1 and DPR 2; a fixed
+     400px ceiling would only hold on a 2x display. */
+  width: 52.5%;
   transform: translate(-50%, -50%);
 }
 
 [data-slot="replica-compose-card"] {
-  height: 68px;
+  height: 62px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--replica-radius-lg);
+  border-radius: var(--radius-xl);
   background: #ffffff;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.035);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.025);
 }
 
 [data-color-scheme="dark"] [data-slot="replica-compose-card"] {
@@ -146,9 +154,20 @@
 }
 
 [data-slot="replica-utility-bar"] {
-  height: 25px;
-  border-radius: var(--replica-radius-md);
+  height: 26px;
+  border-radius: var(--radius-lg);
   background: var(--surface-muted);
+}
+
+[data-slot="replica-sidebar-scroll"] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-subtle) transparent;
+}
+
+/* Floating surfaces outside the three-column frame follow the v3 radius tiers. */
+[data-replica] [data-slot="dialog-content"],
+[data-replica] [data-component="dialog"] {
+  border-radius: var(--radius-dialog);
 }
 
 @media (max-width: 767px) {
@@ -159,5 +178,6 @@
 
   [data-slot="replica-welcome"] {
     inset-inline-start: 50%;
+    width: calc(100% - 32px);
   }
 }

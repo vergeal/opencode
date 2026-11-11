@@ -60,7 +60,7 @@ export function ReplicaWelcome() {
   return (
     <div class="relative min-h-0 flex-1">
       <div data-slot="replica-welcome" class="flex flex-col items-stretch">
-        <h1 class="mb-[18px] text-center text-[20px] leading-[26px] font-medium text-[var(--text-primary)]">
+        <h1 class="mb-[18px] text-center text-[21px] leading-[28px] font-medium text-[var(--text-primary)]">
           {language.t("replica.welcome.title")}
         </h1>
 

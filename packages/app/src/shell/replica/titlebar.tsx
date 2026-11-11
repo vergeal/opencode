@@ -20,7 +20,7 @@ export function ReplicaTitleBar(props: { sidebarOpen: boolean; onToggleSidebar: 
       class="relative flex shrink-0 items-center"
       style={{ "padding-inline-start": mac() ? "78px" : "8px" }}
     >
-      <div class="ms-auto flex items-center gap-0.5 pe-2" data-replica-control>
+      <div class="ms-auto flex items-center gap-0.5 pe-1.5" data-replica-control>
         <button
           type="button"
           class={BUTTON}
