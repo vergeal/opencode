@@ -1,5 +1,6 @@
 import { createMemo, For, Show } from "solid-js"
 import { useNavigate } from "@solidjs/router"
+import { ActivityRing } from "@opencode/ui/activity-ring"
 import { Icon } from "@opencode/ui/icon"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
@@ -12,7 +13,7 @@ import { usePinnedSessions } from "@/session/pins"
 import { sessionLabel } from "@/session/title"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
-import { createSessionInbox, type InboxEntry } from "@/shell/titlebar/inbox-model"
+import { createSessionInbox, type InboxEntry, type InboxStatus } from "@/shell/titlebar/inbox-model"
 
 const SECTION = "mb-1 px-2 text-[13px] leading-5 font-medium text-[var(--color-text-secondary)]"
 
@@ -20,6 +21,55 @@ const ROW =
   "flex h-[29px] w-full items-center gap-2 rounded-[var(--radius-row)] px-2 text-start text-[14px] leading-5 text-[var(--color-text-primary)]"
 
 const LIST = "flex flex-col gap-[2px]"
+
+const DOT: Record<Exclude<InboxStatus, "ready" | "working">, string> = {
+  approval: "bg-[var(--color-accent-orange)]",
+  input: "bg-[var(--color-accent-orange)]",
+  failed: "bg-[var(--v2-state-fg-danger)]",
+  done: "bg-[var(--color-accent-blue)]",
+}
+
+const STATUS_LABEL = {
+  approval: "sidebar.inbox.status.approval",
+  input: "sidebar.inbox.status.input",
+  working: "sidebar.inbox.status.working",
+  failed: "sidebar.inbox.status.failed",
+  done: "sidebar.inbox.status.done",
+} as const
+
+/** The run state at the end of a conversation row: a ring while working, one dot once the result lands. */
+function StatusMark(props: { status: InboxStatus }) {
+  const language = useLanguage()
+  const status = () => props.status
+
+  const label = () => {
+    const value = status()
+
+    return value === "ready" ? undefined : STATUS_LABEL[value]
+  }
+
+  const dot = () => {
+    const value = status()
+
+    return value === "ready" || value === "working" ? undefined : DOT[value]
+  }
+
+  return (
+    <Show when={status() !== "ready"}>
+      <span class="ms-auto flex shrink-0 items-center gap-1.5">
+        <Show when={label()}>
+          {(key) => <span class="sr-only">{language.t(key())}</span>}
+        </Show>
+        <Show
+          when={status() === "working"}
+          fallback={<Show when={dot()}>{(color) => <span aria-hidden="true" class={`size-[7px] shrink-0 rounded-full ${color()}`} />}</Show>}
+        >
+          <ActivityRing class="size-3.5 shrink-0 text-[var(--color-icon-secondary)]" />
+        </Show>
+      </span>
+    </Show>
+  )
+}
 
 /**
  * The 300px navigation column. Conversation-first: pinned conversations, then recent ones, each row carrying
@@ -177,7 +227,8 @@ export function ReplicaSidebar() {
                     >
                       {(project) => <ProjectIcon project={project()} class="size-4 shrink-0" />}
                     </Show>
-                    <span class="min-w-0 truncate">{sessionLabel(entry.session)}</span>
+                    <span class="min-w-0 flex-1 truncate">{sessionLabel(entry.session)}</span>
+                    <StatusMark status={entry.status} />
                   </button>
                 )}
               </For>
@@ -204,7 +255,8 @@ export function ReplicaSidebar() {
                   >
                     {(project) => <ProjectIcon project={project()} class="size-4 shrink-0" />}
                   </Show>
-                  <span class="min-w-0 truncate">{sessionLabel(entry.session)}</span>
+                  <span class="min-w-0 flex-1 truncate">{sessionLabel(entry.session)}</span>
+                  <StatusMark status={entry.status} />
                 </button>
               )}
             </For>
