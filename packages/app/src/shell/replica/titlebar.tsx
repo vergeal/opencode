@@ -2,7 +2,6 @@ import { createMemo, Show } from "solid-js"
 import { lastAssistantWithUsage } from "@opencode/client/solid"
 import { createCNY, flashCostBreakdown } from "@opencode/gui-plugins/context/cost"
 import { Icon } from "@opencode/ui/icon"
-import { ProgressCircle } from "@opencode/ui/progress-circle"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
@@ -226,16 +225,6 @@ export function ReplicaTitleBar(props: {
                   class="flex h-6 shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-[12px] leading-4 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-hover)] hover:text-[var(--color-text-main)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-border)]"
                   onClick={openContext}
                 >
-                  <ProgressCircle
-                    appearance="indicator"
-                    size={16}
-                    strokeWidth={2}
-                    percentage={value().usage}
-                    style={{
-                      "--progress-circle-background": "var(--color-border)",
-                      "--progress-circle-progress": "var(--color-icon-primary)",
-                    }}
-                  />
                   <span data-ui="titlebar-context-tokens" class="shrink-0 tabular-nums">
                     {compact().format(value().tokens)}
                   </span>
