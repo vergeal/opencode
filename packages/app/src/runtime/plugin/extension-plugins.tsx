@@ -19,7 +19,7 @@ import { useReservedPlugins } from "./root"
  * The plugins a server lists, for the Plugins tab of Extensions. Only the desktop app's own server (`own`) runs its
  * plugins' GUIs in this window, so only its rows add the window's controls; other servers and the web list names.
  */
-export function ExtensionPlugins(props: { plugins: readonly PluginInfo[]; own: boolean }) {
+export function ExtensionPlugins(props: { plugins: readonly PluginInfo[]; own: boolean; showSource?: boolean }) {
   const listed = () => props.plugins.filter((plugin) => plugin.source.type !== "builtin")
 
   return (
@@ -33,6 +33,9 @@ export function ExtensionPlugins(props: { plugins: readonly PluginInfo[]; own: b
                 <div class="settings-extension-lead">
                   <Icon name="cube" class="text-v2-icon-icon-muted shrink-0" />
                   <span class="settings-extension-name truncate">{pluginLabel(plugin)}</span>
+                  <Show when={props.showSource}>
+                    <PluginSource source={plugin.source.type} />
+                  </Show>
                 </div>
               </div>
             )}
@@ -40,9 +43,22 @@ export function ExtensionPlugins(props: { plugins: readonly PluginInfo[]; own: b
         </SettingsList>
       }
     >
-      <OwnServerPlugins plugins={listed()} />
+      <OwnServerPlugins plugins={listed()} showSource={props.showSource} />
     </Show>
   )
+}
+
+const sourceLabels = {
+  builtin: "explore.plugins.source.builtin",
+  package: "explore.plugins.source.package",
+  local: "explore.plugins.source.local",
+  sdk: "explore.plugins.source.sdk",
+} as const
+
+function PluginSource(props: { source: PluginInfo["source"]["type"] }) {
+  const language = useLanguage()
+
+  return <Badge>{language.t(sourceLabels[props.source])}</Badge>
 }
 
 /**
@@ -50,7 +66,7 @@ export function ExtensionPlugins(props: { plugins: readonly PluginInfo[]; own: b
  * switch that turns off only the desktop UI, Reload, status and errors, and rows for plugins main lists that the
  * server list does not name. Built-ins always run and stay hidden unless they failed, which only this list reports.
  */
-function OwnServerPlugins(props: { plugins: readonly PluginInfo[] }) {
+function OwnServerPlugins(props: { plugins: readonly PluginInfo[]; showSource?: boolean }) {
   const language = useLanguage()
   const host = usePluginHost()
   const bridge = usePlatform().plugins
@@ -136,7 +152,12 @@ function OwnServerPlugins(props: { plugins: readonly PluginInfo[] }) {
     run(bridge?.manager.reload(id))
   }
 
-  const row = (input: { id: string | undefined; name: string; builtin?: boolean }) => {
+  const row = (input: {
+    id: string | undefined
+    name: string
+    builtin?: boolean
+    source?: PluginInfo["source"]["type"]
+  }) => {
     const state = () => (input.builtin ? "loaded" : kind(input.id))
     const part = input.builtin ? "builtin" : "config"
     const live = () => (state() === "loaded" ? input.id : undefined)
@@ -153,6 +174,9 @@ function OwnServerPlugins(props: { plugins: readonly PluginInfo[] }) {
               <Show when={live()}>
                 {(id) => (
                   <>
+                    <Show when={props.showSource && input.source}>
+                      {(source) => <PluginSource source={source()} />}
+                    </Show>
                     <Show when={input.builtin}>
                       <Badge>{language.t("settings.plugins.builtin")}</Badge>
                     </Show>
@@ -206,9 +230,11 @@ function OwnServerPlugins(props: { plugins: readonly PluginInfo[] }) {
   return (
     <>
       <SettingsList variant="catalog">
-        <For each={props.plugins}>{(plugin) => row({ id: plugin.id, name: pluginLabel(plugin) })}</For>
+        <For each={props.plugins}>
+          {(plugin) => row({ id: plugin.id, name: pluginLabel(plugin), source: plugin.source.type })}
+        </For>
         <For each={unnamed()}>{(id) => row({ id, name: id })}</For>
-        <For each={failedBuiltins()}>{(id) => row({ id, name: id, builtin: true })}</For>
+        <For each={failedBuiltins()}>{(id) => row({ id, name: id, builtin: true, source: "builtin" })}</For>
       </SettingsList>
       <Show when={host.installed().some((item) => !item.builtin)}>
         <p class="text-11-regular text-v2-text-text-muted">{language.t("settings.plugins.parts.note")}</p>

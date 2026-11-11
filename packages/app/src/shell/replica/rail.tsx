@@ -8,7 +8,7 @@ import { useCommand } from "@/shell/commands/command"
 import { useLayout } from "@/shell/state/layout"
 
 type RailItem = {
-  id: "home" | "inbox" | "scheduled" | "explore" | "more"
+  id: "home" | "inbox" | "scheduled" | "explore" | "knowledge" | "more"
   icon: IconName
   iconActive?: IconName
   labelKey: string
@@ -19,7 +19,8 @@ const ITEMS: readonly RailItem[] = [
   { id: "home", icon: "rail-home", iconActive: "rail-home-active", labelKey: "replica.rail.home", path: "/" },
   { id: "inbox", icon: "rail-inbox", iconActive: "rail-inbox-active", labelKey: "replica.rail.inbox", path: "/inbox" },
   { id: "scheduled", icon: "rail-history", iconActive: "rail-history-active", labelKey: "replica.rail.scheduled", path: "/scheduled" },
-  { id: "explore", icon: "rail-compass", iconActive: "rail-compass-active", labelKey: "replica.rail.explore", path: "/knowledge" },
+  { id: "explore", icon: "rail-compass", iconActive: "rail-compass-active", labelKey: "replica.rail.explore", path: "/explore" },
+  { id: "knowledge", icon: "rail-library", iconActive: "rail-library-active", labelKey: "replica.rail.knowledge", path: "/knowledge" },
   { id: "more", icon: "rail-more", labelKey: "replica.rail.more" },
 ]
 
@@ -42,7 +43,9 @@ export function ReplicaRail() {
 
     if (id === "scheduled") return type === "scheduled"
 
-    if (id === "explore") return type === "knowledge"
+    if (id === "explore") return type === "explore"
+
+    if (id === "knowledge") return type === "knowledge"
 
     return false
   }

@@ -117,5 +117,12 @@ describe("settings route", () => {
       server: undefined,
       subtab: undefined,
     })
+    // Skills moved to Explore, so a server-level link lands on the Extensions page itself.
+    expect(parseSettingsView("?tab=extensions&subtab=skills")).toEqual({
+      type: "root",
+      tab: "extensions",
+      server: undefined,
+      subtab: undefined,
+    })
   })
 })
