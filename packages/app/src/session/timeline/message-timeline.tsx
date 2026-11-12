@@ -555,59 +555,9 @@ function MessageTimelineView(
       return next
     })
 
-  // A settled turn keeps only the words written after its last tool call; everything before that folds away behind
-  // the Worked header. A turn with no answer after its last tool call has nothing to fold to, so it stays open.
-  const workedFinalAnswer = createMemo(() => {
-    const result = new Map<string, string>()
-
-    for (const [turnID, messages] of projection.assistantMessagesByParent()) {
-      if (!workedHeaders().has(turnID)) continue
-
-      const entries = messages.flatMap((message) =>
-        Timeline.contentEntries(message).map((entry) => ({ messageID: message.id, entry })),
-      )
-      const lastTool = entries.findLastIndex(({ entry }) => entry.content.type === "tool")
-
-      if (lastTool < 0) continue
-      const answer = entries
-        .slice(lastTool + 1)
-        .find(({ entry }) => entry.content.type === "text" && entry.content.text.trim())
-
-      if (!answer) continue
-      result.set(turnID, `${answer.messageID}:${answer.entry.id}`)
-    }
-
-    return result
-  })
-
-  const collapsedRowKeys = createMemo(() => {
-    const starts = workedFinalAnswer()
-    const expanded = expandedTurns()
-    const keys = new Set<string>()
-    const reached = new Set<string>()
-
-    for (const row of projection.rows()) {
-      const start = starts.get(row.userMessageID)
-
-      if (!start || expanded.has(row.userMessageID) || reached.has(row.userMessageID)) continue
-      if (!Predicate.isTagged(row, "AssistantPart") && !Predicate.isTagged(row, "Thinking")) continue
-
-      const refs = Predicate.isTagged(row, "AssistantPart")
-        ? row.group.type === "part"
-          ? [row.group.ref]
-          : row.group.refs
-        : [row.ref]
-
-      if (refs.some((ref) => `${ref.messageID}:${ref.partID}` === start)) {
-        reached.add(row.userMessageID)
-        continue
-      }
-
-      keys.add(TimelineRow.key(row))
-    }
-
-    return keys
-  })
+  // A settled turn keeps its whole trail: the words it wrote and the tool groups between them, so the reader can see
+  // what ran without expanding a header. The Worked header stays as the divider it always was.
+  const collapsedRowKeys = createMemo(() => new Set<string>())
 
   // The first prompt keeps a gap under the window bar, the way the composer keeps one at the other end.
   const firstUserRowKey = createMemo(() => {
@@ -734,7 +684,7 @@ function MessageTimelineView(
                                 <SessionWorkedHeader
                                   started={header().started}
                                   completed={header().completed}
-                                  expandable={workedFinalAnswer().has(row().userMessageID)}
+                                  expandable={false}
                                   expanded={expandedTurns().has(row().userMessageID)}
                                   onToggle={() => toggleWorked(row().userMessageID)}
                                 />
