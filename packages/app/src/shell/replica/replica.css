@@ -88,12 +88,12 @@
   font-optical-sizing: auto;
 }
 
-/* Dark mode steps the three surfaces down: the window frame (29), the navigation column (21), the work area (17). */
+/* Dark mode steps the three surfaces down: the window frame (29), the navigation column (21), the work area (15). */
 [data-color-scheme="dark"] [data-replica] {
-  --color-titlebar: rgb(29 29 29 / 80%);
-  --color-rail: rgb(29 29 29 / 80%);
+  --color-titlebar: rgb(29 29 29);
+  --color-rail: rgb(29 29 29);
   --color-sidebar: rgb(21 21 21);
-  --color-main: rgb(17 17 17);
+  --color-main: rgb(15 15 15);
   --color-composer: var(--v2-background-bg-layer-01);
   --replica-composer-fill: var(--v2-background-bg-layer-01);
   --color-hover: rgb(255 255 255 / 7%);
@@ -305,6 +305,12 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   width: 100%;
   max-width: var(--workspace-content-max-width);
   margin-inline: auto;
+}
+
+/* A route panel would otherwise paint the theme's base layer (#161616) over the work area, so the answer
+   read one step lighter than the surface around it. The dark shell keeps one flat fill here. */
+[data-color-scheme="dark"] [data-slot="replica-main"] [data-slot="session-panel"] {
+  background: var(--color-main);
 }
 
 /* The conversation scroll area owns its own scrollbar; the window never scrolls. */

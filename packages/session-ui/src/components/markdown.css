@@ -30,17 +30,25 @@
 [data-component="markdown"] {
   --markdown-inline-code-path-color: var(--v2-text-text-code-path);
   --markdown-inline-code-color: var(--v2-text-text-code-accent);
-  /* Inline code and fenced blocks share one surface in both themes, so code reads the same everywhere.
-     The fill is a fixed light grey, which also fixes the ink: body text is light in the dark theme and
-     would vanish on it. */
-  --markdown-code-surface: rgb(233, 234, 234);
+  /* The chip and the fenced block are different surfaces: a chip sits on body text, a block stands on its
+     own. The dark scheme lifts both off the page with their own greys and flips the ink, because the light
+     fill would otherwise leave black text on white in the middle of a dark answer. */
   --markdown-code-ink: #1a1a1a;
-  --markdown-code-background: var(--markdown-code-surface);
-  --markdown-inline-code-background: var(--markdown-code-surface);
-  --markdown-shell-code-background: var(--markdown-code-surface);
+  --markdown-inline-code-surface: rgb(233, 234, 234);
+  --markdown-code-block-surface: rgb(233, 234, 234);
+  --markdown-code-background: var(--markdown-code-block-surface);
+  --markdown-inline-code-background: var(--markdown-inline-code-surface);
+  --markdown-shell-code-background: var(--markdown-code-block-surface);
   --markdown-shell-code-border: var(--v2-border-border-muted);
   --markdown-shell-code-color: var(--markdown-code-ink);
   --markdown-shell-code-token-color: currentColor;
+
+  /* Stated once here: the same overrides would otherwise repeat on every code rule below. */
+  :root[data-color-scheme="dark"] & {
+    --markdown-code-ink: #eeeeee;
+    --markdown-inline-code-surface: rgb(50, 50, 50);
+    --markdown-code-block-surface: rgb(47, 47, 47);
+  }
 
   /* Reset & Base Typography */
   min-width: 0;
@@ -278,10 +286,20 @@
     margin: 12px 0;
   }
 
-  /* The block and the inline chip share one surface and one ink, so code reads the same before and after
-     sending. The fixed light fill also pins the syntax palette to its light values: the dark theme's
-     tokens are near-white and would be unreadable here. */
+  /* The block owns a surface of its own, so its syntax palette follows the scheme: the dark tokens are tuned
+     for dark ink and would disappear on a light fill. The pinned palette below covers the light page only. */
   .highlights {
+    background: var(--markdown-code-background);
+    color: var(--markdown-code-ink);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 20px;
+    padding: 12px 14px;
+    border-radius: var(--radius-lg);
+    border: 0;
+  }
+
+  :root:not([data-color-scheme="dark"]) & .highlights {
     --syntax-comment: #8f8f8f;
     --syntax-regexp: #6f6f6f;
     --syntax-string: #006656;
@@ -300,15 +318,6 @@
     --syntax-critical: #c22f1b;
     --syntax-diff-add: #3a8437;
     --syntax-diff-delete: #ca2d17;
-
-    background: var(--markdown-code-background);
-    color: var(--markdown-code-ink);
-    font-size: 13px;
-    font-weight: 400;
-    line-height: 20px;
-    padding: 12px 14px;
-    border-radius: var(--radius-lg);
-    border: 0;
   }
 
   /* Shiki marks up some scopes (for example `title`) with an inline weight. Code never renders bold. */

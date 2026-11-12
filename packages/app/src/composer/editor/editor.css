@@ -1,6 +1,18 @@
 [data-component="composer-editor"] {
   /* A writing surface, not a one-line strip: two lines of text plus the card's own 12px/8px padding. */
   min-height: calc(var(--line-height-base) * 2 + 20px);
+
+  /* A drafted tick reads like a code block in a finished answer: the chip and the block keep separate
+     greys, and the dark scheme flips the ink so a tick never shows black text on a white fill. */
+  --composer-code-ink: #1a1a1a;
+  --composer-code-inline-surface: rgb(233, 234, 234);
+  --composer-code-block-surface: rgb(233, 234, 234);
+}
+
+:root[data-color-scheme="dark"] [data-component="composer-editor"] {
+  --composer-code-ink: #eeeeee;
+  --composer-code-inline-surface: rgb(50, 50, 50);
+  --composer-code-block-surface: rgb(47, 47, 47);
 }
 
 [data-component="composer-editor"]:empty::before {
@@ -91,8 +103,8 @@
 [data-component="composer-editor"] [data-md-code] {
   padding-inline: 4px;
   border-radius: var(--radius-sm);
-  background: rgb(233, 234, 234);
-  color: #1a1a1a;
+  background: var(--composer-code-inline-surface);
+  color: var(--composer-code-ink);
 }
 
 /* A code tick only paints the markdown; it must not occupy a character box or the draft reads as if
@@ -112,8 +124,8 @@
   margin-block: 6px;
   padding: 12px 14px;
   border-radius: var(--radius-lg);
-  background: rgb(233, 234, 234);
-  color: #1a1a1a;
+  background: var(--composer-code-block-surface);
+  color: var(--composer-code-ink);
   font-family: var(--font-family-mono);
   font-size: 13px;
   font-weight: 400;
@@ -123,10 +135,17 @@
 }
 
 /* Inline code paints through the Highlight API as well as the chip span, so code the chip cannot wrap
-   (a range that crosses a mention chip) still reads as code. */
+   (a range that crosses a mention chip) still reads as code. The custom properties may not reach a
+   highlight pseudo-element in every engine, so each value keeps its light fallback and the dark scheme
+   restates both. */
 ::highlight(composer-md-code) {
-  color: #1a1a1a;
-  background-color: rgb(233, 234, 234);
+  color: var(--composer-code-ink, #1a1a1a);
+  background-color: var(--composer-code-inline-surface, rgb(233, 234, 234));
+}
+
+:root[data-color-scheme="dark"] ::highlight(composer-md-code) {
+  color: #eeeeee;
+  background-color: rgb(50, 50, 50);
 }
 
 [data-component="composer-editor"] [data-mention="session"] {
