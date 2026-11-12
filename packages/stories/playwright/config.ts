@@ -1,9 +1,22 @@
 import { defineConfig, devices } from "@playwright/test"
 
-const port = Number(process.env.PLAYWRIGHT_STORIES_PORT ?? 6006)
-const baseURL = process.env.PLAYWRIGHT_STORIES_URL ?? `http://127.0.0.1:${port}`
+/**
+ * A story server belongs to one checkout. Deriving the default port from the package directory keeps two worktrees
+ * from silently sharing a server, which would test one checkout's code against another's.
+ */
+function storiesPort(directory: string) {
+  const explicit = process.env.PLAYWRIGHT_STORIES_PORT
+
+  if (explicit) return Number(explicit)
+
+  const offset = [...directory].reduce((value, char) => (value * 31 + char.charCodeAt(0)) % 400, 0)
+  return 6006 + offset
+}
 
 export function componentConfig(directory: string) {
+  const port = storiesPort(directory)
+  const baseURL = process.env.PLAYWRIGHT_STORIES_URL ?? `http://127.0.0.1:${port}`
+
   return defineConfig({
     testDir: `${directory}/component-tests`,
     outputDir: `${directory}/component-tests/test-results`,
@@ -26,10 +39,10 @@ export function componentConfig(directory: string) {
     },
     use: {
       baseURL,
-      trace: "on-first-retry",
+      // A local failure keeps the trace instead of the video: the same evidence without encoding a webm per failure.
+      trace: process.env.CI ? "on-first-retry" : "retain-on-failure",
       screenshot: "only-on-failure",
-      // CI retries failures, so the retry records the video; local runs have no retries.
-      video: process.env.CI ? "on-first-retry" : "retain-on-failure",
+      video: process.env.CI ? "on-first-retry" : "off",
     },
     projects: [{ name: "components", use: { ...devices["Desktop Chrome"] } }],
   })
