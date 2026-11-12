@@ -210,6 +210,10 @@ html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   align-items: center;
   min-width: 0;
   padding-inline: 18px 14px;
+  /* Windows paints its three caption buttons over the right edge of the window bar, so the conversation title and
+     the context control stop before them. `titlebar-area-width` is the draggable part of the bar; wherever there is
+     no window controls overlay (macOS, Linux, web) it resolves to the full width and this keeps the 14px inset. */
+  padding-right: calc(100vw - env(titlebar-area-width, 100vw) + 14px);
 }
 
 [data-slot="replica-shell"] {
