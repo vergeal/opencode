@@ -20,6 +20,8 @@ import type {
   PluginUpdateOutput,
   ExperimentalPluginBundleInput,
   ExperimentalPluginBundleOutput,
+  ExperimentalPluginUninstallInput,
+  ExperimentalPluginUninstallOutput,
   SessionListInput,
   SessionListOutput,
   SessionCreateInput,
@@ -621,6 +623,19 @@ export function make(options: ClientOptions) {
             {
               method: "POST",
               path: `/api/experimental/plugin/bundle`,
+              query: { location: input["location"] },
+              body: { id: input["id"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        uninstall: (input: ExperimentalPluginUninstallInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalPluginUninstallOutput>(
+            {
+              method: "POST",
+              path: `/api/experimental/plugin/uninstall`,
               query: { location: input["location"] },
               body: { id: input["id"] },
               successStatus: 200,
@@ -2807,6 +2822,8 @@ export function make(options: ClientOptions) {
       ...client.plugin,
       /** @deprecated Use `client.experimental.plugin.bundle`. Removed in the next minor. */
       bundle: client.experimental.plugin.bundle,
+      /** @deprecated Use `client.experimental.plugin.uninstall`. Removed in the next minor. */
+      uninstall: client.experimental.plugin.uninstall,
     },
     session: {
       ...client.session,

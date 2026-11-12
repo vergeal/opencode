@@ -62,6 +62,17 @@ export async function install(input: {
   }
 }
 
+/** Removes an installed bundle. A loaded plugin's files can be deleted on Windows even though they cannot be renamed. */
+export async function uninstall(input: { readonly id: string; readonly config: string }) {
+  const plugins = path.join(input.config, "plugins")
+  const target = path.join(plugins, input.id)
+  const removed = await exists(target)
+  if (removed) await rm(target, { recursive: true, force: true })
+  // Touching the directory gives the config watcher a change event, so the host unloads it without a restart.
+  await utimes(plugins, new Date(), new Date()).catch(() => {})
+  return { id: input.id, removed }
+}
+
 /** The newest matching bundle in the locations a user's download or drag onto the desktop lands in. */
 async function find(input: { id: string; config: string; cwd: string; home: string }) {
   const folders = [

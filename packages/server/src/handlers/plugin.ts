@@ -86,6 +86,20 @@ export const PluginHandler = HttpApiBuilder.group(Api, "server.plugin", (handler
         return yield* response(Effect.succeed({ ...installed, id: ctx.payload.id }))
       }),
     )
+    .handle("plugin.uninstall", (ctx) =>
+      Effect.gen(function* () {
+        const global = yield* Global.Service
+        const removed = yield* Effect.tryPromise({
+          try: () => PluginBundle.uninstall({ id: ctx.payload.id, config: global.config }),
+          catch: (error) =>
+            new InvalidRequestError({
+              message: error instanceof Error ? error.message : String(error),
+              field: "id",
+            }),
+        })
+        return yield* response(Effect.succeed({ ...removed, id: ctx.payload.id }))
+      }),
+    )
     .handle("plugin.update", (ctx) =>
       Effect.gen(function* () {
         const plugins = yield* Plugin.Service

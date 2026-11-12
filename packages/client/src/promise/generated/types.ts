@@ -3377,6 +3377,16 @@ export type ExperimentalPluginBundleOutput = {
   data: { id: PluginID; version: string; path: string }
 }
 
+export type ExperimentalPluginUninstallInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+}
+
+export type ExperimentalPluginUninstallOutput = {
+  location: LocationPublicRef
+  data: { id: PluginID; removed: boolean }
+}
+
 export type SessionListInput = {
   readonly limit?: number | undefined
   readonly order?: "asc" | "desc" | undefined
@@ -4975,6 +4985,12 @@ export type PluginBundleInput = ExperimentalPluginBundleInput
 
 /** @deprecated Use `ExperimentalPluginBundleOutput`. Removed in the next minor. */
 export type PluginBundleOutput = ExperimentalPluginBundleOutput
+
+/** @deprecated Use `ExperimentalPluginUninstallInput`. Removed in the next minor. */
+export type PluginUninstallInput = ExperimentalPluginUninstallInput
+
+/** @deprecated Use `ExperimentalPluginUninstallOutput`. Removed in the next minor. */
+export type PluginUninstallOutput = ExperimentalPluginUninstallOutput
 
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput

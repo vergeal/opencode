@@ -1,5 +1,6 @@
 import type { PluginInfo } from "@opencode/client"
 import { Button } from "@opencode/ui/button"
+import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Icon } from "@opencode/ui/icon"
 import { TextInput } from "@opencode/ui/text-input"
@@ -7,7 +8,9 @@ import { createMemo, createResource, For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useExploreInstalled } from "@/explore/installed"
 import { pluginLabel } from "@/providers/catalog/plugin"
+import { useServerSDK } from "@/runtime/server/client"
 import { useLanguage } from "@/runtime/i18n/language"
+import { showToast } from "@/shell/notifications/toast"
 import { ExternalLink } from "@/runtime/platform/external-link"
 import { PluginSource } from "@/runtime/plugin/extension-plugins"
 import { PageHeader } from "@/shell/page"
@@ -74,6 +77,11 @@ export function ExplorePlugins() {
   const install = () =>
     void dialog.show(() => <PluginInstallDialog onInstalled={() => void installed.refetchPlugins()} />)
 
+  const uninstall = (plugin: PluginInfo) =>
+    void dialog.show(() => (
+      <UninstallPluginDialog plugin={plugin} onUninstalled={() => void installed.refetchPlugins()} />
+    ))
+
   const installFromCatalog = (entry: CatalogPlugin) =>
     void dialog.show(() => (
       <PluginInstallDialog
@@ -102,6 +110,7 @@ export function ExplorePlugins() {
       onBack={back}
       onInstall={install}
       onInstallCatalog={installFromCatalog}
+      onUninstall={uninstall}
       onRefresh={() => void installed.refetchPlugins()}
     />
   )
@@ -124,6 +133,7 @@ export function ExplorePluginsView(props: {
   onBack: () => void
   onInstall: () => void
   onInstallCatalog?: (entry: CatalogPlugin) => void
+  onUninstall?: (plugin: PluginInfo) => void
   onRefresh?: () => void
 }) {
   const language = useLanguage()
@@ -259,7 +269,7 @@ export function ExplorePluginsView(props: {
           </Show>
         }
       >
-        {(plugin) => <PluginDetail plugin={plugin()} onBack={props.onBack} />}
+        {(plugin) => <PluginDetail plugin={plugin()} onBack={props.onBack} onUninstall={props.onUninstall} />}
       </Show>
     </Show>
   )
@@ -424,7 +434,7 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; installed?: boolean;
 }
 
 /** An installed plugin's page: how it loads, whether it is healthy, and where its module lives. */
-function PluginDetail(props: { plugin: PluginInfo; onBack: () => void }) {
+function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onUninstall?: (plugin: PluginInfo) => void }) {
   const language = useLanguage()
 
   const failed = () => (props.plugin.state.status === "failed" ? props.plugin.state : undefined)
@@ -547,8 +557,69 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void }) {
               </p>
             )}
           </Show>
+
+          <Show when={props.plugin.source.type !== "builtin"}>
+            <div class="explore-catalog-detail-actions">
+              <Button size="small" variant="neutral" icon="trash" onClick={() => props.onUninstall?.(props.plugin)}>
+                {language.t("explore.plugins.uninstall")}
+              </Button>
+            </div>
+          </Show>
         </div>
       </div>
     </div>
+  )
+}
+
+/** Confirms before removing an installed plugin, because its tools and skills disappear with it. */
+function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () => void }) {
+  const language = useLanguage()
+  const dialog = useDialog()
+  const server = useServerSDK()
+  const [state, setState] = createStore({ busy: false, error: "" })
+  const name = () => pluginLabel(props.plugin)
+
+  const submit = async () => {
+    if (state.busy || !props.plugin.id) return
+    setState({ busy: true, error: "" })
+    try {
+      await server.api.experimental.plugin.uninstall({ id: props.plugin.id })
+      dialog.close()
+      props.onUninstalled?.()
+      showToast({ variant: "success", title: language.t("explore.plugins.uninstall.success", { name: name() }) })
+    } catch (error) {
+      console.error("plugin uninstall failed", error)
+      setState({ busy: false, error: language.t("explore.plugins.uninstall.failed") })
+    }
+  }
+
+  return (
+    <Dialog fit containerClass="explore-install-dialog">
+      <DialogHeader hideClose>
+        <DialogTitleGroup
+          title={language.t("explore.plugins.uninstall.title")}
+          description={language.t("explore.plugins.uninstall.description", { name: name() })}
+        />
+      </DialogHeader>
+
+      <DialogBody class="explore-install-body">
+        <Show when={state.error}>
+          {(message) => (
+            <p class="explore-form-error" role="alert">
+              {message()}
+            </p>
+          )}
+        </Show>
+      </DialogBody>
+
+      <DialogFooter>
+        <Button variant="neutral" disabled={state.busy} onClick={() => dialog.close()}>
+          {language.t("explore.plugins.install.cancel")}
+        </Button>
+        <Button variant="submit" disabled={state.busy} aria-busy={state.busy} onClick={() => void submit()}>
+          {language.t("explore.plugins.uninstall")}
+        </Button>
+      </DialogFooter>
+    </Dialog>
   )
 }

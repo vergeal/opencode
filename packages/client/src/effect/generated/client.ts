@@ -26,6 +26,8 @@ import type {
   PluginUpdateOutput,
   ExperimentalPluginBundleInput,
   ExperimentalPluginBundleOutput,
+  ExperimentalPluginUninstallInput,
+  ExperimentalPluginUninstallOutput,
   SessionListInput,
   SessionListOutput,
   SessionCreateInput,
@@ -449,8 +451,17 @@ const EndpointExperimentalPluginBundle = (raw: RawClient["server.plugin"]) => (i
     ),
   )
 
+const EndpointExperimentalPluginUninstall =
+  (raw: RawClient["server.plugin"]) => (input: ExperimentalPluginUninstallInput) =>
+    preserveEffect<ExperimentalPluginUninstallOutput>()(
+      raw["plugin.uninstall"]({ query: { location: input["location"] }, payload: { id: input["id"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
 const adaptGroupExperimentalPlugin = (raw: RawClient["server.plugin"]) => ({
   bundle: EndpointExperimentalPluginBundle(raw),
+  uninstall: EndpointExperimentalPluginUninstall(raw),
 })
 
 const EndpointSessionList = (raw: RawClient["server.session"]) => (input?: SessionListInput) =>
@@ -2103,6 +2114,8 @@ const adaptClient = (raw: RawClient) => {
       ...client.plugin,
       /** @deprecated Use `client.experimental.plugin.bundle`. Removed in the next minor. */
       bundle: client.experimental.plugin.bundle,
+      /** @deprecated Use `client.experimental.plugin.uninstall`. Removed in the next minor. */
+      uninstall: client.experimental.plugin.uninstall,
     },
     session: {
       ...client.session,

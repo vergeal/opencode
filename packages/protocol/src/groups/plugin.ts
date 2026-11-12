@@ -89,6 +89,23 @@ export const PluginGroup = HttpApiGroup.make("server.plugin")
         }),
       ),
   )
+  .add(
+    HttpApiEndpoint.post("plugin.uninstall", "/api/experimental/plugin/uninstall", {
+      query: LocationQuery,
+      payload: Schema.Struct({ id: Plugin.ID }),
+      success: Location.response(Schema.Struct({ id: Plugin.ID, removed: Schema.Boolean })),
+      error: InvalidRequestError,
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "experimental.plugin.uninstall",
+          summary: "Uninstall a plugin bundle",
+          description:
+            "Experimental: may change without compatibility guarantees. Remove an installed .ocplugin bundle's directory so the host unloads it.",
+        }),
+      ),
+  )
   .annotateMerge(
     OpenApi.annotations({
       title: "plugin",

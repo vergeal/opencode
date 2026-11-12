@@ -965,3 +965,10 @@
   color: var(--v2-text-text-base);
   overflow-wrap: anywhere;
 }
+
+/* The installed plugin page ends with its one management action. */
+.explore-catalog-detail-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 20px;
+}

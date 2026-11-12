@@ -131,6 +131,9 @@ export interface PluginApi<E = never> {
 
   /** @deprecated Use `client.experimental.plugin.bundle`. Removed in the next minor. */
   readonly bundle: ExperimentalPluginBundleOperation<E>
+
+  /** @deprecated Use `client.experimental.plugin.uninstall`. Removed in the next minor. */
+  readonly uninstall: ExperimentalPluginUninstallOperation<E>
 }
 
 export type ExperimentalPluginBundleInput = {
@@ -145,8 +148,21 @@ export type ExperimentalPluginBundleOperation<E = never> = (
   input: ExperimentalPluginBundleInput,
 ) => Effect.Effect<ExperimentalPluginBundleOutput, E>
 
+export type ExperimentalPluginUninstallInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: Plugin.ID
+}
+export type ExperimentalPluginUninstallOutput = {
+  readonly location: Location.PublicRef
+  readonly data: { readonly id: Plugin.ID; readonly removed: boolean }
+}
+export type ExperimentalPluginUninstallOperation<E = never> = (
+  input: ExperimentalPluginUninstallInput,
+) => Effect.Effect<ExperimentalPluginUninstallOutput, E>
+
 export interface ExperimentalPluginApi<E = never> {
   readonly bundle: ExperimentalPluginBundleOperation<E>
+  readonly uninstall: ExperimentalPluginUninstallOperation<E>
 }
 
 export type SessionListInput = {
@@ -2941,6 +2957,15 @@ export type PluginBundleOutput = ExperimentalPluginBundleOutput
 
 /** @deprecated Use `ExperimentalPluginBundleOperation`. Removed in the next minor. */
 export type PluginBundleOperation<E = never> = ExperimentalPluginBundleOperation<E>
+
+/** @deprecated Use `ExperimentalPluginUninstallInput`. Removed in the next minor. */
+export type PluginUninstallInput = ExperimentalPluginUninstallInput
+
+/** @deprecated Use `ExperimentalPluginUninstallOutput`. Removed in the next minor. */
+export type PluginUninstallOutput = ExperimentalPluginUninstallOutput
+
+/** @deprecated Use `ExperimentalPluginUninstallOperation`. Removed in the next minor. */
+export type PluginUninstallOperation<E = never> = ExperimentalPluginUninstallOperation<E>
 
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput
