@@ -146,27 +146,20 @@ html[data-replica-window="acrylic"] [data-slot="replica-workbench"] {
   background: transparent;
 }
 
-/* Acrylic only blurs the desk, so the chrome needs a tint over it. */
+/* Fake the transparency by solving the tint against the sampled desktop wallpaper. For this wallpaper (average
+   rgb(96 143 205), luma 137) each alpha lands the composited colour exactly on its design value: titlebar/rail 8 and
+   246, sidebar 21 and 252 in the two schemes, with the panel at 15 and 255. The same shape of equation works for any
+   wallpaper; only the percentages change. */
 html[data-replica-window="acrylic"] [data-replica] {
-  --color-titlebar: rgb(246 246 246 / 95%);
-  --color-rail: rgb(246 246 246 / 95%);
-  --color-sidebar: rgb(252 252 252 / 95%);
+  --color-titlebar: rgb(255 255 255 / 92%);
+  --color-rail: rgb(255 255 255 / 92%);
+  --color-sidebar: rgb(255 255 255 / 97%);
 }
 
-/* The frame has to stay a step darker than the workbench or its rounded cutout turns into a bright notch (see the
-   dark-mode history in this file). Over acrylic the frame is tint mixed with the wallpaper, so the tint is pressed
-   to near black in dark mode: 5% of even a white wallpaper still lands under the panel's 15. */
 [data-color-scheme="dark"][data-replica-window="acrylic"] [data-replica] {
-  --color-titlebar: rgb(0 0 0 / 95%);
-  --color-rail: rgb(0 0 0 / 95%);
-  --color-sidebar: rgb(21 21 21 / 95%);
-}
-
-/* Windows rounds the window itself, but the page still paints square corners underneath it. Clip the frame to the
-   same radius so the chrome tint cannot stick out past the window's corner as a wedge. */
-html[data-replica-window="acrylic"] [data-replica] {
-  border-radius: 8px;
-  overflow: hidden;
+  --color-titlebar: rgb(0 0 0 / 94%);
+  --color-rail: rgb(0 0 0 / 94%);
+  --color-sidebar: rgb(0 0 0 / 85%);
 }
 
 /* A hairline of light along the top edge reads as the glass catching the room. */

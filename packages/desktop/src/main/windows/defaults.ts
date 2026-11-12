@@ -79,6 +79,8 @@ export function platformFrame(mode: "light" | "dark", zoom: number) {
     frame.frame = false
     frame.titleBarStyle = "hidden"
     frame.titleBarOverlay = titlebarOverlay(mode, zoom)
+    // The acrylic surface reads as one sheet, so square corners are deliberate; Windows would otherwise round them.
+    frame.roundedCorners = false
 
     // Acrylic is the material the Windows 11 taskbar itself uses. Electron makes the background of a frameless
     // window with a material transparent on its own; setting `transparent: true` as well would let clicks pass
