@@ -152,7 +152,13 @@ export function ReplicaTitleBar(props: {
       <div
         data-slot="replica-titlebar-left"
         data-ui="titlebar-left"
-        style={{ "padding-inline-start": mac() ? "70px" : "6px" }}
+        // Line the navigation controls up with the workspace name in the sidebar column below: rail + gutter + the
+        // header's own inset, minus the button's share around its 14px icon.
+        style={{
+          "padding-inline-start": mac()
+            ? "70px"
+            : "calc(var(--primary-rail-width) + 1px + var(--sidebar-header-padding-inline) + 4px - 7px)",
+        }}
       >
         <button
           type="button"
