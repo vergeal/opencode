@@ -15,7 +15,7 @@ const SECTIONS: Record<ExploreSection, { icon: Component<{ class?: string }>; la
   skills: { icon: (props) => <SkillIcon class={props.class} monochrome />, labelKey: "explore.nav.skills" },
 }
 
-type NavItem = { id: string; label: string }
+type NavItem = { id: string; label: string; description?: string }
 
 /** The explore navigation column: the two shelves, then what this project already has installed. */
 export function ExploreNav() {
@@ -27,7 +27,11 @@ export function ExploreNav() {
 
   // The installed shelf lists plugins only; installed skills live in the skills page's own tab.
   const items = (): NavItem[] =>
-    installed.plugins().map((plugin) => ({ id: plugin.id ?? pluginLabel(plugin), label: pluginLabel(plugin) }))
+    installed.plugins().map((plugin) => ({
+      id: plugin.id ?? pluginLabel(plugin),
+      label: pluginLabel(plugin),
+      description: plugin.display?.description,
+    }))
 
   // Wait for the server's answer so an empty shelf never flashes before the rows arrive.
   const ready = () => installed.pluginStatus() === "ready"
@@ -89,7 +93,7 @@ export function ExploreNav() {
                       type="button"
                       data-replica-control
                       data-slot="replica-row"
-                      class={ROW}
+                      class="flex min-h-[40px] w-full items-start gap-2 rounded-[var(--radius-row)] px-2 py-1.5 text-start text-[14px] leading-5 text-[var(--color-text-primary)]"
                       title={item.label}
                       data-state={layout.destination.explore.selected() === item.id ? "pressed" : undefined}
                       onClick={() => {
@@ -99,7 +103,17 @@ export function ExploreNav() {
                         layout.destination.explore.setSelected(item.id)
                       }}
                     >
-                      <span class="min-w-0 flex-1 truncate">{item.label}</span>
+                      <PluginIcon class="mt-0.5 size-4 shrink-0 text-[var(--color-icon-secondary)]" monochrome />
+                      <span class="flex min-w-0 flex-1 flex-col">
+                        <span class="truncate">{item.label}</span>
+                        <Show when={item.description}>
+                          {(description) => (
+                            <span class="truncate text-[12px] leading-4 text-[var(--color-text-secondary)]">
+                              {description()}
+                            </span>
+                          )}
+                        </Show>
+                      </span>
                     </button>
                   )}
                 </For>
