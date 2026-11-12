@@ -40,6 +40,9 @@ const setup: Plugin.Setup<typeof definition> = (ctx) => {
     (): BuiltinPanel => ({
       id: "main",
       region: "side",
+      // The two-column stats, the system prompt and the raw message rows need this much room to read in full; the
+      // conversation keeps at least its minimum beside it.
+      width: 600,
       // Stored before plugins as "context".
       legacy: { context: "main" },
       mobile: { title: ctx.t("mobile.title"), order: 40, kind: "menu", icon: "status" },
