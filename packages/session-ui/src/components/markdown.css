@@ -154,6 +154,7 @@
   a {
     color: var(--v2-text-text-accent);
     text-decoration: none;
+    font-family: var(--font-family-sans);
     font-weight: inherit;
   }
 
@@ -453,11 +454,11 @@
     }
   }
 
+  /* Answers read as prose: short code, link labels and URL chips use the UI font. Fenced blocks keep the code font. */
   :not(pre) > code {
     direction: ltr;
     unicode-bidi: isolate;
-    font-family: var(--font-family-mono);
-    font-feature-settings: var(--font-family-mono--font-feature-settings);
+    font-family: var(--font-family-sans);
     color: var(--markdown-inline-code-ink);
     font-weight: 350;
     /* A 4px side pad keeps the tint off the glyphs. It is not paid back by a negative margin: paying

@@ -73,13 +73,14 @@ A flash, a blanked area, a dialog that resizes or a reset scroll on first open a
 
 Users choose three fonts in Settings > Appearance. Every surface uses one of these roles. This section is the single source for font rules across `app`, `ui`, `session-ui`, `gui-plugins` and `desktop`.
 
-| Role          | Use for                                                            | Use                                                                                                   |
-| ------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| UI font       | Prose, labels, titles, controls                                    | Inherit, or `var(--font-family-sans)`, `var(--v2-font-family-sans)`, `font-sans`                      |
-| Code font     | Shell commands, code, paths shown as code, diffs, logs, tool input | `var(--font-family-mono)`, `var(--v2-font-family-code)`, `font-mono`, or a `<code>` / `<pre>` element |
-| Terminal font | Terminal output only                                               | `appearance.font("mono")` from the GUI plugin SDK                                                     |
+| Role          | Use for                                                                   | Use                                                                                                   |
+| ------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| UI font       | Prose, labels, titles, controls                                           | Inherit, or `var(--font-family-sans)`, `var(--v2-font-family-sans)`, `font-sans`                      |
+| Code font     | Shell commands, fenced code, paths shown as code, diffs, logs, tool input | `var(--font-family-mono)`, `var(--v2-font-family-code)`, `font-mono`, or a `<code>` / `<pre>` element |
+| Terminal font | Terminal output only                                                      | `appearance.font("mono")` from the GUI plugin SDK                                                     |
 
 - The font pickers offer the app's bundled faces and the system stack; they never enumerate the system's font list, so icon, symbol and legacy bitmap families cannot reach the UI. A family a user selected earlier stays listed so it can still be re-selected or replaced: `bundledFonts` in `src/runtime/platform/fonts.ts` is the source.
+- Inline code and links inside Markdown prose use the UI font; fenced code, shell commands and tool output keep the code font.
 - Never write a literal family (`Inter`, `"IBM Plex Mono"`, `monospace`, `Menlo`, `system-ui`) in production CSS, classes, inline styles, canvas `font` strings or widget options. A literal ignores the user's setting.
 - Never add an `@font-face`, font file, or font package outside `packages/app/src/index.css`. That file is the only place the app ships faces: Inter (variable), IBM Plex Mono Text (weights below 600), Bold (600 and up) and Text Italic, JetBrains Mono Regular (weights below 600) and Bold (600 and up), and JetBrainsMono Nerd Font Mono Regular and Bold. If a design needs a face that is not shipped, add it there and say why in the PR.
 - The Code font defaults to the system stack on macOS and to JetBrains Mono elsewhere. IBM Plex Mono stays bundled as a fallback and as a choice in the picker; every default face ships with the app. `monoDefaultFor()` and `monoFontFamily()` in `src/settings/model.tsx` own the platform switch; do not test for macOS in a component.
