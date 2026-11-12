@@ -17,6 +17,7 @@ import { showToast } from "@/shell/notifications/toast"
 import { sessionTreeIDs } from "@/session/requests/session-request-tree"
 import { sessionLabel } from "@/session/title"
 import { SessionMenuCopyID } from "@/session/menu-items"
+import { usePinnedSessions } from "@/session/pins"
 import { notifySessionTabsRemoved } from "./session-events"
 import "./tab-nav.css"
 
@@ -37,6 +38,8 @@ export function ProjectSessionRow(props: {
   const dialog = useDialog()
 
   const queryClient = useQueryClient()
+
+  const pins = usePinnedSessions()
 
   const connection = () => global.servers.list().find((conn) => ServerConnection.key(conn) === props.server)
 
@@ -180,6 +183,9 @@ export function ProjectSessionRow(props: {
           <Menu.Separator />
           <Menu.Group>
             <Menu.GroupLabel>{language.t("menu.group.organize")}</Menu.GroupLabel>
+            <Menu.Item onSelect={() => pins.toggle(props.session.id)}>
+              {pins.isPinned(props.session.id) ? language.t("common.unpin") : language.t("common.pin")}
+            </Menu.Item>
             <Menu.Item
               disabled={!ctx()}
               onSelect={() => dialog.show(() => <RenameDialog title={sessionLabel(props.session)} onRename={rename} />)}
