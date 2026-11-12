@@ -8,6 +8,15 @@ import "./font-picker.css"
 
 let pickers = 0
 
+/**
+ * Both Chromium and WebKit resolve `system-ui` to the platform's own UI face (SF Pro on macOS), which is
+ * what "system font" means here. It is a keyword, not a family the system enumeration lists, so the picker
+ * adds it as a fixed row instead of looking it up.
+ */
+const SYSTEM_FAMILY = "system-ui"
+
+type PickerOption = FontOption & { label?: string }
+
 /** A searchable list of font families: the trigger shows the current face and the panel previews each option. */
 export const FontPicker: Component<{
   action: string
@@ -45,21 +54,29 @@ export const FontPicker: Component<{
   let list: HTMLDivElement | undefined
   let search: HTMLInputElement | undefined
 
-  const current = () => props.value.trim() || props.placeholder
+  const currentFamily = () => props.value.trim() || props.placeholder
+  const currentLabel = () =>
+    currentFamily() === SYSTEM_FAMILY ? language.t("settings.appearance.font.system") : currentFamily()
 
   // Reading a resource suspends until it resolves, so the picker keeps rendering the current value meanwhile.
   const loaded = () => (fonts.state === "ready" || fonts.state === "refreshing" ? (fonts() ?? []) : [])
 
-  const available = createMemo<FontOption[]>(() => {
+  const available = createMemo<PickerOption[]>(() => {
     const known = loaded()
-    const family = current()
-    const options: FontOption[] = known.some((option) => option.family === family)
+    const family = currentFamily()
+    const stored: PickerOption[] = known.some((option) => option.family === family)
       ? [...known]
       : [{ family, monospace: isMonospace(family) }, ...known]
+    const system: PickerOption = {
+      family: SYSTEM_FAMILY,
+      monospace: false,
+      label: language.t("settings.appearance.font.system"),
+    }
+    const options: PickerOption[] = [system, ...stored.filter((option) => option.family !== SYSTEM_FAMILY)]
 
     if (!props.monospaceFirst) return options
 
-    return [...options.filter((option) => option.monospace), ...options.filter((option) => !option.monospace)]
+    return [system, ...options.slice(1).filter((option) => option.monospace), ...options.slice(1).filter((option) => !option.monospace)]
   })
 
   const options = createMemo(() => {
@@ -67,7 +84,9 @@ export const FontPicker: Component<{
 
     if (!term) return available()
 
-    return available().filter((option) => option.family.toLowerCase().includes(term))
+    return available().filter((option) =>
+      `${option.label ?? ""} ${option.family}`.toLowerCase().includes(term),
+    )
   })
 
   const place = () => {
@@ -101,7 +120,7 @@ export const FontPicker: Component<{
   }
 
   const openPanel = () => {
-    const family = current()
+    const family = currentFamily()
     const index = available().findIndex((option) => option.family === family)
     setState({
       opens: state.opens + 1,
@@ -126,7 +145,7 @@ export const FontPicker: Component<{
   createEffect(() => {
     if (!state.open || state.query) return
 
-    const index = available().findIndex((option) => option.family === current())
+    const index = available().findIndex((option) => option.family === currentFamily())
 
     if (index !== -1) setState("active", index)
   })
@@ -235,7 +254,7 @@ export const FontPicker: Component<{
         }}
       >
         <span data-slot="font-picker-value" style={{ "font-family": props.family }}>
-          {current()}
+          {currentLabel()}
         </span>
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path
@@ -286,10 +305,10 @@ export const FontPicker: Component<{
                   <div
                     id={`${listID}-${index()}`}
                     role="option"
-                    aria-selected={option.family === current()}
+                    aria-selected={option.family === currentFamily()}
                     data-slot="font-picker-option"
                     data-active={state.active === index() ? "" : undefined}
-                    data-current={option.family === current() ? "" : undefined}
+                    data-current={option.family === currentFamily() ? "" : undefined}
                     data-monospace={option.monospace ? "" : undefined}
                     style={{ "font-family": quoteFamily(option.family) }}
                     onPointerDown={(event) => {
@@ -298,11 +317,11 @@ export const FontPicker: Component<{
                     }}
                     onPointerEnter={() => setState("active", index())}
                   >
-                    <span data-slot="font-picker-option-name">{option.family}</span>
+                    <span data-slot="font-picker-option-name">{option.label ?? option.family}</span>
                     <Show when={option.monospace}>
                       <span data-slot="font-picker-badge">{language.t("settings.appearance.font.monospace")}</span>
                     </Show>
-                    <Show when={option.family === current()}>
+                    <Show when={option.family === currentFamily()}>
                       <svg
                         data-slot="font-picker-check"
                         width="14"
