@@ -5,7 +5,6 @@ import { abort } from "@opencode/util/abort"
 import { createAnimatedPresence } from "@/runtime/animated-presence"
 import type { SessionUserActions } from "@opencode/session-ui/actions"
 import { Button } from "@opencode/ui/button"
-import { prefersReducedMotion } from "@opencode/ui/motion"
 import { Icon } from "@opencode/ui/icon"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Menu } from "@opencode/ui/menu"
@@ -701,7 +700,7 @@ function MessageTimelineView(
           </Show>
         )
 
-        const rendered = (
+        return (
           <Show
             when={Predicate.isTagged(row(), "Activity")}
             fallback={
@@ -778,23 +777,6 @@ function MessageTimelineView(
               return <Show when={shown()}>{activity()}</Show>
             }}
           </Show>
-        )
-
-        // The virtualizer unmounts folded rows, so only the rows revealed by expanding can animate in.
-        if (Predicate.isTagged(row(), "Activity")) return rendered
-
-        return (
-          <div
-            ref={(el) => {
-              if (!expandedTurns().has(row().userMessageID) || prefersReducedMotion()) return
-              el.animate(
-                { opacity: [0, 1], transform: ["translateY(6px)", "none"] },
-                { duration: 180, easing: "cubic-bezier(0.4,0,0.2,1)" },
-              )
-            }}
-          >
-            {rendered}
-          </div>
         )
       }}
       header={
