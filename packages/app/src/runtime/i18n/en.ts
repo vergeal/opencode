@@ -954,6 +954,7 @@ export const dict = {
   "settings.appearance.row.reduceMotion.system": "System",
   "settings.appearance.row.reduceMotion.on": "On",
   "settings.appearance.row.reduceMotion.off": "Off",
+  "settings.appearance.font.monospace": "Monospace",
   "settings.notifications.description": "Choose when to receive notifications and hear sounds",
   "settings.shortcuts.description": "Customize shortcuts for common actions",
   "settings.servers.description": "Manage server connections",

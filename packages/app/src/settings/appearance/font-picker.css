@@ -1,0 +1,144 @@
+/* The trigger copies the select trigger's geometry so a font row matches the other appearance rows. */
+button[data-component="font-picker"] {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 28px;
+  padding-block: 0;
+  padding-inline: 10px 6px;
+  border: 0;
+  border-radius: 6px;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+  background: var(--v2-background-bg-base);
+  box-shadow: var(--v2-elevation-input);
+  color: var(--v2-text-text-base);
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+  text-align: start;
+  user-select: none;
+  cursor: default;
+  transition:
+    background 85ms ease-out,
+    outline-color 85ms ease-out,
+    box-shadow 85ms ease-out;
+}
+
+button[data-component="font-picker"]:hover,
+button[data-component="font-picker"][data-expanded] {
+  box-shadow:
+    inset 0 0 0 100vmax var(--v2-overlay-simple-overlay-hover),
+    var(--v2-elevation-input);
+}
+
+button[data-component="font-picker"]:focus-visible {
+  outline-color: var(--v2-border-border-focus);
+  box-shadow: none;
+}
+
+button[data-component="font-picker"] [data-slot="font-picker-value"] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+button[data-component="font-picker"] svg {
+  flex: none;
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="font-picker-panel"] {
+  position: fixed;
+  z-index: 60;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--v2-material-surface-strong);
+  backdrop-filter: var(--v2-material-blur-thick);
+  box-shadow: var(--v2-elevation-floating);
+  color: var(--v2-text-text-base);
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+}
+
+[data-slot="font-picker-search"] {
+  flex: none;
+  box-sizing: border-box;
+  width: 100%;
+  height: 26px;
+  padding-inline: 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--v2-text-text-base);
+  font-size: 13px;
+  outline: none;
+}
+
+[data-slot="font-picker-search"]::placeholder {
+  color: var(--v2-text-text-faint);
+}
+
+[data-slot="font-picker-list"] {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+[data-slot="font-picker-option"] {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding-inline: 8px;
+  border-radius: 4px;
+  color: var(--v2-text-text-base);
+  cursor: default;
+  user-select: none;
+}
+
+[data-slot="font-picker-option"][data-active] {
+  background: var(--v2-overlay-simple-overlay-hover);
+}
+
+[data-slot="font-picker-option-name"] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="font-picker-badge"] {
+  flex: none;
+  margin-inline-start: auto;
+  padding-inline: 5px;
+  border-radius: 3px;
+  background: var(--v2-background-bg-layer-01);
+  color: var(--v2-text-text-faint);
+  font-family: var(--font-family-sans);
+  font-size: 10px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+[data-slot="font-picker-check"] {
+  flex: none;
+  color: var(--v2-text-text-base);
+}
+
+[data-slot="font-picker-empty"] {
+  padding: 10px 8px;
+  color: var(--v2-text-text-faint);
+}
