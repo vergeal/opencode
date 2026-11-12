@@ -34,6 +34,14 @@ const STATUS_CLASS = {
   failed: "text-v2-state-fg-danger",
 } as const
 
+const RESOLUTION_LABELS = {
+  once: "inbox.detail.resolution.once",
+  always: "inbox.detail.resolution.always",
+  reject: "inbox.detail.resolution.reject",
+  answered: "inbox.detail.resolution.answered",
+  dismissed: "inbox.detail.resolution.dismissed",
+} as const
+
 /** One inbox item opened: the facts a decision needs, and the one or two actions that close it. */
 export function InboxDetail(props: { item: InboxItem; inbox: Inbox; onOpen: () => void; onBack?: () => void }) {
   const language = useLanguage()
@@ -129,7 +137,9 @@ export function InboxDetail(props: { item: InboxItem; inbox: Inbox; onOpen: () =
           <SessionElicitationDock
             request={{ ...request(), location: entry()?.session.location }}
             data={entry()?.ctx.data}
-            onSubmit={() => props.inbox.resolve(props.item)}
+            onSubmit={(result) =>
+              props.inbox.resolve(props.item, result.answer ? "answered" : "dismissed", result.summary)
+            }
           />
         )}
       </Show>
@@ -140,7 +150,39 @@ export function InboxDetail(props: { item: InboxItem; inbox: Inbox; onOpen: () =
         </p>
       </Show>
 
-      <Show when={decided()}>
+      <Show when={props.item.resolution}>
+        {(resolution) => (
+          <div
+            data-slot="inbox-detail-resolution"
+            class="flex flex-col gap-1.5 rounded-[6px] bg-v2-background-bg-layer-01 px-3 py-2.5"
+          >
+            <div class="flex items-center gap-2 text-[12px] leading-[var(--line-height-compact)]">
+              <span class="text-v2-text-text-base">
+                {language.t(RESOLUTION_LABELS[resolution().decision])}
+              </span>
+              <span class="ms-auto text-v2-text-text-faint">
+                {getRelativeTime(new Date(resolution().at).toISOString(), language.t)}
+              </span>
+            </div>
+            <Show when={resolution().answers?.length ? resolution().answers : undefined}>
+              {(answers) => (
+                <dl class="flex flex-col gap-1 text-[13px] leading-[var(--line-height-compact)]">
+                  <For each={answers()}>
+                    {(answer) => (
+                      <div class="flex gap-2">
+                        <dt class="w-24 shrink-0 truncate text-v2-text-text-faint">{answer.label}</dt>
+                        <dd class="min-w-0 break-words">{answer.value}</dd>
+                      </div>
+                    )}
+                  </For>
+                </dl>
+              )}
+            </Show>
+          </div>
+        )}
+      </Show>
+
+      <Show when={props.item.status === "done" && !props.item.resolution}>
         <p class="text-[12px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
           {language.t("inbox.detail.handled")}
         </p>
@@ -177,7 +219,7 @@ export function InboxDetail(props: { item: InboxItem; inbox: Inbox; onOpen: () =
               size="small"
               variant="neutral"
               disabled={busy()}
-              onClick={() => void run(async () => (props.inbox.resolve(props.item), true))}
+              onClick={() => void run(async () => (props.inbox.resolve(props.item, "dismissed"), true))}
             >
               {language.t("inbox.detail.action.dismiss")}
             </Button>
@@ -194,6 +236,13 @@ export function InboxDetail(props: { item: InboxItem; inbox: Inbox; onOpen: () =
               {language.t("inbox.detail.action.open")}
             </Button>
           </Show>
+        </div>
+      </Show>
+      <Show when={props.inbox.history(props.item)}>
+        <div class="mt-auto flex items-center justify-end border-t border-v2-border-border-muted pt-4">
+          <Button size="small" variant="neutral" onClick={() => props.inbox.remove(props.item)}>
+            {language.t("inbox.detail.action.delete")}
+          </Button>
         </div>
       </Show>
     </article>

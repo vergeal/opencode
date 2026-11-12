@@ -25,9 +25,24 @@ const inputTypes = { email: "email", uri: "url", date: "text", "date-time": "tex
   string
 >
 
+/** The label and readable value of each field the person actually filled in, kept for inbox history. */
+function summarize(fields: Field[], answer: FormAnswer) {
+  return fields.flatMap((field) => {
+    if (!Object.hasOwn(answer, field.key)) return []
+
+    const value = answer[field.key]
+
+    return [{ label: field.title || field.key, value: Array.isArray(value) ? value.join(", ") : String(value) }]
+  })
+}
+
 export function SessionElicitationDock(props: {
   request: FormInfo & { location?: LocationRef }
-  onSubmit: () => void
+  /**
+   * Called as soon as the person submits or dismisses. The summary names the fields that were filled in so a caller
+   * can keep the answer in history; it is empty when the question was dismissed.
+   */
+  onSubmit: (result: { answer?: FormAnswer; summary: Array<{ label: string; value: string }> }) => void
   /** The server the request belongs to, when it is not the routed one (for example a cross-server inbox item). */
   data?: ReturnType<typeof useData>
 }) {
@@ -72,13 +87,13 @@ export function SessionElicitationDock(props: {
 
   const reply = useMutation(() => ({
     mutationFn: (answer: FormAnswer) => data().session.form.reply({ ...input(), answer }, props.request.location),
-    onMutate: props.onSubmit,
     onError: fail,
   }))
 
   const cancel = useMutation(() => ({
     mutationFn: () => data().session.form.cancel(input(), props.request.location),
-    onMutate: props.onSubmit,
+    // Dismissing is also how a question leaves the list, so history records it as dismissed rather than answered.
+    onMutate: () => props.onSubmit({ summary: [] }),
     onError: fail,
   }))
 
@@ -86,27 +101,28 @@ export function SessionElicitationDock(props: {
 
   const submit = () => {
     if (sending()) return
-    reply.mutate(
-      Object.fromEntries(
-        fields().flatMap((field): Array<[string, FormValue]> => {
-          if (field.type === "external") return [[field.key, true]]
+    const answer = Object.fromEntries(
+      fields().flatMap((field): Array<[string, FormValue]> => {
+        if (field.type === "external") return [[field.key, true]]
 
-          if (field.type === "boolean") return [[field.key, values.flag[field.key] ?? false]]
+        if (field.type === "boolean") return [[field.key, values.flag[field.key] ?? false]]
 
-          if (field.type === "multiselect") {
-            const list = values.list[field.key] ?? []
+        if (field.type === "multiselect") {
+          const list = values.list[field.key] ?? []
 
-            return list.length ? [[field.key, list]] : []
-          }
+          return list.length ? [[field.key, list]] : []
+        }
 
-          const text = (field.type === "string" ? values.text[field.key] : values.number[field.key])?.trim()
+        const text = (field.type === "string" ? values.text[field.key] : values.number[field.key])?.trim()
 
-          if (!text) return []
+        if (!text) return []
 
-          return [[field.key, field.type === "string" ? text : Number(text)]]
-        }),
-      ),
+        return [[field.key, field.type === "string" ? text : Number(text)]]
+      }),
     )
+
+    props.onSubmit({ answer, summary: summarize(fields(), answer) })
+    reply.mutate(answer)
   }
 
   return (

@@ -2,7 +2,7 @@ import type { FormAnswer, FormInfo, KnowledgeInfo, PermissionRequest, ScheduleIn
 import { useQueries } from "@tanstack/solid-query"
 import { Schema } from "effect"
 import { createMemo } from "solid-js"
-import { createStore } from "solid-js/store"
+import { produce } from "solid-js/store"
 import { canUseServer } from "@/runtime/server/health-machine"
 import { useLanguage } from "@/runtime/i18n/language"
 import { Persistence } from "@/runtime/persistence/schema"
@@ -22,6 +22,17 @@ export type InboxAction =
   | { type: "open-schedule"; scheduleID: string }
   | { type: "open-knowledge"; libraryID: string }
 
+/**
+ * How a person closed an item. History keeps the decision itself, so a Done row says what was decided instead of
+ * only that something was handled.
+ */
+export type InboxResolution = {
+  decision: "once" | "always" | "reject" | "answered" | "dismissed"
+  at: number
+  /** The labels and values a person submitted. Only an answered question carries entries. */
+  answers?: Array<{ label: string; value: string }>
+}
+
 export type InboxItem = {
   /** Stable across polls: server, kind and the request or record it came from. */
   key: string
@@ -34,6 +45,7 @@ export type InboxItem = {
   createdAt: number
   expiresAt?: number
   action: InboxAction
+  resolution?: InboxResolution
 }
 
 /** The text a source needs while it maps a record; the caller passes the app's translator. */
@@ -214,6 +226,42 @@ function preview(output: string) {
 
 const Seen = Persistence.struct({ seen: Persistence.record(Schema.Finite) })
 
+const StoredAnswer = Persistence.struct({ label: Schema.String, value: Schema.String })
+
+const StoredResolution = Persistence.struct({
+  decision: Schema.Literals(["once", "always", "reject", "answered", "dismissed"]),
+  at: Schema.Finite,
+  answers: Persistence.optional(Persistence.array(StoredAnswer)),
+})
+
+const StoredAction = Schema.Union([
+  Persistence.struct({ type: Schema.Literal("permission"), sessionID: Schema.String, requestID: Schema.String }),
+  Persistence.struct({ type: Schema.Literal("form"), sessionID: Schema.String, formID: Schema.String }),
+  Persistence.struct({ type: Schema.Literal("open-session"), sessionID: Schema.String }),
+  Persistence.struct({ type: Schema.Literal("open-schedule"), scheduleID: Schema.String }),
+  Persistence.struct({ type: Schema.Literal("open-knowledge"), libraryID: Schema.String }),
+])
+
+const StoredItem = Persistence.struct({
+  key: Schema.String,
+  kind: Schema.Literals(["question", "approval", "failure", "output", "result"]),
+  status: Schema.Literals(["pending", "done", "failed"]),
+  title: Schema.String,
+  summary: Schema.String,
+  source: Persistence.struct({
+    type: Schema.Literals(["session", "schedule", "knowledge"]),
+    id: Schema.String,
+    name: Persistence.optional(Schema.String),
+  }),
+  projectID: Persistence.optional(Schema.String),
+  createdAt: Schema.Finite,
+  expiresAt: Persistence.optional(Schema.Finite),
+  action: StoredAction,
+  resolution: Persistence.optional(StoredResolution),
+})
+
+const Resolved = Persistence.record(StoredItem)
+
 /**
  * Aggregates the five kinds of inbox items across every visible server. Sessions come from `createSessionInbox`,
  * whose approval / input / failure states stay the single source of that judgement; schedules and knowledge
@@ -272,8 +320,8 @@ export function createInbox() {
   }))
 
   // Items this client finished. The source drops a request once it is answered, so the row would otherwise vanish
-  // instead of moving to Done. Keeping the item itself, not only its key, lets the row survive that refetch.
-  const [resolved, setResolved] = createStore<Record<string, InboxItem>>({})
+  // instead of moving to Done. The record keeps the decision and survives restarts; nothing but a person removes it.
+  const [resolved, setResolved] = persisted(Persist.global("inbox.resolved"), Resolved, {})
   const [state, setState] = persisted(Persist.global("inbox.seen"), Seen, { seen: {} })
 
   const sessionItems = createMemo(() =>
@@ -340,18 +388,45 @@ export function createInbox() {
     ),
   )
 
-  const items = createMemo(() => {
+  const items = createMemo<InboxItem[]>(() => {
     const live = [...sessionItems(), ...scheduleItems(), ...knowledgeItems()]
     const liveKeys = new Set(live.map((item) => item.key))
     const answered = Object.values(resolved).filter((item) => !liveKeys.has(item.key))
 
     return [...live, ...answered]
-      .map((item) => (resolved[item.key] ? { ...item, status: "done" as const } : item))
+      .map((item) => {
+        const record = resolved[item.key]
+
+        return record ? { ...item, status: "done" as const, resolution: record.resolution } : item
+      })
       .toSorted((a, b) => b.createdAt - a.createdAt)
   })
 
-  /** The item is answered or handed off here, so keep it visible as Done until the next launch. */
-  const resolve = (item: InboxItem) => setResolved(item.key, { ...item })
+  /** Records the decision with the item, so Done history survives restarts and reads as what was decided. */
+  const resolve = (item: InboxItem, decision: InboxResolution["decision"], answers?: InboxResolution["answers"]) =>
+    setResolved(item.key, {
+      ...item,
+      status: "done",
+      resolution: { decision, at: Date.now(), answers },
+    })
+
+  /** Drops one history row. Nothing prunes Done on its own; only a person removes a record. */
+  const remove = (item: InboxItem) => {
+    setResolved(
+      produce((records) => {
+        delete records[item.key]
+      }),
+    )
+    setState(
+      "seen",
+      produce((seen) => {
+        delete seen[item.key]
+      }),
+    )
+  }
+
+  /** Whether this item is a retained record, so only history can offer to forget it. */
+  const history = (item: InboxItem) => !!resolved[item.key]
 
   const unread = (item: InboxItem) => !state.seen[item.key]
 
@@ -405,12 +480,12 @@ export function createInbox() {
       .reply({ sessionID: request.sessionID, requestID: request.id, decision })
       .then(() => true, () => false)
 
-    if (accepted) resolve(item)
+    if (accepted) resolve(item, decision)
 
     return accepted
   }
 
-  const answerForm = async (item: InboxItem, answer: FormAnswer) => {
+  const answerForm = async (item: InboxItem, answer: FormAnswer, answers?: InboxResolution["answers"]) => {
     const target = entry(item)
 
     if (!target) return false
@@ -422,7 +497,7 @@ export function createInbox() {
       .reply({ sessionID: request.sessionID, formID: request.id, answer }, target.session.location)
       .then(() => true, () => false)
 
-    if (accepted) resolve(item)
+    if (accepted) resolve(item, "answered", answers)
 
     return accepted
   }
@@ -448,6 +523,8 @@ export function createInbox() {
     markSeen,
     markAllSeen,
     resolve,
+    remove,
+    history,
     entry,
     openSession,
     permission,
