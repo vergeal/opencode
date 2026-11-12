@@ -53,6 +53,7 @@ async function prepareServer(source: ServerSource) {
   if (source.type === "download")
     return downloadCliToResources(source.version, windowsify("resources/opencode-cli-dev"))
   buildWebUi()
+  process.env.OPENCODE_DESKTOP_BUN = process.execPath
   process.env.OPENCODE_DESKTOP_CLI_DEV = join(import.meta.dirname, "../../cli")
 
   if (process.platform !== "win32") return
@@ -66,7 +67,7 @@ async function prepareServer(source: ServerSource) {
 function buildWebUi() {
   const started = performance.now()
 
-  const build = Bun.spawn(["bun", "run", "build"], {
+  const build = Bun.spawn([process.execPath, "run", "build"], {
     cwd: join(import.meta.dirname, "../../app"),
     env: { ...process.env, VITE_OPENCODE_SERVER_MODE: "origin" },
     stdio: ["ignore", "ignore", "ignore"],
