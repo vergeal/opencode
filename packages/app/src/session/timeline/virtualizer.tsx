@@ -1314,6 +1314,7 @@ export function createTimelineVirtualizer(input: Input) {
   })
 
   return {
+    detachFollow: () => input.follow.dispatch({ type: "detach" }),
     disclosure: {
       patchGroupKeys,
       value: (key: string) => toolOpen[key],

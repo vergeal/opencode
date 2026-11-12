@@ -546,8 +546,9 @@ function MessageTimelineView(
   const [expandedTurns, setExpandedTurns] = createSignal<ReadonlySet<string>>(new Set())
 
   const toggleWorked = (turnID: string) => {
-    const selector = `[data-timeline-row="UserMessage"][data-message-id="${CSS.escape(turnID)}"]`
-    const top = () => document.querySelector<HTMLElement>(selector)?.getBoundingClientRect().top
+    // Folding changes the row count, so stop following the end before toggling; otherwise the virtualizer would
+    // scroll to the new end and push the header up. Following resumes when the user scrolls back to the end.
+    virtualized.detachFollow()
 
     setExpandedTurns((current) => {
       const next = new Set(current)
@@ -556,26 +557,6 @@ function MessageTimelineView(
       else next.add(turnID)
 
       return next
-    })
-
-    // Expanding or folding changes the rows above the viewport's anchor; compensate once the virtualizer has measured
-    // them so the header stays put and the content grows or shrinks below it instead of shifting the turn.
-    const before = top()
-    const scroller = document.querySelector<HTMLElement>(selector)?.closest<HTMLElement>("[data-scrollable]")
-
-    if (before === undefined || !scroller) return
-
-    // Browser scroll anchoring would also react to the new rows; we own the adjustment, so disable it until measured.
-    const anchor = scroller.style.overflowAnchor
-    scroller.style.overflowAnchor = "none"
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const after = top()
-
-        if (after !== undefined) scroller.scrollTop += after - before
-        scroller.style.overflowAnchor = anchor
-      })
     })
   }
 
