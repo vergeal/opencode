@@ -908,6 +908,28 @@ function restore(editor: HTMLElement, caret: Caret) {
   if (caret.start === caret.end) {
     const at = caretPoint(nodes, caret.start)
     if (!at) return
+
+    // A caret that sat just outside a hidden tick can resolve back into the chip. Keep the source
+    // position instead of silently moving the caret one character left, so typing after closing code
+    // lands outside the code as the user left it.
+    const resolved = textOffset(editor, at.node, at.offset)
+    if (resolved !== caret.start) {
+      const marker = Array.from(editor.querySelectorAll<HTMLElement>("[data-md-marker]")).find(
+        (candidate) => elementEnd(editor, candidate) === caret.start || elementStart(editor, candidate) === caret.start,
+      )
+      if (marker) {
+        const range = document.createRange()
+        if (elementEnd(editor, marker) === caret.start) range.setStartAfter(marker)
+        else range.setStartBefore(marker)
+        range.collapse(true)
+        selection.removeAllRanges()
+        selection.addRange(range)
+        keepCaretOutsideMention(editor)
+
+        return
+      }
+    }
+
     selection.setBaseAndExtent(at.node, at.offset, at.node, at.offset)
     keepCaretOutsideMention(editor)
 
