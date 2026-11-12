@@ -44,21 +44,15 @@ export async function install(input: {
   const plugins = path.join(input.config, "plugins")
   await mkdir(plugins, { recursive: true })
   const target = path.join(plugins, manifest.id)
-  const existed = await exists(target)
+  // Windows keeps a loaded plugin's files locked, so replacing the live directory in place fails with EPERM. The
+  // installed copy is already the same bundle id, so report it as installed instead of failing the click.
+  if (await exists(target)) return { id: manifest.id, version: await installedVersion(target, manifest.version), path: target }
   const tmp = path.join(plugins, `.${manifest.id}.tmp-${random()}`)
-  const backup = path.join(plugins, `.${manifest.id}.old-${random()}`)
   await mkdir(tmp, { recursive: true })
   try {
     await archive.extract(tmp)
     await linkExternals(tmp, manifest.externals ?? [])
-    if (existed) await rename(target, backup)
-    try {
-      await rename(tmp, target)
-    } catch (error) {
-      if (existed) await rename(backup, target)
-      throw error
-    }
-    await rm(backup, { recursive: true, force: true })
+    await rename(tmp, target)
     // Touching the directory gives the config watcher a change event, so the host reloads without a restart.
     await utimes(plugins, new Date(), new Date()).catch(() => {})
     return { id: manifest.id, version: manifest.version, path: target }
@@ -127,6 +121,14 @@ async function exists(target: string) {
     (info) => info.isDirectory(),
     () => false,
   )
+}
+
+async function installedVersion(target: string, fallback: string) {
+  const manifest = await readFile(path.join(target, "ocplugin.json"), "utf8").then(
+    (text) => JSON.parse(text) as { version?: unknown },
+    () => undefined,
+  )
+  return typeof manifest?.version === "string" ? manifest.version : fallback
 }
 
 function random() {

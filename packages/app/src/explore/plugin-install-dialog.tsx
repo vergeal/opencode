@@ -1,4 +1,6 @@
 import { Button } from "@opencode/ui/button"
+import { PluginIcon } from "@/explore/plugin-icon"
+import type { CatalogPlugin } from "@/explore/catalog"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { TextInput } from "@opencode/ui/text-input"
@@ -23,6 +25,8 @@ export function PluginInstallDialog(props: {
   bundle?: { file: string; format: "ocplugin" }
   /** Plugin id a bundle install targets. */
   id?: string
+  /** The catalog entry a bundle install renders. */
+  entry?: CatalogPlugin
   onInstalled?: () => void
 }) {
   const language = useLanguage()
@@ -30,8 +34,8 @@ export function PluginInstallDialog(props: {
   const server = useServerSDK()
   const [state, setState] = createStore({ package: "", busy: false, error: "" })
 
-  if (props.bundle)
-    return <BundleInstallDialog id={props.id ?? props.bundle.file} name={props.name} onInstalled={props.onInstalled} />
+  if (props.bundle && props.entry)
+    return <BundleInstallDialog entry={props.entry} onInstalled={props.onInstalled} />
 
   const target = () => (props.package ?? state.package).trim()
 
@@ -134,7 +138,7 @@ export function PluginInstallDialog(props: {
 }
 
 /** One button: the server finds the bundle, verifies it and unpacks it. Nothing for the user to configure. */
-function BundleInstallDialog(props: { id: string; name?: string; onInstalled?: () => void }) {
+function BundleInstallDialog(props: { entry: CatalogPlugin; onInstalled?: () => void }) {
   const language = useLanguage()
   const dialog = useDialog()
   const server = useServerSDK()
@@ -144,17 +148,21 @@ function BundleInstallDialog(props: { id: string; name?: string; onInstalled?: (
     if (state.busy) return
     setState({ busy: true, error: "" })
     try {
-      await server.api.experimental.plugin.bundle({ id: props.id })
+      await server.api.experimental.plugin.bundle({ id: props.entry.id })
       dialog.close()
       props.onInstalled?.()
       showToast({
         variant: "success",
-        title: language.t("explore.plugins.bundle.success", { name: props.name ?? props.id }),
+        title: language.t("explore.plugins.bundle.success", { name: props.entry.name }),
       })
-    } catch {
+    } catch (error) {
+      // Keep the user-facing copy short; the detail belongs in the console for a bug report.
+      console.error("plugin install failed", error)
       setState({ busy: false, error: language.t("explore.plugins.bundle.failed") })
     }
   }
+
+  const skills = () => props.entry.skills?.map((skill) => skill.name).join("、") ?? ""
 
   return (
     <Dialog fit containerClass="explore-install-dialog">
@@ -166,6 +174,45 @@ function BundleInstallDialog(props: { id: string; name?: string; onInstalled?: (
       </DialogHeader>
 
       <DialogBody class="explore-install-body">
+        <div class="explore-install-head">
+          <span class="explore-install-head-icon">
+            <PluginIcon />
+          </span>
+          <div class="explore-install-head-text">
+            <span class="explore-install-target-name">{props.entry.name}</span>
+            <span class="explore-install-target-package">
+              {props.entry.version ? `v${props.entry.version}` : props.entry.id}
+            </span>
+          </div>
+        </div>
+
+        <p class="explore-install-text">{props.entry.description}</p>
+
+        <dl class="explore-install-facts">
+          <Show when={props.entry.version}>
+            {(version) => (
+              <div>
+                <dt>{language.t("explore.plugins.facts.version")}</dt>
+                <dd>{version()}</dd>
+              </div>
+            )}
+          </Show>
+          <Show when={props.entry.tools?.length}>
+            <div>
+              <dt>{language.t("explore.plugins.facts.tools")}</dt>
+              <dd dir="ltr">{props.entry.tools?.join("、")}</dd>
+            </div>
+          </Show>
+          <Show when={skills()}>
+            {(names) => (
+              <div>
+                <dt>{language.t("explore.plugins.facts.skills")}</dt>
+                <dd>{names()}</dd>
+              </div>
+            )}
+          </Show>
+        </dl>
+
         <Show when={state.error}>
           {(message) => (
             <p class="explore-form-error" role="alert">

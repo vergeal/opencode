@@ -31,6 +31,10 @@ export type CatalogPlugin = {
    * file into its plugins directory, so the card shows the bundle instead of offering a package install.
    */
   bundle?: { file: string; format: "ocplugin" }
+  /** Version shown on the install card. */
+  version?: string
+  /** Tool families the plugin registers, for the install card. */
+  tools?: readonly string[]
   /** MCP servers the plugin starts, when the catalog knows them. */
   mcpServers?: readonly { name: string }[]
   /** Skills the plugin ships, when the catalog knows them. */
@@ -65,6 +69,8 @@ const plugins: readonly CatalogPlugin[] = [
     package: "opencode.webwright",
     repository: "https://github.com/anomalyco/opencode/tree/dev/packages/plugins/webwright",
     bundle: { file: "opencode.webwright-2.2.5.ocplugin", format: "ocplugin" },
+    version: "2.2.5",
+    tools: ["webwright.*"],
     skills: [
       {
         name: "Webwright",

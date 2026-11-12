@@ -82,6 +82,7 @@ export function ExplorePlugins() {
         integrated={entry.integrated}
         bundle={entry.bundle}
         id={entry.id}
+        entry={entry}
         onInstalled={() => void installed.refetchPlugins()}
       />
     ))
