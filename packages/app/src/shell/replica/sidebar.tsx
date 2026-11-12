@@ -2,7 +2,11 @@ import { createEffect, createMemo, createSignal, For, Match, onCleanup, Show, Sw
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { useNavigate } from "@solidjs/router"
 import { ActivityRing } from "@opencode/ui/activity-ring"
+import { Button } from "@opencode/ui/button"
+import { useDialog } from "@opencode/ui/context/dialog"
+import { Dialog, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { Icon } from "@opencode/ui/icon"
+import { Menu } from "@opencode/ui/menu"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
@@ -11,6 +15,8 @@ import { useCommand } from "@/shell/commands/command"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { usePinnedSessions } from "@/session/pins"
 import { sessionLabel } from "@/session/title"
+import { SessionMenuCopyID } from "@/session/menu-items"
+import { sessionTreeIDs } from "@/session/requests/session-request-tree"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 import { createSessionInbox, type InboxEntry, type InboxStatus } from "@/shell/titlebar/inbox-model"
@@ -96,8 +102,17 @@ export function ReplicaSidebar() {
  * The home destination: pinned conversations, then recent ones, each row carrying its project's icon. Rows sit
  * 2px apart so a selected background never reads as one continuous block.
  */
-/** One session row: click opens it, double-click on the title renames it in place. */
-function SessionRow(props: { entry: InboxEntry; active: boolean; onOpen: (entry: InboxEntry) => void }) {
+/** One session row: click opens it, double-click on the title renames it in place, right-click shows its actions. */
+function SessionRow(props: {
+  entry: InboxEntry
+  active: boolean
+  onOpen: (entry: InboxEntry) => void
+  onDelete: (entry: InboxEntry) => void
+}) {
+  const language = useLanguage()
+
+  const pins = usePinnedSessions()
+
   const [renaming, setRenaming] = createSignal(false)
   let label!: HTMLSpanElement
 
@@ -110,10 +125,7 @@ function SessionRow(props: { entry: InboxEntry; active: boolean; onOpen: (entry:
     label.textContent = value
   })
 
-  const beginRename = (event: MouseEvent) => {
-    event.preventDefault()
-    event.stopPropagation()
-
+  const startRename = () => {
     if (renaming()) return
     label.textContent = sessionLabel(props.entry.session)
     setRenaming(true)
@@ -126,6 +138,12 @@ function SessionRow(props: { entry: InboxEntry; active: boolean; onOpen: (entry:
       selection?.removeAllRanges()
       selection?.addRange(range)
     })
+  }
+
+  const beginRename = (event: MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+    startRename()
   }
 
   const commit = async (save: boolean) => {
@@ -171,65 +189,95 @@ function SessionRow(props: { entry: InboxEntry; active: boolean; onOpen: (entry:
   })
 
   return (
-    <div
-      data-slot="replica-row"
-      data-ui="sidebar-row"
-      data-state={props.active ? "pressed" : undefined}
-      data-renaming={renaming() ? "" : undefined}
-      role="button"
-      tabindex={renaming() ? undefined : 0}
-      class={`${ROW} outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]`}
-      onClick={() => {
-        if (renaming()) return
-        props.onOpen(props.entry)
-      }}
-      onKeyDown={(event) => {
-        if (renaming() || event.key !== "Enter") return
-        event.preventDefault()
-        props.onOpen(props.entry)
-      }}
-    >
-      <Show
-        when={project()}
-        fallback={<Icon name="folder" class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />}
+    <Menu.Context modal={false}>
+      <Menu.Context.Trigger
+        as="div"
+        data-slot="replica-row"
+        data-ui="sidebar-row"
+        data-state={props.active ? "pressed" : undefined}
+        data-renaming={renaming() ? "" : undefined}
+        role="button"
+        tabindex={renaming() ? undefined : 0}
+        class={`${ROW} outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]`}
+        onClick={() => {
+          if (renaming()) return
+          props.onOpen(props.entry)
+        }}
+        onKeyDown={(event: KeyboardEvent) => {
+          if (renaming() || event.key !== "Enter") return
+          event.preventDefault()
+          props.onOpen(props.entry)
+        }}
       >
-        {(project) => <ProjectIcon project={project()} class="size-4 shrink-0" />}
-      </Show>
-      <span
-        ref={label}
-        data-slot="replica-row-title"
-        dir="auto"
-        class="min-w-0 flex-1 outline-none"
-        classList={{ truncate: !renaming(), "cursor-text select-text": renaming() }}
-        contenteditable={renaming() ? "plaintext-only" : undefined}
-        onDblClick={beginRename}
-        onKeyDown={(event) => {
-          if (!renaming()) return
-          event.stopPropagation()
+        <Show
+          when={project()}
+          fallback={<Icon name="folder" class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />}
+        >
+          {(project) => <ProjectIcon project={project()} class="size-4 shrink-0" />}
+        </Show>
+        <span
+          ref={label}
+          data-slot="replica-row-title"
+          dir="auto"
+          class="min-w-0 flex-1 outline-none"
+          classList={{ truncate: !renaming(), "cursor-text select-text": renaming() }}
+          contenteditable={renaming() ? "plaintext-only" : undefined}
+          onDblClick={beginRename}
+          onKeyDown={(event) => {
+            if (!renaming()) return
+            event.stopPropagation()
 
-          if (event.key === "Enter") {
+            if (event.key === "Enter") {
+              event.preventDefault()
+              void commit(true)
+
+              return
+            }
+
+            if (event.key !== "Escape") return
             event.preventDefault()
-            void commit(true)
-
-            return
-          }
-
-          if (event.key !== "Escape") return
-          event.preventDefault()
-          void commit(false)
-        }}
-        onBlur={() => void commit(true)}
-        onPointerDown={(event) => {
-          if (renaming()) event.stopPropagation()
-        }}
-        onClick={(event) => {
-          if (!renaming()) return
-          event.preventDefault()
-          event.stopPropagation()
-        }}
-      />
-      <StatusMark status={props.entry.status} />
-    </div>
+            void commit(false)
+          }}
+          onBlur={() => void commit(true)}
+          onPointerDown={(event) => {
+            if (renaming()) event.stopPropagation()
+          }}
+          onClick={(event) => {
+            if (!renaming()) return
+            event.preventDefault()
+            event.stopPropagation()
+          }}
+        />
+        <StatusMark status={props.entry.status} />
+      </Menu.Context.Trigger>
+      <Menu.Context.Portal>
+        <Menu.Context.Content
+          onCloseAutoFocus={(event) => {
+            if (renaming()) event.preventDefault()
+          }}
+        >
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.organize")}</Menu.GroupLabel>
+            <Menu.Item onSelect={() => pins.toggle(props.entry.session.id)}>
+              {pins.isPinned(props.entry.session.id) ? language.t("common.unpin") : language.t("common.pin")}
+            </Menu.Item>
+            <Menu.Item onSelect={startRename}>{language.t("common.rename")}</Menu.Item>
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.copyExport")}</Menu.GroupLabel>
+            <SessionMenuCopyID sessionID={props.entry.session.id} />
+          </Menu.Group>
+          <Menu.Separator />
+          <Menu.Group>
+            <Menu.GroupLabel>{language.t("menu.group.danger")}</Menu.GroupLabel>
+            <Menu.Item data-variant="critical" onSelect={() => props.onDelete(props.entry)}>
+              {language.t("common.delete")}…
+            </Menu.Item>
+          </Menu.Group>
+        </Menu.Context.Content>
+      </Menu.Context.Portal>
+    </Menu.Context>
   )
 }
 
@@ -242,6 +290,7 @@ function ConversationNav() {
   const global = useGlobal()
   const inbox = createSessionInbox()
   const pins = usePinnedSessions()
+  const dialog = useDialog()
 
   const pending = () =>
     inbox
@@ -303,6 +352,36 @@ function ConversationNav() {
     entry.ctx.projects.touch(directory)
   }
 
+  const confirmDelete = (entry: InboxEntry) => {
+    const ids = sessionTreeIDs(entry.ctx.data.session.list(), entry.session.id)
+
+    void dialog.show(() => (
+      <Dialog fit>
+        <DialogHeader hideClose>
+          <DialogTitleGroup
+            title={language.t("session.delete.title")}
+            description={language.t("session.delete.confirm", { name: sessionLabel(entry.session) })}
+          />
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="neutral" autofocus onClick={() => dialog.close()}>
+            {language.t("common.cancel")}
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              dialog.close()
+              pins.remove(ids)
+              void inbox.remove(entry)
+            }}
+          >
+            {language.t("session.delete.button")}
+          </Button>
+        </DialogFooter>
+      </Dialog>
+    ))
+  }
+
   return (
     <>
       <div data-slot="replica-sidebar-header" data-ui="sidebar-header" class={HEADER}>
@@ -347,7 +426,7 @@ function ConversationNav() {
             <h2 class={SECTION}>{language.t("replica.section.pinned")}</h2>
             <div class={LIST}>
               <For each={pinned()}>
-                {(entry) => <SessionRow entry={entry} active={active(entry)} onOpen={open} />}
+                {(entry) => <SessionRow entry={entry} active={active(entry)} onOpen={open} onDelete={confirmDelete} />}
               </For>
             </div>
           </section>
@@ -358,7 +437,7 @@ function ConversationNav() {
             <h2 class={SECTION}>{language.t("replica.section.recent")}</h2>
             <div class={LIST}>
               <For each={recent()}>
-                {(entry) => <SessionRow entry={entry} active={active(entry)} onOpen={open} />}
+                {(entry) => <SessionRow entry={entry} active={active(entry)} onOpen={open} onDelete={confirmDelete} />}
               </For>
             </div>
           </section>
