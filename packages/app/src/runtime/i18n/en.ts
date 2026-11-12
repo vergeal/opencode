@@ -1053,7 +1053,6 @@ export const dict = {
   "explore.plugins.source.sdk": "SDK",
   "explore.plugins.install.title": "Install a plugin",
   "explore.plugins.install.description": "Enter a plugin name and it installs in one step",
-  "explore.plugins.bundle.description": "One click installs this plugin. Nothing else to set up.",
   "explore.plugins.bundle.install": "Install",
   "explore.plugins.facts.version": "Version",
   "explore.plugins.facts.tools": "Tools",

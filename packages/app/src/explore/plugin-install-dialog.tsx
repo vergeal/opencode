@@ -167,10 +167,7 @@ function BundleInstallDialog(props: { entry: CatalogPlugin; onInstalled?: () => 
   return (
     <Dialog fit containerClass="explore-install-dialog">
       <DialogHeader hideClose>
-        <DialogTitleGroup
-          title={language.t("explore.plugins.install.title")}
-          description={language.t("explore.plugins.bundle.description")}
-        />
+        <DialogTitleGroup title={language.t("explore.plugins.install.title")} />
       </DialogHeader>
 
       <DialogBody class="explore-install-body">

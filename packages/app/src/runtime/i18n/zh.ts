@@ -752,7 +752,6 @@ export const dict = {
   "explore.plugins.source.sdk": "SDK",
   "explore.plugins.install.title": "安装插件",
   "explore.plugins.install.description": "填入插件名称，点一下就能装好",
-  "explore.plugins.bundle.description": "点一下就能装好，不需要其他设置。",
   "explore.plugins.bundle.install": "安装",
   "explore.plugins.facts.version": "版本",
   "explore.plugins.facts.tools": "工具",
