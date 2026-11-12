@@ -1161,10 +1161,6 @@ function toolGroupType(
   )
     return undefined
 
-  // Commands collect into one collapsible group between the paragraphs, whatever the detail setting says; a command
-  // that is still running keeps its own row above so the live output stays visible.
-  if (content.name === "shell" || content.name === "execute") return "context"
-
   if (currentContentDefaultOpen(content, shellExpanded, editExpanded) !== true) return "context"
 
   if (content.name === "patch" || content.name === "edit" || content.name === "write") return "file"
