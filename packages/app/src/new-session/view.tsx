@@ -145,7 +145,7 @@ export function NewSessionView(props: {
                         type="button"
                         data-action="prompt-project-card"
                         aria-pressed={props.project.isSelected(project)}
-                        class="flex h-7 min-w-0 items-center gap-2 rounded-lg border-[0.5px] border-v2-border-border-base px-2 text-[13px] font-[400] leading-[var(--line-height-base)] tracking-[-0.04px] text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--v2-border-border-focus)] aria-[pressed=true]:border-v2-border-border-focus aria-[pressed=true]:text-v2-text-text-base"
+                        class="flex h-7 min-w-0 items-center gap-2 rounded-lg border-[0.5px] border-v2-border-border-base px-2 text-[13px] font-[400] leading-[var(--line-height-base)] tracking-[-0.04px] text-v2-text-text-muted transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none aria-[pressed=true]:text-v2-text-text-base"
                         onClick={() => {
                           props.project.select(project)
                           props.composer.restoreFocus()
