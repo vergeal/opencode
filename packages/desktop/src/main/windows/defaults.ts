@@ -39,11 +39,11 @@ export function savedBackgroundColor() {
   return Predicate.isString(stored) ? stored : undefined
 }
 
-// The zoom level chosen in settings or with Zoom In and Zoom Out, or 100% when none was saved.
+// The zoom level chosen in settings or with Zoom In and Zoom Out, or 110% when none was saved.
 export function storedZoomLevel() {
   const stored = getStore().get(ZOOM_LEVEL_KEY)
 
-  return desktopZoomLevels.find((level) => level === stored) ?? 1
+  return desktopZoomLevels.find((level) => level === stored) ?? 1.1
 }
 
 export function titlebarOverlay(mode: "light" | "dark" = tone(), zoom = 1) {
