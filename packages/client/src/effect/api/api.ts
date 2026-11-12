@@ -1892,9 +1892,14 @@ export type ProjectUpdateInput = {
 export type ProjectUpdateOutput = Project.Info
 export type ProjectUpdateOperation<E = never> = (input: ProjectUpdateInput) => Effect.Effect<ProjectUpdateOutput, E>
 
+export type ProjectRemoveInput = { readonly projectID: Project.ID }
+export type ProjectRemoveOutput = void
+export type ProjectRemoveOperation<E = never> = (input: ProjectRemoveInput) => Effect.Effect<ProjectRemoveOutput, E>
+
 export interface ProjectApi<E = never> {
   readonly list: ProjectListOperation<E>
   readonly update: ProjectUpdateOperation<E>
+  readonly remove: ProjectRemoveOperation<E>
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
@@ -2131,6 +2136,7 @@ export type EventSubscribeInput = {
         | "permission.replied"
         | "plugin.updated"
         | "project.updated"
+        | "project.deleted"
         | "worktree.updated"
         | "worktree.resolved"
         | "command.updated"

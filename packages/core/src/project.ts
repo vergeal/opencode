@@ -92,6 +92,12 @@ export interface Interface {
   /** Reads one Project without resolving a directory, for readers that already know the ID. */
   readonly get: (projectID: ID) => Effect.Effect<Info | undefined>
   readonly update: (input: UpdateInput) => Effect.Effect<Info, NotFoundError>
+  /**
+   * Deletes a Project row; its worktrees, directories, permissions and remaining Sessions go with it. Callers remove
+   * Sessions through `Session.remove` first so running turns stop and clients see each `session.deleted`; the cascade
+   * here is the backstop. Directories on disk are never touched.
+   */
+  readonly remove: (projectID: ID) => Effect.Effect<void, NotFoundError>
   /** Records Project activity for recency ordering, at most once per minute per Project. */
   readonly activate: (projectID: ID, options?: ActivateOptions) => Effect.Effect<void>
   /** Resolves the owning Project, persisting it unless `persist` is false. */
@@ -291,6 +297,17 @@ const layer = Layer.effect(
       const project = fromRow(row)
       yield* bus.publish(ProjectSchema.Event.Updated, project)
       return project
+    })
+
+    const remove = Effect.fn("Project.remove")(function* (projectID: ID) {
+      const row = yield* db
+        .delete(ProjectTable)
+        .where(eq(ProjectTable.id, projectID))
+        .returning({ id: ProjectTable.id })
+        .get()
+        .pipe(Effect.orDie)
+      if (!row) return yield* new NotFoundError({ projectID })
+      yield* bus.publish(ProjectSchema.Event.Deleted, { projectID })
     })
 
     const activated = new Map<ID, number>()
@@ -513,7 +530,7 @@ const layer = Layer.effect(
       )
     })
 
-    return Service.of({ list, get, update, activate, resolve, sweep })
+    return Service.of({ list, get, update, remove, activate, resolve, sweep })
   }),
 )
 

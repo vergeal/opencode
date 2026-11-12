@@ -10,6 +10,7 @@ import { errorMessage } from "@/shell/layout/helpers"
 import { showToast } from "@/shell/notifications/toast"
 import type { LocalProject } from "@/shell/state/layout"
 import { createProjectSessionActions } from "@/shell/tabs/project-sessions"
+import { useDeleteProject } from "./delete"
 import { useRevealProject } from "./reveal"
 
 export function createProjectActions() {
@@ -24,6 +25,8 @@ export function createProjectActions() {
   const global = useGlobal()
 
   const sessions = createProjectSessionActions()
+
+  const deleteProject = useDeleteProject()
 
   const revealProject = useRevealProject()
 
@@ -97,6 +100,7 @@ export function createProjectActions() {
     },
     hide: (conn: ServerConnection.Any, project: LocalProject) =>
       global.serverCtx(ServerConnection.key(conn))?.projects.hide(project),
+    remove: (conn: ServerConnection.Any, project: LocalProject) => deleteProject(conn, project),
     canReveal: revealProject.available,
     reveal: revealProject.reveal,
   }

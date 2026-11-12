@@ -501,6 +501,7 @@ function ProjectRow(props: {
                   onRevealProject={props.actions.reveal}
                   onClearNotifications={props.actions.clearNotifications}
                   onHideProject={props.actions.hide}
+                  onDeleteProject={props.actions.remove}
                 />
               </Menu.Content>
             </Menu.Portal>

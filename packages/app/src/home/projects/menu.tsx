@@ -1,4 +1,5 @@
 import { For } from "solid-js"
+import { Project } from "@opencode/schema/project"
 import { Menu } from "@opencode/ui/menu"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
@@ -29,6 +30,7 @@ export function projectMenuItems(props: {
   onRevealProject: (server: ServerConnection.Any, project: LocalProject) => void
   onClearNotifications: (server: ServerConnection.Any, project: LocalProject) => void
   onHideProject: (server: ServerConnection.Any, project: LocalProject) => void
+  onDeleteProject: (server: ServerConnection.Any, project: LocalProject) => void
 }) {
   const language = useLanguage()
   const platform = usePlatform()
@@ -73,9 +75,18 @@ export function projectMenuItems(props: {
     {
       id: "close",
       label: language.t("common.close"),
-      separated: true,
       onSelect: () => props.onHideProject(props.server, props.project),
     },
+    ...(props.project.id && props.project.id !== Project.ID.global
+      ? [
+          {
+            id: "delete",
+            label: `${language.t("project.delete.action")}…`,
+            separated: true,
+            onSelect: () => props.onDeleteProject(props.server, props.project),
+          },
+        ]
+      : []),
   ]
 }
 

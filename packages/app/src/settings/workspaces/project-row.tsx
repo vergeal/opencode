@@ -12,6 +12,8 @@ import { errorMessage } from "@/shell/layout/helpers"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { showToast } from "@/shell/notifications/toast"
 import { ContextMenu } from "@opencode/ui/context-menu"
+import { Project } from "@opencode/schema/project"
+import { useDeleteProject } from "@/home/projects/delete"
 import { ProjectOptions, projectMenuItems } from "./project-options"
 
 export function SettingsProjectRow(props: {
@@ -97,7 +99,7 @@ export function SettingsProjectRow(props: {
     requestAnimationFrame(() => (saved ? button : input)?.focus())
   }
 
-  const deleteProject = () => void global.serverCtx(ServerConnection.key(props.server))?.projects.hide(props.project)
+  const deleteProject = useDeleteProject()
 
   const items = projectMenuItems({
     server: props.server,
@@ -105,7 +107,7 @@ export function SettingsProjectRow(props: {
     onAdd: props.onAdd,
     onEdit: () => props.onOpen(props.project),
     onRename: openEditor,
-    onDelete: deleteProject,
+    onDelete: props.project.id === Project.ID.global ? undefined : () => deleteProject(props.server, props.project),
   })
 
   // Desktop draws the platform menu; only the web build needs the in-app one.
@@ -190,7 +192,9 @@ export function SettingsProjectRow(props: {
           onAdd={props.onAdd}
           onEdit={() => props.onOpen(props.project)}
           onRename={openEditor}
-          onDelete={deleteProject}
+          onDelete={
+            props.project.id === Project.ID.global ? undefined : () => deleteProject(props.server, props.project)
+          }
         />
       </Show>
     </div>

@@ -55,7 +55,7 @@ describe("public event manifest", () => {
     expect(EventManifest.Latest.get("project.updated")).toBe(Project.Event.Updated)
     expect(Agent.Event.Definitions).toEqual([Agent.Event.Updated])
     expect(Credential.Event.Definitions).toEqual([Credential.Event.Updated, Credential.Event.Switched])
-    expect(Project.Event.Definitions).toEqual([Project.Event.Updated])
+    expect(Project.Event.Definitions).toEqual([Project.Event.Updated, Project.Event.Deleted])
     expect(Config.Event.Definitions).toEqual([Config.Event.Updated])
     expect(FileSystem.Event.Definitions).toEqual([FileSystem.Event.Changed])
     expect(FileSystemV1.Event.Definitions).toEqual([FileSystemV1.Event.Edited])

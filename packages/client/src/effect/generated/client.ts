@@ -179,6 +179,8 @@ import type {
   ProjectListOutput,
   ProjectUpdateInput,
   ProjectUpdateOutput,
+  ProjectRemoveInput,
+  ProjectRemoveOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1276,9 +1278,15 @@ const EndpointProjectUpdate = (raw: RawClient["server.project"]) => (input: Proj
     }).pipe(Effect.mapError(mapClientError)),
   )
 
+const EndpointProjectRemove = (raw: RawClient["server.project"]) => (input: ProjectRemoveInput) =>
+  preserveEffect<ProjectRemoveOutput>()(
+    raw["project.remove"]({ params: { projectID: input["projectID"] } }).pipe(Effect.mapError(mapClientError)),
+  )
+
 const adaptGroupProject = (raw: RawClient["server.project"]) => ({
   list: EndpointProjectList(raw),
   update: EndpointProjectUpdate(raw),
+  remove: EndpointProjectRemove(raw),
 })
 
 const EndpointFormList = (raw: RawClient["server.form"]) => (input?: FormListInput) =>

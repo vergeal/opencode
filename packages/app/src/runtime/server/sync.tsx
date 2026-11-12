@@ -139,6 +139,11 @@ function createServerSyncContextInner(serverSDK: ServerSDK, data: Data) {
     })
   }
 
+  // A deleted project leaves the list at once, before any refetch; its sessions arrive as session.deleted.
+  function applyProjectDeleted(projectID: string) {
+    setGlobalStore("project", (projects) => projects.filter((project) => project.id !== projectID))
+  }
+
   // Observes the list the bootstrap loads without fetching it again, so readers can tell "no projects" from "not loaded".
   const projectsQuery = useQuery(() => ({
     ...loadProjectsQuery(serverSDK.scope, serverSDK.api.project),
@@ -152,6 +157,8 @@ function createServerSyncContextInner(serverSDK: ServerSDK, data: Data) {
     connection.handleEvent({ type: event.type })
 
     if (event.type === "project.updated") applyProjectUpdate(event.data)
+
+    if (event.type === "project.deleted") applyProjectDeleted(event.data.projectID)
 
     if (event.type === "worktree.updated") {
       void worktrees.list(event.data.projectID)
