@@ -1315,6 +1315,8 @@ export function createTimelineVirtualizer(input: Input) {
 
   return {
     detachFollow: () => input.follow.dispatch({ type: "detach" }),
+    // Folded rows render empty, and their old measured height would otherwise stay in the size cache as a gap.
+    remeasure: () => virtualizer.measure(),
     disclosure: {
       patchGroupKeys,
       value: (key: string) => toolOpen[key],

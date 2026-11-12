@@ -564,6 +564,7 @@ function MessageTimelineView(
     // Folding can leave scrollTop past the shorter content, which shows an empty band below the turn. Keep the
     // header in view instead so the scroll position settles on real content.
     requestAnimationFrame(() => {
+      virtualized.remeasure()
       const scroller = document
         .querySelector<HTMLElement>(selector)
         ?.closest<HTMLElement>("[data-scrollable]")
