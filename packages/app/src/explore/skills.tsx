@@ -3,6 +3,7 @@ import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { Icon } from "@opencode/ui/icon"
+import { Loader } from "@opencode/ui/loader"
 import { Switch } from "@opencode/ui/switch"
 import { TextInput } from "@opencode/ui/text-input"
 import { Textarea } from "@opencode/ui/textarea"
@@ -19,6 +20,7 @@ import { PageHeader } from "@/shell/page"
 import { useLayout } from "@/shell/state/layout"
 import "./explore.css"
 import { loadCatalog, type CatalogSkill } from "./catalog"
+import { ExploreStatus } from "./status"
 
 const isVirtual = (skill: SkillInfo) => skill.path.startsWith("skill://") || skill.path.startsWith("/builtin/")
 
@@ -100,12 +102,13 @@ export const ExploreSkills: Component = () => {
 
   const [state, setState] = createStore<{
     query: string
-    catalog?: string
+    tab: "installed" | "discover"
     toggling?: string
     syncing: boolean
     syncError: string
   }>({
     query: "",
+    tab: "discover",
     syncing: true,
     syncError: "",
   })
@@ -114,7 +117,7 @@ export const ExploreSkills: Component = () => {
 
   const [catalog] = createResource(loadCatalog)
 
-  // Reading the resource before its first value would suspend the skills pane, so Discover stays empty until it lands.
+  // Reading the resource before its first value would suspend the pane, so Discover stays empty until it lands.
   const catalogSkills = () => {
     if (catalog.state !== "ready" && catalog.state !== "refreshing") return []
 
@@ -127,49 +130,47 @@ export const ExploreSkills: Component = () => {
     if (!installed.skillsLoaded()) return []
 
     const known = new Set(skills().map((skill) => skill.id))
-    const needle = state.query.trim().toLowerCase()
 
-    return catalogSkills().filter((entry) => {
-      if (known.has(entry.id)) return false
-
-      if (!needle) return true
-
-      return `${entry.title}\n${entry.description}\n${entry.id}`.toLowerCase().includes(needle)
-    })
+    return catalogSkills().filter((entry) => !known.has(entry.id))
   })
 
-  const catalogEntry = createMemo(() => discoverable().find((entry) => entry.id === state.catalog))
-
-  // The navigation column owns the installed selection; the pane only shows whichever skill it names.
+  // The navigation column owns the installed selection; the list and the detail page only read it.
   const selected = createMemo(() => skills().find((skill) => skill.id === layout.destination.explore.selected()))
 
-  // Selecting a catalog entry replaces whatever installed skill the column had open.
-  createEffect(
-    on(
-      () => layout.destination.explore.selected(),
-      (id) => {
-        if (id) setState("catalog", undefined)
-      },
-    ),
+  const catalogEntry = createMemo(() =>
+    catalogSkills().find((entry) => entry.id === layout.destination.explore.catalog()),
   )
 
-  // A catalog selection the search no longer shows clears back to the selected skill or the placeholder.
-  createEffect(() => {
-    const current = state.catalog
+  const matches = (text: string) => {
+    const needle = state.query.trim().toLowerCase()
 
-    if (!current) return
+    return !needle || text.toLowerCase().includes(needle)
+  }
 
-    if (discoverable().some((entry) => entry.id === current)) return
+  const installedGroups = createMemo(() => {
+    const group = (titleKey: string, virtual: boolean) => ({
+      titleKey,
+      items: skills().filter(
+        (skill) => isVirtual(skill) === virtual && matches(`${skill.name}\n${skill.description}\n${skill.id}`),
+      ),
+    })
 
-    setState("catalog", undefined)
+    return [group("explore.skills.group.installed", false), group("explore.skills.group.builtin", true)].filter(
+      (entry) => entry.items.length > 0,
+    )
   })
 
-  const selectCatalog = (entry: CatalogSkill) => {
-    if (entry.id === state.catalog) return
+  const discoverEntries = createMemo(() =>
+    discoverable().filter((entry) => matches(`${entry.title}\n${entry.description}\n${entry.id}`)),
+  )
 
+  // A catalog card and an installed row are two different pages, so opening one closes the other.
+  const back = () => {
     layout.destination.explore.setSelected(undefined)
-    setState("catalog", entry.id)
+    layout.destination.explore.setCatalog(undefined)
   }
+
+  const selectCatalog = (entry: CatalogSkill) => layout.destination.explore.setCatalog(entry.id)
 
   // The switch is optimistic until the rescan reports the written value, then it follows the server again.
   const [autoinvoke, setAutoinvoke] = createStore<Record<string, boolean>>({})
@@ -305,10 +306,7 @@ export const ExploreSkills: Component = () => {
         directory={directory()}
         existing={skills().map((skill) => skill.id)}
         onInstalled={(id) => {
-          void syncSkills(directory()).then(() => {
-            layout.destination.explore.setSelected(id)
-            setState("catalog", undefined)
-          })
+          void syncSkills(directory()).then(() => layout.destination.explore.setSelected(id))
           showToast({ variant: "success", title: language.t("explore.skills.install.success", { id }) })
         }}
       />
@@ -319,12 +317,9 @@ export const ExploreSkills: Component = () => {
       <InstallSkillDialog
         directory={directory()}
         existing={skills().map((skill) => skill.id)}
-        initial={{ id: entry.id, name: entry.id, description: entry.description, instructions: entry.instructions }}
+        initial={{ id: entry.id, name: entry.title, description: entry.description, instructions: entry.instructions }}
         onInstalled={(id) => {
-          void syncSkills(directory()).then(() => {
-            layout.destination.explore.setSelected(id)
-            setState("catalog", undefined)
-          })
+          void syncSkills(directory()).then(() => layout.destination.explore.setSelected(id))
           showToast({ variant: "success", title: language.t("explore.skills.install.success", { id }) })
         }}
       />
@@ -359,11 +354,12 @@ export const ExploreSkills: Component = () => {
     ))
   }
 
-  return (
+  const list = () => (
     <>
       <PageHeader
         title={language.t("explore.skills.title")}
         description={language.t("explore.skills.description")}
+        inset
         actions={
           <>
             <div class="explore-page-search">
@@ -401,185 +397,352 @@ export const ExploreSkills: Component = () => {
         }
       />
 
-      <div class="explore-skills">
-        <aside class="explore-skills-list">
-          <div class="explore-skills-scroll" data-scrollable>
-            <Show when={state.syncError}>
-              {(message) => (
-                <div class="explore-error" role="alert">
-                  <Icon name="outline-hexagonal-warning" size="small" class="shrink-0" />
-                  <span class="min-w-0 flex-1 break-words">{message()}</span>
-                  <Button size="small" variant="ghost-muted" onClick={() => void syncSkills(directory())}>
-                    {language.t("explore.plugins.error.retry")}
-                  </Button>
-                </div>
-              )}
-            </Show>
+      <div class="explore-catalog-body" data-scrollable>
+        <div class="explore-page-inner">
+          <Show when={state.syncError}>
+            {(message) => (
+              <div class="explore-error" role="alert">
+                <Icon name="outline-hexagonal-warning" size="small" class="shrink-0" />
+                <span class="min-w-0 flex-1 break-words">{message()}</span>
+                <Button size="small" variant="ghost-muted" onClick={() => void syncSkills(directory())}>
+                  {language.t("explore.plugins.error.retry")}
+                </Button>
+              </div>
+            )}
+          </Show>
 
+          <div class="explore-catalog-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              class="explore-catalog-tab"
+              aria-selected={state.tab === "installed"}
+              data-selected={state.tab === "installed" ? "" : undefined}
+              onClick={() => setState("tab", "installed")}
+            >
+              {language.t("explore.skills.tab.installed")}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              class="explore-catalog-tab"
+              aria-selected={state.tab === "discover"}
+              data-selected={state.tab === "discover" ? "" : undefined}
+              onClick={() => setState("tab", "discover")}
+            >
+              {language.t("explore.skills.tab.discover")}
+            </button>
+          </div>
+
+          <Show
+            when={installed.skillsLoaded()}
+            fallback={
+              <div class="explore-loading" aria-busy="true">
+                <Loader />
+              </div>
+            }
+          >
             <Show
-              when={discoverable().length > 0}
+              when={state.tab === "installed"}
               fallback={
-                <Show when={!!state.query.trim()}>
-                  <div class="explore-skills-empty">
-                    <p class="explore-skills-empty-title">{language.t("settings.skills.noResults.title")}</p>
-                    <p class="explore-skills-empty-description">
-                      {language.t("settings.skills.noResults.description")}
-                    </p>
-                  </div>
+                <Show when={discoverEntries().length > 0} fallback={<SkillEmpty tab="discover" query={state.query} />}>
+                  <section class="explore-catalog-group">
+                    <h2 class="explore-catalog-group-title">{language.t("explore.skills.group.available")}</h2>
+                    <div class="explore-catalog-grid">
+                      <For each={discoverEntries()}>
+                        {(entry) => (
+                          <SkillCard
+                            name={entry.title}
+                            description={entry.description}
+                            addLabel={language.t("explore.skills.install")}
+                            onOpen={() => selectCatalog(entry)}
+                            onAdd={() => installCatalog(entry)}
+                          />
+                        )}
+                      </For>
+                    </div>
+                  </section>
                 </Show>
               }
             >
-              <div class="explore-skills-group">
-                <div class="explore-skills-group-title">
-                  <span>{language.t("explore.skills.discover.title")}</span>
-                  <span class="explore-skills-count">{discoverable().length}</span>
-                </div>
-                <For each={discoverable()}>
-                  {(entry) => (
-                    <button
-                      type="button"
-                      class="explore-skills-row"
-                      data-discover=""
-                      data-selected={state.catalog === entry.id ? "" : undefined}
-                      onClick={() => selectCatalog(entry)}
-                    >
-                      <span class="explore-skills-row-name">{entry.title}</span>
-                    </button>
+              <Show when={installedGroups().length > 0} fallback={<SkillEmpty tab="installed" query={state.query} />}>
+                <For each={installedGroups()}>
+                  {(group) => (
+                    <section class="explore-catalog-group">
+                      <h2 class="explore-catalog-group-title">{language.t(group.titleKey)}</h2>
+                      <div class="explore-catalog-grid">
+                        <For each={group.items}>
+                          {(skill) => (
+                            <SkillCard
+                              name={skill.name}
+                              description={skill.description}
+                              onOpen={() => layout.destination.explore.setSelected(skill.id)}
+                            />
+                          )}
+                        </For>
+                      </div>
+                    </section>
                   )}
                 </For>
-              </div>
-            </Show>
-          </div>
-        </aside>
-
-        <section class="explore-skills-detail" data-scrollable>
-          <Show
-            when={selected()}
-            fallback={
-              <Show
-                when={catalogEntry()}
-                fallback={
-                  <div class="explore-skills-placeholder">
-                    <p class="explore-skills-placeholder-title">{language.t("settings.skills.select.title")}</p>
-                    <p class="explore-skills-placeholder-description">
-                      {language.t("settings.skills.select.description")}
-                    </p>
-                  </div>
-                }
-              >
-                {(entry) => <CatalogSkillDetail entry={entry()} onInstall={() => installCatalog(entry())} />}
               </Show>
-            }
-          >
-            {(skill) => (
-              <>
-                <div class="explore-skills-header">
-                  <div class="explore-skills-heading">
-                    <h3 class="explore-skills-title">{skill().name}</h3>
-                    <div class="explore-skills-meta">
-                      <button
-                        type="button"
-                        class="explore-skills-reference"
-                        title={language.t("settings.skills.copyReference")}
-                        onClick={() => void copyReference(skill())}
-                      >
-                        @{skill().id}
-                      </button>
-                      <span class="explore-skills-path" title={skill().path}>
-                        {skill().path}
-                      </span>
-                    </div>
-                  </div>
-                  <Show when={!isVirtual(skill())}>
-                    <div class="explore-skills-actions">
-                      <Button
-                        size="small"
-                        variant="ghost-muted"
-                        icon="outline-code-brackets"
-                        disabled={!platform.openPath}
-                        onClick={() => void openInEditor(skill())}
-                      >
-                        {language.t("settings.skills.openEditor")}
-                      </Button>
-                      <Button
-                        size="small"
-                        variant="ghost-muted"
-                        icon="folder"
-                        onClick={() => reveal(skill())}
-                        disabled={!platform.revealPath && !platform.openPath}
-                      >
-                        {language.t("settings.skills.reveal")}
-                      </Button>
-                      <Button size="small" variant="ghost-danger" icon="trash" onClick={() => void remove(skill())}>
-                        {language.t("explore.skills.remove")}
-                      </Button>
-                    </div>
-                  </Show>
-                </div>
-
-                <Show when={skill().description}>
-                  {(description) => <p class="explore-skills-description">{description()}</p>}
-                </Show>
-
-                <div class="explore-skills-toggle">
-                  <div class="explore-skills-toggle-copy">
-                    <span class="explore-skills-toggle-title">{language.t("settings.skills.autoinvoke.title")}</span>
-                    <p class="explore-skills-toggle-description">
-                      {language.t(
-                        isVirtual(skill())
-                          ? "settings.skills.autoinvoke.builtin"
-                          : "settings.skills.autoinvoke.description",
-                      )}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={autoinvokeOn(skill())}
-                    disabled={isVirtual(skill()) || !!state.toggling}
-                    hideLabel
-                    onChange={(enabled) => void toggleAutoinvoke(skill(), enabled)}
-                  >
-                    {language.t("settings.skills.autoinvoke.title")}
-                  </Switch>
-                </div>
-
-                <Show when={!isVirtual(skill())}>
-                  <p class="explore-note">{language.t("explore.skills.remove.hint")}</p>
-                </Show>
-              </>
-            )}
+            </Show>
           </Show>
-        </section>
+        </div>
       </div>
     </>
+  )
+
+  return (
+    <Show
+      when={selected()}
+      fallback={
+        <Show when={catalogEntry()} fallback={list()}>
+          {(entry) => <CatalogSkillDetail entry={entry()} onBack={back} onInstall={() => installCatalog(entry())} />}
+        </Show>
+      }
+    >
+      {(skill) => (
+        <InstalledSkillDetail
+          skill={skill()}
+          autoinvoke={autoinvokeOn(skill())}
+          toggling={state.toggling === skill().id}
+          onBack={back}
+          onToggle={(enabled) => void toggleAutoinvoke(skill(), enabled)}
+          onCopyReference={() => void copyReference(skill())}
+          onOpenEditor={() => void openInEditor(skill())}
+          onReveal={() => reveal(skill())}
+          onRemove={() => void remove(skill())}
+        />
+      )}
+    </Show>
+  )
+}
+
+/** One skill in the catalog grid: the row opens its page, the trailing plus installs it. */
+function SkillCard(props: {
+  name: string
+  description?: string
+  addLabel?: string
+  onOpen: () => void
+  onAdd?: () => void
+}) {
+  return (
+    <div class="explore-catalog-card">
+      <button type="button" class="explore-catalog-card-main" onClick={props.onOpen}>
+        <span class="explore-catalog-card-icon">
+          <Icon name="post-skill" />
+        </span>
+        <span class="explore-catalog-card-copy">
+          <span class="explore-catalog-card-name">{props.name}</span>
+          <Show when={props.description}>
+            {(description) => <span class="explore-catalog-card-description">{description()}</span>}
+          </Show>
+        </span>
+      </button>
+      <Show when={props.onAdd}>
+        <button
+          type="button"
+          class="explore-catalog-card-add"
+          aria-label={props.addLabel}
+          title={props.addLabel}
+          onClick={() => props.onAdd?.()}
+        >
+          <Icon name="plus" />
+        </button>
+      </Show>
+    </div>
+  )
+}
+
+function SkillCrumbs(props: { current: string; onBack: () => void }) {
+  const language = useLanguage()
+
+  return (
+    <nav class="explore-catalog-crumbs" aria-label={language.t("explore.skills.back")}>
+      <button type="button" class="explore-catalog-crumb" onClick={props.onBack}>
+        {language.t("explore.skills.title")}
+      </button>
+      <Icon name="outline-chevron-right" class="explore-catalog-crumb-separator" />
+      <span class="explore-catalog-crumb-current">{props.current}</span>
+    </nav>
+  )
+}
+
+/** An installed skill's page: its reference, the autoinvoke switch, and where the file lives. */
+function InstalledSkillDetail(props: {
+  skill: SkillInfo
+  autoinvoke: boolean
+  toggling: boolean
+  onBack: () => void
+  onToggle: (enabled: boolean) => void
+  onCopyReference: () => void
+  onOpenEditor: () => void
+  onReveal: () => void
+  onRemove: () => void
+}) {
+  const language = useLanguage()
+  const platform = usePlatform()
+
+  return (
+    <div class="explore-catalog-page" data-scrollable>
+      <div class="explore-page-inner">
+        <SkillCrumbs current={props.skill.name} onBack={props.onBack} />
+
+        <div class="explore-catalog-page-body">
+          <header class="explore-catalog-hero">
+            <span class="explore-catalog-hero-icon">
+              <Icon name="post-skill" />
+            </span>
+            <div class="explore-catalog-hero-copy">
+              <h1 class="explore-catalog-hero-name">{props.skill.name}</h1>
+              <p class="explore-catalog-hero-meta">
+                <button
+                  type="button"
+                  class="explore-catalog-reference"
+                  title={language.t("settings.skills.copyReference")}
+                  onClick={props.onCopyReference}
+                >
+                  @{props.skill.id}
+                </button>
+                <span class="explore-catalog-path" dir="ltr" title={props.skill.path}>
+                  {props.skill.path}
+                </span>
+              </p>
+            </div>
+            <Show when={!isVirtual(props.skill)}>
+              <div class="explore-catalog-actions">
+                <Button
+                  size="small"
+                  variant="ghost-muted"
+                  icon="outline-code-brackets"
+                  disabled={!platform.openPath}
+                  onClick={props.onOpenEditor}
+                >
+                  {language.t("settings.skills.openEditor")}
+                </Button>
+                <Button
+                  size="small"
+                  variant="ghost-muted"
+                  icon="folder"
+                  disabled={!platform.revealPath && !platform.openPath}
+                  onClick={props.onReveal}
+                >
+                  {language.t("settings.skills.reveal")}
+                </Button>
+                <Button size="small" variant="ghost-danger" icon="trash" onClick={props.onRemove}>
+                  {language.t("explore.skills.remove")}
+                </Button>
+              </div>
+            </Show>
+          </header>
+
+          <Show when={props.skill.description}>
+            {(description) => <p class="explore-catalog-about">{description()}</p>}
+          </Show>
+
+          <div class="explore-catalog-toggle">
+            <div class="explore-catalog-toggle-copy">
+              <span class="explore-catalog-toggle-title">{language.t("settings.skills.autoinvoke.title")}</span>
+              <p class="explore-catalog-toggle-description">
+                {language.t(
+                  isVirtual(props.skill)
+                    ? "settings.skills.autoinvoke.builtin"
+                    : "settings.skills.autoinvoke.description",
+                )}
+              </p>
+            </div>
+            <Switch
+              checked={props.autoinvoke}
+              disabled={isVirtual(props.skill) || props.toggling}
+              hideLabel
+              onChange={props.onToggle}
+            >
+              {language.t("settings.skills.autoinvoke.title")}
+            </Switch>
+          </div>
+
+          <Show when={!isVirtual(props.skill)}>
+            <p class="explore-note">{language.t("explore.skills.remove.hint")}</p>
+          </Show>
+        </div>
+      </div>
+    </div>
   )
 }
 
 /** A catalog skill this project has not installed yet: what it does, and the SKILL.md it would write. */
-function CatalogSkillDetail(props: { entry: CatalogSkill; onInstall: () => void }) {
+function CatalogSkillDetail(props: { entry: CatalogSkill; onBack: () => void; onInstall: () => void }) {
   const language = useLanguage()
 
   return (
-    <>
-      <div class="explore-skills-header">
-        <div class="explore-skills-heading">
-          <h3 class="explore-skills-title">{props.entry.title}</h3>
-          <div class="explore-skills-meta">
-            <span class="explore-skills-path" dir="ltr">
-              {props.entry.id}
+    <div class="explore-catalog-page" data-scrollable>
+      <div class="explore-page-inner">
+        <SkillCrumbs current={props.entry.title} onBack={props.onBack} />
+
+        <div class="explore-catalog-page-body">
+          <header class="explore-catalog-hero">
+            <span class="explore-catalog-hero-icon">
+              <Icon name="post-skill" />
             </span>
-          </div>
+            <div class="explore-catalog-hero-copy">
+              <h1 class="explore-catalog-hero-name">{props.entry.title}</h1>
+              <p class="explore-catalog-hero-meta">
+                <span class="explore-catalog-path" dir="ltr">
+                  {props.entry.id}
+                </span>
+              </p>
+            </div>
+            <Button variant="contrast" size="small" icon="plus" onClick={props.onInstall}>
+              {language.t("explore.skills.install")}
+            </Button>
+          </header>
+
+          <p class="explore-catalog-about">{props.entry.description}</p>
+
+          <section class="explore-catalog-section">
+            <h2 class="explore-catalog-section-title">{language.t("explore.skills.detail.instructions")}</h2>
+            <pre class="explore-skill-preview" data-scrollable>
+              <code>{props.entry.instructions}</code>
+            </pre>
+          </section>
         </div>
-        <Button size="small" variant="contrast" icon="plus" onClick={props.onInstall}>
-          {language.t("explore.skills.install")}
-        </Button>
       </div>
+    </div>
+  )
+}
 
-      <p class="explore-skills-description">{props.entry.description}</p>
+/** The list's empty state: a search miss, no skills yet, or every catalog skill already installed. */
+function SkillEmpty(props: { tab: "installed" | "discover"; query: string }) {
+  const language = useLanguage()
 
-      <pre class="explore-skill-preview" data-scrollable>
-        <code>{props.entry.instructions}</code>
-      </pre>
-    </>
+  return (
+    <Show
+      when={!!props.query.trim()}
+      fallback={
+        <Show
+          when={props.tab === "installed"}
+          fallback={
+            <ExploreStatus
+              icon="post-skill"
+              title={language.t("explore.skills.discover.empty.title")}
+              description={language.t("explore.skills.discover.empty.description")}
+            />
+          }
+        >
+          <ExploreStatus
+            icon="post-skill"
+            title={language.t("explore.skills.empty.title")}
+            description={language.t("explore.skills.empty.description")}
+          />
+        </Show>
+      }
+    >
+      <ExploreStatus
+        icon="magnifying-glass"
+        title={language.t("settings.skills.noResults.title")}
+        description={language.t("settings.skills.noResults.description")}
+      />
+    </Show>
   )
 }
 

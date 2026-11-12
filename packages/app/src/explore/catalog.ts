@@ -112,8 +112,8 @@ const plugins: readonly CatalogPlugin[] = [
 const skills: readonly CatalogSkill[] = [
   {
     id: "commit-message",
-    title: "Commit messages",
-    description: "Write one conventional commit message for the staged diff, then stop.",
+    title: "提交信息",
+    description: "为暂存的改动写一条规范的提交信息，然后停下。",
     instructions: `# Commit messages
 
 Write the commit message for the currently staged change.
@@ -127,8 +127,8 @@ Never run \`git commit\` yourself. Return the message and wait for the user to a
   },
   {
     id: "release-notes",
-    title: "Release notes",
-    description: "Group merged work between two refs into notes a reader can scan.",
+    title: "发布说明",
+    description: "把两个引用之间的合并改动整理成可以快速浏览的发布说明。",
     instructions: `# Release notes
 
 Turn the changes between two refs into release notes.
@@ -142,8 +142,8 @@ Write the notes in the release's language and do not invent entries for work you
   },
   {
     id: "test-triage",
-    title: "Flaky test triage",
-    description: "Decide whether a failing test is broken code or a broken test, with evidence.",
+    title: "不稳定测试的排查",
+    description: "判断失败的测试是代码坏了还是测试坏了，并给出证据。",
     instructions: `# Flaky test triage
 
 Walk a failing test to a conclusion instead of a guess.

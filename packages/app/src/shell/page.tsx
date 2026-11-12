@@ -24,17 +24,23 @@ export function PageHeader(props: {
   description?: string
   breadcrumb?: JSX.Element
   actions?: JSX.Element
+  /** Keep the contents on the session reading measure while the rule spans the whole panel. */
+  inset?: boolean
 }) {
   return (
-    <header class="flex shrink-0 items-start gap-4 border-b border-v2-border-border-muted px-6 py-3">
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        {props.breadcrumb}
-        <h1 class="text-[20px] leading-[26px] font-semibold tracking-[-0.2px]">{props.title}</h1>
-        {props.description ? (
-          <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">{props.description}</p>
-        ) : null}
+    <header
+      class={`flex shrink-0 items-start gap-4 border-b border-v2-border-border-muted py-3 ${props.inset ? "" : "px-6"}`}
+    >
+      <div class={props.inset ? "mx-auto flex w-full max-w-session items-start gap-4 px-6" : "contents"}>
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+          {props.breadcrumb}
+          <h1 class="text-[20px] leading-[26px] font-semibold tracking-[-0.2px]">{props.title}</h1>
+          {props.description ? (
+            <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">{props.description}</p>
+          ) : null}
+        </div>
+        {props.actions ? <div class="flex shrink-0 items-center gap-2">{props.actions}</div> : null}
       </div>
-      {props.actions ? <div class="flex shrink-0 items-center gap-2">{props.actions}</div> : null}
     </header>
   )
 }

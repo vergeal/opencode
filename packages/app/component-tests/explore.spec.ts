@@ -33,23 +33,23 @@ story("groups the catalog, filters it, opens a plugin's page, and returns", asyn
     // SAFETY: mountExplorePlugins builds its host with document.createElement("div").
     const host = mounted.host as HTMLDivElement
 
-    const cards = () => Array.from(host.querySelectorAll<HTMLButtonElement>(".explore-plugin-card-main"))
+    const cards = () => Array.from(host.querySelectorAll<HTMLButtonElement>(".explore-catalog-card-main"))
 
     const names = () =>
-      cards().map((card) => card.querySelector(".explore-plugin-card-name")?.textContent?.trim() ?? "")
+      cards().map((card) => card.querySelector(".explore-catalog-card-name")?.textContent?.trim() ?? "")
 
     const groups = () =>
-      Array.from(host.querySelectorAll(".explore-plugin-group-title")).map((title) => title.textContent?.trim() ?? "")
+      Array.from(host.querySelectorAll(".explore-catalog-group-title")).map((title) => title.textContent?.trim() ?? "")
 
-    const detailTitle = () => host.querySelector(".explore-plugin-hero-name")?.textContent?.trim()
+    const detailTitle = () => host.querySelector(".explore-catalog-hero-name")?.textContent?.trim()
 
-    const crumbs = () => host.querySelector(".explore-plugin-crumb")?.textContent?.trim()
+    const crumbs = () => host.querySelector(".explore-catalog-crumb")?.textContent?.trim()
 
     const statusTitle = () => host.querySelector(".explore-status-title")?.textContent?.trim()
 
     const search = host.querySelector<HTMLInputElement>('input[type="search"]')!
 
-    const body = host.querySelector(".explore-plugins-body")!
+    const body = host.querySelector(".explore-catalog-body")!
 
     const heights = cards().map((card) => Math.round(card.getBoundingClientRect().height))
 
@@ -75,11 +75,11 @@ story("groups the catalog, filters it, opens a plugin's page, and returns", asyn
     const opened = {
       title: detailTitle(),
       crumbs: crumbs(),
-      hasAbout: !!host.querySelector(".explore-plugin-about"),
-      hasMcp: !!host.querySelector(".explore-plugin-section-title"),
+      hasAbout: !!host.querySelector(".explore-catalog-about"),
+      hasMcp: !!host.querySelector(".explore-catalog-section-title"),
     }
 
-    host.querySelector<HTMLButtonElement>(".explore-plugin-crumb")?.click()
+    host.querySelector<HTMLButtonElement>(".explore-catalog-crumb")?.click()
     await frame()
     const returned = cards().length
 
