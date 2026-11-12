@@ -8,8 +8,9 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { base64Encode } from "@opencode/util/encode"
 import { useGlobal } from "@/runtime/server/runtime"
-import { useServers } from "@/runtime/server/registry"
+import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { SessionRouteKey, SessionStateKey } from "@/runtime/server/scope"
+import { SessionLocation } from "@/session/session-identity-header"
 import { useCommand } from "@/shell/commands/command"
 import { goBackCommand, goForwardCommand } from "@/shell/titlebar/history-commands"
 import { createTitlebarHistory } from "@/shell/titlebar/history-store"
@@ -62,11 +63,20 @@ export function ReplicaTitleBar(props: {
     const route = layout.route()
 
     if (route.type !== "session") return
-    const session = global.serverCtx(route.server)?.data.session.get(route.sessionId)
+    const ctx = global.serverCtx(route.server)
+    const session = ctx?.data.session.get(route.sessionId)
+    const conn = servers.list().find((item) => ServerConnection.key(item) === route.server)
 
-    if (!session) return
+    if (!ctx || !session) return
 
-    return { title: session.title, directory: session.location.directory }
+    return {
+      title: session.title,
+      directory: session.location.directory,
+      // The native session bar already knows how to name a project, its worktree or its branch; the titlebar reuses
+      // it instead of showing the raw directory.
+      project: ctx.projects.forSession(session),
+      server: conn ? { conn, key: route.server, ctx } : undefined,
+    }
   }
 
   const cny = createMemo(() => createCNY(language.locale()))
@@ -179,24 +189,27 @@ export function ReplicaTitleBar(props: {
       <div data-slot="replica-titlebar-main" data-ui="titlebar-main">
         <span class="flex min-w-0 items-center gap-2.5">
           <Icon name="titlebar-chat" size="small" class="shrink-0 text-[var(--color-icon-secondary)]" />
+          <Show when={conversation()}>
+            {(value) => (
+              <Show when={value().server}>
+                {(server) => (
+                  <SessionLocation
+                    server={server()}
+                    project={value().project}
+                    directory={value().directory}
+                    branchInline
+                    trailing
+                  />
+                )}
+              </Show>
+            )}
+          </Show>
           <span
             class="min-w-0 max-w-[55%] shrink truncate text-[14px] leading-[17px] font-medium text-[var(--color-text-main)]"
             data-ui="titlebar-title"
           >
             {conversation()?.title ?? ""}
           </span>
-          <Show when={conversation()?.directory}>
-            {(directory) => (
-              <span
-                dir="ltr"
-                title={directory()}
-                data-ui="titlebar-path"
-                class="min-w-0 flex-1 truncate text-[12px] leading-4 text-[var(--color-text-secondary)]"
-              >
-                {directory()}
-              </span>
-            )}
-          </Show>
         </span>
 
         <Show when={usage()}>

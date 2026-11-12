@@ -139,6 +139,27 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   -webkit-app-region: no-drag;
 }
 
+/* The reused session location sits at titlebar scale and stays clickable inside the window's drag region. */
+[data-slot="replica-titlebar"] [data-slot="session-location-trigger"] {
+  -webkit-app-region: no-drag;
+  block-size: 22px;
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+  letter-spacing: 0;
+  color: var(--color-text-secondary);
+}
+
+[data-slot="replica-titlebar-main"] .session-location-tooltip {
+  flex-shrink: 1;
+  max-inline-size: min(45%, 360px);
+}
+
+[data-slot="replica-titlebar-main"] [data-slot="session-location-project"],
+[data-slot="replica-titlebar-main"] [data-slot="session-location-worktree"],
+[data-slot="replica-titlebar-main"] [data-slot="session-location-branch"] {
+  max-inline-size: 180px;
+}
+
 [data-slot="replica-titlebar-left"] {
   display: flex;
   align-items: center;

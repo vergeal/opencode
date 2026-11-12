@@ -24,7 +24,8 @@ import {
 import { createStore } from "solid-js/store"
 import { PluginSlot } from "@/runtime/plugin/render"
 import { containsDirectory, getFilename } from "@opencode/util/path"
-import { useServer } from "@/runtime/server/current"
+import { useServer, useServerOptional } from "@/runtime/server/current"
+import type { ServerCtx } from "@/runtime/server/runtime"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { ServerLabel } from "@/servers/registry/label"
 import { fileManagerApp } from "@/home/projects/file-manager"
@@ -105,8 +106,21 @@ export function SessionLocation(props: {
   trailing?: boolean
   /** Available after the owning session screen mounts; loading headers show location details only. */
   context?: { session: MountedSession; screen: SessionScreen }
+  /**
+   * Shows the branch as its own crumb when no worktree names the location. The window titlebar reuses this bar
+   * above the routes, where no `ServerProvider` exists, so it injects the server instead.
+   */
+  branchInline?: boolean
+  server?: { conn: ServerConnection.Any; key: ServerConnection.Key; ctx: ServerCtx }
 }) {
-  const server = useServer()
+  const injected = useServerOptional()
+  const server = () => {
+    const value = props.server ?? injected
+
+    if (!value) throw new Error("SessionLocation requires a server prop outside a ServerProvider")
+
+    return value
+  }
   const servers = useServers()
   const language = useLanguage()
   const platform = usePlatform()
@@ -133,23 +147,23 @@ export function SessionLocation(props: {
   const label = createMemo(() => [projectName(), worktree()].filter(Boolean).join(" / "))
 
   const branch = () =>
-    props.directory ? server.ctx.data.location.vcs.info({ directory: props.directory })?.branch.current : undefined
+    props.directory ? server().ctx.data.location.vcs.info({ directory: props.directory })?.branch.current : undefined
 
   const baseBranch = () =>
-    props.project ? server.ctx.data.location.vcs.info({ directory: props.project.worktree })?.branch.current : undefined
+    props.project ? server().ctx.data.location.vcs.info({ directory: props.project.worktree })?.branch.current : undefined
 
   // Revealing a path only makes sense on the machine the app runs on.
   const canReveal = () =>
-    platform.platform === "desktop" && !!platform.revealPath && servers.current(server.conn) && !!props.directory
+    platform.platform === "desktop" && !!platform.revealPath && servers.current(server().conn) && !!props.directory
 
   const onOpenChange = (open: boolean) => {
     setStore("open", open)
 
     if (!open || !props.directory || !git()) return
-    void server.ctx.data.location.vcs.sync({ directory: props.directory }).catch(() => undefined)
+    void server().ctx.data.location.vcs.sync({ directory: props.directory }).catch(() => undefined)
 
     if (props.project && props.project.worktree !== props.directory)
-      void server.ctx.data.location.vcs.sync({ directory: props.project.worktree }).catch(() => undefined)
+      void server().ctx.data.location.vcs.sync({ directory: props.project.worktree }).catch(() => undefined)
   }
 
   const copyText = async (text: string) => {
@@ -186,8 +200,8 @@ export function SessionLocation(props: {
     const project = props.project
 
     if (!project) return
-    server.ctx.projects.touch(project.worktree)
-    layout.home.setSelection({ server: server.key, directory: project.worktree })
+    server().ctx.projects.touch(project.worktree)
+    layout.home.setSelection({ server: server().key, directory: project.worktree })
     navigate("/")
   }
 
@@ -195,7 +209,7 @@ export function SessionLocation(props: {
     const project = props.project
 
     if (!project) return
-    settingsSurface.openProject({ server: ServerConnection.key(server.conn), project: project.worktree })
+    settingsSurface.openProject({ server: ServerConnection.key(server().conn), project: project.worktree })
   }
 
   const workspace = () => (
@@ -239,6 +253,17 @@ export function SessionLocation(props: {
                     class="session-location-worktree-icon shrink-0 text-v2-icon-icon-muted"
                   />
                   <bdi dir="auto" data-slot="session-location-worktree" class="session-location-label min-w-0 truncate">
+                    {name()}
+                  </bdi>
+                </>
+              )}
+            </Show>
+            <Show when={props.branchInline && !props.compact && !worktree() && branch()}>
+              {(name) => (
+                <>
+                  <SessionHeaderSeparator gap={0} before={0} after={0} />
+                  <Icon name="branch" class="shrink-0 text-v2-icon-icon-muted" />
+                  <bdi dir="auto" data-slot="session-location-branch" class="session-location-label min-w-0 truncate">
                     {name()}
                   </bdi>
                 </>
@@ -371,9 +396,9 @@ export function SessionLocation(props: {
             </Show>
             <Menu.Separator />
             {/* The only server, on this computer, needs no name. */}
-            <Show when={servers.list.length > 1 || !servers.current(server.conn)}>
+            <Show when={servers.list.length > 1 || !servers.current(server().conn)}>
               <SessionLocationDetail icon="server">
-                <ServerLabel server={server.conn} hint />
+                <ServerLabel server={server().conn} hint />
               </SessionLocationDetail>
             </Show>
             <Show when={props.directory}>

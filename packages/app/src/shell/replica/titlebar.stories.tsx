@@ -1,5 +1,6 @@
 import { createMemoryHistory, MemoryRouter, Route, useLocation, useNavigate } from "@solidjs/router"
 import { DialogStoryRuntime } from "@/components-lab/dialog-story-runtime"
+import { SettingsSurfaceProvider } from "@/settings/surface"
 import { LayoutProvider } from "@/shell/state/layout"
 import { ReplicaTitleBar } from "./titlebar"
 
@@ -41,7 +42,11 @@ function Story(props: { start?: string }) {
     <DialogStoryRuntime>
       <MemoryRouter
         history={history}
-        root={(rootProps) => <LayoutProvider>{rootProps.children}</LayoutProvider>}
+        root={(rootProps) => (
+          <LayoutProvider>
+            <SettingsSurfaceProvider>{rootProps.children}</SettingsSurfaceProvider>
+          </LayoutProvider>
+        )}
       >
         <Route path="*all" component={TitlebarStory} />
       </MemoryRouter>
