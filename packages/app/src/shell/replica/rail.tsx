@@ -111,7 +111,7 @@ export function ReplicaRail() {
                   else command.trigger("command.palette")
                 }}
               >
-                <Icon name={item.icon} />
+                <Icon name={item.icon} size="large" />
               </button>
             </Tooltip>
           )}
@@ -127,7 +127,7 @@ export function ReplicaRail() {
             class="flex size-[30px] items-center justify-center rounded-[var(--radius-control)] text-[var(--color-accent-blue)] hover:bg-[var(--color-hover)]"
             onClick={() => command.trigger("app.checkForUpdates")}
           >
-            <Icon name="rail-download" />
+            <Icon name="rail-download" size="large" />
           </button>
         </Tooltip>
         <Tooltip placement="bottom" value={language.t("replica.rail.settings")}>
@@ -140,7 +140,7 @@ export function ReplicaRail() {
             class={BUTTON}
             onClick={openSettings}
           >
-            <Icon name="settings-gear" />
+            <Icon name="settings-gear" size="large" />
           </button>
         </Tooltip>
       </div>
