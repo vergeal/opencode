@@ -925,6 +925,27 @@ story("keeps the caret visible after closing inline code", async ({ mount, page 
   expect(caret.height).toBeGreaterThan(0)
 })
 
+story("paints the draft's inline and fenced code on the answer's shared surface", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await typeFenceLines(input, page, ["`value`", "", "```ts", "const a = 1", "```"])
+  await page.waitForTimeout(300)
+
+  const inline = await input.locator("[data-md-code]").evaluate((element) => {
+    const style = getComputedStyle(element)
+
+    return { background: style.backgroundColor, radius: style.borderRadius, weight: style.fontWeight }
+  })
+  expect(inline).toEqual({ background: "rgb(233, 234, 234)", radius: "4px", weight: "400" })
+
+  const block = await input.locator("[data-md-code-block]").evaluate((element) => {
+    const style = getComputedStyle(element)
+
+    return { background: style.backgroundColor, radius: style.borderRadius, weight: style.fontWeight }
+  })
+  expect(block).toEqual({ background: "rgb(233, 234, 234)", radius: "8px", weight: "400" })
+})
+
 story("still expands a lone fence into an empty block on a committed line", async ({ mount, page }) => {
   const component = await mount("opencode-composer-flow--empty-draft")
   const input = component.getByRole("textbox", { name: "Prompt", exact: true })

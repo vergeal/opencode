@@ -30,17 +30,16 @@
 [data-component="markdown"] {
   --markdown-inline-code-path-color: var(--v2-text-text-code-path);
   --markdown-inline-code-color: var(--v2-text-text-code-accent);
-  --markdown-code-background: var(--v2-background-bg-layer-02);
-  /* The layer-02 fill sat within 1.1:1 of a white message surface, so inline chips read as bare text.
-     Mixing the text colour keeps the chip visible on light surfaces and matches layer-02 in dark themes.
-     Light mode uses a lighter tint: the same weight as layer-02 read too dark next to body text. */
-  --markdown-inline-code-background: light-dark(
-    color-mix(in oklch, var(--v2-text-text-base) 10%, transparent),
-    color-mix(in oklch, var(--v2-text-text-base) 14%, transparent)
-  );
-  --markdown-shell-code-background: var(--v2-background-bg-layer-02);
+  /* Inline code and fenced blocks share one surface in both themes, so code reads the same everywhere.
+     The fill is a fixed light grey, which also fixes the ink: body text is light in the dark theme and
+     would vanish on it. */
+  --markdown-code-surface: rgb(233, 234, 234);
+  --markdown-code-ink: #1a1a1a;
+  --markdown-code-background: var(--markdown-code-surface);
+  --markdown-inline-code-background: var(--markdown-code-surface);
+  --markdown-shell-code-background: var(--markdown-code-surface);
   --markdown-shell-code-border: var(--v2-border-border-muted);
-  --markdown-shell-code-color: var(--v2-text-text-base);
+  --markdown-shell-code-color: var(--markdown-code-ink);
   --markdown-shell-code-token-color: currentColor;
 
   /* Reset & Base Typography */
@@ -279,16 +278,43 @@
     margin: 12px 0;
   }
 
-  /* The block matches the composer's fenced block: one soft layer, 12px/14px inside, and a 10px
-     radius without a hairline. */
+  /* The block and the inline chip share one surface and one ink, so code reads the same before and after
+     sending. The fixed light fill also pins the syntax palette to its light values: the dark theme's
+     tokens are near-white and would be unreadable here. */
   .highlights {
+    --syntax-comment: #8f8f8f;
+    --syntax-regexp: #6f6f6f;
+    --syntax-string: #006656;
+    --syntax-keyword: #8f8f8f;
+    --syntax-primitive: #fb4804;
+    --syntax-operator: #6f6f6f;
+    --syntax-variable: #171717;
+    --syntax-property: #b0349a;
+    --syntax-type: #596600;
+    --syntax-constant: #007b80;
+    --syntax-punctuation: #6f6f6f;
+    --syntax-object: #171717;
+    --syntax-info: #007d90;
+    --syntax-success: #2d7a28;
+    --syntax-warning: #8a6410;
+    --syntax-critical: #c22f1b;
+    --syntax-diff-add: #3a8437;
+    --syntax-diff-delete: #ca2d17;
+
     background: var(--markdown-code-background);
-    color: var(--v2-text-text-base);
+    color: var(--markdown-code-ink);
     font-size: 13px;
+    font-weight: 400;
     line-height: 20px;
     padding: 12px 14px;
-    border-radius: 10px;
+    border-radius: var(--radius-lg);
     border: 0;
+  }
+
+  /* Shiki marks up some scopes (for example `title`) with an inline weight. Code never renders bold. */
+  .highlights code,
+  .highlights code span {
+    font-weight: 400 !important;
   }
 
   [data-component="markdown-code"] {
@@ -419,12 +445,12 @@
     unicode-bidi: isolate;
     font-family: var(--font-family-mono);
     font-feature-settings: var(--font-family-mono--font-feature-settings);
-    color: var(--v2-text-text-base);
-    font-weight: var(--font-weight-regular);
+    color: var(--markdown-code-ink);
+    font-weight: 400;
     /* A 4px side pad keeps the tint off the glyphs. It is not paid back by a negative margin: paying
        it back pulled neighbouring text into the chip, which reads as letters touching. */
     padding: 0 4px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     background: var(--markdown-inline-code-background);
   }
 

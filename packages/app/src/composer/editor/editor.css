@@ -93,16 +93,13 @@
   pointer-events: none;
 }
 
-/* Inline code renders as a chip over the text. The side pad stays in the flow: paying it back with a
-   negative margin made the tint overlap the neighbouring characters. A tint of the text colour is lighter
-   on the white draft than the layer-02 fill; layer-02 still carries the chip on a dark surface. */
+/* Inline code renders as a chip over the text. The chip uses the same fixed surface and ink as a completed
+   answer, so the draft reads the same before and after sending. */
 [data-component="composer-editor"] [data-md-code] {
   padding-inline: 4px;
-  border-radius: 4px;
-  background: light-dark(
-    color-mix(in oklch, var(--v2-text-text-base) 10%, transparent),
-    var(--v2-background-bg-layer-02)
-  );
+  border-radius: var(--radius-sm);
+  background: rgb(233, 234, 234);
+  color: #1a1a1a;
 }
 
 /* A code tick only paints the markdown; it must not occupy a character box or the draft reads as if
@@ -121,10 +118,12 @@
   min-height: calc(var(--line-height-base) + 24px);
   margin-block: 6px;
   padding: 12px 14px;
-  border-radius: 10px;
-  background: var(--v2-background-bg-layer-02);
+  border-radius: var(--radius-lg);
+  background: rgb(233, 234, 234);
+  color: #1a1a1a;
   font-family: var(--font-family-mono);
   font-size: 13px;
+  font-weight: 400;
   line-height: var(--line-height-base);
   white-space: pre-wrap;
   tab-size: 2;
@@ -152,8 +151,8 @@
 }
 
 ::highlight(composer-md-code) {
-  color: var(--v2-text-text-base);
-  background-color: var(--v2-background-bg-layer-02);
+  color: #1a1a1a;
+  background-color: rgb(233, 234, 234);
 }
 
 ::highlight(composer-md-link) {

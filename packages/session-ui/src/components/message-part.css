@@ -246,23 +246,11 @@
     }
 
     /* A prompt bubble keeps the composer's code styling, so what the user typed reads the same
-       before and after sending. The bubble surface is already layer-02, so inline code and the block
-       sit one layer deeper to stay visible while keeping the same chip and block metrics. */
-    [data-component="markdown"] :not(pre) > code {
-      background: var(--v2-background-bg-layer-03);
-    }
-
-    /* The block's fill is an inline `background-color: var(--markdown-code-background)` on the pre, so
-       overriding `.highlights` never won. Lift the variable instead, two layers down from the bubble
-       surface so the block reads as a block even on a light page. */
-    [data-component="markdown"] {
-      --markdown-code-background: var(--v2-background-bg-layer-04);
-    }
-
+       before and after sending. The unified surface and ink come from the shared markdown rules. */
     [data-component="markdown"] .highlights {
       padding: 12px 14px;
       border: 0;
-      border-radius: 10px;
+      border-radius: var(--radius-lg);
     }
 
     [data-component="markdown"] [data-component="markdown-code"] {
