@@ -1,4 +1,4 @@
-import { createEffect, createSignal, lazy, Show, Suspense, type ParentProps } from "solid-js"
+import { createEffect, createSignal, lazy, onCleanup, Show, Suspense, type ParentProps } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { ToastRegion } from "@/shell/notifications/toast"
@@ -123,6 +123,46 @@ function ReplicaLayer(props: ParentProps) {
   const [resizing, setResizing] = createSignal(false)
   const sidebarSize = () => sidebarWidth() ?? 300
 
+  let root: HTMLDivElement | undefined
+  let draggingWidth: number | undefined
+  let frame = 0
+
+  // Dragging writes the width straight to the root's CSS variable, coalesced to one write per frame, so pointer moves
+  // never re-render the shell. The signal catches up once, when the pointer is released and the width is committed.
+  const writeSidebarWidth = (width: number) => {
+    draggingWidth = width
+
+    if (frame) return
+
+    frame = requestAnimationFrame(() => {
+      frame = 0
+
+      if (draggingWidth === undefined) return
+      root?.style.setProperty("--navigation-sidebar-width-current", showSidebar() ? `${draggingWidth}px` : "0px")
+    })
+  }
+
+  const commitSidebarWidth = () => {
+    if (frame) {
+      cancelAnimationFrame(frame)
+      frame = 0
+    }
+
+    const width = draggingWidth
+    draggingWidth = undefined
+
+    if (width !== undefined) setSidebarWidth(width)
+  }
+
+  const onDraggingChange = (value: boolean) => {
+    setResizing(value)
+    if (!value) commitSidebarWidth()
+  }
+
+  onCleanup(() => {
+    if (frame) cancelAnimationFrame(frame)
+  })
+
   const sidebarOpen = () => preferences.appearance.sidebarOpen()
   const toggleSidebar = () => preferences.appearance.setSidebarOpen(!sidebarOpen())
   // Settings ships its own category column and search, so the navigation sidebar would duplicate it.
@@ -208,6 +248,7 @@ function ReplicaLayer(props: ParentProps) {
 
   return (
     <div
+      ref={root}
       data-replica
       class="relative flex min-h-0 min-w-0 flex-1 select-none flex-col [&_input]:select-text [&_textarea]:select-text [&_[contenteditable]]:select-text"
       data-resizing={resizing() ? "" : undefined}
@@ -242,8 +283,8 @@ function ReplicaLayer(props: ParentProps) {
                 size={sidebarSize()}
                 min={220}
                 max={480}
-                onResize={setSidebarWidth}
-                onDraggingChange={setResizing}
+                onResize={writeSidebarWidth}
+                onDraggingChange={onDraggingChange}
               />
             </Show>
           </div>

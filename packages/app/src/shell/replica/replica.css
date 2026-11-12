@@ -218,6 +218,12 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   transition: none;
 }
 
+/* While dragging, the whole frame keeps the resize cursor and stops selecting the panels' text. */
+[data-replica][data-resizing] {
+  cursor: col-resize;
+  user-select: none;
+}
+
 [data-slot="replica-rail"] {
   display: flex;
   flex-direction: column;
