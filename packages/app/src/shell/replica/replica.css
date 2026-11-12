@@ -35,10 +35,11 @@
   --font-size-body: 14px;
   --font-size-secondary: 12px;
 
-  /* The window backdrop, titlebar and navigation column share one soft grey with a hint of translucency. */
-  --color-titlebar: rgb(246 246 246 / 80%);
-  --color-rail: rgb(246 246 246 / 80%);
-  --color-sidebar: rgb(252 252 252);
+  /* The window backdrop, titlebar and navigation column share one soft grey with a hint of translucency. On macOS
+     they sit on the window's vibrancy material, so the tints stay light enough to let it read as glass. */
+  --color-titlebar: rgb(246 246 246 / 62%);
+  --color-rail: rgb(246 246 246 / 62%);
+  --color-sidebar: rgb(252 252 252 / 62%);
   --color-main: #ffffff;
   --color-composer: #ffffff;
   --replica-composer-fill: #ffffff;
@@ -92,9 +93,9 @@
 
 /* Dark mode steps the three surfaces down: the window frame (29), the navigation column (21), the work area (15). */
 [data-color-scheme="dark"] [data-replica] {
-  --color-titlebar: rgb(29 29 29);
-  --color-rail: rgb(29 29 29);
-  --color-sidebar: rgb(21 21 21);
+  --color-titlebar: rgb(29 29 29 / 62%);
+  --color-rail: rgb(29 29 29 / 62%);
+  --color-sidebar: rgb(21 21 21 / 62%);
   --color-main: rgb(15 15 15);
   --color-composer: var(--v2-background-bg-layer-01);
   --replica-composer-fill: var(--v2-background-bg-layer-01);
@@ -119,8 +120,28 @@
 /* One titlebar split at the sidebar boundary: window controls on the left, conversation title on the right. */
 /* On macOS the window is a blurred material, so the page root gives up its opaque fill and the frame
    colour above sits directly on the desktop. Other platforms keep the painted root. */
+html[data-replica-window="translucent"]:has([data-replica]),
 html[data-replica-window="translucent"] #root:has([data-replica]) {
+  /* The theme paints the root from an inline style, so only an important rule clears it. */
+  background-color: transparent !important;
+}
+
+/* The frame and its workbench give up their fills on macOS so the vibrancy material shows through the chrome. The
+   conversation keeps an opaque surface; only the chrome acts as glass. */
+html[data-replica-window="translucent"] [data-replica],
+html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   background: transparent;
+}
+
+/* A hairline of light along the top edge reads as the glass catching the room. */
+[data-slot="replica-titlebar"],
+[data-slot="replica-sidebar"] {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
+}
+
+[data-color-scheme="dark"] [data-slot="replica-titlebar"],
+[data-color-scheme="dark"] [data-slot="replica-sidebar"] {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%);
 }
 
 [data-slot="replica-titlebar"] {
