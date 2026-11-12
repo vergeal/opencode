@@ -201,7 +201,13 @@ export const DESKTOP_MENU: DesktopMenu[] = [
         accelerator: { macos: "Ctrl+`" },
       },
       { type: "separator" },
-      { type: "item", labelKey: "desktop.menu.reload", action: "view.reload", role: "reload" },
+      {
+        type: "item",
+        labelKey: "desktop.menu.reload",
+        action: "view.reload",
+        role: "reload",
+        accelerator: { macos: "Cmd+R", windows: "Ctrl+Shift+F5" },
+      },
       {
         type: "item",
         labelKey: "desktop.menu.toggleDeveloperTools",
