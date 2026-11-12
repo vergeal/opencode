@@ -546,7 +546,6 @@ function MessageTimelineView(
   const [expandedTurns, setExpandedTurns] = createSignal<ReadonlySet<string>>(new Set())
 
   const toggleWorked = (turnID: string) => {
-    const expanded = expandedTurns().has(turnID)
     const selector = `[data-timeline-row="UserMessage"][data-message-id="${CSS.escape(turnID)}"]`
     const top = () => document.querySelector<HTMLElement>(selector)?.getBoundingClientRect().top
 
@@ -559,10 +558,8 @@ function MessageTimelineView(
       return next
     })
 
-    if (expanded) return
-
-    // Expanding adds rows above the viewport's anchor; compensate once the virtualizer has measured them so the
-    // header stays put and the revealed rows grow downward instead of pushing the turn up.
+    // Expanding or folding changes the rows above the viewport's anchor; compensate once the virtualizer has measured
+    // them so the header stays put and the content grows or shrinks below it instead of shifting the turn.
     const before = top()
     const scroller = document.querySelector<HTMLElement>(selector)?.closest<HTMLElement>("[data-scrollable]")
 
