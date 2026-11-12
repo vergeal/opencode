@@ -115,35 +115,11 @@ function ReplicaLayer(props: ParentProps) {
 
   // The v6 column is 300px until dragging pins an explicit width, so the resize handle starts from the width
   // the sidebar is really laid out at instead of snapping to another value on the first move.
-  // A window on a system backdrop drops its opaque theme fill so the desktop shows through. macOS vibrancy names its
-  // own material, Windows gets acrylic from the acrylic backdrop; anything else keeps the painted background.
+  // The macOS window sits on a blurred material, so the page root drops its opaque theme fill and the
+  // translucent frame shows the desktop instead. Other platforms keep the painted background.
   createEffect(() => {
     document.documentElement.dataset.replicaWindow =
-      platform.platform !== "desktop"
-        ? "opaque"
-        : platform.os === "macos"
-          ? "vibrancy"
-          : platform.glass
-            ? "acrylic"
-            : "opaque"
-  })
-
-  // Windows acrylic only blurs the wallpaper; it does not tint it, so the chrome needs a mask or the desk colour takes
-  // over. The mask alpha is solved from the wallpaper's brightness so the composited tone stays stable across desktops,
-  // and it is set per scheme because the two themes solve it from opposite ends.
-  createEffect(() => {
-    const luma = platform.platform === "desktop" ? platform.wallpaperLuma : undefined
-    if (luma === undefined) return
-
-    const root = document.documentElement.style
-    const dark = (target: number) => Math.min(0.98, Math.max(0.4, 1 - target / Math.max(luma, 1)))
-    const light = (target: number) => Math.min(0.98, Math.max(0.4, (target - luma) / Math.max(255 - luma, 1)))
-    const percent = (alpha: number) => `${Math.round(alpha * 1000) / 10}%`
-
-    root.setProperty("--replica-glass-rail-dark", `rgb(0 0 0 / ${percent(dark(32))})`)
-    root.setProperty("--replica-glass-sidebar-dark", `rgb(0 0 0 / ${percent(dark(40))})`)
-    root.setProperty("--replica-glass-rail-light", `rgb(255 255 255 / ${percent(light(238))})`)
-    root.setProperty("--replica-glass-sidebar-light", `rgb(255 255 255 / ${percent(light(243))})`)
+      platform.platform === "desktop" && platform.os === "macos" ? "translucent" : "opaque"
   })
 
   const sidebarWidth = () => preferences.appearance.sidebarWidth()

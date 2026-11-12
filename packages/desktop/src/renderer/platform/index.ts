@@ -20,8 +20,6 @@ export function createDesktopPlatform(api: ElectronAPI, windowState: DesktopWind
   return {
     platform: "desktop",
     os,
-    glass: api.getWindowBootstrap().glass,
-    wallpaperLuma: api.getWindowBootstrap().wallpaperLuma,
     version: windowState.version,
     windowID: windowState.id,
     ...createDesktopFiles(api, os),

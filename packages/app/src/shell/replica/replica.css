@@ -123,42 +123,25 @@
 /* One titlebar split at the sidebar boundary: window controls on the left, conversation title on the right. */
 /* On macOS the window is a blurred material, so the page root gives up its opaque fill and the frame
    colour above sits directly on the desktop. Other platforms keep the painted root. */
-html[data-replica-window="vibrancy"]:has([data-replica]),
-html[data-replica-window="acrylic"]:has([data-replica]),
-html[data-replica-window="vibrancy"] #root:has([data-replica]),
-html[data-replica-window="acrylic"] #root:has([data-replica]) {
+html[data-replica-window="translucent"]:has([data-replica]),
+html[data-replica-window="translucent"] #root:has([data-replica]) {
   /* The theme paints the root from an inline style, so only an important rule clears it. */
   background-color: transparent !important;
 }
 
-/* macOS vibrancy already darkens what sits behind it, so the chrome there gives up its tint entirely. Windows
-   acrylic only blurs the desktop, so the chrome keeps a tint over it or the desk colour bleeds into the workbench. */
-html[data-replica-window="vibrancy"] [data-slot="replica-titlebar"],
-html[data-replica-window="vibrancy"] [data-slot="replica-rail"],
-html[data-replica-window="vibrancy"] [data-slot="replica-sidebar"],
-html[data-replica-window="vibrancy"] [data-slot="destination-bar"] {
+/* The frame keeps the single chrome tint so the whole window is one sheet of glass; the columns and the title bar
+   sit on that tint instead of washing it a second time. The workbench still gives up its fill, because everything
+   inside it is either the opaque conversation or the navigation column's own tint. */
+html[data-replica-window="translucent"] [data-slot="replica-titlebar"],
+html[data-replica-window="translucent"] [data-slot="replica-rail"],
+html[data-replica-window="translucent"] [data-slot="replica-sidebar"],
+html[data-replica-window="translucent"] [data-slot="destination-bar"] {
   background: transparent;
 }
 
 /* The conversation keeps an opaque surface; only the chrome acts as glass. */
-html[data-replica-window="vibrancy"] [data-slot="replica-workbench"],
-html[data-replica-window="acrylic"] [data-slot="replica-workbench"] {
+html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   background: transparent;
-}
-
-/* Faked glass. The app samples the wallpaper's brightness at startup and solves these masks so the chrome keeps a
-   visible trace of the desk colour while staying close to its design tone. The fallbacks are the values for a mid
-   wallpaper; macOS needs none of this because vibrancy tints itself. */
-html[data-replica-window="acrylic"] [data-replica] {
-  --color-titlebar: var(--replica-glass-rail-light, rgb(255 255 255 / 86%));
-  --color-rail: var(--replica-glass-rail-light, rgb(255 255 255 / 86%));
-  --color-sidebar: var(--replica-glass-sidebar-light, rgb(255 255 255 / 90%));
-}
-
-[data-color-scheme="dark"][data-replica-window="acrylic"] [data-replica] {
-  --color-titlebar: var(--replica-glass-rail-dark, rgb(0 0 0 / 77%));
-  --color-rail: var(--replica-glass-rail-dark, rgb(0 0 0 / 77%));
-  --color-sidebar: var(--replica-glass-sidebar-dark, rgb(0 0 0 / 71%));
 }
 
 /* A hairline of light along the top edge reads as the glass catching the room. */
