@@ -545,7 +545,11 @@ function MessageTimelineView(
 
   const [expandedTurns, setExpandedTurns] = createSignal<ReadonlySet<string>>(new Set())
 
-  const toggleWorked = (turnID: string) =>
+  const toggleWorked = (turnID: string) => {
+    const expanded = expandedTurns().has(turnID)
+    const selector = `[data-timeline-row="UserMessage"][data-message-id="${CSS.escape(turnID)}"]`
+    const top = () => document.querySelector<HTMLElement>(selector)?.getBoundingClientRect().top
+
     setExpandedTurns((current) => {
       const next = new Set(current)
 
@@ -554,6 +558,24 @@ function MessageTimelineView(
 
       return next
     })
+
+    if (expanded) return
+
+    // Expanding adds rows above the viewport's anchor; compensate once the virtualizer has measured them so the
+    // header stays put and the revealed rows grow downward instead of pushing the turn up.
+    const before = top()
+    const scroller = document.querySelector<HTMLElement>(selector)?.closest<HTMLElement>("[data-scrollable]")
+
+    if (before === undefined || !scroller) return
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const after = top()
+
+        if (after !== undefined) scroller.scrollTop += after - before
+      })
+    })
+  }
 
   // A settled turn keeps only the words written after its last tool call; everything before that folds away behind
   // the Worked header. A turn with no answer after its last tool call has nothing to fold to, so it stays open.
