@@ -1,6 +1,7 @@
 export * as ChromeInstall from "./install.js"
 
 import { existsSync } from "node:fs"
+import { mkdir } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { Effect } from "effect"
@@ -57,25 +58,70 @@ export function copyToClipboard(value: string) {
   }).pipe(Effect.orElseSucceed(() => false))
 }
 
-export function openExtensionsPage() {
-  return Effect.promise(async () => {
-    const chrome =
-      process.platform === "darwin"
-        ? ["open", ["-a", "Google Chrome", "chrome://extensions/"]]
-        : process.platform === "win32"
-          ? ["cmd", ["/c", "start", "", "chrome://extensions/"]]
-          : ["xdg-open", ["chrome://extensions/"]]
-    const proc = Bun.spawn(chrome as [string, ...string[]], { stdout: "ignore", stderr: "ignore" })
-    return (await proc.exited) === 0
-  }).pipe(Effect.orElseSucceed(() => false))
+/** A dedicated profile so the agent never drives the user's everyday Chrome session. */
+export function profilePath() {
+  return join(homedir(), ".opencode", "chrome-agent", "profile")
 }
 
-export function steps(path: string, port: number) {
+/** Find a Chromium-based browser that accepts --load-extension. */
+export function browserBinary() {
+  if (process.platform === "darwin") {
+    return [
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      join(homedir(), "Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+      "/Applications/Chromium.app/Contents/MacOS/Chromium",
+      "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    ].find((path) => existsSync(path))
+  }
+  if (process.platform === "win32") {
+    return [process.env.PROGRAMFILES, process.env["PROGRAMFILES(X86)"], process.env.LOCALAPPDATA]
+      .filter((root): root is string => Boolean(root))
+      .flatMap((root) => [
+        join(root, "Google", "Chrome", "Application", "chrome.exe"),
+        join(root, "Microsoft", "Edge", "Application", "msedge.exe"),
+      ])
+      .find((path) => existsSync(path))
+  }
+  return ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "microsoft-edge"]
+    .map((name) => Bun.which(name))
+    .find((path): path is string => Boolean(path))
+}
+
+/**
+ * Start the dedicated Chrome with the extension loaded. Chrome 137+ gates
+ * --load-extension behind a feature flag, so the flag is turned off for this
+ * profile. A second launch for the same profile hands off to the running
+ * instance, which already has the extension.
+ */
+export function launch() {
+  return Effect.promise(async () => {
+    const binary = browserBinary()
+    if (!binary) return { ok: false as const, reason: "No Chrome, Chromium, or Edge installation was found." }
+    const profile = profilePath()
+    await mkdir(profile, { recursive: true })
+    const proc = Bun.spawn(
+      [
+        binary,
+        `--user-data-dir=${profile}`,
+        `--load-extension=${extensionPath()}`,
+        "--disable-features=DisableLoadExtensionCommandLineSwitch",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--start-maximized",
+        "about:blank",
+      ],
+      { stdout: "ignore", stderr: "ignore", stdin: "ignore" },
+    )
+    proc.unref()
+    return { ok: true as const, binary, profile, pid: proc.pid }
+  })
+}
+
+export function manualSteps(path: string) {
   return [
-    `Open chrome://extensions in the Chrome you want OpenCode to drive.`,
+    `If the dedicated Chrome did not start, open chrome://extensions in the Chrome you want to drive.`,
     `Turn on Developer mode (top-right).`,
     `Choose "Load unpacked" and select: ${path}`,
-    `Keep this OpenCode process running. The extension scans 127.0.0.1:8642-${port} and pairs automatically.`,
-    `If it does not connect, open the extension popup and press "Reconnect to OpenCode".`,
+    `Keep this OpenCode process running. The extension scans 127.0.0.1:8642-8662 and pairs automatically.`,
   ]
 }

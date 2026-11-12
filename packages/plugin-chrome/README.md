@@ -1,9 +1,9 @@
 # Chrome plugin
 
-`@opencode/plugin-chrome` exposes `chrome.*` tools that drive the user's own
-Chrome through a Manifest V3 extension. Unlike `@opencode/plugin-browser`, which
-owns an embedded desktop browser, this plugin attaches to the Chrome the user
-already has open: same profile, same logins, same cookies.
+`@opencode/plugin-chrome` exposes `chrome.*` tools that drive a dedicated Chrome
+window through a Manifest V3 extension. The window runs its own profile
+(`~/.opencode/chrome-agent/profile`), so the agent can work in a site the user
+signs into there without touching the user's everyday Chrome session.
 
 The plugin and the extension talk over a loopback WebSocket. The server owns
 tool definitions, permissions, and file reads; the extension owns tabs, DOM
@@ -23,18 +23,21 @@ instructions.
 
 ## First use
 
-The unpacked extension ships inside this package, so the user installs it once
-from a local path:
+`chrome.setup` starts a dedicated Chrome window with the extension already
+loaded. There is no extension store, no developer mode, and no manual install
+step, which matters where the Chrome Web Store is unreachable.
 
-1. Call `chrome.setup`. It reports the extension directory, copies it to the
-   clipboard, and opens `chrome://extensions`.
-2. In that Chrome window, turn on **Developer mode** and choose **Load unpacked**,
-   then select the copied path.
-3. Keep OpenCode running. The extension scans `127.0.0.1:8642-8662`, pairs
-   automatically, and reconnects after either side restarts.
+1. Call `chrome.setup`. It launches the installed Chrome, Chromium, or Edge
+   binary with the bundled extension and waits for the bridge.
+2. The window opens on a blank tab with its own profile at
+   `~/.opencode/chrome-agent/profile`. Sign in there to the sites the agent
+   should drive; logins persist across launches.
+3. The window is separate from the user's everyday Chrome. Nothing the agent
+   does touches the everyday session, and closing the window does not affect it.
 
-`chrome.setup` never installs silently. Chrome requires the manual "Load
-unpacked" step for an unsigned local extension.
+Chrome 137+ gates `--load-extension` behind a feature flag. `chrome.setup`
+disables that feature for the dedicated profile only. If no Chromium browser can
+be launched, setup returns the manual unpacked-extension steps as a fallback.
 
 ## Bridge
 
@@ -71,6 +74,8 @@ to recover from stale refs or a disconnected extension.
 
 ## Security and limits
 
+- The dedicated profile holds its own cookies and logins. The user's everyday
+  Chrome session is never read or modified.
 - The extension injects `content.js` on demand with `chrome.scripting`, not on
   every page. A small `hooks.js` content script records console output and
   dialogs at `document_start`.

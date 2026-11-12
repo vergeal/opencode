@@ -58,13 +58,14 @@ function operation<
 export const Operations = [
   operation(
     "setup",
-    "Check the Chrome extension bridge and open the one-time installation steps. Call this before the first Chrome operation if no extension is connected.",
+    "Start the dedicated OpenCode Chrome window with the extension already loaded, then wait for it to connect. Call this before the first Chrome operation when chrome.status reports disconnected.",
     {},
     Schema.Struct({
       connected: Schema.Boolean,
       port: Schema.NullOr(port),
       extensionPath: short,
-      opened: Schema.Boolean,
+      profile: short,
+      launched: Schema.Boolean,
       steps: Schema.Array(text),
     }),
   ),

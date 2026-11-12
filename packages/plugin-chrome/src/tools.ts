@@ -60,6 +60,7 @@ export const register = Effect.fn("ChromeTools.register")(function* (
 
 function setup(bridge: ChromeBridge.Bridge) {
   const path = ChromeInstall.extensionPath()
+  const profile = ChromeInstall.profilePath()
   return Effect.gen(function* () {
     if (bridge.connected())
       return result(
@@ -67,22 +68,65 @@ function setup(bridge: ChromeBridge.Bridge) {
           connected: true,
           port: bridge.port,
           extensionPath: path,
-          opened: false,
+          profile,
+          launched: false,
           steps: ["The Chrome extension is already connected. Use chrome.tabs.list to start working."],
         },
         `Chrome extension connected on 127.0.0.1:${bridge.port}.`,
       )
+
     yield* ChromeInstall.copyToClipboard(path)
-    const opened = yield* ChromeInstall.openExtensionsPage()
-    const steps = ChromeInstall.steps(path, bridge.port)
+    const launch = yield* ChromeInstall.launch()
+    if (!launch.ok)
+      return result(
+        {
+          connected: false,
+          port: bridge.port,
+          extensionPath: path,
+          profile,
+          launched: false,
+          steps: ChromeInstall.manualSteps(path),
+        },
+        [launch.reason, "", ...ChromeInstall.manualSteps(path).map((step, index) => `${index + 1}. ${step}`)].join("\n"),
+      )
+
+    const deadline = Date.now() + 30_000
+    while (!bridge.connected()) {
+      if (Date.now() > deadline) break
+      yield* Effect.promise(() => Bun.sleep(250))
+    }
+
+    if (bridge.connected())
+      return result(
+        {
+          connected: true,
+          port: bridge.port,
+          extensionPath: path,
+          profile: launch.profile,
+          launched: true,
+          steps: ["Sign in to any sites the agent should use inside this window; the profile persists between launches."],
+        },
+        [
+          `Started the dedicated OpenCode Chrome window and the extension connected on 127.0.0.1:${bridge.port}.`,
+          "",
+          `It uses its own profile at ${launch.profile}, separate from your everyday Chrome. Sign in there to the sites the agent should drive; the login persists.`,
+        ].join("\n"),
+      )
+
     return result(
-      { connected: false, port: bridge.port, extensionPath: path, opened, steps },
+      {
+        connected: false,
+        port: bridge.port,
+        extensionPath: path,
+        profile: launch.profile,
+        launched: true,
+        steps: ChromeInstall.manualSteps(path),
+      },
       [
-        "Chrome extension is not connected yet. Finish this one-time setup, then retry:",
+        "The dedicated Chrome window started but the extension has not connected yet.",
+        "Wait a few seconds and call chrome.status again. If it stays disconnected, use the manual steps:",
         "",
-        ...steps.map((step, index) => `${index + 1}. ${step}`),
-        "",
-        "The extension path was copied to the clipboard.",
+        ...ChromeInstall.manualSteps(path).map((step, index) => `${index + 1}. ${step}`),
       ].join("\n"),
     )
   }).pipe(Effect.orDie)
