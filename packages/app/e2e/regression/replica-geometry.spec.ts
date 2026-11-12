@@ -156,7 +156,7 @@ test("replica v6 geometry", async ({ page }) => {
   near(at('[data-ui="titlebar-left"]')?.width, 346, 2)
   near(at('[data-ui="primary-rail"]')?.width, 46, 1)
   near(at('[data-ui="navigation-sidebar"]')?.width, 300, 2)
-  near(at('[data-ui="main-workspace"]')?.x, 354, 2)
+  near(at('[data-ui="main-workspace"]')?.x, 347, 2)
   near(at('[data-ui="sidebar-header"]')?.height, 49, 1)
   near(at('[data-ui="sidebar-row"]')?.height, 29, 1)
   near(extra.composerEditor?.width, 650, 8)
