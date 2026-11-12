@@ -240,6 +240,15 @@ html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   box-shadow: var(--shadow-panel);
 }
 
+/* In light mode the chrome behind the panel is a step darker than the panel, so the cutout of the rounded edge
+   reads as a recess. Dark mode flips that contrast, which turned the same cutout into a bright notch outside the
+   corner; a tight shadow hugging the edge darkens it back into a recess without touching the chrome itself. */
+[data-color-scheme="dark"] [data-slot="replica-workbench"] {
+  box-shadow:
+    0 0 4px 0 rgb(0 0 0 / 60%),
+    var(--shadow-panel);
+}
+
 [data-slot="replica-sidebar-slot"] {
   position: relative;
   display: flex;
