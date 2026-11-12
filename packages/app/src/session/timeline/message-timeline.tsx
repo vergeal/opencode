@@ -546,6 +546,8 @@ function MessageTimelineView(
   const [expandedTurns, setExpandedTurns] = createSignal<ReadonlySet<string>>(new Set())
 
   const toggleWorked = (turnID: string) => {
+    const selector = `[data-timeline-row="UserMessage"][data-message-id="${CSS.escape(turnID)}"]`
+
     // Folding changes the row count, so stop following the end before toggling; otherwise the virtualizer would
     // scroll to the new end and push the header up. Following resumes when the user scrolls back to the end.
     virtualized.detachFollow()
@@ -557,6 +559,16 @@ function MessageTimelineView(
       else next.add(turnID)
 
       return next
+    })
+
+    // Folding can leave scrollTop past the shorter content, which shows an empty band below the turn. Keep the
+    // header in view instead so the scroll position settles on real content.
+    requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(selector)
+      const scroller = row?.closest<HTMLElement>("[data-scrollable]")
+
+      if (scroller) scroller.scrollTop = Math.min(scroller.scrollTop, scroller.scrollHeight - scroller.clientHeight)
+      row?.scrollIntoView({ block: "nearest", behavior: "instant" })
     })
   }
 
