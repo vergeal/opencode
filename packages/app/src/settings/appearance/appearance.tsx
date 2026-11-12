@@ -1,6 +1,6 @@
 import { Component, Show } from "solid-js"
 import { Select } from "@opencode/ui/select"
-import { TextInput } from "@opencode/ui/text-input"
+import { FontPicker } from "./font-picker"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ExternalLink } from "@/runtime/platform/external-link"
 import { SettingsList } from "@/settings/list"
@@ -51,19 +51,14 @@ const FontSetting: Component<{
   return (
     <SettingsRow title={language.t(config().title)} description={language.t(config().description)}>
       <div class="w-full sm:w-[220px]">
-        <TextInput
-          data-action={config().action}
-          type="text"
-          appearance="base"
+        <FontPicker
+          action={config().action}
+          label={language.t(config().title)}
           value={props.fonts[config().font]().value}
-          onInput={(event) => props.fonts[config().input](event.currentTarget.value)}
+          family={props.fonts[config().font]().family}
           placeholder={props.fonts[config().font]().placeholder}
-          spellcheck={false}
-          autocorrect="off"
-          autocomplete="off"
-          autocapitalize="off"
-          aria-label={language.t(config().title)}
-          style={{ "font-family": props.fonts[config().font]().family }}
+          monospaceFirst={props.kind === "code"}
+          onSelect={(family) => props.fonts[config().input](family)}
         />
       </div>
     </SettingsRow>

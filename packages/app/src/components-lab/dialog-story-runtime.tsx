@@ -353,6 +353,8 @@ function findMatchingPaths(root: string, query: string, type: string | null) {
 
 type DialogStoryRuntimeOptions = {
   servers?: ServerConnection.Any[]
+  /** System font names a desktop platform would enumerate; omitting them keeps the web fallback list. */
+  fonts?: readonly string[]
 }
 
 function createStoryFetch(): typeof fetch {
@@ -583,6 +585,7 @@ export function DialogStoryRuntime(props: ParentProps<DialogStoryRuntimeOptions>
     notify: async () => {},
     storage,
     fetch: createStoryFetch(),
+    ...(props.fonts === undefined ? {} : { listSystemFonts: async () => props.fonts ?? [] }),
   }
 
   const client = new QueryClient({
