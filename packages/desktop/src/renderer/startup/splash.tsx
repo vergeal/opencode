@@ -56,7 +56,7 @@ export function LoadingSplash(props: {
             "bg-v2-background-bg-base": !props.deep,
           }}
         >
-          <ChanghongLogo class="w-56 opacity-60" sweep />
+          <ChanghongLogo class="w-[350px] opacity-60" sweep />
         </div>
       }
     >
