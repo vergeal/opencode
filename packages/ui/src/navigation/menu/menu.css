@@ -24,8 +24,6 @@
   transform-origin: var(--kb-menu-content-transform-origin, top left);
   animation: menu-v2-in 140ms cubic-bezier(0.22, 1, 0.36, 1);
 
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
 
   &:focus-visible {
@@ -46,8 +44,6 @@
   --menu-v2-badge-border: var(--v2-border-border-base);
   --menu-v2-hover: var(--v2-overlay-simple-overlay-hover);
 
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
 
   box-sizing: border-box;

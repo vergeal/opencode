@@ -4,8 +4,6 @@
 
 @layer components {
   [data-component="icon-button-v2"] {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     display: inline-flex;
     align-items: center;
     justify-content: center;

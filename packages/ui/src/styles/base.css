@@ -423,16 +423,18 @@ input:where([type="button"], [type="reset"], [type="submit"]),
 }
 
 /*
-  macOS interaction defaults. AppKit draws text with grayscale antialiasing, tints selection and the caret
-  with the system accent, and lets the user tint form controls the same way. Applying them once here keeps
-  every surface consistent instead of per component.
+  macOS interaction defaults. The platform picks the text smoothing (subpixel on standard displays, grayscale
+  on Retina), selection and the caret follow the system accent, and the user can tint form controls the same
+  way. Applying them once here keeps every surface consistent instead of per component.
 */
 
 :root {
   accent-color: var(--v2-system-accent);
   caret-color: var(--v2-system-accent);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Not `antialiased`: that forces grayscale everywhere. This lets macOS smooth text the way it does in
+     every other app. */
+  -webkit-font-smoothing: subpixel-antialiased;
+  -moz-osx-font-smoothing: auto;
 }
 
 ::selection {

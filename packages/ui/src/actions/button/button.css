@@ -4,8 +4,6 @@
 
 @layer components {
   [data-component="button-v2"] {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
     position: relative;
     display: inline-flex;
     align-items: center;
