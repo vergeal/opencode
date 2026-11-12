@@ -38,7 +38,6 @@ export const Plugin = {
       .transform((editor) =>
         editor.add({
           name,
-          options: { codemode: false },
           description,
           input: Input,
           output: Output,
