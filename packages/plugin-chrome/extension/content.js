@@ -97,6 +97,7 @@
     if (tag === "aside") return "complementary"
     if (tag === "form") return "form"
     if (tag === "progress") return "progressbar"
+    if (tag === "canvas") return "canvas"
     if (tag === "input") {
       const type = (element.getAttribute("type") || "text").toLowerCase()
       if (type === "checkbox") return "checkbox"
@@ -144,12 +145,16 @@
     }
     if (element.tagName === "A" && element.href) parts.push(`href=${JSON.stringify(element.getAttribute("href").slice(0, 200))}`)
     if (element.tagName === "IMG" && element.src) parts.push(`src=${JSON.stringify(element.src.slice(0, 200))}`)
+    if (role === "canvas") {
+      const rect = element.getBoundingClientRect()
+      parts.push(`${element.width}x${element.height}`, `at ${Math.round(rect.left)},${Math.round(rect.top)}`)
+    }
     if (role === "heading") parts.push(`level=${element.tagName.slice(1)}`)
     return parts.join(" ")
   }
 
   function isInteractive(element, role) {
-    if (["button", "link", "textbox", "searchbox", "combobox", "listbox", "checkbox", "radio", "switch", "slider", "spinbutton", "option", "tab", "menuitem"].includes(role)) return true
+    if (["button", "link", "textbox", "searchbox", "combobox", "listbox", "checkbox", "radio", "switch", "slider", "spinbutton", "option", "tab", "menuitem", "canvas"].includes(role)) return true
     if (element.hasAttribute("contenteditable") && element.getAttribute("contenteditable") !== "false") return true
     if (element.hasAttribute("onclick")) return true
     if (element.tabIndex >= 0 && element.tagName !== "BODY") return true
@@ -320,6 +325,95 @@
     mouse(element, "mouseover", point)
     mouse(element, "mousemove", point)
     return { ok: true }
+  }
+
+  function pointer(element, type, point, options = {}) {
+    element.dispatchEvent(
+      new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: window,
+        clientX: point.x,
+        clientY: point.y,
+        button: options.button === "right" ? 2 : options.button === "middle" ? 1 : 0,
+        buttons: options.buttons ?? (type === "pointerdown" ? 1 : 0),
+        pointerId: 1,
+        pointerType: "mouse",
+        isPrimary: true,
+        ctrlKey: options.modifiers?.includes("Control") ?? false,
+        shiftKey: options.modifiers?.includes("Shift") ?? false,
+        altKey: options.modifiers?.includes("Alt") ?? false,
+        metaKey: options.modifiers?.includes("Meta") ?? false,
+      }),
+    )
+  }
+
+  function pointOf(input) {
+    if (!input.ref) return { x: input.x, y: input.y }
+    const rect = resolve(input.ref).getBoundingClientRect()
+    return { x: rect.left + input.x, y: rect.top + input.y }
+  }
+
+  function flashPoint(point, label, color = "#f59e0b") {
+    ensureOverlay()
+    const dot = document.createElement("div")
+    const shadow = dot.attachShadow({ mode: "closed" })
+    shadow.innerHTML = `
+      <style>
+        :host { all: initial; }
+        .ring { position: fixed; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 999px;
+                border: 2px solid ${color}; background: ${color}22; box-shadow: 0 0 0 4px ${color}33; }
+        .label { position: fixed; font: 600 11px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                 color: #fff; background: ${color}; padding: 3px 7px; border-radius: 5px; white-space: nowrap; }
+      </style>
+      <div class="ring"></div>
+      <div class="label"></div>`
+    const ring = shadow.querySelector(".ring")
+    const text = shadow.querySelector(".label")
+    ring.style.left = `${point.x}px`
+    ring.style.top = `${point.y}px`
+    text.textContent = label
+    text.style.left = `${point.x + 18}px`
+    text.style.top = `${point.y - 10}px`
+    overlay.host.appendChild(dot)
+    setTimeout(() => dot.remove(), 900)
+  }
+
+  function clickAt(input) {
+    const point = pointOf(input)
+    const target = document.elementFromPoint(point.x, point.y)
+    if (!target) return { ok: false, error: "Nothing is rendered at that point." }
+    flashPoint(point, "OpenCode · click")
+    for (let index = 0; index < (input.count ?? 1); index++) {
+      pointer(target, "pointerdown", point, { ...input, buttons: 1 })
+      mouse(target, "mousedown", point, { ...input, buttons: 1 })
+      pointer(target, "pointerup", point, input)
+      mouse(target, "mouseup", point, input)
+      mouse(target, "click", point, input)
+    }
+    return { ok: true, x: Math.round(point.x), y: Math.round(point.y), target: target.tagName.toLowerCase() }
+  }
+
+  function drag(input) {
+    const from = pointOf({ ref: input.fromRef ?? input.ref, x: input.fromX, y: input.fromY })
+    const to = pointOf({ ref: input.toRef ?? input.ref, x: input.toX, y: input.toY })
+    const target = document.elementFromPoint(from.x, from.y)
+    if (!target) return { ok: false, error: "Nothing is rendered at the start point." }
+    const steps = Math.max(1, Math.min(60, input.steps ?? 15))
+    flashPoint(from, "OpenCode · drag", "#8b7cf6")
+    pointer(target, "pointerdown", from, { ...input, buttons: 1 })
+    mouse(target, "mousedown", from, { ...input, buttons: 1 })
+    for (let index = 1; index <= steps; index++) {
+      const ratio = index / steps
+      const point = { x: from.x + (to.x - from.x) * ratio, y: from.y + (to.y - from.y) * ratio }
+      pointer(target, "pointermove", point, { ...input, buttons: 1 })
+      mouse(target, "mousemove", point, { ...input, buttons: 1 })
+    }
+    pointer(target, "pointerup", to, input)
+    mouse(target, "mouseup", to, input)
+    mouse(target, "click", to, input)
+    return { ok: true, from: [Math.round(from.x), Math.round(from.y)], to: [Math.round(to.x), Math.round(to.y)], steps }
   }
 
   function setNativeValue(element, value) {
@@ -507,6 +601,8 @@
     snapshot,
     find,
     click,
+    click_at: clickAt,
+    drag,
     hover,
     fill,
     select,

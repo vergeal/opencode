@@ -1,7 +1,7 @@
 export * as ChromeInstall from "./install.js"
 
 import { existsSync } from "node:fs"
-import { mkdir } from "node:fs/promises"
+import { mkdir, readlink } from "node:fs/promises"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { Effect } from "effect"
@@ -88,17 +88,60 @@ export function browserBinary() {
 }
 
 /**
+ * A Chrome process that already owns the dedicated profile. Chrome keeps the
+ * owning PID in a SingletonLock symlink named "<hostname>-<pid>".
+ */
+export function runningPid() {
+  return Effect.promise(async () => {
+    const target = await readlink(join(profilePath(), "SingletonLock")).catch(() => null)
+    const pid = Number(target?.split("-").pop())
+    if (!Number.isInteger(pid) || pid <= 0) return null
+    try {
+      process.kill(pid, 0)
+      return pid
+    } catch {
+      return null
+    }
+  })
+}
+
+/**
+ * Mark the previous session as clean before Chrome starts. Chrome treats an
+ * unclean exit as a crash and offers to restore tabs on the next launch, which
+ * is exactly the bubble the dedicated window must not show.
+ */
+export function prepareProfile() {
+  return Effect.promise(async () => {
+    const directory = join(profilePath(), "Default")
+    await mkdir(directory, { recursive: true })
+    const file = Bun.file(join(directory, "Preferences"))
+    const preferences: Record<string, Record<string, unknown>> =
+      (await file.exists()) ? await file.json().catch(() => ({})) : {}
+    await Bun.write(
+      join(directory, "Preferences"),
+      JSON.stringify({
+        ...preferences,
+        profile: { ...preferences.profile, exit_type: "Normal", exited_cleanly: true },
+        session: { ...preferences.session, restore_on_startup: 5 },
+      }),
+    )
+  })
+}
+
+/**
  * Start the dedicated Chrome with the extension loaded. Chrome 137+ gates
  * --load-extension behind a feature flag, so the flag is turned off for this
- * profile. A second launch for the same profile hands off to the running
- * instance, which already has the extension.
+ * profile. A second call reuses the running instance instead of opening another
+ * window for the same profile.
  */
 export function launch() {
-  return Effect.promise(async () => {
+  return Effect.gen(function* () {
     const binary = browserBinary()
     if (!binary) return { ok: false as const, reason: "No Chrome, Chromium, or Edge installation was found." }
     const profile = profilePath()
-    await mkdir(profile, { recursive: true })
+    const running = yield* runningPid()
+    if (running) return { ok: true as const, binary, profile, pid: running, reused: true }
+    yield* prepareProfile()
     const proc = Bun.spawn(
       [
         binary,
@@ -107,13 +150,15 @@ export function launch() {
         "--disable-features=DisableLoadExtensionCommandLineSwitch",
         "--no-first-run",
         "--no-default-browser-check",
+        "--hide-crash-restore-bubble",
+        "--disable-session-crashed-bubble",
         "--start-maximized",
         "about:blank",
       ],
       { stdout: "ignore", stderr: "ignore", stdin: "ignore" },
     )
     proc.unref()
-    return { ok: true as const, binary, profile, pid: proc.pid }
+    return { ok: true as const, binary, profile, pid: proc.pid, reused: false }
   })
 }
 

@@ -21,7 +21,7 @@ export const info = Skill.Info.make({
     "",
     "1. Call `tools.chrome.status({})`. If `connected` is true, continue.",
     "2. Otherwise call `tools.chrome.setup({})`. It starts the dedicated Chrome window with the extension already loaded and waits for the bridge. There is no extension store, developer mode, or manual install step.",
-    "3. The window opens on a blank tab. Ask the user to sign in there to the sites this task needs; logins persist across launches.",
+    "3. The window opens on an OpenCode start page. Opening the first task tab closes it automatically. Ask the user to sign in there to the sites this task needs; logins persist across launches.",
     "4. If setup could not launch a browser, use the manual steps it returns as a fallback. Never claim the extension is installed from a failed or missing status.",
     "",
     "## Basics",

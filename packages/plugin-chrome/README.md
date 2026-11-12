@@ -28,16 +28,20 @@ loaded. There is no extension store, no developer mode, and no manual install
 step, which matters where the Chrome Web Store is unreachable.
 
 1. Call `chrome.setup`. It launches the installed Chrome, Chromium, or Edge
-   binary with the bundled extension and waits for the bridge.
-2. The window opens on a blank tab with its own profile at
+   binary with the bundled extension and waits for the bridge. A second call
+   reuses the running window instead of opening another one.
+2. The window opens on an OpenCode start page with its own profile at
    `~/.opencode/chrome-agent/profile`. Sign in there to the sites the agent
-   should drive; logins persist across launches.
+   should drive; logins persist across launches. Opening the first task tab
+   closes the start page automatically.
 3. The window is separate from the user's everyday Chrome. Nothing the agent
    does touches the everyday session, and closing the window does not affect it.
 
 Chrome 137+ gates `--load-extension` behind a feature flag. `chrome.setup`
-disables that feature for the dedicated profile only. If no Chromium browser can
-be launched, setup returns the manual unpacked-extension steps as a fallback.
+disables that feature for the dedicated profile only. Before launching, setup
+marks the previous session as clean so Chrome never offers to restore tabs, and
+it passes `--hide-crash-restore-bubble`. If no Chromium browser can be launched,
+setup returns the manual unpacked-extension steps as a fallback.
 
 ## Bridge
 

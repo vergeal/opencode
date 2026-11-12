@@ -55,6 +55,38 @@ async function pair(port) {
   return body.token
 }
 
+function welcomeUrl() {
+  return chrome.runtime.getURL("welcome.html")
+}
+
+/**
+ * The dedicated window starts on about:blank. Turn that placeholder into the
+ * extension's own start page so the user never sees an empty tab, but leave any
+ * page the user or agent already opened alone.
+ */
+async function settleStartup(attempt = 0) {
+  try {
+    const tabs = await chrome.tabs.query({})
+    const blank = tabs.filter((tab) => typeof tab.id === "number" && tab.url === "about:blank")
+    if (tabs.length === 1 && blank.length === 1) {
+      await chrome.tabs.update(blank[0].id, { url: welcomeUrl() })
+      return
+    }
+    if (tabs.length === 0 && attempt < 5) setTimeout(() => settleStartup(attempt + 1), 400)
+  } catch (error) {
+    if (attempt < 5) return setTimeout(() => settleStartup(attempt + 1), 400)
+    await chrome.storage.local.set({ startupError: String(error?.message ?? error) }).catch(() => {})
+  }
+}
+
+async function closeWelcomeTabs(keep) {
+  const welcome = welcomeUrl()
+  const tabs = await chrome.tabs.query({})
+  for (const tab of tabs) {
+    if (tab.id !== keep && tab.url === welcome) await chrome.tabs.remove(tab.id).catch(() => {})
+  }
+}
+
 async function connect() {
   if (connecting || socket?.readyState === WebSocket.OPEN) return
   connecting = true
@@ -76,6 +108,7 @@ async function connect() {
       log("connected")
       setBadge("on", "#34d399")
       send({ type: "hello", version: VERSION, userAgent: navigator.userAgent })
+      settleStartup()
     })
     next.addEventListener("message", async (event) => {
       const message = JSON.parse(event.data)
@@ -147,19 +180,21 @@ async function run(op, input) {
   if (op === "dialogs") return pageDialogs(input)
   if (op === "evaluate") return evaluate(input)
   if (op === "upload") return upload(input)
-  if (["snapshot", "find", "click", "hover", "fill", "select", "check", "press", "scroll", "wait", "highlight"].includes(op))
+  if (["snapshot", "find", "click", "click_at", "drag", "hover", "fill", "select", "check", "press", "scroll", "wait", "highlight"].includes(op))
     return content(input.tabID, op, input)
   throw new Error(`Unknown Chrome bridge operation ${op}.`)
 }
 
 async function status() {
   const tabs = await chrome.tabs.query({})
+  const stored = await chrome.storage.local.get("startupError").catch(() => ({}))
   return {
     connected: socket?.readyState === WebSocket.OPEN,
     version: VERSION,
     port: bridge.port,
     chrome: navigator.userAgent.match(/Chrome\/([\d.]+)/)?.[1] ?? "",
     tabs: tabs.length,
+    startupError: stored?.startupError ?? null,
   }
 }
 
@@ -184,6 +219,7 @@ async function tabsOpen(input) {
   const tab = await chrome.tabs.create({ url: input.url ?? "about:blank", active: input.active ?? true })
   if (tab.id === undefined) throw new Error("Chrome did not return a tab ID.")
   await waitForTab(tab.id)
+  await closeWelcomeTabs(tab.id)
   return describe(tab.id)
 }
 
