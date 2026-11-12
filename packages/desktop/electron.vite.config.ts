@@ -65,11 +65,15 @@ const splashPage = `<!doctype html>
         height: auto;
       }
 
-      /* The band is a mask on the layer, then clipped again to the mark so the light only lands on the letters. */
+      /* The light is the same artwork painted white under a moving gradient mask, so the band only lands on the
+         letterforms. A filled layer here would sweep a white rectangle over the splash. */
       .sweep {
         position: absolute;
         inset: 0;
-        background: #fff;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: brightness(0) invert(1);
         mix-blend-mode: screen;
         -webkit-mask-image: linear-gradient(to right, transparent 38%, #000 50%, transparent 62%);
         mask-image: linear-gradient(to right, transparent 38%, #000 50%, transparent 62%);
@@ -78,21 +82,6 @@ const splashPage = `<!doctype html>
         -webkit-mask-repeat: no-repeat;
         mask-repeat: no-repeat;
         animation: sweep 1800ms ease-in-out infinite;
-      }
-
-      .sweep::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: #fff;
-        -webkit-mask-image: url("/assets/changhong.svg");
-        mask-image: url("/assets/changhong.svg");
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-position: center;
-        mask-position: center;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
       }
 
       @keyframes sweep {
@@ -125,7 +114,7 @@ const splashPage = `<!doctype html>
   <body>
     <div class="splash">
       <img src="/assets/changhong.svg" alt="" />
-      <div class="sweep" aria-hidden="true"></div>
+      <img class="sweep" src="/assets/changhong.svg" alt="" aria-hidden="true" />
     </div>
     <script>
       const timer = setInterval(() => {
