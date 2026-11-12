@@ -47,7 +47,7 @@ import type {
 import type { ComposerEditorModel, ComposerSelectControl } from "./interaction"
 import { isAttachment } from "../prompt-parts"
 import { QuoteCommentEditor } from "./quote-comment"
-import { createMarkdownHighlight } from "./markdown-highlight"
+import { createCodeDecoration } from "./code-decoration"
 import { openFence } from "./fence"
 import "../attachments/attachments.css"
 import "./editor.css"
@@ -99,7 +99,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
   let viewport: HTMLDivElement | undefined
   let controlsViewport!: HTMLDivElement
   let controlsContent!: HTMLDivElement
-  let highlight: ReturnType<typeof createMarkdownHighlight> | undefined
+  let decoration: ReturnType<typeof createCodeDecoration> | undefined
   const [overflow, setOverflow] = createStore({ start: false, end: false })
   const [historyLayout, setHistoryLayout] = createStore<{ height?: number }>({})
   // The placeholder follows what the editor visibly holds, not just the synced draft: an IME's
@@ -112,7 +112,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
   const [dock, setDock] = createSignal<HTMLElement>()
 
   onMount(() => setDock(document.querySelector<HTMLElement>('[data-slot="composer-touch-bar-mount"]') ?? undefined))
-  onCleanup(() => highlight?.dispose())
+  onCleanup(() => decoration?.dispose())
 
   createEffect(() => {
     if (state.popover.type !== "history") setHistoryLayout("height", undefined)
@@ -348,8 +348,8 @@ export function ComposerEditor(props: ComposerEditorProps) {
               ref={(element) => {
                 editor = element
                 props.controller.setEditor(element)
-                highlight?.dispose()
-                highlight = createMarkdownHighlight(element)
+                decoration?.dispose()
+                decoration = createCodeDecoration(element)
               }}
               data-component="composer-editor"
               role="textbox"

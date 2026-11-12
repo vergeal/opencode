@@ -538,6 +538,34 @@ story("keeps inline code backgrounds 18px tall", async ({ page }) => {
   ).toEqual([18, 18])
 })
 
+story("paints inline and fenced code on one shared surface without bold", async ({ page }) => {
+  await page.evaluate(async (fixture) => {
+    const { mountMarkdown } = await import(fixture)
+    await mountMarkdown({ text: "`value`\n\n```ts\nconst answer = 42\n```" })
+  }, fixture)
+  const markdown = page.getByTestId("markdown-fixture").locator('[data-component="markdown"]')
+  await expect(markdown).toHaveAttribute("data-markdown-ready", "")
+
+  const inline = await markdown.locator(":not(pre) > code").evaluate((element) => {
+    const style = getComputedStyle(element)
+
+    return { background: style.backgroundColor, radius: style.borderRadius, weight: style.fontWeight }
+  })
+  expect(inline).toEqual({ background: "rgb(233, 234, 234)", radius: "4px", weight: "400" })
+
+  const block = await markdown.locator("pre.highlights").evaluate((element) => {
+    const style = getComputedStyle(element)
+    const code = element.querySelector("code")!
+
+    return {
+      background: style.backgroundColor,
+      radius: style.borderRadius,
+      weight: getComputedStyle(code).fontWeight,
+    }
+  })
+  expect(block).toEqual({ background: "rgb(233, 234, 234)", radius: "8px", weight: "400" })
+})
+
 story("keeps inline code geometry when a completed stream turns it into a file link", async ({ page }) => {
   await page.evaluate(async (fixture) => {
     const { mountMarkdown } = await import(fixture)

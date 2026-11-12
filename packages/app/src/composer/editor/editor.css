@@ -72,15 +72,8 @@
   background-color: var(--v2-overlay-simple-overlay-hover);
 }
 
-/* Markdown paints over the editable text, so the text model, caret and mentions stay untouched. */
-/* Decoration only exists while the draft is unfocused, and every interaction restores the source
-   first, so markers can leave the text flow entirely instead of holding a zero-width line box. */
-/* Inline markers stay in the text so the caret, selection and undo keep working on plain source; the
-   highlight paints them transparent. */
-::highlight(composer-md-marker) {
-  color: transparent;
-}
-
+/* The draft stays plain text; only code is drawn as code. Inline ticks are hidden spans that keep the
+   source characters in place, so the caret, selection and undo keep working on plain text. */
 /* A fenced block's own fence line carries a line break. Taking it out of the flow with absolute
    positioning keeps it out of the caret's line boxes without leaving a display:none element between the
    draft and the block, which Chromium resolves to the wrong insertion point. */
@@ -93,16 +86,13 @@
   pointer-events: none;
 }
 
-/* Inline code renders as a chip over the text. The side pad stays in the flow: paying it back with a
-   negative margin made the tint overlap the neighbouring characters. A tint of the text colour is lighter
-   on the white draft than the layer-02 fill; layer-02 still carries the chip on a dark surface. */
+/* Inline code renders as a chip over the text. The chip uses the same fixed surface and ink as a completed
+   answer, so the draft reads the same before and after sending. */
 [data-component="composer-editor"] [data-md-code] {
   padding-inline: 4px;
-  border-radius: 4px;
-  background: light-dark(
-    color-mix(in oklch, var(--v2-text-text-base) 10%, transparent),
-    var(--v2-background-bg-layer-02)
-  );
+  border-radius: var(--radius-sm);
+  background: rgb(233, 234, 234);
+  color: #1a1a1a;
 }
 
 /* A code tick only paints the markdown; it must not occupy a character box or the draft reads as if
@@ -121,55 +111,22 @@
   min-height: calc(var(--line-height-base) + 24px);
   margin-block: 6px;
   padding: 12px 14px;
-  border-radius: 10px;
-  background: var(--v2-background-bg-layer-02);
+  border-radius: var(--radius-lg);
+  background: rgb(233, 234, 234);
+  color: #1a1a1a;
   font-family: var(--font-family-mono);
   font-size: 13px;
+  font-weight: 400;
   line-height: var(--line-height-base);
   white-space: pre-wrap;
   tab-size: 2;
 }
 
-::highlight(composer-md-strong) {
-  color: var(--v2-text-text-base);
-  text-shadow:
-    0.35px 0 0 currentColor,
-    -0.35px 0 0 currentColor;
-}
-
-::highlight(composer-md-em) {
-  color: var(--v2-text-text-base);
-}
-
-/* The highlight API cannot slant text, so emphasis carries its own span. */
-[data-component="composer-editor"] [data-md-em] {
-  font-style: italic;
-}
-
-::highlight(composer-md-strike) {
-  color: var(--v2-text-text-faint);
-  text-decoration: line-through;
-}
-
+/* Inline code paints through the Highlight API as well as the chip span, so code the chip cannot wrap
+   (a range that crosses a mention chip) still reads as code. */
 ::highlight(composer-md-code) {
-  color: var(--v2-text-text-base);
-  background-color: var(--v2-background-bg-layer-02);
-}
-
-::highlight(composer-md-link) {
-  color: var(--v2-text-text-accent);
-  text-decoration: underline;
-}
-
-::highlight(composer-md-heading) {
-  color: var(--v2-text-text-base);
-  text-shadow:
-    0.3px 0 0 currentColor,
-    -0.3px 0 0 currentColor;
-}
-
-::highlight(composer-md-quote) {
-  color: var(--v2-text-text-muted);
+  color: #1a1a1a;
+  background-color: rgb(233, 234, 234);
 }
 
 [data-component="composer-editor"] [data-mention="session"] {
