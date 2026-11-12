@@ -148,17 +148,24 @@ html[data-replica-window="acrylic"] [data-slot="replica-workbench"] {
 
 /* Acrylic shows the desk through a neutral blur, which reads lighter than the workbench in dark mode and washed out
    in light mode. These tints sit closer to the theme surface so the chrome reads as the same sheet of glass, while
-   the remaining third still lets the backdrop through. macOS needs no equivalent: vibrancy already does this tinting. */
+   the remaining part still lets the backdrop through. macOS needs no equivalent: vibrancy already does this tinting. */
 html[data-replica-window="acrylic"] [data-replica] {
-  --color-titlebar: rgb(250 250 250 / 72%);
-  --color-rail: rgb(246 246 246 / 72%);
-  --color-sidebar: rgb(252 252 252 / 72%);
+  --color-titlebar: rgb(250 250 250 / 84%);
+  --color-rail: rgb(246 246 246 / 84%);
+  --color-sidebar: rgb(252 252 252 / 84%);
 }
 
 [data-color-scheme="dark"][data-replica-window="acrylic"] [data-replica] {
-  --color-titlebar: rgb(8 8 8 / 72%);
-  --color-rail: rgb(8 8 8 / 72%);
-  --color-sidebar: rgb(21 21 21 / 72%);
+  --color-titlebar: rgb(8 8 8 / 84%);
+  --color-rail: rgb(8 8 8 / 84%);
+  --color-sidebar: rgb(21 21 21 / 84%);
+}
+
+/* Windows rounds the window itself, but the page still paints square corners underneath it. Clip the frame to the
+   same radius so the chrome tint cannot stick out past the window's corner as a wedge. */
+html[data-replica-window="acrylic"] [data-replica] {
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 /* A hairline of light along the top edge reads as the glass catching the room. */
