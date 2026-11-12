@@ -72,15 +72,8 @@
   background-color: var(--v2-overlay-simple-overlay-hover);
 }
 
-/* Markdown paints over the editable text, so the text model, caret and mentions stay untouched. */
-/* Decoration only exists while the draft is unfocused, and every interaction restores the source
-   first, so markers can leave the text flow entirely instead of holding a zero-width line box. */
-/* Inline markers stay in the text so the caret, selection and undo keep working on plain source; the
-   highlight paints them transparent. */
-::highlight(composer-md-marker) {
-  color: transparent;
-}
-
+/* The draft stays plain text; only code is drawn as code. Inline ticks are hidden spans that keep the
+   source characters in place, so the caret, selection and undo keep working on plain text. */
 /* A fenced block's own fence line carries a line break. Taking it out of the flow with absolute
    positioning keeps it out of the caret's line boxes without leaving a display:none element between the
    draft and the block, which Chromium resolves to the wrong insertion point. */
@@ -129,46 +122,11 @@
   tab-size: 2;
 }
 
-::highlight(composer-md-strong) {
-  color: var(--v2-text-text-base);
-  text-shadow:
-    0.35px 0 0 currentColor,
-    -0.35px 0 0 currentColor;
-}
-
-::highlight(composer-md-em) {
-  color: var(--v2-text-text-base);
-}
-
-/* The highlight API cannot slant text, so emphasis carries its own span. */
-[data-component="composer-editor"] [data-md-em] {
-  font-style: italic;
-}
-
-::highlight(composer-md-strike) {
-  color: var(--v2-text-text-faint);
-  text-decoration: line-through;
-}
-
+/* Inline code paints through the Highlight API as well as the chip span, so code the chip cannot wrap
+   (a range that crosses a mention chip) still reads as code. */
 ::highlight(composer-md-code) {
   color: #1a1a1a;
   background-color: rgb(233, 234, 234);
-}
-
-::highlight(composer-md-link) {
-  color: var(--v2-text-text-accent);
-  text-decoration: underline;
-}
-
-::highlight(composer-md-heading) {
-  color: var(--v2-text-text-base);
-  text-shadow:
-    0.3px 0 0 currentColor,
-    -0.3px 0 0 currentColor;
-}
-
-::highlight(composer-md-quote) {
-  color: var(--v2-text-text-muted);
 }
 
 [data-component="composer-editor"] [data-mention="session"] {

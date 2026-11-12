@@ -946,6 +946,65 @@ story("paints the draft's inline and fenced code on the answer's shared surface"
   expect(block).toEqual({ background: "rgb(233, 234, 234)", radius: "8px", weight: "400" })
 })
 
+story("shows markdown emphasis as the characters the user typed", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await input.click()
+  await page.keyboard.type("**bold** and # heading and [link](https://example.com)")
+  await page.waitForTimeout(300)
+
+  await expect(input).toHaveText("**bold** and # heading and [link](https://example.com)")
+  await expect(input.locator("strong, em, h1, a, [data-md-em]")).toHaveCount(0)
+  expect(await input.evaluate((element) => getComputedStyle(element).fontWeight)).toBe("400")
+})
+
+story("renders a single-backtick span as inline code", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await input.click()
+  await page.keyboard.type("`value`")
+  await page.waitForTimeout(300)
+
+  await expect(input).toHaveText("`value`")
+  await expect(input.locator("[data-md-code]")).toHaveText("value")
+  await expect(input.locator("[data-md-marker]")).toHaveCount(2)
+})
+
+story("renders a triple-backtick fence as a block", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await typeFenceLines(input, page, ["```ts", "const a = 1", "```"])
+  await page.waitForTimeout(300)
+
+  await expect(input).toHaveText("```ts\nconst a = 1\n```")
+  await expect(input.locator("[data-md-code-block]")).toHaveText("const a = 1")
+  await expect(input.locator("[data-md-code-block]")).toHaveCount(1)
+})
+
+story("keeps the caret after an inline chip while typing continues", async ({ mount, page }) => {
+  const component = await mount("opencode-composer-flow--empty-draft")
+  const input = component.getByRole("textbox", { name: "Prompt", exact: true })
+  await input.click()
+  await page.keyboard.type("`a`")
+  await page.waitForTimeout(300)
+  await page.keyboard.type("c")
+
+  await expect(input).toHaveText("`a`c")
+  expect(
+    await input.evaluate((element) => {
+      const selection = window.getSelection()
+      const range = selection?.rangeCount ? selection.getRangeAt(0) : undefined
+      if (!range) return undefined
+
+      const before = range.cloneRange()
+      before.selectNodeContents(element)
+      before.setEnd(range.endContainer, range.endOffset)
+
+      return before.toString().length
+    }),
+  ).toBe(4)
+})
+
 story("still expands a lone fence into an empty block on a committed line", async ({ mount, page }) => {
   const component = await mount("opencode-composer-flow--empty-draft")
   const input = component.getByRole("textbox", { name: "Prompt", exact: true })

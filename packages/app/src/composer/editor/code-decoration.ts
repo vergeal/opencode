@@ -1,44 +1,32 @@
-import { lexMarkdown } from "@opencode/ui/context/marked-base"
-import { nextFence, type Fence } from "./fence"
+/**
+ * Renders code in the composer draft: a single pair of backticks becomes an inline chip and a fenced
+ * triple-backtick block becomes its own layer. Every other markdown character stays literal, so the draft
+ * shows the source the user typed with only code drawn as code.
+ *
+ * Decoration is presentation only. The draft text is never rewritten, so the caret, selection, IME, undo,
+ * paste and the mention parser keep working on plain text.
+ */
+type Segment = {
+  kind: "fence" | "tick" | "block" | "code"
+  start: number
+  end: number
+  content?: { start: number; end: number }
+}
 
-/** Highlight group names registered through the CSS Custom Highlight API. */
-const groups = {
-  strong: "composer-md-strong",
-  em: "composer-md-em",
-  code: "composer-md-code",
-  marker: "composer-md-marker",
-  heading: "composer-md-heading",
-  quote: "composer-md-quote",
-  list: "composer-md-list",
-  link: "composer-md-link",
-  strike: "composer-md-strike",
-} as const
+type Caret = { start: number; end: number; direction: "forward" | "backward" }
 
-type Group = keyof typeof groups | "codeblock"
+/** One source-level undo step: the draft and caret as they were before an edit. */
+type Snapshot = { text: string; caret: Caret | undefined }
 
-/** A segment of the draft, plus the range inside it that renders as content instead of syntax. */
-type Segment = { start: number; end: number; group: Group; content?: { start: number; end: number } }
-
-type Token = { type: string; raw?: string; text?: string; tokens?: Token[]; items?: Token[] }
+/** The CSS Custom Highlight name for inline code. It still paints code the chip cannot wrap, for example a
+ *  range that crosses a mention chip. */
+const CODE_HIGHLIGHT = "composer-md-code"
 
 /** A typing pause renders the draft. Short enough to read as immediate, long enough not to churn the
  * editable DOM on every keystroke. */
 const IDLE = 150
 
-/** One source-level undo step: the draft and caret as they were before an edit. Rendering rewrites the
- * editor's nodes, so this lives outside the browser's own history. */
-type Snapshot = { text: string; caret: Caret | undefined }
-
-/**
- * Styles markdown in the composer.
- *
- * Syntax paint uses the CSS Custom Highlight API, so typing never rewrites the text model. Once typing
- * pauses, syntax markers collapse into hidden spans, inline code becomes a chip and a fenced block becomes
- * its own layer, so the draft reads as rendered markdown while focused. Any key that edits the draft
- * restores the source first, so the browser edits plain text the editor and its mention parser expect, and
- * a fragment at the caret deletes whole rather than leaving its symbols behind.
- */
-export function createMarkdownHighlight(editor: HTMLElement) {
+export function createCodeDecoration(editor: HTMLElement) {
   let frame: number | undefined
   let idle: ReturnType<typeof setTimeout> | undefined
   let immediate: number | undefined
@@ -52,35 +40,25 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   const clearPaint = () => {
     if (typeof CSS === "undefined" || !CSS.highlights) return
 
-    for (const name of Object.values(groups)) CSS.highlights.delete(name)
+    CSS.highlights.delete(CODE_HIGHLIGHT)
   }
 
   const paint = (text: string, segments: Segment[]) => {
     clearPaint()
     if (!text.trim()) return
     if (typeof CSS === "undefined" || !CSS.highlights) return
-    if (segments.length === 0) return
 
     const nodes = textNodes(editor)
-    if (nodes.length === 0) return
-
-    const byGroup = new Map<keyof typeof groups, Range[]>()
+    const ranges: Range[] = []
 
     for (const segment of segments) {
-      if (segment.group === "codeblock") continue
-
-      const { start, end } = segment.content ?? segment
-      const range = toRange(nodes, start, end)
-      if (!range) continue
-
-      const list = byGroup.get(segment.group)
-      if (list) list.push(range)
-      else byGroup.set(segment.group, [range])
+      if (segment.kind !== "code" || !segment.content) continue
+      const range = toRange(nodes, segment.content.start, segment.content.end)
+      if (range) ranges.push(range)
     }
 
-    for (const [group, ranges] of byGroup) {
-      CSS.highlights.set(groups[group], new Highlight(...ranges))
-    }
+    if (ranges.length === 0) return
+    CSS.highlights.set(CODE_HIGHLIGHT, new Highlight(...ranges))
   }
 
   const refreshPaint = () => {
@@ -96,9 +74,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
 
   const undecorate = (restoreCaret = true) => {
     const decorated = Array.from(
-      editor.querySelectorAll(
-        "[data-md-marker], [data-md-marker-block], [data-md-code-block], [data-md-code], [data-md-em]",
-      ),
+      editor.querySelectorAll("[data-md-marker], [data-md-marker-block], [data-md-code-block], [data-md-code]"),
     )
     if (decorated.length === 0) return
 
@@ -176,11 +152,12 @@ export function createMarkdownHighlight(editor: HTMLElement) {
 
     const text = editor.textContent ?? ""
     const segments = collect(text)
-    const markers = segments.filter((segment) => segment.group === "marker")
-    const blocks = segments.filter((segment) => segment.group === "codeblock")
-    const codes = segments.filter((segment) => segment.group === "code" && segment.content)
+    const fences = segments.filter((segment) => segment.kind === "fence")
+    const ticks = segments.filter((segment) => segment.kind === "tick")
+    const blocks = segments.filter((segment) => segment.kind === "block")
+    const codes = segments.filter((segment) => segment.kind === "code" && segment.content)
 
-    if (!text.trim() || (markers.length === 0 && blocks.length === 0)) {
+    if (!text.trim() || (fences.length === 0 && ticks.length === 0)) {
       undecorate()
       refreshPaint()
 
@@ -191,7 +168,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     if (
       decoratedText === text &&
       editor.querySelector(
-        "[data-md-marker], [data-md-marker-block], [data-md-code-block], [data-md-code], [data-md-em]",
+        "[data-md-marker], [data-md-marker-block], [data-md-code-block], [data-md-code]",
       )
     )
       return
@@ -201,23 +178,16 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     decorating = true
 
     try {
-      for (const segment of blocks.sort(firstToLast)) wrap(segment)
+      for (const segment of blocks.sort(firstToLast)) wrapBlock(segment)
 
       // Markers must collapse before the code chip is resolved: hiding a tick rewrites the text nodes,
       // and a chip range read after that can swallow the following character.
-      // Only the ticks of an inline code chip are locked: they are syntax with no content, so a caret
-      // inside them would type into hidden text. A fence line stays editable, or a block could never be
-      // deleted once its markers collapsed.
-      for (const segment of markers.sort(firstToLast))
-        hide(
-          segment,
-          blocks.some((block) => segment.start === block.end || segment.end === block.start),
-          codes.some((code) => segment.start === code.start || segment.end === code.end),
-        )
+      for (const segment of fences.sort(firstToLast)) hideFence(segment)
+      // Only the ticks of an inline chip are locked: they are syntax with no content, so a caret inside
+      // them would type into hidden text. A fence line stays editable, or a block could never be deleted.
+      for (const segment of ticks.sort(firstToLast)) hideTick(segment)
 
       for (const segment of codes.sort(firstToLast)) chip(segment)
-      for (const segment of segments.filter((segment) => segment.group === "em" && segment.content).sort(firstToLast))
-        emphasis(segment)
 
       if (caret) restore(editor, caret)
       keepCaretVisible()
@@ -228,15 +198,15 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     decoratedText = text
     refreshPaint()
 
-    function wrap(segment: Segment) {
+    function wrapBlock(segment: Segment) {
       const entry = locate(textNodes(editor), segment.start, segment.end)
       if (!entry) return
 
       const span = document.createElement("span")
       span.dataset.mdCodeBlock = ""
 
-      // An empty block has no content to surround, so the span is inserted as a zero-width
-      // placeholder that still paints the layer and keeps the caret on the body line.
+      // An empty block has no content to surround, so the span is inserted as a zero-width placeholder
+      // that still paints the layer and keeps the caret on the body line.
       if (segment.start === segment.end) {
         const range = document.createRange()
         range.setStart(entry.from.node, entry.from.offset)
@@ -246,15 +216,26 @@ export function createMarkdownHighlight(editor: HTMLElement) {
         return
       }
 
-      const range = document.createRange()
-      range.setStart(entry.from.node, entry.from.offset)
-      range.setEnd(entry.to.node, entry.to.offset)
+      wrapRange(entry, span, text.slice(segment.start, segment.end))
+    }
 
-      try {
-        range.surroundContents(span)
-      } catch {
-        // A block that crosses mention chips or other markup stays as plain text.
-      }
+    function hideFence(segment: Segment) {
+      const entry = locate(textNodes(editor), segment.start, segment.end)
+      if (!entry) return
+
+      const span = document.createElement("span")
+      span.dataset.mdMarkerBlock = ""
+      wrapRange(entry, span, text.slice(segment.start, segment.end))
+    }
+
+    function hideTick(segment: Segment) {
+      const entry = locate(textNodes(editor), segment.start, segment.end)
+      if (!entry) return
+
+      const span = document.createElement("span")
+      span.dataset.mdMarker = ""
+      span.contentEditable = "false"
+      wrapRange(entry, span, text.slice(segment.start, segment.end))
     }
 
     function chip(segment: Segment) {
@@ -263,40 +244,9 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       const entry = locate(textNodes(editor), segment.content.start, segment.content.end)
       if (!entry) return
 
-      if (segment.content.end <= segment.content.start) return
-
       const span = document.createElement("span")
       span.dataset.mdCode = ""
       wrapRange(entry, span, text.slice(segment.content.start, segment.content.end))
-    }
-
-    // A fenced block's own fence line takes no room at all. An inline marker keeps a zero-size line box
-    // instead: the caret can still sit inside it, which is what makes typing after a closing tick land
-    // outside the chip instead of inside it.
-    // The highlight API paints colour and decoration but cannot slant text, so emphasis needs its own span.
-    function emphasis(segment: Segment) {
-      if (!segment.content || segment.content.end <= segment.content.start) return
-
-      const entry = locate(textNodes(editor), segment.content.start, segment.content.end)
-      if (!entry) return
-
-      const span = document.createElement("span")
-      span.dataset.mdEm = ""
-      wrapRange(entry, span, text.slice(segment.content.start, segment.content.end))
-    }
-
-    function hide(segment: Segment, block: boolean, lock: boolean) {
-      const entry = locate(textNodes(editor), segment.start, segment.end)
-      if (!entry) return
-
-      const span = document.createElement("span")
-      if (block) {
-        span.dataset.mdMarkerBlock = ""
-      } else {
-        span.dataset.mdMarker = ""
-        if (lock) span.contentEditable = "false"
-      }
-      wrapRange(entry, span, text.slice(segment.start, segment.end))
     }
   }
 
@@ -311,15 +261,6 @@ export function createMarkdownHighlight(editor: HTMLElement) {
 
     const caret = textOffset(editor, node, selection.anchorOffset)
     if (caret === undefined) return false
-    if (typeof window !== "undefined")
-      ((window as unknown as { __vert?: unknown[] }).__vert ??= []).push({
-        direction,
-        caret,
-        blocks: [...editor.querySelectorAll("[data-md-code-block]")].map((b) => [
-          elementStart(editor, b),
-          elementEnd(editor, b),
-        ]),
-      })
 
     // Find the block by text range instead of the anchor's ancestors: an empty block has no text node, so
     // its caret sits on the editor itself and `closest` would miss it.
@@ -402,7 +343,6 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     if (outside.length === 0) {
       fence.parentElement?.insertBefore(line, direction === "up" ? fence : fence.nextSibling)
       const at = document.createRange()
-      // Down lands on the first new line itself, so the draft shows one blank line rather than two.
       // Down lands on the first blank line: the second newline only keeps Chromium from folding the first
       // into the fence line.
       at.setStart(line, direction === "up" ? 0 : 1)
@@ -414,8 +354,8 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       return true
     }
 
-    // Land inside the neighbouring line's own text node. A bare offset on a line boundary is resolved by the
-    // browser to the fence side, which is how typing ended up back inside the block.
+    // Land inside the neighbouring line's own text node. A bare offset on a line boundary is resolved by
+    // the browser to the fence side, which is how typing ended up back inside the block.
     const neighbour = direction === "up" ? previousText(fence) : nextText(fence)
     if (!neighbour) return false
 
@@ -595,7 +535,7 @@ export function createMarkdownHighlight(editor: HTMLElement) {
       if (selection?.rangeCount && selection.isCollapsed) {
         const source = editor.textContent ?? ""
 
-        if (source.includes("```") || source.includes("~~~")) {
+        if (source.includes("```")) {
           const removed = emptyFenceRange(collect(source))
 
           if (removed) {
@@ -708,8 +648,9 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   const onPaste = () => undecorate()
   const onDrop = () => undecorate()
 
-  // A fenced block's own lines are hidden with `display: none`, so the browser's selection text omits them.
-  // Copy the selected DOM instead, which still holds the fences, so pasting elsewhere restores the source.
+  // A fenced block's own lines are hidden with absolute positioning, so the browser's selection text omits
+  // them. Copy the selected DOM instead, which still holds the fences, so pasting elsewhere restores the
+  // source.
   const onCopy = (event: ClipboardEvent) => {
     const selection = window.getSelection()
     if (!selection?.rangeCount || selection.isCollapsed) return
@@ -730,14 +671,9 @@ export function createMarkdownHighlight(editor: HTMLElement) {
     const text = editor.textContent ?? ""
 
     // Typing plain words changes the text under an already rendered form without changing its structure, so
-    // the decoration stays as it is. Rebuilding there is what made every keystroke look like a re-render.
-    if (
-      decoratedText !== undefined &&
-      text !== decoratedText &&
-      !touchesSyntax(decoratedText, text) &&
-      !hasOpenFragment(decoratedText) &&
-      !hasOpenFragment(text)
-    ) {
+    // the decoration stays as it is. Only code syntax and line breaks need a rebuild; rebuilding on every
+    // keystroke is what made a long draft stutter.
+    if (decoratedText !== undefined && text !== decoratedText && !touchesSyntax(decoratedText, text)) {
       decoratedText = text
       refreshPaint()
       return
@@ -792,7 +728,6 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   schedule()
 
   return {
-    schedule,
     dispose() {
       disposed = true
       observer.disconnect()
@@ -815,7 +750,115 @@ export function createMarkdownHighlight(editor: HTMLElement) {
   }
 }
 
-type Caret = { start: number; end: number; direction: "forward" | "backward" }
+/**
+ * Code ranges in the draft: hidden fence lines, fenced block bodies, hidden inline ticks and inline code.
+ * Only a single-backtick span and a triple-backtick fence count. Every other markdown character stays text.
+ */
+function collect(text: string): Segment[] {
+  const segments: Segment[] = []
+  const lines = text.split("\n")
+  let offset = 0
+  let fence: number | undefined
+  let bodyStart: number | undefined
+
+  for (const [index, line] of lines.entries()) {
+    const start = offset
+    const end = start + line.length
+    const after = end + (index < lines.length - 1 ? 1 : 0)
+    offset = after
+
+    if (fence === undefined) {
+      const open = /^[ \t]*(`{3,})/.exec(line)
+      // A run with no line break after it is still the line the user is typing on: keep it as plain text
+      // until the line is committed, so a language tag or a longer nested run reaches the draft intact.
+      if (open && index < lines.length - 1) {
+        fence = open[1]!.length
+        bodyStart = after
+        // The fence line's own line break belongs to the marker too, so hiding it removes the whole line box
+        // instead of leaving an empty line above the block.
+        segments.push({ kind: "fence", start, end: after })
+        continue
+      }
+
+      collectInline(line, start, segments)
+      continue
+    }
+
+    const close = /^[ \t]*(`{3,})[ \t]*$/.exec(line)
+    if (close && close[1]!.length >= fence) {
+      // The line break in front of the closing fence belongs to the marker, so the body stops before it.
+      const boundary = Math.max(bodyStart!, start - 1)
+      segments.push({ kind: "block", start: bodyStart!, end: boundary })
+      segments.push({ kind: "fence", start: boundary, end: after })
+      fence = undefined
+      bodyStart = undefined
+    }
+  }
+
+  if (fence !== undefined && bodyStart !== undefined) {
+    // An open fence runs to the end of the draft; trailing whitespace adds no body line of its own.
+    const end = Math.max(bodyStart, text.replace(/\s+$/, "").length)
+    segments.push({ kind: "block", start: bodyStart, end })
+  }
+
+  return segments
+}
+
+/** Single-backtick pairs on one line. A run of two or more backticks stays literal. */
+function collectInline(line: string, lineStart: number, segments: Segment[]) {
+  let open: number | undefined
+
+  for (let index = 0; index < line.length; index++) {
+    if (line[index] !== "`") continue
+
+    let run = 1
+    while (line[index + run] === "`") run++
+
+    if (run === 1) {
+      if (open === undefined) open = index
+      else {
+        segments.push({ kind: "tick", start: lineStart + open, end: lineStart + open + 1 })
+        segments.push({
+          kind: "code",
+          start: lineStart + open,
+          end: lineStart + index + 1,
+          content: { start: lineStart + open + 1, end: lineStart + index },
+        })
+        segments.push({ kind: "tick", start: lineStart + index, end: lineStart + index + 1 })
+        open = undefined
+      }
+    }
+
+    index += run - 1
+  }
+}
+
+/** Whether an edit added or removed code syntax or a line break, which is the only thing a render must
+ *  react to. */
+function touchesSyntax(previous: string, next: string) {
+  let start = 0
+  const shortest = Math.min(previous.length, next.length)
+  while (start < shortest && previous[start] === next[start]) start++
+
+  let end = 0
+  while (end < shortest - start && previous[previous.length - 1 - end] === next[next.length - 1 - end]) end++
+
+  const changed = previous.slice(start, previous.length - end) + next.slice(start, next.length - end)
+
+  return /[`\n]/.test(changed)
+}
+
+/** The source range of an empty fenced block: both fence lines and the blank body between them. */
+function emptyFenceRange(segments: Segment[]) {
+  const block = segments.find((segment) => segment.kind === "block" && segment.start === segment.end)
+  if (!block) return
+
+  const open = segments.find((segment) => segment.kind === "fence" && segment.end === block.start)
+  const close = segments.find((segment) => segment.kind === "fence" && segment.start === block.end)
+  if (!open || !close) return
+
+  return { start: open.start, end: close.end }
+}
 
 function capture(editor: HTMLElement): Caret | undefined {
   const selection = window.getSelection()
@@ -949,7 +992,7 @@ function keepCaretOutsideMention(editor: HTMLElement) {
 }
 
 /** Offset of the first character inside an element, in the editor's text order. */
-function elementStart(editor: HTMLElement, element: Element) {
+function elementStart(editor: HTMLElement, element: Element): number | undefined {
   const nodes = textNodes(editor)
   const inside = nodes.filter((entry) => element.contains(entry.node))
   if (inside.length > 0) return inside[0]!.start
@@ -969,7 +1012,7 @@ function elementStart(editor: HTMLElement, element: Element) {
 }
 
 /** Offset just past the last character inside an element, in the editor's text order. */
-function elementEnd(editor: HTMLElement, element: Element) {
+function elementEnd(editor: HTMLElement, element: Element): number | undefined {
   const nodes = textNodes(editor)
   const inside = nodes.filter((entry) => element.contains(entry.node))
   if (inside.length > 0) return inside.at(-1)!.end
@@ -1050,284 +1093,4 @@ function wrapRange(entry: ReturnType<typeof locate>, span: HTMLElement, expected
   const fragment = range.extractContents()
   span.appendChild(fragment)
   range.insertNode(span)
-}
-
-/** Whether the draft has an unclosed inline fragment, whose boundary must follow ordinary typing. */
-function hasOpenFragment(text: string) {
-  let open: Fence | undefined
-
-  for (const line of text.split("\n")) {
-    const fence = nextFence(open, line)
-    open = fence.open
-
-    // A fenced block's rows are code, not inline markdown: its fence lines and any ticks inside it are
-    // not an open fragment, and treating them as one rebuilt every decoration on every keystroke.
-    if (fence.marker || open) continue
-
-    for (const mark of ["`", "~~", "**", "*", "_"]) {
-      if (mark === "*" && line.includes("**")) continue
-      if ((line.split(mark).length - 1) % 2 === 1) return true
-    }
-  }
-
-  return false
-}
-
-/** Whether an edit added or removed Markdown syntax, which is the only thing a render must react to. */
-function touchesSyntax(previous: string, next: string) {
-  let start = 0
-  const shortest = Math.min(previous.length, next.length)
-  while (start < shortest && previous[start] === next[start]) start++
-
-  let end = 0
-  while (end < shortest - start && previous[previous.length - 1 - end] === next[next.length - 1 - end]) end++
-
-  const changed = previous.slice(start, previous.length - end) + next.slice(start, next.length - end)
-
-  return /[`*_~\n]/.test(changed)
-}
-
-/** The source range of an empty fenced block: both fence lines and the blank body between them. */
-function emptyFenceRange(segments: Segment[]) {
-  const block = segments.find((segment) => segment.group === "codeblock" && segment.start === segment.end)
-  if (!block) return
-
-  const open = segments.find((segment) => segment.group === "marker" && segment.end === block.start)
-  const close = segments.find((segment) => segment.group === "marker" && segment.start === block.end)
-  if (!open || !close) return
-
-  return { start: open.start, end: close.end }
-}
-
-function collect(text: string): Segment[] {
-  const segments: Segment[] = []
-
-  walk(lexMarkdown(text) as Token[], 0)
-  unclosedEmphasis()
-
-  return segments
-
-  // Emphasis typed but not closed yet renders too, so `**bold` reads as bold instead of showing its stars.
-  // Only the last unpaired marker on a line opens a fragment, and it stops where the next parsed fragment
-  // begins, so a closed range further along the line keeps its own rendering.
-  function unclosedEmphasis() {
-    const marks: { token: string; group: Group }[] = [
-      { token: "**", group: "strong" },
-      { token: "__", group: "strong" },
-    ]
-
-    let lineStart = 0
-
-    while (lineStart <= text.length) {
-      const breakAt = text.indexOf("\n", lineStart)
-      const lineEnd = breakAt === -1 ? text.length : breakAt
-      const line = text.slice(lineStart, lineEnd)
-      const taken = new Set<number>()
-      let best: { start: number; token: string; group: Group } | undefined
-
-      for (const mark of marks) {
-        const positions: number[] = []
-
-        for (let index = 0; index + mark.token.length <= line.length; index++) {
-          if (!line.startsWith(mark.token, index)) continue
-          // A shorter marker must not count the characters of a longer one (`*` inside `**`).
-          if (mark.token.length === 1 && taken.has(index)) continue
-          const position = lineStart + index
-          if (segments.some((segment) => position >= segment.start && position < segment.end)) continue
-
-          positions.push(position)
-          if (mark.token.length > 1) {
-            taken.add(index)
-            taken.add(index + 1)
-          }
-        }
-
-        // Two occurrences close each other; an odd count leaves the last one open. A longer marker wins
-        // over its own characters, so `**bold*` stays one bold fragment instead of flipping to emphasis.
-        if (positions.length % 2 === 0) continue
-        best = { start: positions.at(-1)!, token: mark.token, group: mark.group }
-        break
-      }
-
-      if (best && lineEnd > best.start + best.token.length) {
-        const next = segments
-          .filter((segment) => segment.start > best.start)
-          .reduce((min, segment) => Math.min(min, segment.start), lineEnd)
-        const end = Math.min(lineEnd, next)
-
-        if (end > best.start + best.token.length) {
-          add(best.start, end, best.group, { start: best.start + best.token.length, end })
-          add(best.start, best.start + best.token.length, "marker")
-        }
-      }
-
-      if (breakAt === -1) break
-      lineStart = breakAt + 1
-    }
-  }
-
-  function walk(tokens: Token[], from: number) {
-    let offset = from
-
-    for (const token of tokens) {
-      const raw = token.raw ?? ""
-      const at = raw ? text.indexOf(raw, offset) : -1
-      const start = at === -1 ? offset : at
-      const end = start + raw.length
-      offset = end
-
-      switch (token.type) {
-        case "heading": {
-          // Headings are not rendered in the composer: the hashes stay visible as typed text.
-          const prefix = linePrefix(raw, /^[ \t]*#{1,6}[ \t]+/)
-          inline(token.tokens, start + prefix)
-          break
-        }
-
-        case "paragraph":
-        case "text": {
-          inline(token.tokens, start)
-          break
-        }
-
-        case "blockquote": {
-          add(start, end, "quote")
-          for (const prefix of linePrefixes(raw, start, /^[ \t]*>[ \t]?/)) add(prefix.start, prefix.end, "marker")
-          walk(token.tokens ?? [], start)
-          break
-        }
-
-        case "list": {
-          for (const item of token.items ?? []) {
-            const itemRaw = item.raw ?? ""
-            const itemAt = itemRaw ? text.indexOf(itemRaw, start) : -1
-            const itemStart = itemAt === -1 ? start : itemAt
-            add(itemStart, itemStart + itemRaw.length, "list")
-            const prefix = linePrefix(itemRaw, /^[ \t]*[-*+][ \t]+/)
-            if (prefix) add(itemStart, itemStart + prefix, "marker")
-            walk(item.tokens ?? [], itemStart + prefix)
-          }
-          break
-        }
-
-        case "code": {
-          const lines = raw.split("\n")
-          // A fence line only closes the block when it matches the opening run: the same character, at
-          // least as long, and nothing after it. A shorter run or another marker inside a longer fence
-          // is body text, so hiding it would swallow the line the user is typing on.
-          const fence = nextFence(undefined, lines[0]).open
-          const trimmed = raw.replace(/\s+$/, "")
-          const lastBreak = trimmed.lastIndexOf("\n")
-          const closed =
-            !!fence && lastBreak > 0 && nextFence(fence, trimmed.slice(lastBreak + 1)).open === undefined
-
-          // Until the line is committed with a line break, the fence run is still the line the user is
-          // typing on. Collapsing it there hid the characters as they were typed, so a lone run stays
-          // as plain text and only becomes a block once there is a body line below it.
-          if (fence && lines.length > 1) {
-            // The fence line's own line break belongs to the marker too, so hiding the marker removes
-            // the whole line box instead of leaving an empty 20px line above the block.
-            const bodyStart = start + lines[0].length + (raw.length > lines[0].length ? 1 : 0)
-            // An open fence with no body yet still owns an empty block, so the caret has a visible place
-            // to land instead of being restored into the hidden fence line.
-            const bodyEnd = Math.max(bodyStart, start + trimmed.length)
-            add(start, bodyStart, "marker")
-            add(bodyStart, closed ? start + lastBreak : bodyEnd, "codeblock")
-            // Hide the closing fence with the line break in front of it. The line break after it joins the
-            // marker too, otherwise it draws an empty line between the block and the next line.
-            if (closed) {
-              const after = start + trimmed.length
-              add(start + lastBreak, text[after] === "\n" ? after + 1 : after, "marker")
-            }
-          }
-          break
-        }
-      }
-    }
-  }
-
-  function inline(tokens: Token[] | undefined, from: number) {
-    if (!tokens) return
-    let offset = from
-
-    for (const token of tokens) {
-      const raw = token.raw ?? ""
-      const at = raw ? text.indexOf(raw, offset) : -1
-      const start = at === -1 ? offset : at
-      const end = start + raw.length
-      offset = end
-
-      switch (token.type) {
-        case "strong": {
-          add(start, end, "strong")
-          markers(start, end, raw.startsWith("__") ? "__" : "**")
-          inline(token.tokens, start + 2)
-          break
-        }
-
-        case "em": {
-          // Italics stay literal in the composer, so the markers keep their own box and colour.
-          const marker = raw.startsWith("_") ? "_" : "*"
-          inline(token.tokens, start + marker.length)
-          break
-        }
-
-        case "del": {
-          // Strikethrough stays literal in the composer.
-          inline(token.tokens, start + 2)
-          break
-        }
-
-        case "codespan": {
-          const marker = /^`+/.exec(raw)?.[0] ?? "`"
-          // The chip covers the code itself; the fence ticks are markers that render as nothing.
-          add(start, end, "code", { start: start + marker.length, end: end - marker.length })
-          markers(start, end, marker)
-          break
-        }
-
-        case "link": {
-          add(start, end, "link")
-          const label = token.text ?? ""
-          const open = text.indexOf("[", start)
-          const close = open === -1 ? -1 : open + 1 + label.length
-          if (close !== -1) {
-            add(open, open + 1, "marker")
-            add(close, end, "marker")
-          }
-          break
-        }
-      }
-    }
-  }
-
-  function markers(start: number, end: number, marker: string) {
-    if (end - start < marker.length * 2) return
-    add(start, start + marker.length, "marker")
-    add(end - marker.length, end, "marker")
-  }
-
-  function add(start: number, end: number, group: Group, content?: { start: number; end: number }) {
-    // An empty code block still needs a segment so its layer paints before the first character.
-    if (group === "codeblock" ? end < start : end <= start) return
-    segments.push(content ? { start, end, group, content } : { start, end, group })
-  }
-}
-
-function linePrefix(raw: string, pattern: RegExp) {
-  const match = raw.match(pattern)
-  return match ? match[0].length : 0
-}
-
-function linePrefixes(raw: string, base: number, pattern: RegExp) {
-  const prefixes: { start: number; end: number }[] = []
-  let offset = 0
-
-  for (const line of raw.split("\n")) {
-    const match = line.match(pattern)
-    if (match) prefixes.push({ start: base + offset, end: base + offset + match[0].length })
-    offset += line.length + 1
-  }
-
-  return prefixes
 }
