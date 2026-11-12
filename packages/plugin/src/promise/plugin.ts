@@ -1,5 +1,6 @@
 import type { OpenCodeClient } from "@opencode/client"
 import type { CredentialApi, ExperimentalGenerateApi, PluginApi } from "@opencode/client/promise/api"
+import type { Display } from "@opencode/schema/plugin"
 import type { Location } from "@opencode/schema/location"
 import type { PluginOptions } from "../options.js"
 import type { App } from "../app.js"
@@ -63,6 +64,13 @@ export type Cleanup = () => Promise<void> | void
 
 export interface Plugin {
   readonly id: string
+  /** What the app's plugin browser shows. Omit it to keep an internal plugin out of the browser. */
+  readonly display?: Display
+  /**
+   * Whether this built-in plugin runs without a config entry. Defaults to true. Set false for a plugin that ships
+   * with the app but stays dormant until the user installs it from the plugin browser.
+   */
+  readonly defaultEnabled?: boolean
   readonly setup: (context: Context) => Promise<Cleanup | void> | Cleanup | void
 }
 

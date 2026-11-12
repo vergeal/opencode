@@ -1,5 +1,4 @@
-import { Splash } from "@opencode/ui/logo"
-import { Wordmark } from "@opencode/ui/wordmark"
+import { ChanghongLogo } from "@opencode/ui/changhong-logo"
 import type { Platform } from "@opencode/app/desktop"
 import { onCleanup, onMount, Show } from "solid-js"
 import "./splash.css"
@@ -57,7 +56,7 @@ export function LoadingSplash(props: {
             "bg-v2-background-bg-base": !props.deep,
           }}
         >
-          <Splash class="w-16 h-20 opacity-50 animate-pulse" />
+          <ChanghongLogo class="w-40 opacity-60" sweep />
         </div>
       }
     >
@@ -73,18 +72,13 @@ export function LoadingSplash(props: {
           "padding-inline": "32px",
         }}
         onAnimationEnd={(event) => {
-          if (event.animationName === "first-launch-wordmark-draw") props.onDrawEnd()
+          if (event.animationName === "first-launch-logo-in") props.onDrawEnd()
         }}
       >
         <div class="relative size-full">
           <div class="absolute inset-x-0 top-[25.375%]">
-            <div class="mx-auto w-full max-w-[720px]">
-              <Wordmark
-                outline
-                fade={false}
-                muted={false}
-                class="mx-auto block h-auto w-4/5 text-v2-icon-icon-faint opacity-50"
-              />
+            <div class="mx-auto w-full max-w-[720px]" data-slot="first-launch-logo">
+              <ChanghongLogo class="mx-auto block w-4/5 opacity-60" sweep />
             </div>
           </div>
         </div>

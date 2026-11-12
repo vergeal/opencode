@@ -101,6 +101,7 @@ import { WellKnown } from "../wellknown.js"
 import { WriteTool } from "../tool/plugin/write.js"
 import { AgentPlugin } from "./agent.js"
 import BrowserPlugin from "@opencode/plugin-browser"
+import ChromePlugin from "@opencode/plugin-chrome"
 import { CommandPlugin } from "./command.js"
 import { IdentityPlugin } from "./identity.js"
 import { PlanPlugin } from "./plan.js"
@@ -290,6 +291,7 @@ const post = [
   ConfigReferencePlugin.Plugin,
   ConfigAgentPlugin.Plugin,
   BrowserPlugin,
+  ChromePlugin,
   ConfigCommandPlugin.Plugin,
   ConfigCompactionPlugin.Plugin,
   ConfigFormatterPlugin.Plugin,
@@ -319,6 +321,8 @@ export const list = Effect.fn("PluginInternal.list")(function* () {
       (plugin) =>
         ({
           id: plugin.id,
+          ...(plugin.display === undefined ? {} : { display: plugin.display }),
+          ...(plugin.defaultEnabled === undefined ? {} : { defaultEnabled: plugin.defaultEnabled }),
           effect: (host) => plugin.effect(host).pipe(Effect.provide(context)),
           revision: "internal",
           source: { type: "builtin" },

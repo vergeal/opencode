@@ -1,14 +1,4 @@
-import {
-  For,
-  Show,
-  createEffect,
-  createMemo,
-  createSignal,
-  on,
-  onCleanup,
-  type Accessor,
-  type JSX,
-} from "solid-js"
+import { For, Show, createEffect, createMemo, createSignal, on, onCleanup, type Accessor, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import { createMediaQuery } from "@solid-primitives/media"
 import { createEventListener } from "@solid-primitives/event-listener"
@@ -17,7 +7,7 @@ import { Tabs } from "@opencode/ui/tabs"
 import { IconButton } from "@opencode/ui/icon-button"
 import { Icon } from "@opencode/ui/icon"
 import { ResizeHandle } from "@opencode/ui/resize-handle"
-import { Mark } from "@opencode/ui/logo"
+import { ChanghongLogo } from "@opencode/ui/changhong-logo"
 import { Keybind } from "@opencode/ui/keybind"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { Menu } from "@opencode/ui/menu"
@@ -75,9 +65,7 @@ export function SideRegion(props: {
   // Opening the side region with no tabs shows a new tab view, once per opening and session. Keyed by the session, not
   // the item, whose object changes with every routed session. A view left from an earlier opening is shown again
   // rather than joined by another.
-  const starting = createMemo(() =>
-    tabsOpen() && layout.ready() && props.region.empty() ? props.view.key : undefined,
-  )
+  const starting = createMemo(() => (tabsOpen() && layout.ready() && props.region.empty() ? props.view.key : undefined))
 
   createEffect(on(starting, (key) => key && !props.region.newTab("side") && props.region.openNewTab("side")))
 
@@ -447,7 +435,7 @@ export function PaneTabs(props: {
           <Show when={!primary()}>
             <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
               <div class="h-full px-6 pb-42 -mt-4 flex flex-col items-center justify-center text-center gap-6">
-                <Mark class="w-14 opacity-10" />
+                <ChanghongLogo class="w-32 opacity-10" />
                 <div class="text-14-regular text-text-weak max-w-56">{language.t("session.files.selectToOpen")}</div>
               </div>
             </div>

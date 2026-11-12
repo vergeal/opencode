@@ -117,7 +117,9 @@ export class Info extends Schema.Class<Info>("Config.Info")({
 }) {}
 
 export const Patch = Schema.Struct({
-  shell: Schema.NullOr(Schema.String),
+  shell: Schema.NullOr(Schema.String).pipe(optional),
+  /** Package names or local paths to enable. Existing entries are kept; a matching `-name` disable is removed. */
+  plugins: Schema.Array(Schema.String).pipe(optional),
 }).annotate({ identifier: "Config.Patch" })
 export interface Patch extends Schema.Schema.Type<typeof Patch> {}
 

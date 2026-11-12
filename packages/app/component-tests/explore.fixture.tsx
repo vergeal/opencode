@@ -1,3 +1,4 @@
+import type { PluginInfo } from "@opencode/client"
 import { createSignal } from "solid-js"
 import { render } from "solid-js/web"
 import type { CatalogPlugin } from "../src/explore/catalog"
@@ -37,11 +38,47 @@ const sample: CatalogPlugin[] = [
   },
 ]
 
+/** The one integration the build ships: installing it only enables code already present. */
+export const chromeCatalog: CatalogPlugin[] = [
+  {
+    id: "opencode.chrome",
+    name: "Chrome 浏览器",
+    category: "automation",
+    author: "OpenCode",
+    description: "让 AI 直接操作专用 Chrome 窗口：打开网页、点击、填表、截图。",
+    package: "opencode.chrome",
+    repository: "https://github.com/anomalyco/opencode/tree/dev/packages/plugin-chrome",
+    integrated: true,
+    icon: "chrome",
+    skills: [{ name: "Chrome 浏览器", description: "用 chrome.* 工具操作专用 Chrome 窗口。" }],
+  },
+]
+
+/** What the server reports once that integration is enabled. */
+export const chromeInstalled: PluginInfo[] = [
+  {
+    id: "opencode.chrome",
+    source: { type: "builtin" },
+    features: { server: true },
+    state: { status: "active" },
+    display: {
+      name: "Chrome 浏览器",
+      description: "让 AI 直接操作专用 Chrome 窗口：打开网页、点击、填表、截图。",
+      category: "automation",
+      skills: [{ id: "chrome", name: "Chrome 浏览器", description: "用 chrome.* 工具操作专用 Chrome 窗口。" }],
+      tools: ["chrome.*"],
+    },
+  },
+]
+
 /**
  * Mounts the plugins page's real view over fixture data. The page's story provides the app runtime; this only
  * supplies the language context and the selection the real navigation column would own.
  */
-export function mountExplorePlugins(input?: { catalog?: readonly CatalogPlugin[] }) {
+export function mountExplorePlugins(input?: {
+  catalog?: readonly CatalogPlugin[]
+  installed?: readonly PluginInfo[]
+}) {
   const catalog = input?.catalog ?? sample
   const [openID, setOpenID] = createSignal<string>()
 
@@ -55,6 +92,7 @@ export function mountExplorePlugins(input?: { catalog?: readonly CatalogPlugin[]
       <LanguageProvider locale="en">
         <ExplorePluginsView
           catalog={catalog}
+          installed={input?.installed}
           catalogEntry={catalog.find((entry) => entry.id === openID())}
           onSelectCatalog={setOpenID}
           onBack={() => setOpenID(undefined)}

@@ -267,6 +267,7 @@
         "@opencode/codemode": "workspace:*",
         "@opencode/plugin": "workspace:*",
         "@opencode/plugin-browser": "workspace:*",
+        "@opencode/plugin-chrome": "workspace:*",
         "@opencode/pty": "0.4.0",
         "@opencode/schema": "workspace:*",
         "@opencode/util": "workspace:*",
@@ -547,6 +548,21 @@
     },
     "packages/plugin-browser": {
       "name": "@opencode/plugin-browser",
+      "version": "2.2.5",
+      "dependencies": {
+        "@opencode/plugin": "workspace:*",
+        "@opencode/schema": "workspace:*",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "@tsconfig/bun": "catalog:",
+        "@types/bun": "catalog:",
+        "@typescript/native": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "packages/plugins/chrome": {
+      "name": "@opencode/plugin-chrome",
       "version": "2.2.5",
       "dependencies": {
         "@opencode/plugin": "workspace:*",
@@ -1950,6 +1966,8 @@
     "@opencode/plugin": ["@opencode/plugin@workspace:packages/plugin"],
 
     "@opencode/plugin-browser": ["@opencode/plugin-browser@workspace:packages/plugin-browser"],
+
+    "@opencode/plugin-chrome": ["@opencode/plugin-chrome@workspace:packages/plugins/chrome"],
 
     "@opencode/plugin-figma": ["@opencode/plugin-figma@workspace:packages/plugins/figma"],
 

@@ -1,7 +1,7 @@
 import { lazy, Show, Suspense } from "solid-js"
 import { Button } from "@opencode/ui/button"
 import { TextInput } from "@opencode/ui/text-input"
-import { Wordmark } from "@opencode/ui/wordmark"
+import { ChanghongLogo } from "@opencode/ui/changhong-logo"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { cameraHint, createCameraAvailability } from "./camera"
@@ -22,8 +22,8 @@ export function ConnectServerScreen(props: { url?: string } = {}) {
   return (
     <main data-component="connect-server" aria-labelledby="server-connect-title">
       <div class="server-connect-content">
-        <div class="server-connect-brand" role="img" aria-label="OpenCode">
-          <Wordmark />
+        <div class="server-connect-brand">
+          <ChanghongLogo sweep />
         </div>
         <header>
           <h1 id="server-connect-title">{language.t("server.connect.title")}</h1>

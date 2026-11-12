@@ -47,12 +47,35 @@ export const State = Schema.Union([
 ]).annotate({ identifier: "Plugin.State" })
 export type State = typeof State.Type
 
+/**
+ * What a plugin shows in the app's plugin browser. A built-in plugin omits it to stay out of the browser; a plugin
+ * that declares it appears with the skills and tools it contributes, so one entry reads as one capability bundle.
+ */
+export interface Display extends Schema.Schema.Type<typeof Display> {}
+export const Display = Schema.Struct({
+  name: Schema.String,
+  description: Schema.String,
+  /** The shelf the plugin browser groups the entry under. */
+  category: Schema.String.pipe(optional),
+  /** Skills the plugin registers when it loads. */
+  skills: Schema.Array(
+    Schema.Struct({
+      id: Schema.String,
+      name: Schema.String,
+      description: Schema.String,
+    }),
+  ).pipe(optional),
+  /** Tool name prefixes the plugin registers, such as `chrome.*`. */
+  tools: Schema.Array(Schema.String).pipe(optional),
+}).annotate({ identifier: "Plugin.Display" })
+
 export interface Info extends Schema.Schema.Type<typeof Info> {}
 export const Info = Schema.Struct({
   id: ID.pipe(optional),
   source: Source,
   features: Features,
   state: State,
+  display: Display.pipe(optional),
 }).annotate({ identifier: "Plugin.Info" })
 
 const Updated = ephemeral({

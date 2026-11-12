@@ -39,17 +39,17 @@ describe("SkillPlugin.Plugin", () => {
       expect(skills).toContainEqual(
         expect.objectContaining({
           id: "opencode",
-          name: "OpenCode",
+          name: "OpenCode 使用指南",
           path: "skill://opencode/SKILL.md",
-          description: expect.stringContaining("any question about OpenCode itself"),
+          description: expect.stringContaining("回答一切关于 OpenCode 自身的问题"),
         }),
       )
       expect(skills).toContainEqual(
         expect.objectContaining({
           id: "report",
-          name: "Report",
+          name: "问题反馈",
           path: "skill://report/SKILL.md",
-          description: expect.stringContaining("opencode issue"),
+          description: expect.stringContaining("当用户想报告 OpenCode 的问题或缺陷时使用"),
         }),
       )
       expect(report?.content).toContain("- opencode version: 1.2.3")

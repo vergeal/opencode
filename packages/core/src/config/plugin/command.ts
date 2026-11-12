@@ -82,7 +82,7 @@ export const Plugin = define({
                   yield* sessions.prompt({
                     ...input.prompt,
                     sessionID: child.id,
-                    text: ["You are a subagent spawned by another session.", text].join("\n"),
+                    text: ["你是由另一个会话创建的子 agent。", text].join("\n"),
                     resume: false,
                   })
                   const recovery = {

@@ -430,6 +430,24 @@ export const { use: useTabs, provider: TabsProvider } = createSimpleContext({
         if (existing) {
           if (current?.server === next.server && current.sessionId === next.sessionId) preview.release()
 
+          // Opening a session by id shows that session, not the child route the tab was last left on.
+          if (!next.routeSessionId && existing.routeSessionId) {
+            const index = store.findIndex((item) => tabKey(item) === tabKey(next))
+
+            setStore(
+              index,
+              produce((item) => {
+                if (item.type !== "session") return
+                item.routeSessionId = undefined
+                item.routeParentId = undefined
+              }),
+            )
+
+            const reopened = store[index]
+
+            return reopened?.type === "session" ? reopened : existing
+          }
+
           return existing
         }
 

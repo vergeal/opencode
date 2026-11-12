@@ -30,6 +30,11 @@
     height: 24px;
   }
 
+  /* A search field reads as a pill so its rounded ends sit right against the leading icon and clear button. */
+  [data-component="text-input-v2"]:has([data-slot="text-input-v2-input"][type="search"]) {
+    border-radius: 9999px;
+  }
+
   [data-component="text-input-v2"][data-appearance="large"] {
     height: 32px;
   }

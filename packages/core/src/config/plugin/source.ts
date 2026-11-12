@@ -81,14 +81,8 @@ export const layer = Layer.effect(
       }),
       changes: () =>
         Stream.merge(
-          config.changes().pipe(
-            Stream.filterEffect((update) =>
-              Effect.map(config.entries(), (entries) =>
-                ConfigEntryObserver.isDirectorySource(entries, update.path, PluginSourceDirectory.names),
-              ),
-            ),
-            Stream.map(() => undefined),
-          ),
+          // Any config change can add, remove, or reorder a `plugins` entry, so a saved document must re-scan too.
+          config.changes().pipe(Stream.map(() => undefined)),
           Stream.fromPubSub(configuredChanges),
         ),
     })

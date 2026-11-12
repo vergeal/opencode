@@ -26,16 +26,16 @@ const ITEMS: readonly RailItem[] = [
     path: "/scheduled",
   },
   {
-    id: "explore",
-    icon: "rail-compass",
-    labelKey: "replica.rail.explore",
-    path: "/explore",
-  },
-  {
     id: "knowledge",
     icon: "rail-library",
     labelKey: "replica.rail.knowledge",
     path: "/knowledge",
+  },
+  {
+    id: "explore",
+    icon: "rail-compass",
+    labelKey: "replica.rail.explore",
+    path: "/explore",
   },
   { id: "more", icon: "rail-more", labelKey: "replica.rail.more" },
 ]

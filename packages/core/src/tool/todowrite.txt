@@ -1,7 +1,7 @@
-Create and update a todo list for the current session. The user sees it as your working plan.
+为当前会话创建和更新待办列表。用户会把它看作你的工作计划。
 
-Use it proactively when a task has 3 or more distinct steps, or when the user gives several tasks or asks for a todo list. Skip it for a single simple task or a purely conversational request. When in doubt, use it.
+当任务有 3 个或更多不同步骤，或用户给出多个任务、要求一个待办列表时，主动使用它。对于单个简单任务或纯对话式请求，跳过它。有疑问时，就用它。
 
-- Send the full list on every call; it replaces the previous one.
-- Mark items `in_progress` when you start them and `completed` as soon as they're actually done.
-- Only call it when the list changes.
+- 每次调用都发送完整列表；它会替换之前的列表。
+- 开始处理某项时标记为 `in_progress`，实际完成时立即标记为 `completed`。
+- 只在列表发生变化时调用它。

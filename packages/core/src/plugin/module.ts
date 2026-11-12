@@ -2,7 +2,7 @@ export * as PluginModule from "./module.js"
 
 import type { Plugin } from "@opencode/plugin/effect/plugin"
 import { Host } from "@opencode/plugin/host"
-import { GuiBundle, type Source } from "@opencode/schema/plugin"
+import { Display, GuiBundle, type Source } from "@opencode/schema/plugin"
 import { createPluginSources } from "@opencode/plugin/source"
 import { Hash } from "@opencode/util/hash"
 import { Npm } from "@opencode/util/npm"
@@ -82,10 +82,12 @@ const Module = Schema.Struct({
   default: Schema.Union([
     Schema.Struct({
       id: Schema.String,
+      display: Display.pipe(Schema.optional),
       effect: Schema.declare<Plugin["effect"]>((input): input is Plugin["effect"] => typeof input === "function"),
     }),
     Schema.Struct({
       id: Schema.String,
+      display: Display.pipe(Schema.optional),
       setup: Schema.declare<Parameters<typeof PluginPromise.fromPromise>[0]["setup"]>(
         (input): input is Parameters<typeof PluginPromise.fromPromise>[0]["setup"] => typeof input === "function",
       ),
@@ -150,6 +152,7 @@ const load = Effect.fn("PluginModule.load")(function* (
     : {}
   return {
     id: plugin.id,
+    ...(plugin.display === undefined ? {} : { display: plugin.display }),
     features: {
       ...(entrypoint ? { server: true as const } : {}),
       ...(entrypoints.tui ? { tui: true as const } : {}),

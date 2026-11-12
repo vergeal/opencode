@@ -110,3 +110,68 @@ story("groups the catalog, filters it, opens a plugin's page, and returns", asyn
   expect(result.returned).toBe(1)
   expect(result.empty).toEqual({ title: "No matching plugins", cards: 0 })
 })
+
+story("shows the built-in Chrome integration and stops offering it once installed", async ({ page }) => {
+  const result = await page.evaluate(async (fixture) => {
+    const { chromeCatalog, chromeInstalled, mountExplorePlugins } = await import(fixture)
+
+    const frame = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+
+    const read = async (input: { catalog: unknown; installed?: unknown }) => {
+      const mounted = mountExplorePlugins(input as never)
+      // SAFETY: mountExplorePlugins builds its host with document.createElement("div").
+      const host = mounted.host as HTMLDivElement
+      await frame()
+
+      // The page opens on Installed, so reach the catalog before reading its card.
+      host.querySelector<HTMLButtonElement>('[role="tab"]:not([data-selected])')?.click()
+      await frame()
+
+      const card = host.querySelector<HTMLElement>(".explore-catalog-card")!
+      const state = {
+        name: card.querySelector(".explore-catalog-card-name")?.textContent?.trim() ?? "",
+        installed: card.querySelector(".explore-catalog-card-installed")?.textContent?.trim() ?? "",
+        hasInstall: !!card.querySelector(".explore-catalog-card-add"),
+        brandColor: card.querySelector(".explore-catalog-card-icon svg path")?.getAttribute("fill") ?? "",
+      }
+
+      card.querySelector<HTMLButtonElement>(".explore-catalog-card-main")?.click()
+      await frame()
+
+      const detail = {
+        installed: host.querySelector(".explore-catalog-hero-installed")?.textContent?.trim() ?? "",
+        hasInstall: !!host.querySelector(".explore-catalog-hero .explore-button"),
+        brandColor: host.querySelector(".explore-catalog-hero-icon svg path")?.getAttribute("fill") ?? "",
+        type: host.querySelector(".explore-catalog-facts dt")?.textContent?.trim() ?? "",
+      }
+
+      mounted.unmount()
+
+      return { state, detail }
+    }
+
+    return {
+      catalogOnly: await read({ catalog: chromeCatalog }),
+      installed: await read({ catalog: chromeCatalog, installed: chromeInstalled }),
+    }
+  }, fixture)
+
+  const expectChrome = (value: { brandColor: string; type?: string }, hasInstall: boolean, installed: string) => {
+    expect(value.brandColor).toBe("#EA4335")
+    expect(hasInstall).toBe(false)
+    expect(installed).toBe("Installed")
+  }
+
+  expect(result.catalogOnly.state.name).toBe("Chrome 浏览器")
+  expect(result.catalogOnly.state.brandColor).toBe("#EA4335")
+  expect(result.catalogOnly.state.hasInstall).toBe(true)
+  expect(result.catalogOnly.state.installed).toBe("")
+  expect(result.catalogOnly.detail.hasInstall).toBe(true)
+  expect(result.catalogOnly.detail.type).toBe("Type")
+
+  expect(result.installed.state.name).toBe("Chrome 浏览器")
+  expectChrome(result.installed.state, result.installed.state.hasInstall, result.installed.state.installed)
+  expect(result.installed.detail.type).toBe("Type")
+  expectChrome(result.installed.detail, result.installed.detail.hasInstall, result.installed.detail.installed)
+})

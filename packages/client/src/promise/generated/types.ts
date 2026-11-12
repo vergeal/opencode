@@ -47,6 +47,14 @@ export type PluginFeatures = { server?: true; tui?: true; rpc?: true; gui?: true
 
 export type PluginState = { status: "active" } | { status: "failed"; error: string; ref?: string }
 
+export type PluginDisplay = {
+  name: string
+  description: string
+  category?: string
+  skills?: Array<{ id: string; name: string; description: string }>
+  tools?: Array<string>
+}
+
 export type PluginGuiBundle = { code: string; revision: string; options: { [x: string]: JsonValue } }
 
 export type SessionID = string
@@ -417,7 +425,13 @@ export type ConfigModelVariantSettings = { compaction?: ProviderCompaction; enco
 
 export type PermissionRule = { action: string; resource: string; effect: PermissionEffect }
 
-export type PluginInfo = { id?: PluginID; source: PluginSource; features: PluginFeatures; state: PluginState }
+export type PluginInfo = {
+  id?: PluginID
+  source: PluginSource
+  features: PluginFeatures
+  state: PluginState
+  display?: PluginDisplay
+}
 
 export type SessionForkBoundary =
   | { type: "before"; messageID: SessionMessageID }
@@ -4906,7 +4920,10 @@ export type ConfigGetOutput = Array<ConfigEntry>
 
 export type ConfigShellsOutput = Array<ConfigShellOption>
 
-export type ExperimentalConfigUpdateInput = { readonly shell: string | null }
+export type ExperimentalConfigUpdateInput = {
+  readonly shell?: string | null | undefined
+  readonly plugins?: ReadonlyArray<string> | undefined
+}
 
 export type ExperimentalConfigUpdateOutput = void
 

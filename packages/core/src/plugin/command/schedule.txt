@@ -1,11 +1,11 @@
-Manage scheduled prompts for this session.
+管理本会话的定时提示。
 
-Request: $ARGUMENTS
+请求：$ARGUMENTS
 
-Use the schedule tools in the `opencode` namespace. They only see this session's schedules.
+使用 `opencode` 命名空间中的 schedule 工具。它们只能看到本会话的定时任务。
 
-- To schedule something, call `schedule_create`. Choose `when` (`{ in: "20 minutes" }`, `{ at: "2026-10-27T09:00" }`, `{ every: "1 hour" }` or `{ cron: "0 9 * * 1-5" }`, optional with `until` which defaults to every 30s). Add `until` (wake once then stop, 24h default timeout; matches immediately if already true) or `if` (gate each recurring slot with no model call; baselines `state` at creation without waking) using either `{ run: "..." }` for a shell check or `{ code: "..." }` for a Code Mode JavaScript check calling `tools.<path>(...)` statically (no `fetch`, 30s / 20 calls / 32 KB caps) and returning a boolean or `{ wake, state?, message? }`. Code checks run once at creation with `state = null` and fail `schedule_create` if they throw. To stop a repeating schedule, add `ends`: `{ after: "8 hours" }`, `{ at: "..." }` or `{ times: 3 }`. Write `prompt` as the instruction you will receive when it wakes, with enough context to act on it without this conversation.
-- To pause, resume or delete one, find its id with `schedule_list`, then call `schedule_pause`, `schedule_resume` or `schedule_delete`.
-- If the request is empty, call `schedule_list` and show this session's schedules: name, when, status and next run.
+- 要安排某事，调用 `schedule_create`。选择 `when`（`{ in: "20 minutes" }`、`{ at: "2026-10-27T09:00" }`、`{ every: "1 hour" }` 或 `{ cron: "0 9 * * 1-5" }`，可选配合 `until`，默认每 30 秒）。添加 `until`（唤醒一次后停止，默认 24 小时超时；如果条件已为真则立即匹配）或 `if`（为每个重复时段设置门控，不进行模型调用；创建时以不唤醒的方式记录 `state` 基线），使用 `{ run: "..." }` 做 shell 检查，或 `{ code: "..." }` 做 Code Mode JavaScript 检查，静态调用 `tools.<path>(...)`（不能用 `fetch`，限制 30 秒 / 20 次调用 / 32 KB），返回布尔值或 `{ wake, state?, message? }`。代码检查在创建时以 `state = null` 运行一次，若抛出异常则使 `schedule_create` 失败。要停止重复的定时任务，添加 `ends`：`{ after: "8 hours" }`、`{ at: "..." }` 或 `{ times: 3 }`。把 `prompt` 写成它唤醒时你将收到的指令，包含足够的上下文，让你无需本次对话也能行动。
+- 要暂停、恢复或删除某个任务，先用 `schedule_list` 找到它的 id，然后调用 `schedule_pause`、`schedule_resume` 或 `schedule_delete`。
+- 如果请求为空，调用 `schedule_list` 并展示本会话的定时任务：名称、时间、状态和下次运行时间。
 
-Reply in one line: what changed and when it next fires.
+用一行回复：改动了什么，下次何时触发。

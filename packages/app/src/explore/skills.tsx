@@ -20,6 +20,7 @@ import { PageHeader } from "@/shell/page"
 import { useLayout } from "@/shell/state/layout"
 import "./explore.css"
 import { loadCatalog, type CatalogSkill } from "./catalog"
+import { SkillIcon } from "./skill-icon"
 import { ExploreStatus } from "./status"
 
 const isVirtual = (skill: SkillInfo) => skill.path.startsWith("skill://") || skill.path.startsWith("/builtin/")
@@ -307,7 +308,7 @@ export const ExploreSkills: Component = () => {
         existing={skills().map((skill) => skill.id)}
         onInstalled={(id) => {
           void syncSkills(directory()).then(() => layout.destination.explore.setSelected(id))
-          showToast({ variant: "success", title: language.t("explore.skills.install.success", { id }) })
+          showToast({ variant: "success", title: language.t("explore.skills.install.success") })
         }}
       />
     ))
@@ -320,7 +321,7 @@ export const ExploreSkills: Component = () => {
         initial={{ id: entry.id, name: entry.title, description: entry.description, instructions: entry.instructions }}
         onInstalled={(id) => {
           void syncSkills(directory()).then(() => layout.destination.explore.setSelected(id))
-          showToast({ variant: "success", title: language.t("explore.skills.install.success", { id }) })
+          showToast({ variant: "success", title: language.t("explore.skills.install.success") })
         }}
       />
     ))
@@ -530,7 +531,7 @@ function SkillCard(props: {
     <div class="explore-catalog-card">
       <button type="button" class="explore-catalog-card-main" onClick={props.onOpen}>
         <span class="explore-catalog-card-icon">
-          <Icon name="post-skill" />
+          <SkillIcon />
         </span>
         <span class="explore-catalog-card-copy">
           <span class="explore-catalog-card-name">{props.name}</span>
@@ -591,7 +592,7 @@ function InstalledSkillDetail(props: {
         <div class="explore-catalog-page-body">
           <header class="explore-catalog-hero">
             <span class="explore-catalog-hero-icon">
-              <Icon name="post-skill" />
+              <SkillIcon />
             </span>
             <div class="explore-catalog-hero-copy">
               <h1 class="explore-catalog-hero-name">{props.skill.name}</h1>
@@ -682,7 +683,7 @@ function CatalogSkillDetail(props: { entry: CatalogSkill; onBack: () => void; on
         <div class="explore-catalog-page-body">
           <header class="explore-catalog-hero">
             <span class="explore-catalog-hero-icon">
-              <Icon name="post-skill" />
+              <SkillIcon />
             </span>
             <div class="explore-catalog-hero-copy">
               <h1 class="explore-catalog-hero-name">{props.entry.title}</h1>
@@ -757,27 +758,26 @@ function InstallSkillDialog(props: {
   const dialog = useDialog()
   const serverSdk = useServerSDK()
 
+  // The user never names a folder: a fresh id keeps the skill directory machine-readable.
+  const fallbackId = `skill-${Date.now().toString(36)}`
+
   const [state, setState] = createStore({
-    id: props.initial?.id ?? "",
     name: props.initial?.name ?? "",
     description: props.initial?.description ?? "",
-    instructions: props.initial?.instructions ?? "",
     busy: false,
     error: "",
   })
 
+  const id = () => props.initial?.id ?? fallbackId
   const root = () => trimDirectory(props.directory)
-  const target = () => `${root()}/.opencode/skill/${state.id.trim() || "<id>"}/SKILL.md`
+  const target = () => `${root()}/.opencode/skill/${id()}/SKILL.md`
 
   const submit = async () => {
     if (state.busy) return
-    const id = state.id.trim()
     const name = state.name.trim()
     const description = state.description.trim()
 
-    if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) return setState("error", language.t("explore.skills.install.invalidId"))
-
-    if (props.existing.includes(id)) return setState("error", language.t("explore.skills.install.exists"))
+    if (props.existing.includes(id())) return setState("error", language.t("explore.skills.install.exists"))
 
     if (!name) return setState("error", language.t("explore.skills.install.requiredName"))
 
@@ -788,19 +788,21 @@ function InstallSkillDialog(props: {
     try {
       await serverSdk.api.experimental.file.write({
         path: target(),
-        payload: new TextEncoder().encode(composeSkill({ name, description, instructions: state.instructions })),
+        payload: new TextEncoder().encode(
+          composeSkill({ name, description, instructions: props.initial?.instructions ?? "" }),
+        ),
         location: { directory: props.directory },
       })
       dialog.close()
-      props.onInstalled(id)
+      props.onInstalled(id())
     } catch (error) {
       setState({ busy: false, error: error instanceof Error ? error.message : String(error) })
     }
   }
 
   return (
-    <Dialog>
-      <DialogHeader>
+    <Dialog fit containerClass="explore-install-dialog">
+      <DialogHeader hideClose>
         <DialogTitleGroup
           title={language.t("explore.skills.install.title")}
           description={language.t("explore.skills.install.description")}
@@ -809,24 +811,15 @@ function InstallSkillDialog(props: {
 
       <DialogBody class="explore-install-body">
         <label class="explore-field">
-          <span class="explore-field-label">{language.t("explore.skills.install.id")}</span>
-          <TextInput
-            autofocus
-            value={state.id}
-            placeholder={language.t("explore.skills.install.id.placeholder")}
-            aria-label={language.t("explore.skills.install.id")}
-            spellcheck={false}
-            onInput={(event) => setState("id", event.currentTarget.value)}
-          />
-          <span class="explore-field-hint">{language.t("explore.skills.install.id.description")}</span>
-        </label>
-
-        <label class="explore-field">
           <span class="explore-field-label">{language.t("explore.skills.install.name")}</span>
           <TextInput
+            autofocus
+            appearance="large"
             value={state.name}
             placeholder={language.t("explore.skills.install.name.placeholder")}
             aria-label={language.t("explore.skills.install.name")}
+            autocomplete="off"
+            spellcheck={false}
             onInput={(event) => setState("name", event.currentTarget.value)}
           />
         </label>
@@ -834,31 +827,15 @@ function InstallSkillDialog(props: {
         <label class="explore-field">
           <span class="explore-field-label">{language.t("explore.skills.install.summary")}</span>
           <Textarea
-            rows={2}
+            rows={3}
+            autoResize
             value={state.description}
             placeholder={language.t("explore.skills.install.summary.placeholder")}
             aria-label={language.t("explore.skills.install.summary")}
             onInput={(event) => setState("description", event.currentTarget.value)}
           />
+          <span class="explore-field-hint">{language.t("explore.skills.install.hint")}</span>
         </label>
-
-        <label class="explore-field">
-          <span class="explore-field-label">{language.t("explore.skills.install.instructions")}</span>
-          <Textarea
-            rows={5}
-            value={state.instructions}
-            placeholder={language.t("explore.skills.install.instructions.placeholder")}
-            aria-label={language.t("explore.skills.install.instructions")}
-            onInput={(event) => setState("instructions", event.currentTarget.value)}
-          />
-        </label>
-
-        <div class="explore-field">
-          <span class="explore-field-label">{language.t("explore.skills.install.path")}</span>
-          <code class="explore-install-path" dir="ltr">
-            {target()}
-          </code>
-        </div>
 
         <Show when={state.error}>
           {(message) => (
@@ -911,7 +888,7 @@ function RemoveSkillDialog(props: { skill: SkillInfo; text: string; directory: s
   }
 
   return (
-    <Dialog>
+    <Dialog fit>
       <DialogHeader>
         <DialogTitleGroup
           title={language.t("explore.skills.remove.title", { name: props.skill.name })}

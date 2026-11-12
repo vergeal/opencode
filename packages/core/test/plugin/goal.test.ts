@@ -93,7 +93,7 @@ describe("goal plugin", () => {
         "<untrusted_objective>\nMake the test suite pass\n</untrusted_objective>",
       )
       expect(notices[1]?.type === "synthetic" && notices[1].text).toContain(
-        "The parser test still fails.\nNext step: Fix the date parser.",
+        "The parser test still fails.\n下一步：Fix the date parser.",
       )
       // Continuations run inside the same execution, so the Session went idle once.
       expect(messages.filter((message) => message.type === "idle")).toMatchObject([{ outcome: "succeeded" }])
@@ -255,7 +255,7 @@ describe("goal plugin", () => {
       // The grandchild reports to the child, so the reviewer runs. With none of the Session's own shells running,
       // "wait" is not offered and counts as an unusable answer.
       expect(verdicts.asked()).toBe(2)
-      expect(prompts[0]).toContain("No background shells are running.")
+      expect(prompts[0]).toContain("没有后台 shell 在运行。")
       expect(yield* goal(session.id)).toMatchObject({ status: "complete", reason: "The report is written." })
     }),
   )

@@ -1,16 +1,18 @@
-import { For, Show } from "solid-js"
-import { Icon } from "@opencode/ui/icon"
-import type { IconName } from "@opencode/ui/icons/catalog"
+import { For, Show, type Component } from "solid-js"
+import { Dynamic } from "solid-js/web"
 import { useExploreInstalled } from "@/explore/installed"
+import { PluginIcon } from "@/explore/plugin-icon"
+import { SkillIcon } from "@/explore/skill-icon"
 import { ExploreSkeleton } from "@/explore/skeleton"
 import { pluginLabel } from "@/providers/catalog/plugin"
 import { useLanguage } from "@/runtime/i18n/language"
 import { EXPLORE_SECTIONS, useLayout, type ExploreSection } from "@/shell/state/layout"
 import { HEADER, LIST, ROW, SECTION, TITLE } from "./sidebar-tokens"
 
-const SECTIONS: Record<ExploreSection, { icon: IconName; labelKey: string }> = {
-  plugins: { icon: "cube", labelKey: "explore.nav.plugins" },
-  skills: { icon: "post-skill", labelKey: "explore.nav.skills" },
+// The shelves reuse the marks their pages use, painted in currentColor so the navigation stays quiet.
+const SECTIONS: Record<ExploreSection, { icon: Component<{ class?: string }>; labelKey: string }> = {
+  plugins: { icon: (props) => <PluginIcon class={props.class} monochrome />, labelKey: "explore.nav.plugins" },
+  skills: { icon: (props) => <SkillIcon class={props.class} monochrome />, labelKey: "explore.nav.skills" },
 }
 
 type NavItem = { id: string; label: string }
@@ -23,18 +25,14 @@ export function ExploreNav() {
 
   const section = () => layout.destination.explore.section()
 
+  // The installed shelf lists plugins only; installed skills live in the skills page's own tab.
+  const items = (): NavItem[] =>
+    installed.plugins().map((plugin) => ({ id: plugin.id ?? pluginLabel(plugin), label: pluginLabel(plugin) }))
+
   // Wait for the server's answer so an empty shelf never flashes before the rows arrive.
-  const ready = () => (section() === "plugins" ? installed.pluginStatus() === "ready" : installed.skillsLoaded())
+  const ready = () => installed.pluginStatus() === "ready"
 
-  const waiting = () => (section() === "plugins" ? installed.pluginStatus() === "loading" : !installed.skillsLoaded())
-
-  const items = (): NavItem[] => {
-    if (section() === "plugins") {
-      return installed.plugins().map((plugin) => ({ id: plugin.id ?? pluginLabel(plugin), label: pluginLabel(plugin) }))
-    }
-
-    return installed.skills().map((skill) => ({ id: skill.id, label: skill.name }))
-  }
+  const waiting = () => installed.pluginStatus() === "loading"
 
   return (
     <>
@@ -56,7 +54,7 @@ export function ExploreNav() {
               aria-pressed={section() === shelf}
               onClick={() => layout.destination.explore.setSection(shelf)}
             >
-              <Icon name={SECTIONS[shelf].icon} class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />
+              <Dynamic component={SECTIONS[shelf].icon} class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />
               <span class="min-w-0 flex-1 truncate">{language.t(SECTIONS[shelf].labelKey)}</span>
             </button>
           )}
@@ -80,7 +78,7 @@ export function ExploreNav() {
               when={items().length > 0}
               fallback={
                 <p class="px-2 py-2 text-[13px] leading-[var(--line-height-compact)] text-[var(--color-text-secondary)]">
-                  {language.t(section() === "plugins" ? "explore.plugins.empty.title" : "explore.skills.empty.title")}
+                  {language.t("explore.plugins.empty.title")}
                 </p>
               }
             >
@@ -94,7 +92,12 @@ export function ExploreNav() {
                       class={ROW}
                       title={item.label}
                       data-state={layout.destination.explore.selected() === item.id ? "pressed" : undefined}
-                      onClick={() => layout.destination.explore.setSelected(item.id)}
+                      onClick={() => {
+                        // The installed shelf lists plugins, so opening one from the skills shelf still lands on the
+                        // plugins page; the section setter clears the selection it replaces.
+                        layout.destination.explore.setSection("plugins")
+                        layout.destination.explore.setSelected(item.id)
+                      }}
                     >
                       <span class="min-w-0 flex-1 truncate">{item.label}</span>
                     </button>

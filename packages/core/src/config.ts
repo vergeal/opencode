@@ -476,13 +476,36 @@ export const layer = (options?: Options) =>
             (yield* Effect.filter(candidates, fs.isFile)).at(-1) ?? path.join(directory, "opencode.jsonc")
           const text = (yield* fs.readFileStringSafe(filepath)) ?? "{}\n"
           const updated = yield* Effect.try({
-            try: () =>
-              applyEdits(
-                text,
-                modify(text, ["shell"], patch.shell ?? undefined, {
-                  formattingOptions: { tabSize: 2, insertSpaces: true },
-                }),
-              ),
+            try: () => {
+              const formattingOptions = { tabSize: 2, insertSpaces: true }
+              let current = text
+              if (patch.plugins !== undefined && patch.plugins.length > 0) {
+                const parsed: unknown = parse(current, [], { allowTrailingComma: true })
+                const settings =
+                  parsed && typeof parsed === "object" && !Array.isArray(parsed)
+                    ? (parsed as Record<string, unknown>)
+                    : {}
+                const legacy = Array.isArray(settings.plugin) ? settings.plugin : []
+                const declared = Array.isArray(settings.plugins) ? settings.plugins : []
+                const existing = [...legacy, ...declared].filter((item): item is string => typeof item === "string")
+                const added = new Set(patch.plugins)
+                // Installing also lifts a former `-name` disable, so the user gets the plugin they just asked for.
+                const merged = [...new Set([...existing, ...patch.plugins])].filter(
+                  (item) => !(item.startsWith("-") && added.has(item.slice(1))),
+                )
+                current = applyEdits(current, modify(current, ["plugins"], merged, { formattingOptions }))
+                if (legacy.length > 0) {
+                  current = applyEdits(current, modify(current, ["plugin"], undefined, { formattingOptions }))
+                }
+              }
+              if (patch.shell !== undefined) {
+                current = applyEdits(
+                  current,
+                  modify(current, ["shell"], patch.shell ?? undefined, { formattingOptions }),
+                )
+              }
+              return current
+            },
             catch: (cause) => new FSUtil.FileSystemError({ method: "config.update", cause }),
           })
           yield* fs.writeWithDirs(filepath, updated.endsWith("\n") ? updated : `${updated}\n`)

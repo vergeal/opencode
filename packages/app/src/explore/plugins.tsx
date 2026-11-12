@@ -15,7 +15,9 @@ import { useLayout } from "@/shell/state/layout"
 import "@/settings/settings.css"
 import "./explore.css"
 import { loadCatalog, PLUGIN_CATEGORIES, type CatalogPlugin, type PluginCategory } from "./catalog"
+import { ChromeIcon } from "./chrome-icon"
 import { PluginInstallDialog } from "./plugin-install-dialog"
+import { PluginIcon } from "./plugin-icon"
 import { ExploreStatus } from "./status"
 
 const CATEGORY_LABELS: Record<PluginCategory, string> = {
@@ -45,6 +47,20 @@ const sourceDetail = (plugin: PluginInfo) => {
 
 const pluginKey = (plugin: PluginInfo) => plugin.id ?? pluginLabel(plugin)
 
+/**
+ * Brand marks for integrations that carry a recognisable logo, keyed by plugin id. An installed plugin reports only
+ * its id, so this is how its card and page show the same mark as its catalog entry.
+ */
+const PLUGIN_MARKS: Record<string, string> = { "opencode.chrome": "chrome" }
+
+const markOf = (input: { icon?: string; id?: string }) =>
+  input.icon ?? (input.id === undefined ? undefined : PLUGIN_MARKS[input.id])
+
+/** The catalog entry's brand mark, or the generic plugins mark when the entry has none. */
+function PluginMark(props: { mark?: string }) {
+  return props.mark === "chrome" ? <ChromeIcon /> : <PluginIcon />
+}
+
 /** The published plugins this project can install, and whichever entry the list or the column opened. */
 export function ExplorePlugins() {
   const layout = useLayout()
@@ -68,10 +84,18 @@ export function ExplorePlugins() {
     catalogPlugins().find((entry) => entry.id === layout.destination.explore.catalog()),
   )
 
-  const install = () => void dialog.show(() => <PluginInstallDialog directory={installed.directory()} />)
+  const install = () =>
+    void dialog.show(() => <PluginInstallDialog onInstalled={() => void installed.refetchPlugins()} />)
 
   const installFromCatalog = (entry: CatalogPlugin) =>
-    void dialog.show(() => <PluginInstallDialog directory={installed.directory()} package={entry.package} />)
+    void dialog.show(() => (
+      <PluginInstallDialog
+        package={entry.package}
+        name={entry.name}
+        integrated={entry.integrated}
+        onInstalled={() => void installed.refetchPlugins()}
+      />
+    ))
 
   const back = () => {
     layout.destination.explore.setSelected(undefined)
@@ -118,10 +142,17 @@ export function ExplorePluginsView(props: {
 
   const [state, setState] = createStore<{ query: string; tab: "public" | "personal" }>({
     query: "",
-    tab: "public",
+    // Built-in capability bundles and installed packages land on "personal", so opening the page shows what already
+    // works instead of an empty catalog.
+    tab: "personal",
   })
 
   const query = () => state.query.trim().toLowerCase()
+
+  // A catalog entry that the server already loads must not offer a second install.
+  const installedIDs = createMemo(
+    () => new Set((props.installed ?? []).flatMap((plugin) => (plugin.id ? [plugin.id] : []))),
+  )
 
   const groups = createMemo(() => {
     const needle = query()
@@ -235,9 +266,11 @@ export function ExplorePluginsView(props: {
                   when={groups().length > 0}
                   fallback={
                     <ExploreStatus
-                      icon="magnifying-glass"
-                      title={language.t("explore.plugins.noResults.title")}
-                      description={language.t("explore.plugins.noResults.description")}
+                      icon="outline-pair"
+                      title={language.t(query() ? "explore.plugins.noResults.title" : "explore.plugins.none.title")}
+                      description={language.t(
+                        query() ? "explore.plugins.noResults.description" : "explore.plugins.none.description",
+                      )}
                     />
                   }
                 >
@@ -251,7 +284,9 @@ export function ExplorePluginsView(props: {
                               <PluginCard
                                 name={entry.name}
                                 description={entry.description}
-                                folder
+                                mark={markOf(entry)}
+                                folder={!entry.integrated}
+                                installed={installedIDs().has(entry.id)}
                                 addLabel={language.t("explore.plugins.install")}
                                 onOpen={() => props.onSelectCatalog?.(entry.id)}
                                 onAdd={() => props.onInstallCatalog?.(entry)}
@@ -276,6 +311,7 @@ export function ExplorePluginsView(props: {
             {(entry) => (
               <CatalogPluginDetail
                 entry={entry()}
+                installed={installedIDs().has(entry().id)}
                 onBack={props.onBack}
                 onInstall={() => props.onInstallCatalog?.(entry())}
               />
@@ -308,7 +344,11 @@ function InstalledGrid(props: { plugins: readonly PluginInfo[]; onOpen?: (id: st
           {(plugin) => (
             <PluginCard
               name={pluginLabel(plugin)}
-              description={plugin.source.type === "package" ? plugin.source.target : (sourceDetail(plugin) ?? "")}
+              description={
+                plugin.display?.description ??
+                (plugin.source.type === "package" ? plugin.source.target : (sourceDetail(plugin) ?? ""))
+              }
+              mark={markOf({ id: plugin.id })}
               onOpen={() => props.onOpen?.(pluginKey(plugin))}
             />
           )}
@@ -322,16 +362,22 @@ function InstalledGrid(props: { plugins: readonly PluginInfo[]; onOpen?: (id: st
 function PluginCard(props: {
   name: string
   description: string
+  /** Brand mark for the leading icon; the generic plugins mark when absent. */
+  mark?: string
   folder?: boolean
+  /** Already loaded by the server, so the card reports it instead of offering another install. */
+  installed?: boolean
   addLabel?: string
   onOpen?: () => void
   onAdd?: () => void
 }) {
+  const language = useLanguage()
+
   return (
     <div class="explore-catalog-card">
       <button type="button" class="explore-catalog-card-main" onClick={() => props.onOpen?.()}>
         <span class="explore-catalog-card-icon">
-          <Icon name="outline-pair" />
+          <PluginMark mark={props.mark} />
         </span>
         <span class="explore-catalog-card-copy">
           <span class="explore-catalog-card-name">
@@ -343,7 +389,10 @@ function PluginCard(props: {
           <span class="explore-catalog-card-description">{props.description}</span>
         </span>
       </button>
-      <Show when={props.onAdd}>
+      <Show when={props.installed}>
+        <span class="explore-catalog-card-installed">{language.t("explore.plugins.installed")}</span>
+      </Show>
+      <Show when={props.onAdd && !props.installed}>
         <button
           type="button"
           class="explore-catalog-card-add"
@@ -373,7 +422,7 @@ function DetailCrumbs(props: { current: string; onBack: () => void }) {
 }
 
 /** A catalog entry's full page: who publishes it, what it does, and the install that adds it to the project. */
-function CatalogPluginDetail(props: { entry: CatalogPlugin; onBack: () => void; onInstall: () => void }) {
+function CatalogPluginDetail(props: { entry: CatalogPlugin; installed?: boolean; onBack: () => void; onInstall: () => void }) {
   const language = useLanguage()
 
   const details = () => props.entry.details ?? props.entry.description
@@ -386,20 +435,29 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; onBack: () => void; 
         <div class="explore-catalog-page-body">
           <header class="explore-catalog-hero">
             <span class="explore-catalog-hero-icon">
-              <Icon name="outline-pair" />
+              <PluginMark mark={markOf(props.entry)} />
             </span>
             <div class="explore-catalog-hero-copy">
               <h1 class="explore-catalog-hero-name">
                 <bdi dir="ltr">{props.entry.name}</bdi>
-                <Icon name="folder" class="explore-catalog-card-folder" />
+                <Show when={!props.entry.integrated}>
+                  <Icon name="folder" class="explore-catalog-card-folder" />
+                </Show>
               </h1>
               <p class="explore-catalog-hero-meta">
                 {language.t("explore.plugins.by", { author: props.entry.author })} · {props.entry.description}
               </p>
             </div>
-            <Button variant="contrast" size="small" icon="plus" onClick={props.onInstall}>
-              {language.t("explore.plugins.install")}
-            </Button>
+            <Show
+              when={!props.installed}
+              fallback={
+                <span class="explore-catalog-hero-installed">{language.t("explore.plugins.installed")}</span>
+              }
+            >
+              <Button variant="contrast" size="small" icon="plus" onClick={props.onInstall}>
+                {language.t("explore.plugins.install")}
+              </Button>
+            </Show>
           </header>
 
           <p class="explore-catalog-about">{details()}</p>
@@ -455,9 +513,17 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; onBack: () => void; 
 
           <dl class="explore-catalog-facts">
             <div>
-              <dt>{language.t("explore.plugins.discover.package")}</dt>
+              <dt>
+                {language.t(
+                  props.entry.integrated ? "explore.plugins.discover.integration" : "explore.plugins.discover.package",
+                )}
+              </dt>
               <dd>
-                <code dir="ltr">{props.entry.package}</code>
+                {props.entry.integrated ? (
+                  language.t("explore.plugins.install.integrated")
+                ) : (
+                  <code dir="ltr">{props.entry.package}</code>
+                )}
               </dd>
             </div>
             <div>
@@ -468,7 +534,11 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; onBack: () => void; 
             </div>
           </dl>
 
-          <p class="explore-note">{language.t("explore.plugins.install.manual")}</p>
+          <p class="explore-note">
+            {language.t(
+              props.entry.integrated ? "explore.plugins.install.integrated.note" : "explore.plugins.install.manual",
+            )}
+          </p>
         </div>
       </div>
     </div>
@@ -489,7 +559,7 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onInstall
         <div class="explore-catalog-page-body">
           <header class="explore-catalog-hero">
             <span class="explore-catalog-hero-icon">
-              <Icon name="outline-pair" />
+              <PluginMark mark={markOf({ id: props.plugin.id })} />
             </span>
             <div class="explore-catalog-hero-copy">
               <h1 class="explore-catalog-hero-name">
@@ -509,7 +579,7 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onInstall
           </header>
 
           <dl class="explore-catalog-facts">
-            <Show when={props.plugin.id}>
+            <Show when={props.plugin.id && !props.plugin.display}>
               {(id) => (
                 <div>
                   <dt>{language.t("explore.plugins.detail.id")}</dt>
@@ -525,7 +595,7 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onInstall
               <dd>{language.t(failed() ? "explore.plugins.state.failed" : "explore.plugins.state.active")}</dd>
             </div>
 
-            <Show when={featuresOf(props.plugin).length > 0}>
+            <Show when={!props.plugin.display && featuresOf(props.plugin).length > 0}>
               <div>
                 <dt>{language.t("explore.plugins.detail.features")}</dt>
                 <dd>
@@ -537,6 +607,61 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onInstall
             </Show>
           </dl>
 
+          <Show when={props.plugin.display?.description}>
+            {(description) => <p class="explore-catalog-about">{description()}</p>}
+          </Show>
+
+          <Show when={props.plugin.display?.skills?.length}>
+            {(count) => (
+              <section class="explore-catalog-section">
+                <h2 class="explore-catalog-section-title">
+                  {language.t("explore.plugins.detail.skills")}
+                  <span class="explore-catalog-section-count">{count()}</span>
+                </h2>
+                <ul class="explore-catalog-list">
+                  <For each={props.plugin.display?.skills}>
+                    {(skill) => (
+                      <li class="explore-catalog-list-row explore-catalog-skill">
+                        <span class="explore-catalog-list-icon">
+                          <Icon name="post-skill" />
+                        </span>
+                        <span class="explore-catalog-skill-copy">
+                          <span class="explore-catalog-list-name">{skill.name}</span>
+                          <span class="explore-catalog-skill-description">{skill.description}</span>
+                        </span>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </section>
+            )}
+          </Show>
+
+          <Show when={props.plugin.display?.tools?.length}>
+            {(count) => (
+              <section class="explore-catalog-section">
+                <h2 class="explore-catalog-section-title">
+                  {language.t("explore.plugins.detail.tools")}
+                  <span class="explore-catalog-section-count">{count()}</span>
+                </h2>
+                <ul class="explore-catalog-list">
+                  <For each={props.plugin.display?.tools}>
+                    {(tool) => (
+                      <li class="explore-catalog-list-row">
+                        <span class="explore-catalog-list-icon">
+                          <Icon name="outline-pair" />
+                        </span>
+                        <code class="explore-catalog-list-name" dir="ltr">
+                          {tool}
+                        </code>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </section>
+            )}
+          </Show>
+
           <Show when={failed()}>
             {(state) => (
               <p class="explore-form-error" role="alert">
@@ -545,11 +670,13 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onInstall
             )}
           </Show>
 
-          <p class="explore-note explore-catalog-detail-note">{language.t("explore.plugins.detail.install")}</p>
+          <Show when={props.plugin.source.type !== "builtin"}>
+            <p class="explore-note explore-catalog-detail-note">{language.t("explore.plugins.detail.install")}</p>
 
-          <Button size="small" variant="neutral" icon="plus" onClick={props.onInstall}>
-            {language.t("explore.plugins.install")}
-          </Button>
+            <Button size="small" variant="neutral" icon="plus" onClick={props.onInstall}>
+              {language.t("explore.plugins.install")}
+            </Button>
+          </Show>
         </div>
       </div>
     </div>

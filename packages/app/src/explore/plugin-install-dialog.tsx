@@ -1,94 +1,125 @@
 import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
-import { Icon } from "@opencode/ui/icon"
+import { TextInput } from "@opencode/ui/text-input"
+import { Show } from "solid-js"
+import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
-import { ExternalLink } from "@/runtime/platform/external-link"
-import { usePlatform } from "@/runtime/platform/platform"
+import { useServerSDK } from "@/runtime/server/client"
 import { showToast } from "@/shell/notifications/toast"
 
-const DEFAULT_PACKAGE = "opencode-plugin-example"
-
 /**
- * Installing a plugin means changing the server's config or dropping a module in its plugin directory, which no
- * client API offers. This explains the supported ways instead of pretending the button installed something.
+ * One-step plugin installation. A catalog entry arrives with its package; a manual install asks for one field.
+ * Submitting writes the package into the shared config, and the server installs and loads it from there.
+ *
+ * An `integrated` entry ships inside the app, so its config entry enables code that is already present: the dialog
+ * says so instead of naming a package, and the success message reports the plugin as enabled.
  */
-export function PluginInstallDialog(props: { directory: string; package?: string }) {
+export function PluginInstallDialog(props: {
+  package?: string
+  name?: string
+  integrated?: boolean
+  onInstalled?: () => void
+}) {
   const language = useLanguage()
-  const platform = usePlatform()
   const dialog = useDialog()
+  const server = useServerSDK()
+  const [state, setState] = createStore({ package: "", busy: false, error: "" })
 
-  // A catalog entry arrives as a package name, so the snippet it copies is the one the user needs.
-  const snippet = () => `{\n  "plugin": ["${props.package ?? DEFAULT_PACKAGE}"]\n}`
+  const target = () => (props.package ?? state.package).trim()
 
-  const copyConfig = async () => {
+  const submit = async () => {
+    if (state.busy) return
+    if (!target()) return setState("error", language.t("explore.plugins.install.required"))
+
+    setState({ busy: true, error: "" })
+
     try {
-      await (platform.writeClipboardText?.(snippet()) ?? navigator.clipboard.writeText(snippet()))
-      showToast({ variant: "success", title: language.t("explore.plugins.install.copiedConfig") })
-    } catch {
-      showToast({ variant: "error", title: language.t("explore.plugins.install.copyFailed") })
+      await server.api.experimental.config.update({ plugins: [target()] })
+      dialog.close()
+      props.onInstalled?.()
+      showToast({
+        variant: "success",
+        title: language.t(props.integrated ? "explore.plugins.enabled" : "explore.plugins.install.success", {
+          name: props.name ?? target(),
+        }),
+      })
+    } catch (error) {
+      setState({ busy: false, error: error instanceof Error ? error.message : String(error) })
     }
   }
 
   return (
-    <Dialog size="large">
-      <DialogHeader>
+    <Dialog fit containerClass="explore-install-dialog">
+      <DialogHeader hideClose>
         <DialogTitleGroup
-          title={language.t("explore.plugins.install.title")}
-          description={language.t("explore.plugins.install.description")}
+          title={language.t(props.integrated ? "explore.plugins.enable.title" : "explore.plugins.install.title")}
+          description={language.t(
+            props.integrated ? "explore.plugins.enable.description" : "explore.plugins.install.description",
+          )}
         />
       </DialogHeader>
 
       <DialogBody class="explore-install-body">
-        <section class="explore-install-section">
-          <div class="explore-install-heading">
-            <Icon name="cube" class="explore-install-icon" />
-            <h3>{language.t("explore.plugins.install.runtime.title")}</h3>
-          </div>
-          <p class="explore-install-text">{language.t("explore.plugins.install.runtime.description")}</p>
-        </section>
+        <Show
+          when={props.package}
+          fallback={
+            <label class="explore-field">
+              <span class="explore-field-label">{language.t("explore.plugins.install.package")}</span>
+              <TextInput
+                autofocus
+                appearance="large"
+                value={state.package}
+                placeholder={language.t("explore.plugins.install.package.placeholder")}
+                aria-label={language.t("explore.plugins.install.package")}
+                autocomplete="off"
+                spellcheck={false}
+                onInput={(event) => setState("package", event.currentTarget.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void submit()
+                }}
+              />
+            </label>
+          }
+        >
+          {(value) => (
+            <div class="explore-install-target">
+              <span class="explore-install-target-name">{props.name ?? value()}</span>
+              <Show
+                when={!props.integrated}
+                fallback={
+                  <span class="explore-install-target-package">
+                    {language.t("explore.plugins.install.integrated")}
+                  </span>
+                }
+              >
+                <span class="explore-install-target-package" dir="ltr">
+                  {value()}
+                </span>
+              </Show>
+            </div>
+          )}
+        </Show>
 
-        <section class="explore-install-section">
-          <h3>{language.t("explore.plugins.install.npm.title")}</h3>
-          <p class="explore-install-text">{language.t("explore.plugins.install.npm.description")}</p>
-          <pre class="explore-install-code">
-            <code>{snippet()}</code>
-          </pre>
-          <Button size="small" variant="ghost-muted" icon="copy" onClick={() => void copyConfig()}>
-            {language.t("explore.plugins.install.copyConfig")}
-          </Button>
-        </section>
+        <p class="explore-install-text">
+          {language.t(props.integrated ? "explore.plugins.enable.watching" : "explore.plugins.install.watching")}
+        </p>
 
-        <section class="explore-install-section">
-          <h3>{language.t("explore.plugins.install.local.title")}</h3>
-          <p class="explore-install-text">{language.t("explore.plugins.install.local.description")}</p>
-          <ul class="explore-install-paths">
-            <li>
-              <code dir="ltr">{`${props.directory}/.opencode/plugin/`}</code>
-            </li>
-            <li>
-              <code dir="ltr">{"~/.config/opencode/plugin/"}</code>
-            </li>
-          </ul>
-        </section>
-
-        <section class="explore-install-section" data-tone="warning">
-          <div class="explore-install-heading">
-            <Icon name="outline-hexagonal-warning" class="explore-install-icon" />
-            <h3>{language.t("explore.plugins.install.python.title")}</h3>
-          </div>
-          <p class="explore-install-text">{language.t("explore.plugins.install.python.description")}</p>
-        </section>
-
-        <p class="explore-install-text explore-install-note">{language.t("explore.plugins.install.watch")}</p>
+        <Show when={state.error}>
+          {(message) => (
+            <p class="explore-form-error" role="alert">
+              {message()}
+            </p>
+          )}
+        </Show>
       </DialogBody>
 
       <DialogFooter>
-        <ExternalLink class="explore-install-docs" href="https://opencode.ai/v2/docs/plugins">
-          {language.t("explore.plugins.install.docs")}
-        </ExternalLink>
-        <Button variant="neutral" onClick={() => dialog.close()}>
-          {language.t("explore.plugins.install.close")}
+        <Button variant="neutral" disabled={state.busy} onClick={() => dialog.close()}>
+          {language.t("explore.plugins.install.cancel")}
+        </Button>
+        <Button variant="submit" disabled={state.busy} aria-busy={state.busy} onClick={() => void submit()}>
+          {language.t(props.integrated ? "explore.plugins.enable.submit" : "explore.plugins.install.submit")}
         </Button>
       </DialogFooter>
     </Dialog>

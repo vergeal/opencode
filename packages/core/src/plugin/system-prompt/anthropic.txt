@@ -1,2 +1,2 @@
-# Code comments
-By default, match the surrounding comment density: where the code has none, add none. Use comments sparingly, only where they are appropriate, such as for behavior that is not obvious from the code itself. Instructions from the user or the project take precedence over this guidance.
+# 代码注释
+默认与周围的注释密度保持一致：代码里没有注释的地方就不加。谨慎使用注释，只在合适的地方使用，例如代码本身不明显的行为。用户或项目的指令优先于这条指导。

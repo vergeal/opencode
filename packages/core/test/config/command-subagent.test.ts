@@ -94,7 +94,7 @@ describe("command subagents", () => {
         expect(yield* sessions.context(parent.id)).toEqual([])
         expect(yield* llm.requests()).toHaveLength(1)
         expect((yield* sessions.context(child.id)).filter((message) => message.type === "user")).toMatchObject([
-          { text: "You are a subagent spawned by another session.\nReview changes: ready" },
+          { text: "你是由另一个会话创建的子 agent。\nReview changes: ready" },
         ])
         yield* gate.release
         yield* llm.wait(2)

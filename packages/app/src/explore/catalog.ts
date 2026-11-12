@@ -22,6 +22,12 @@ export type CatalogPlugin = {
   /** The npm package a config entry loads the plugin from. */
   package: string
   repository: string
+  /**
+   * Ships inside the app: installing only writes the config entry that enables it, so no package is downloaded.
+   */
+  integrated?: boolean
+  /** Brand mark to render instead of the generic plugin icon. */
+  icon?: "chrome"
   /** MCP servers the plugin starts, when the catalog knows them. */
   mcpServers?: readonly { name: string }[]
   /** Skills the plugin ships, when the catalog knows them. */
@@ -42,121 +48,33 @@ export type CatalogSource = {
   skills: readonly CatalogSkill[]
 }
 
-// From the docs' ecosystem page: each repository's published npm name, so the copied config entry loads it.
+// The catalog currently lists the one integration this build carries: Chrome is compiled into the server, so
+// installing it enables a plugin that is already here instead of downloading a package.
 const plugins: readonly CatalogPlugin[] = [
   {
-    id: "opencode-wakatime",
-    name: "opencode-wakatime",
-    category: "developer-tools",
-    author: "angristan",
-    description: "用 Wakatime 记录 OpenCode 的使用时长。",
-    details:
-      "把 OpenCode 的会话时长上报给 Wakatime，和在编辑器里写代码的时间一起统计。适合想看清一天里有多少时间花在 AI 编程上的团队和个人。",
-    package: "opencode-wakatime",
-    repository: "https://github.com/angristan/opencode-wakatime",
-  },
-  {
-    id: "opencode-notifier",
-    name: "opencode-notifier",
-    category: "productivity",
-    author: "mohak34",
-    description: "为权限请求、任务完成和错误事件发送桌面通知与提示音。",
-    details:
-      "长任务在后台运行时，插件在需要你确认权限、会话完成或出错时弹出系统通知。可以只开提示音，也可以关掉某一类事件。",
-    package: "@mohak34/opencode-notifier",
-    repository: "https://github.com/mohak34/opencode-notifier",
-  },
-  {
-    id: "opencode-pty",
-    name: "opencode-pty",
-    category: "developer-tools",
-    author: "shekohex",
-    description: "在 PTY 中运行后台进程，并向它们发送交互式输入。",
-    details: "让模型启动一个持久终端进程，之后继续向它写入命令并读取输出。适合需要交互的构建、测试和长时间运行的服务。",
-    package: "opencode-pty",
-    repository: "https://github.com/shekohex/opencode-pty",
-  },
-  {
-    id: "opencode-md-table-formatter",
-    name: "opencode-md-table-formatter",
-    category: "developer-tools",
-    author: "franlol",
-    description: "整理模型输出的 Markdown 表格。",
-    details: "在模型写完表格后对齐列宽和分隔行，让 diff 只在内容变化时出现，而不是整张表都被重排。",
-    package: "@franlol/opencode-md-table-formatter",
-    repository: "https://github.com/franlol/opencode-md-table-formatter",
-  },
-  {
-    id: "opencode-scheduler",
-    name: "opencode-scheduler",
+    id: "opencode.chrome",
+    name: "Chrome 浏览器",
     category: "automation",
-    author: "different-ai",
-    description: "用 cron 语法在 launchd 或 systemd 上安排周期性任务。",
-    details: "把重复的检查、总结和同步交给系统调度器，按 cron 表达式定时运行，不依赖 OpenCode 一直开着。",
-    package: "opencode-scheduler",
-    repository: "https://github.com/different-ai/opencode-scheduler",
-  },
-  {
-    id: "opencode-supermemory",
-    name: "opencode-supermemory",
-    category: "productivity",
-    author: "supermemoryai",
-    description: "用 Supermemory 在会话之间保留长期记忆。",
-    details: "把重要的偏好和结论写入 Supermemory，新会话开始时再取回来，不必每次重新交代背景。",
-    package: "opencode-supermemory",
-    repository: "https://github.com/supermemoryai/opencode-supermemory",
-  },
-]
-
-// Bundled until the registry serves skill bodies. Each one is a complete SKILL.md, so installing writes a usable skill.
-const skills: readonly CatalogSkill[] = [
-  {
-    id: "commit-message",
-    title: "提交信息",
-    description: "为暂存的改动写一条规范的提交信息，然后停下。",
-    instructions: `# Commit messages
-
-Write the commit message for the currently staged change.
-
-1. Run \`git diff --cached\` for the content and \`git log --oneline -10\` for the project's voice.
-2. Summarize what the change makes true, not which files changed.
-3. Use one line of \`type(scope): summary\` and add a body only when the reason is not obvious from the summary.
-4. Keep the summary under 72 characters, imperative, and without a trailing period.
-
-Never run \`git commit\` yourself. Return the message and wait for the user to approve it.`,
-  },
-  {
-    id: "release-notes",
-    title: "发布说明",
-    description: "把两个引用之间的合并改动整理成可以快速浏览的发布说明。",
-    instructions: `# Release notes
-
-Turn the changes between two refs into release notes.
-
-1. Collect the commits with \`git log --no-merges <from>..<to>\`.
-2. Group them under \`Added\`, \`Changed\`, \`Fixed\`, and \`Removed\`, dropping internal chores and dependency bumps.
-3. Lead each line with the user-visible result. Name the surface, not the file.
-4. Link an issue or pull request number when the commit carries one.
-
-Write the notes in the release's language and do not invent entries for work you cannot see.`,
-  },
-  {
-    id: "test-triage",
-    title: "不稳定测试的排查",
-    description: "判断失败的测试是代码坏了还是测试坏了，并给出证据。",
-    instructions: `# Flaky test triage
-
-Walk a failing test to a conclusion instead of a guess.
-
-1. Reproduce it alone, then in the full file, then in the whole suite. Each passing context narrows the cause.
-2. Read the failure for what the assertion saw, not just the name that failed.
-3. Look for shared state: module-level caches, a fixed clock, ports, temporary directories, and tests that write
-   the same path.
-4. Distrust any test that orders itself by sleeping or by watching a wall clock.
-5. Report one of two verdicts: the code is wrong, or the test is wrong. Say which assertion or shared resource
-   proves it, and quote the line.`,
+    author: "OpenCode",
+    description: "让 AI 直接操作专用 Chrome 窗口：打开网页、点击、填表、截图，不用你一步步教。",
+    details:
+      "启用后，AI 会打开一个和你日常浏览器分开的专用 Chrome 窗口。它能在里面打开网页、点击按钮、填写表单、截图，也能操作在线文档、地图、白板这类没有普通按钮的页面。\n\n需要登录的网站，在那个窗口里登录一次即可，登录状态会保留。窗口可以随时关掉，关掉后 AI 就停下来。",
+    package: "opencode.chrome",
+    repository: "https://github.com/anomalyco/opencode/tree/dev/packages/plugin-chrome",
+    integrated: true,
+    icon: "chrome",
+    skills: [
+      {
+        name: "Chrome 浏览器",
+        description:
+          "用 `chrome.*` 工具操作专用的 OpenCode Chrome 窗口：列出和切换标签页、读取页面结构、点击和填表、执行页面脚本、截图、上传文件，并在页面上显示光标。第一次调用 `chrome.*` 前先加载本技能。",
+      },
+    ],
   },
 ]
+
+// Likewise nothing is bundled to install, so the skills shelf lists only what the server builds in.
+const skills: readonly CatalogSkill[] = []
 
 export function loadCatalog(): Promise<CatalogSource> {
   return Promise.resolve({ plugins, skills })

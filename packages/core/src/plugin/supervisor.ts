@@ -25,7 +25,11 @@ const resolve = Effect.fn("PluginSupervisor.resolve")(function* (
   const matches = (selector: string, target: string) =>
     selector === "*" || (selector.endsWith(".*") ? target.startsWith(selector.slice(0, -1)) : selector === target)
   const definitions = [...pre, ...post]
-  const enabled = new Set(definitions.map((plugin) => plugin.id))
+  // A built-in plugin that declares `defaultEnabled: false` ships with the app but waits for an explicit config
+  // entry, so installing it from the plugin browser is what switches it on.
+  const enabled = new Set(
+    definitions.filter((plugin) => plugin.defaultEnabled !== false).map((plugin) => plugin.id),
+  )
   const packages = new Map<string, Plugin.Generation>()
   const pending = new Set<string>()
   const failures = new Map<string, Plugin.Failure>()

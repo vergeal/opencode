@@ -1701,6 +1701,17 @@
                       }
                     ]
                   },
+                  "prompt": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/Session.Prompt"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Session-level instructions for the system prompt. An empty string clears them."
+                  },
                   "archived": {
                     "anyOf": [
                       {
@@ -5236,6 +5247,16 @@
                   "prompt": {
                     "type": "string"
                   },
+                  "small": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "model": {
                     "anyOf": [
                       {
@@ -5355,6 +5376,16 @@
                 "properties": {
                   "prompt": {
                     "type": "string"
+                  },
+                  "small": {
+                    "anyOf": [
+                      {
+                        "type": "boolean"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "model": {
                     "anyOf": [
@@ -8368,6 +8399,9 @@
                   },
                   "commands": {
                     "$ref": "#/components/schemas/Project.Commands"
+                  },
+                  "prompt": {
+                    "$ref": "#/components/schemas/Project.Prompt"
                   }
                 },
                 "additionalProperties": false
@@ -8376,6 +8410,58 @@
           },
           "required": true
         }
+      },
+      "delete": {
+        "tags": ["project"],
+        "operationId": "project.remove",
+        "parameters": [
+          {
+            "name": "projectID",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/Project.ID"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ProjectNotFoundError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectNotFoundErrorEncoded"
+                }
+              }
+            }
+          }
+        },
+        "description": "Delete a project and every session in it. Directories on disk are left untouched; resolving the directory again recreates the project.",
+        "summary": "Delete project"
       }
     },
     "/api/form": {
@@ -10106,6 +10192,7 @@
                     "session.model.selected",
                     "session.moved",
                     "session.renamed",
+                    "session.prompt.updated",
                     "session.metadata.updated",
                     "session.permissions",
                     "session.viewed",
@@ -10158,6 +10245,7 @@
                     "permission.replied",
                     "plugin.updated",
                     "project.updated",
+                    "project.deleted",
                     "worktree.updated",
                     "worktree.resolved",
                     "command.updated",
@@ -10215,6 +10303,7 @@
                           "session.model.selected",
                           "session.moved",
                           "session.renamed",
+                          "session.prompt.updated",
                           "session.metadata.updated",
                           "session.permissions",
                           "session.viewed",
@@ -10267,6 +10356,7 @@
                           "permission.replied",
                           "plugin.updated",
                           "project.updated",
+                          "project.deleted",
                           "worktree.updated",
                           "worktree.resolved",
                           "command.updated",
@@ -12180,7 +12270,7 @@
             "schema": {
               "$ref": "#/components/schemas/Session.ID"
             },
-            "required": true
+            "required": false
           }
         ],
         "security": [],
@@ -12246,7 +12336,7 @@
             }
           }
         },
-        "description": "List a Session's schedules, oldest first. Experimental: needs experimental.schedules in the Session's config and may change without notice.",
+        "description": "List schedules oldest first. Pass sessionID to scope the list to one Session; omit it to list every schedule. Experimental: needs experimental.schedules in the Session's config and may change without notice.",
         "summary": "List schedules"
       }
     },
@@ -15825,6 +15915,310 @@
           "required": true
         }
       }
+    },
+    "/api/experimental/knowledge": {
+      "get": {
+        "tags": ["experimental"],
+        "operationId": "experimental.knowledge.list",
+        "parameters": [],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Knowledge.Info"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          }
+        },
+        "description": "List every knowledge library this server has a copy of, with its index status and the model that indexed it. Experimental: may change without compatibility guarantees.",
+        "summary": "List knowledge libraries"
+      }
+    },
+    "/api/experimental/knowledge/{libraryID}": {
+      "put": {
+        "tags": ["experimental"],
+        "operationId": "experimental.knowledge.sync",
+        "parameters": [
+          {
+            "name": "libraryID",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Knowledge.Info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Knowledge.Info"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          }
+        },
+        "description": "Replace a library's stored documents with the text the desktop app just read. Unchanged content keeps the current index; changed content rebuilds it in the background. Experimental: may change without compatibility guarantees.",
+        "summary": "Sync knowledge library",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Knowledge.SyncInput"
+              }
+            }
+          },
+          "required": true
+        }
+      },
+      "delete": {
+        "tags": ["experimental"],
+        "operationId": "experimental.knowledge.remove",
+        "parameters": [
+          {
+            "name": "libraryID",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          }
+        },
+        "description": "Delete the server copy of a library, including its documents, chunks, and assignments. Experimental: may change without compatibility guarantees.",
+        "summary": "Remove knowledge library"
+      }
+    },
+    "/api/experimental/knowledge/assigned/{projectID}": {
+      "get": {
+        "tags": ["experimental"],
+        "operationId": "experimental.knowledge.assigned",
+        "parameters": [
+          {
+            "name": "projectID",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/Project.ID"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Knowledge.Info"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          }
+        },
+        "description": "List the knowledge libraries a Project's sessions may search. Experimental: may change without compatibility guarantees.",
+        "summary": "List assigned knowledge libraries"
+      }
+    },
+    "/api/experimental/knowledge/assigned/{projectID}/{libraryID}": {
+      "put": {
+        "tags": ["experimental"],
+        "operationId": "experimental.knowledge.assign",
+        "parameters": [
+          {
+            "name": "projectID",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/Project.ID"
+            },
+            "required": true
+          },
+          {
+            "name": "libraryID",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          }
+        },
+        "description": "Let a Project search a library. The first assignment indexes the library with the Project's free model. Experimental: may change without compatibility guarantees.",
+        "summary": "Assign knowledge library"
+      },
+      "delete": {
+        "tags": ["experimental"],
+        "operationId": "experimental.knowledge.unassign",
+        "parameters": [
+          {
+            "name": "projectID",
+            "in": "path",
+            "schema": {
+              "$ref": "#/components/schemas/Project.ID"
+            },
+            "required": true
+          },
+          {
+            "name": "libraryID",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "security": [],
+        "responses": {
+          "204": {
+            "description": "<No Content>"
+          },
+          "400": {
+            "description": "InvalidRequestError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvalidRequestErrorEncoded"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UnauthorizedError",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnauthorizedErrorEncoded"
+                }
+              }
+            }
+          }
+        },
+        "description": "Stop a Project from searching a library. The server copy and its index stay. Experimental: may change without compatibility guarantees.",
+        "summary": "Unassign knowledge library"
+      }
     }
   },
   "components": {
@@ -17084,9 +17478,14 @@
                 "type": "null"
               }
             ]
+          },
+          "plugins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
-        "required": ["shell"],
         "additionalProperties": false
       },
       "Config.Plugin.EntryEncoded": {
@@ -20068,6 +20467,114 @@
         "required": ["started"],
         "additionalProperties": false
       },
+      "Knowledge.Document": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/Knowledge.DocumentKind"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["path", "name", "kind", "size", "text"],
+        "additionalProperties": false
+      },
+      "Knowledge.DocumentKind": {
+        "type": "string",
+        "enum": ["document", "spreadsheet", "text"]
+      },
+      "Knowledge.Info": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/Knowledge.Status"
+          },
+          "model": {
+            "type": "string"
+          },
+          "documentCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "chunkCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "indexedAt": {
+            "type": "number"
+          },
+          "time": {
+            "type": "object",
+            "properties": {
+              "created": {
+                "type": "number"
+              },
+              "updated": {
+                "type": "number"
+              }
+            },
+            "required": ["created", "updated"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "name", "keywords", "status", "documentCount", "chunkCount", "time"],
+        "additionalProperties": false
+      },
+      "Knowledge.Status": {
+        "type": "string",
+        "enum": ["empty", "indexing", "ready", "stale", "failed"]
+      },
+      "Knowledge.SyncInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Knowledge.Document"
+            }
+          }
+        },
+        "required": ["name", "documents"],
+        "additionalProperties": false
+      },
       "Location.PublicInfo": {
         "type": "object",
         "properties": {
@@ -21342,6 +21849,47 @@
         },
         "additionalProperties": false
       },
+      "Plugin.Display": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "name", "description"],
+              "additionalProperties": false
+            }
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["name", "description"],
+        "additionalProperties": false
+      },
       "Plugin.Features": {
         "type": "object",
         "properties": {
@@ -21397,6 +21945,9 @@
           },
           "state": {
             "$ref": "#/components/schemas/Plugin.State"
+          },
+          "display": {
+            "$ref": "#/components/schemas/Plugin.Display"
           }
         },
         "required": ["source", "features", "state"],
@@ -21537,6 +22088,9 @@
           "commands": {
             "$ref": "#/components/schemas/Project.Commands"
           },
+          "prompt": {
+            "$ref": "#/components/schemas/Project.Prompt"
+          },
           "time": {
             "$ref": "#/components/schemas/Project.Time"
           },
@@ -21577,6 +22131,9 @@
           }
         },
         "additionalProperties": false
+      },
+      "Project.Prompt": {
+        "type": "string"
       },
       "Project.Time": {
         "type": "object",
@@ -22835,6 +23392,9 @@
             "$ref": "#/components/schemas/session.renamed"
           },
           {
+            "$ref": "#/components/schemas/session.prompt.updated"
+          },
+          {
             "$ref": "#/components/schemas/session.metadata.updated"
           },
           {
@@ -23383,6 +23943,9 @@
           },
           "permissions": {
             "$ref": "#/components/schemas/Permission.Ruleset"
+          },
+          "prompt": {
+            "$ref": "#/components/schemas/Session.Prompt"
           },
           "revert": {
             "$ref": "#/components/schemas/Session.Revert"
@@ -24288,6 +24851,9 @@
       },
       "Session.Metadata": {
         "type": "object"
+      },
+      "Session.Prompt": {
+        "type": "string"
       },
       "Session.Revert": {
         "type": "object",
@@ -25332,6 +25898,9 @@
             "$ref": "#/components/schemas/session.renamed"
           },
           {
+            "$ref": "#/components/schemas/session.prompt.updated"
+          },
+          {
             "$ref": "#/components/schemas/session.metadata.updated"
           },
           {
@@ -25486,6 +26055,9 @@
           },
           {
             "$ref": "#/components/schemas/project.updated"
+          },
+          {
+            "$ref": "#/components/schemas/project.deleted"
           },
           {
             "$ref": "#/components/schemas/worktree.updated"
@@ -26908,6 +27480,39 @@
         "required": ["id", "created", "type", "data"],
         "additionalProperties": false
       },
+      "project.deleted": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Event.ID"
+          },
+          "created": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["project.deleted"]
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location.Ref"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "projectID": {
+                "$ref": "#/components/schemas/Project.ID"
+              }
+            },
+            "required": ["projectID"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "created", "type", "data"],
+        "additionalProperties": false
+      },
       "project.updated": {
         "type": "object",
         "properties": {
@@ -26947,6 +27552,9 @@
               },
               "commands": {
                 "$ref": "#/components/schemas/Project.Commands"
+              },
+              "prompt": {
+                "$ref": "#/components/schemas/Project.Prompt"
               },
               "time": {
                 "$ref": "#/components/schemas/Project.Time"
@@ -28470,6 +29078,58 @@
               }
             },
             "required": ["sessionID", "permissions"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "created", "type", "durable", "data"],
+        "additionalProperties": false
+      },
+      "session.prompt.updated": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Event.ID"
+          },
+          "created": {
+            "type": "number"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["session.prompt.updated"]
+          },
+          "durable": {
+            "type": "object",
+            "properties": {
+              "aggregateID": {
+                "type": "string"
+              },
+              "seq": {
+                "$ref": "#/components/schemas/Event.Seq"
+              },
+              "version": {
+                "$ref": "#/components/schemas/Event.VersionEncoded_c77c5abcb68d"
+              }
+            },
+            "required": ["aggregateID", "seq", "version"],
+            "additionalProperties": false
+          },
+          "location": {
+            "$ref": "#/components/schemas/Location.Ref"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "$ref": "#/components/schemas/Session.ID"
+              },
+              "prompt": {
+                "$ref": "#/components/schemas/Session.Prompt"
+              }
+            },
+            "required": ["sessionID", "prompt"],
             "additionalProperties": false
           }
         },
@@ -30814,6 +31474,9 @@
     {
       "name": "config",
       "description": "Location-scoped configuration routes."
+    },
+    {
+      "name": "server.knowledge"
     }
   ]
 }

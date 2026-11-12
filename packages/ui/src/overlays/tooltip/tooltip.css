@@ -12,7 +12,7 @@
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  padding: 5px 6px;
+  padding: 5px 12px;
   gap: 6px;
 
   /* macOS draws tooltips as a dark, slightly translucent bubble over the content, without a light
@@ -22,7 +22,7 @@
   box-shadow:
     0 4px 12px var(--v2-alpha-dark-20),
     0 0 0 0.5px var(--v2-alpha-light-16);
-  border-radius: 6px;
+  border-radius: 9999px;
 
   font-style: normal;
   font-weight: 530;
@@ -47,9 +47,10 @@
 [data-component="tooltip-v2"][data-appearance="standard"] {
   display: block;
   max-width: 320px;
-  padding: 2px 8px;
+  padding: 8px 16px;
   border: none;
-  border-radius: 6px;
+  /* 18px reads as a pill on a single line and stays a rounded bubble when a long path wraps. */
+  border-radius: 18px;
   background: color-mix(in srgb, var(--v2-grey-1200) 84%, transparent);
   backdrop-filter: var(--v2-material-blur-regular);
   color: var(--v2-grey-50);
@@ -74,7 +75,7 @@
 }
 
 [data-component="tooltip-v2"][data-appearance="large"] {
-  padding: 12px;
+  padding: 12px 20px;
   font-size: 15px;
   line-height: var(--line-height-compact);
   letter-spacing: -0.04px;

@@ -450,7 +450,7 @@ describe("SubagentTool", () => {
             model: childModel,
           })
           expect((yield* sessions.inbox(child.id)).find((message) => message.type === "user")?.payload.text).toBe(
-            "You are a subagent spawned by another session.\nreview this",
+            "你是由另一个会话创建的子 agent。\nreview this",
           )
 
           const fallback = yield* executeTool(registry, {
@@ -516,7 +516,7 @@ describe("SubagentTool", () => {
             (yield* sessions.inbox(childID)).flatMap((message) =>
               message.type === "user" ? [message.payload.text] : [],
             ),
-          ).toEqual(["You are a subagent spawned by another session.\nreview this", "continue this"])
+          ).toEqual(["你是由另一个会话创建的子 agent。\nreview this", "continue this"])
           expect(second.content).toEqual([{ type: "text", text: completedOutput(childID) }])
         }),
       ),

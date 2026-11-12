@@ -1,6 +1,7 @@
 import type { SkillInfo } from "@opencode/client/promise"
 import { createSimpleContext } from "@opencode/ui/context"
-import { createMemo, createResource } from "solid-js"
+import { containsDirectory } from "@opencode/util/path"
+import { createEffect, createMemo, createResource, onCleanup } from "solid-js"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
 import { useLayout } from "@/shell/state/layout"
@@ -34,11 +35,33 @@ export function createExploreInstalled() {
     (server) => server.sdk.api.plugin.list().then((result) => result.data),
   )
 
-  // Built-ins always run, so a server with only built-ins has nothing to manage here.
-  const plugins = createMemo(() => (pluginList() ?? []).filter((plugin) => plugin.source.type !== "builtin"))
+  // Built-in plugins are server parts with nothing to manage, so only the ones that declare display metadata (a
+  // user-facing capability bundle) are listed. Global plugins load for every project, so the column lists only what
+  // lives in this project: packages from its config, and local plugins inside its directory.
+  const plugins = createMemo(() => {
+    const root = directory()
+
+    return (pluginList() ?? []).filter((plugin) => {
+      // A built-in plugin is a server part with nothing to manage here, unless it declares display metadata and
+      // therefore wants to appear as a capability bundle.
+      if (plugin.source.type === "builtin") return plugin.display !== undefined
+
+      if (plugin.source.type !== "local") return true
+
+      return root !== "" && containsDirectory(root, plugin.source.path)
+    })
+  })
+
+  // Installing a plugin rewrites the config and then installs the package; refresh when either lands.
+  createEffect(() => {
+    const server = ctx()
+    if (!server) return
+
+    onCleanup(server.sdk.event.on("config.updated", () => void refetch()))
+    onCleanup(server.sdk.event.on("plugin.updated", () => void refetch()))
+  })
 
   const skillList = () => (active() ? ctx()?.data.location.skill.list({ directory: directory() }) : undefined)
-
   const skills = (): readonly SkillInfo[] => skillList() ?? []
 
   const pluginStatus = (): ExploreStatusKind => {

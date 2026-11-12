@@ -159,11 +159,11 @@ describe("plan plugin reminders", () => {
     Effect.gen(function* () {
       const { persisted } = yield* run([agentSelected(plan, build), agentSelected(build, plan)])
       yield* settle(persisted, 2)
-      expect(persisted[0]).toContain("You are in Plan mode")
+      expect(persisted[0]).toContain("你处于 Plan 模式")
       expect(persisted[0]).toContain("Do not create or update plan files unless the user explicitly asks you to")
       expect(persisted[0]).toContain(planDirectory)
       expect(persisted[0]).toContain("Do not modify any other files")
-      expect(persisted[1]).toContain("NO LONGER in Plan mode")
+      expect(persisted[1]).toContain("已不再处于 Plan 模式")
     }),
   )
 
@@ -175,7 +175,7 @@ describe("plan plugin reminders", () => {
       expect(messages).toHaveLength(2)
       // Inserted before the user's prompt, matching where agent-switch reminders land.
       const first = messages[0]?.content[0]
-      expect(first?.type === "text" && first.text).toContain("You are in Plan mode")
+      expect(first?.type === "text" && first.text).toContain("你处于 Plan 模式")
       expect(persisted).toHaveLength(1)
     }),
   )
@@ -199,7 +199,7 @@ describe("plan plugin reminders", () => {
       yield* contextHook(request(build, messages))
       expect(messages).toHaveLength(3)
       const middle = messages[1]?.content[0]
-      expect(middle?.type === "text" && middle.text).toContain("NO LONGER in Plan mode")
+      expect(middle?.type === "text" && middle.text).toContain("已不再处于 Plan 模式")
       expect(persisted).toHaveLength(1)
     }),
   )

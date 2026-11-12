@@ -411,6 +411,17 @@
   outline-offset: -2px;
 }
 
+/* An installed catalog entry reports its state where the install button would be. */
+.explore-catalog-card-installed,
+.explore-catalog-hero-installed {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--v2-text-text-muted);
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  white-space: nowrap;
+}
+
 /* A plugin's own page: crumbs back to the catalog, then the entry's introduction and contents. */
 
 .explore-catalog-page {
@@ -816,44 +827,19 @@
 
 /* Install and remove dialogs share one reading column. */
 
+/* A short form reads better narrower than the default dialog width. */
+[data-slot="dialog-container"].explore-install-dialog {
+  width: min(calc(100vw - 32px), 520px);
+}
+
 .explore-install-body {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: 16px;
-  padding: 0 16px 16px;
+  gap: 12px;
+  /* 4px here plus the header's own 16px gives the section its 20px rhythm. */
+  padding: 4px 16px 0;
   overflow-y: auto;
-}
-
-.explore-install-section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.explore-install-section[data-tone="warning"] {
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--v2-background-bg-layer-02);
-}
-
-.explore-install-heading {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.explore-install-icon {
-  color: var(--v2-icon-icon-muted);
-}
-
-.explore-install-section h3 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: var(--line-height-compact);
-  color: var(--v2-text-text-base);
 }
 
 .explore-install-text {
@@ -863,23 +849,29 @@
   color: var(--v2-text-text-muted);
 }
 
-.explore-install-note {
-  font-size: 12px;
-  line-height: var(--line-height-base);
-  color: var(--v2-text-text-faint);
+/* A catalog plugin is already chosen, so the dialog shows what will be installed instead of an empty field. */
+.explore-install-target {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--v2-background-bg-layer-02);
 }
 
-.explore-install-code {
-  width: 100%;
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: var(--v2-background-bg-layer-02);
+.explore-install-target-name {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-base);
+}
+
+.explore-install-target-package {
   font-family: var(--v2-font-family-code);
   font-size: 12px;
   line-height: var(--line-height-base);
-  color: var(--v2-text-text-base);
-  overflow-x: auto;
+  color: var(--v2-text-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .explore-install-path {
@@ -896,34 +888,19 @@
   user-select: text;
 }
 
-.explore-install-paths {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.explore-install-paths code {
-  font-family: var(--v2-font-family-code);
-  font-size: 12px;
-  line-height: var(--line-height-base);
-  color: var(--v2-text-text-base);
-  user-select: text;
-}
-
-.explore-install-docs {
-  align-self: center;
-  margin-inline-end: auto;
-  font-size: 13px;
-  line-height: var(--line-height-compact);
-}
-
 .explore-field {
   display: flex;
+  width: 100%;
+  min-width: 0;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+}
+
+/* The shared fields default to 280px; inside a dialog a field follows its column instead. */
+.explore-field [data-component="text-input-v2"],
+.explore-field [data-component="textarea-v2"] {
+  width: 100%;
+  min-width: 0;
 }
 
 .explore-field-label {

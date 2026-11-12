@@ -1,0 +1,53 @@
+[data-component="changhong-logo"] {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+  color: var(--changhong-logo-color, #e60013);
+}
+
+[data-component="changhong-logo"] > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* `#e60013` is fully saturated, and on the near-black canvas it reads as an alarm rather than a brand mark.
+   Pulling saturation and a little brightness back keeps the red recognisable without the glow. */
+[data-color-scheme="dark"] [data-component="changhong-logo"] {
+  filter: saturate(0.62) brightness(0.86);
+}
+
+/* The sweep is the same artwork in white, so the light band only lands on the letterforms. */
+[data-component="changhong-logo"] .changhong-logo-sweep {
+  position: absolute;
+  inset: 0;
+  fill: #fff;
+  mix-blend-mode: screen;
+  mask-image: linear-gradient(to right, transparent 38%, #000 50%, transparent 62%);
+  mask-size: 300% 100%;
+  mask-repeat: no-repeat;
+  animation: changhong-logo-sweep 1800ms ease-in-out infinite;
+}
+
+/* Oversizing the mask moves its highlight physically left to right, including in RTL. */
+@keyframes changhong-logo-sweep {
+  0% {
+    mask-position: 100% 0;
+    opacity: 0;
+  }
+
+  18%,
+  82% {
+    opacity: 0.9;
+  }
+
+  100% {
+    mask-position: 0% 0;
+    opacity: 0;
+  }
+}
+
+:root[data-motion="reduce"] [data-component="changhong-logo"] .changhong-logo-sweep {
+  animation: none;
+  opacity: 0;
+}
