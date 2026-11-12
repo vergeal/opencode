@@ -34,22 +34,27 @@ export function projectSettingsKey(scope: ServerScope, projectID: string | undef
   return projectID ? ScopedKey.from(scope, projectID) : undefined
 }
 
-export const monoDefault = "JetBrains Mono"
+export const monoDefault = "IBM Plex Mono"
 
 export const sansDefault = "Inter"
 
-export const terminalDefault = "JetBrainsMono Nerd Font Mono"
+export const terminalDefault = "IBM Plex Mono"
 
 const monoFallback =
-  '"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
-
-// macOS reads text best in its own face, so code surfaces there default to the system stack instead of JetBrains Mono.
-const monoMacFallback = `system-ui, ${monoFallback}`
+  '"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 
 const sansFallback = '"Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 
-const terminalFallback =
-  '"JetBrainsMono Nerd Font Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+const terminalFallback = monoFallback
+
+// macOS reads text best in its own face, so every font role there defaults to the system stack.
+const systemFirst = (base: string) => `system-ui, ${base}`
+
+const monoMacFallback = systemFirst(monoFallback)
+
+const sansMacFallback = systemFirst(sansFallback)
+
+const terminalMacFallback = systemFirst(terminalFallback)
 
 const monoBase = monoFallback
 
@@ -87,25 +92,33 @@ export function monoFontFamily(font: string | undefined, macos = isMacOS()) {
   return stack(font, macos ? monoMacFallback : monoBase)
 }
 
-/** The code font family the Code row shows when the user has not chosen one. */
+export function sansFontFamily(font: string | undefined, macos = isMacOS()) {
+  return stack(font, macos ? sansMacFallback : sansBase)
+}
+
+export function terminalFontFamily(font: string | undefined, macos = isMacOS()) {
+  return stack(font, macos ? terminalMacFallback : terminalBase)
+}
+
+/** The family each Appearance row shows when the user has not chosen one; macOS defaults all three to System. */
 export function monoDefaultFor(macos = isMacOS()) {
   return macos ? "system-ui" : monoDefault
+}
+
+export function sansDefaultFor(macos = isMacOS()) {
+  return macos ? "system-ui" : sansDefault
+}
+
+export function terminalDefaultFor(macos = isMacOS()) {
+  return macos ? "system-ui" : terminalDefault
 }
 
 function isMacOS() {
   return typeof navigator !== "undefined" && /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
 }
 
-export function sansFontFamily(font: string | undefined) {
-  return stack(font, sansBase)
-}
-
 export function terminalInput(font: string | undefined) {
   return input(font)
-}
-
-export function terminalFontFamily(font: string | undefined) {
-  return stack(font, terminalBase)
 }
 
 const placementSchema = Schema.Literals(["separate", "grouped", "hidden"])

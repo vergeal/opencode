@@ -5,11 +5,11 @@ import {
   monoDefaultFor,
   monoFontFamily,
   monoInput,
-  sansDefault,
+  sansDefaultFor,
   sansFontFamily,
   sansInput,
   type ReduceMotion,
-  terminalDefault,
+  terminalDefaultFor,
   terminalFontFamily,
   terminalInput,
   useSettings,
@@ -105,7 +105,7 @@ export function createAppearanceSettingsController() {
       ui: createMemo(() => ({
         value: sansInput(settings.appearance.uiFont()),
         family: sansFontFamily(settings.appearance.uiFont()),
-        placeholder: sansDefault,
+        placeholder: sansDefaultFor(),
       })),
       code: createMemo(() => ({
         value: monoInput(settings.appearance.font()),
@@ -115,7 +115,7 @@ export function createAppearanceSettingsController() {
       terminal: createMemo(() => ({
         value: terminalInput(settings.appearance.terminalFont()),
         family: terminalFontFamily(settings.appearance.terminalFont()),
-        placeholder: terminalDefault,
+        placeholder: terminalDefaultFor(),
       })),
       setUI: (value: string) => settings.appearance.setUIFont(value),
       setCode: (value: string) => settings.appearance.setFont(value),

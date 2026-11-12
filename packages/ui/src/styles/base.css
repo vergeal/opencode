@@ -423,18 +423,18 @@ input:where([type="button"], [type="reset"], [type="submit"]),
 }
 
 /*
-  macOS interaction defaults. The platform picks the text smoothing (subpixel on standard displays, grayscale
-  on Retina), selection and the caret follow the system accent, and the user can tint form controls the same
-  way. Applying them once here keeps every surface consistent instead of per component.
+  macOS interaction defaults. Text uses grayscale smoothing, selection and the caret follow the system accent,
+  and the user can tint form controls the same way. Applying them once here keeps every surface consistent
+  instead of per component.
 */
 
 :root {
   accent-color: var(--v2-system-accent);
   caret-color: var(--v2-system-accent);
-  /* Not `antialiased`: that forces grayscale everywhere. This lets macOS smooth text the way it does in
-     every other app. */
-  -webkit-font-smoothing: subpixel-antialiased;
-  -moz-osx-font-smoothing: auto;
+  /* The app asks for macOS's grayscale smoothing everywhere. Chromium honors this only on macOS, so other
+     platforms keep their own renderer. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
