@@ -345,4 +345,22 @@ describe("SessionInstructions", () => {
     expect(messages[0]!.role).toBe("user")
     expect(messages[0]!.content).toEqual([{ type: "text", text: "Instructions from: /repo/sub/AGENTS.md\ncontent" }])
   })
+
+  test("toLLMMessages turns an addressed agent mention into a delegation instruction", () => {
+    const created = DateTime.makeUnsafe(0)
+    const model = Model.Ref.make({ id: Model.ID.make("model"), providerID: Provider.ID.make("provider") })
+    const user = SessionMessage.User.make({
+      id: SessionMessage.ID.make("msg_user"),
+      type: "user",
+      text: "@general find the auth code",
+      agents: [{ name: "general", mention: { text: "@general", start: 0, end: 8 } }],
+      time: { created },
+    })
+    const messages = toLLMMessages([user], model)
+    expect(messages[0]!.content[0]).toEqual({
+      type: "text",
+      text: 'The user addressed this request to the "general" subagent. Call the subagent tool with agent "general" and pass the user\'s request as its prompt.',
+    })
+    expect(messages[0]!.content[1]).toEqual({ type: "text", text: "@general find the auth code" })
+  })
 })

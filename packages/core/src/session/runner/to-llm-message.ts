@@ -238,8 +238,16 @@ function toLLMMessage(message: SessionMessage.Info, model: Model.Ref, providerMe
           content: `The working directory has been changed to ${message.location.directory}.`,
         }),
       ]
-    case "user":
+    case "user": {
+      // An @agent mention is a request to hand the task to that subagent. The model never sees the attachment fields, so
+      // the mention has to become an instruction or it reads as plain text and nothing gets delegated.
+      const addressed = (message.agents ?? []).map((agent) =>
+        Message.text(
+          `The user addressed this request to the "${agent.name}" subagent. Call the subagent tool with agent "${agent.name}" and pass the user's request as its prompt.`,
+        ),
+      )
       const content = [
+        ...addressed,
         ...(message.skills ?? []).flatMap((skill) => (skill.text === undefined ? [] : [Message.text(skill.text)])),
         ...(message.text === "" ? [] : [Message.text(message.text)]),
         ...userAttachmentContent(message.files ?? []),
@@ -252,6 +260,7 @@ function toLLMMessage(message: SessionMessage.Info, model: Model.Ref, providerMe
           content,
         }),
       ]
+    }
     case "synthetic":
       return [Message.make({ id: message.id, role: "user", content: message.text })]
     case "skill":
