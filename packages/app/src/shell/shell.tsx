@@ -18,6 +18,7 @@ import { useNavigate } from "@solidjs/router"
 import { ResizeHandle } from "@opencode/ui/resize-handle"
 import { DestinationToggle } from "@/shell/titlebar/destination-toggle"
 import { createSessionInbox } from "@/shell/titlebar/inbox-model"
+import { ExploreInstalledProvider } from "@/explore/installed"
 import { InboxProvider } from "@/inbox/context"
 import { KnowledgeProvider } from "@/knowledge/context"
 import { ScheduledProvider } from "@/scheduled/context"
@@ -39,7 +40,9 @@ export default function Layout(props: ParentProps) {
     <InboxProvider>
       <ScheduledProvider>
         <KnowledgeProvider>
-          <ReplicaLayer {...props} />
+          <ExploreInstalledProvider>
+            <ReplicaLayer {...props} />
+          </ExploreInstalledProvider>
         </KnowledgeProvider>
       </ScheduledProvider>
     </InboxProvider>

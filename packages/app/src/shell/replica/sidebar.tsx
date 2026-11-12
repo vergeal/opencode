@@ -21,6 +21,7 @@ import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 import { createSessionInbox, type InboxEntry, type InboxStatus } from "@/shell/titlebar/inbox-model"
 import { InboxNav } from "./sidebar-inbox"
+import { ExploreNav } from "./sidebar-explore"
 import { KnowledgeNav } from "./sidebar-knowledge"
 import { ScheduledNav } from "./sidebar-scheduled"
 import { HEADER, LIST, PRIMARY, ROW, SECTION } from "./sidebar-tokens"
@@ -86,6 +87,9 @@ export function ReplicaSidebar() {
         </Match>
         <Match when={layout.route().type === "scheduled"}>
           <ScheduledNav />
+        </Match>
+        <Match when={layout.route().type === "explore"}>
+          <ExploreNav />
         </Match>
         <Match when={layout.route().type === "knowledge"}>
           <KnowledgeNav />

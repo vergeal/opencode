@@ -120,51 +120,9 @@
   overflow-wrap: anywhere;
 }
 
-/* Plugins: the same master-detail shape as skills, with search above the list. */
+/* Plugins: a full-width catalog grouped by category; opening one replaces it with that plugin's page. */
 
-.explore-plugins {
-  display: grid;
-  flex: 1;
-  width: 100%;
-  min-height: 0;
-  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
-  padding: 16px 24px 24px;
-}
-
-.explore-plugins-list {
-  display: flex;
-  min-width: 0;
-  min-height: 0;
-  flex-direction: column;
-  padding-inline-end: 20px;
-}
-
-.explore-plugins-header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 12px;
-}
-
-.explore-plugins-search {
-  flex-shrink: 0;
-  padding-bottom: 12px;
-}
-
-.explore-plugins-search [data-component="text-input-v2"] {
-  width: 100%;
-  min-width: 0;
-}
-
-.explore-plugins-scroll {
-  flex: 1;
-  min-height: 0;
-  padding-inline-end: 2px;
-  overflow-y: auto;
-}
-
+/* Rows the settings extension list reuses, kept here because both surfaces share the same quiet row treatment. */
 .explore-plugin-row {
   width: 100%;
   border: 0;
@@ -208,28 +166,432 @@
   outline-offset: -2px;
 }
 
-.explore-plugins-detail {
+.explore-page-search {
+  width: 260px;
+  max-width: 40vw;
+}
+
+.explore-page-search > [data-component="text-input-v2"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.explore-plugins-icon-button {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--v2-icon-icon-muted);
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .explore-plugins-icon-button:hover {
+    background: var(--v2-overlay-simple-overlay-hover);
+    color: var(--v2-text-text-base);
+  }
+}
+
+.explore-plugins-icon-button:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: 1px;
+}
+
+.explore-plugins-body {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 40px;
+}
+
+.explore-plugin-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.explore-plugin-tab {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--v2-text-text-muted);
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .explore-plugin-tab:hover {
+    background: var(--v2-overlay-simple-overlay-hover);
+    color: var(--v2-text-text-base);
+  }
+}
+
+.explore-plugin-tab[data-selected] {
+  background: var(--v2-overlay-simple-overlay-pressed);
+  color: var(--v2-text-text-base);
+}
+
+.explore-plugin-tab:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: -2px;
+}
+
+.explore-plugin-group + .explore-plugin-group {
+  margin-top: 28px;
+}
+
+.explore-plugin-group-title {
+  margin: 0 0 8px;
+  padding-inline: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: var(--line-height-base);
+  color: var(--v2-text-text-base);
+}
+
+.explore-plugin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 2px;
+}
+
+.explore-plugin-card {
   display: flex;
   min-width: 0;
-  min-height: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  overflow-y: auto;
-  padding-inline-start: 28px;
-  border-inline-start: 0.5px solid var(--v2-border-border-base);
+  align-items: center;
+  gap: 2px;
+  padding-inline-end: 6px;
+  border-radius: 8px;
 }
 
-.explore-plugin-detail-header {
+.explore-plugin-card-main {
+  display: flex;
   min-width: 0;
-  width: 100%;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: default;
 }
 
-.explore-plugin-detail-meta {
+@media (hover: hover) {
+  .explore-plugin-card-main:hover {
+    background: var(--v2-overlay-simple-overlay-hover);
+  }
+}
+
+.explore-plugin-card-main:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: -2px;
+}
+
+.explore-plugin-card-icon {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-icon-icon-muted);
+}
+
+.explore-plugin-card-icon > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.explore-plugin-card-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.explore-plugin-card-name {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  color: var(--v2-text-text-base);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: var(--line-height-compact);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explore-plugin-card-folder {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--v2-icon-icon-faint);
+}
+
+.explore-plugin-card-description {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-text-text-muted);
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explore-plugin-card-add {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--v2-icon-icon-secondary);
+  cursor: default;
+}
+
+.explore-plugin-card-add > svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (hover: hover) {
+  .explore-plugin-card-add:hover {
+    background: var(--v2-overlay-simple-overlay-hover);
+    color: var(--v2-text-text-base);
+  }
+}
+
+.explore-plugin-card-add:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: -2px;
+}
+
+/* A plugin's own page: crumbs back to the catalog, then the entry's introduction and contents. */
+
+.explore-plugin-page {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.explore-plugin-crumbs {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 24px;
+  border-bottom: 0.5px solid var(--v2-border-border-muted);
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+}
+
+.explore-plugin-crumb {
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--v2-text-text-muted);
+  font: inherit;
+  line-height: var(--line-height-compact);
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .explore-plugin-crumb:hover {
+    background: var(--v2-overlay-simple-overlay-hover);
+    color: var(--v2-text-text-base);
+  }
+}
+
+.explore-plugin-crumb:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: 1px;
+}
+
+.explore-plugin-crumb-separator {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--v2-icon-icon-faint);
+}
+
+.explore-plugin-crumb-current {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-text-text-base);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explore-plugin-page-body {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  padding: 28px 24px 64px;
+}
+
+.explore-plugin-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.explore-plugin-hero-icon {
+  display: flex;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-icon-icon-muted);
+}
+
+.explore-plugin-hero-icon > svg {
+  width: 26px;
+  height: 26px;
+}
+
+.explore-plugin-hero-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.explore-plugin-hero-name {
   display: flex;
   min-width: 0;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
+  margin: 0;
+  overflow: hidden;
+  color: var(--v2-text-text-base);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 26px;
+  letter-spacing: -0.2px;
+}
+
+.explore-plugin-hero-meta {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
+}
+
+.explore-plugin-about {
+  margin: 24px 0 0;
+  font-size: 13px;
+  line-height: var(--line-height-base);
+  color: var(--v2-text-text-base);
+}
+
+.explore-plugin-section {
+  margin-top: 32px;
+}
+
+.explore-plugin-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 0.5px solid var(--v2-border-border-base);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: var(--line-height-base);
+  color: var(--v2-text-text-base);
+}
+
+.explore-plugin-section-count {
+  color: var(--v2-text-text-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.explore-plugin-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.explore-plugin-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.explore-plugin-list-icon {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-icon-icon-muted);
+}
+
+.explore-plugin-list-icon > svg {
+  width: 15px;
+  height: 15px;
+}
+
+.explore-plugin-list-name {
+  min-width: 0;
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-base);
+}
+
+.explore-plugin-skill {
+  align-items: flex-start;
+}
+
+.explore-plugin-skill-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.explore-plugin-skill-description {
+  font-size: 12px;
+  line-height: var(--line-height-base);
+  color: var(--v2-text-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .explore-plugin-facts {
@@ -237,7 +599,7 @@
   width: 100%;
   flex-direction: column;
   gap: 12px;
-  margin: 20px 0 0;
+  margin: 32px 0 0;
   padding-block: 16px;
   border-block: 0.5px solid var(--v2-border-border-base);
 }
@@ -288,6 +650,24 @@
   margin-bottom: 12px;
 }
 
+@media (max-width: 760px) {
+  .explore-plugin-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .explore-plugins-body {
+    padding-inline: 16px;
+  }
+
+  .explore-plugin-page-body {
+    padding-inline: 16px;
+  }
+
+  .explore-plugin-hero {
+    flex-wrap: wrap;
+  }
+}
+
 /* Loading skeletons reserve the list's shape while its data loads. */
 
 .explore-skeleton {
@@ -325,25 +705,6 @@
   }
 }
 
-@media (max-width: 760px) {
-  .explore-plugins {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(96px, 42%) minmax(0, 1fr);
-  }
-
-  .explore-plugins-list {
-    padding-inline-end: 0;
-    padding-bottom: 16px;
-  }
-
-  .explore-plugins-detail {
-    padding-inline-start: 0;
-    padding-block-start: 16px;
-    border-inline-start: 0;
-    border-block-start: 0.5px solid var(--v2-border-border-base);
-  }
-}
-
 /* Skills: a master-detail pane that owns its height instead of scrolling the whole page. */
 
 .explore-skills {
@@ -361,16 +722,6 @@
   min-height: 0;
   flex-direction: column;
   padding-inline-end: 20px;
-}
-
-.explore-skills-search {
-  flex-shrink: 0;
-  padding-bottom: 16px;
-}
-
-.explore-skills-search [data-component="text-input-v2"] {
-  width: 100%;
-  min-width: 0;
 }
 
 .explore-skills-scroll {
@@ -464,16 +815,6 @@
   color: var(--v2-text-text-muted);
 }
 
-.explore-skills-footer {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 0.5px solid var(--v2-border-border-base);
-}
-
 .explore-skills-detail {
   display: flex;
   min-width: 0;
@@ -554,6 +895,22 @@
   flex-shrink: 0;
   align-items: center;
   gap: 6px;
+}
+
+/* The full SKILL.md a catalog entry would write, so installing is a review rather than a surprise. */
+.explore-skill-preview {
+  max-height: 320px;
+  margin: 16px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--v2-background-bg-layer-01);
+  color: var(--v2-text-text-base);
+  font-family: var(--v2-font-family-code);
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .explore-skills-description {

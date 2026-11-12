@@ -1,34 +1,50 @@
-import type { PluginInfo } from "@opencode/client"
+import { createSignal } from "solid-js"
 import { render } from "solid-js/web"
+import type { CatalogPlugin } from "../src/explore/catalog"
 import { ExplorePluginsView } from "../src/explore/plugins"
 import { LanguageProvider } from "../src/runtime/i18n/language"
 
-const sample: PluginInfo[] = [
+const sample: CatalogPlugin[] = [
   {
     id: "alpha-plugin",
-    source: { type: "package", target: "opencode-plugin-alpha" },
-    features: { server: true, tui: true },
-    state: { status: "active" },
+    name: "alpha-plugin",
+    category: "developer-tools",
+    author: "example",
+    description: "Adds alpha behaviour",
+    details: "The full alpha introduction.",
+    package: "opencode-plugin-alpha",
+    repository: "https://github.com/example/alpha-plugin",
   },
   {
     id: "beta-plugin",
-    source: { type: "local", path: "/tmp/opencode/plugin-beta.ts" },
-    features: { rpc: true },
-    state: { status: "active" },
+    name: "beta-plugin",
+    category: "productivity",
+    author: "example",
+    description: "Adds beta behaviour",
+    package: "opencode-plugin-beta",
+    repository: "https://github.com/example/beta-plugin",
+    mcpServers: [{ name: "beta-mcp" }],
+    skills: [{ name: "Beta Skill", description: "Does beta work" }],
   },
   {
     id: "gamma-plugin",
-    source: { type: "sdk" },
-    features: {},
-    state: { status: "failed", error: "Could not load gamma" },
+    name: "gamma-plugin",
+    category: "automation",
+    author: "example",
+    description: "Adds gamma behaviour",
+    package: "opencode-plugin-gamma",
+    repository: "https://github.com/example/gamma-plugin",
   },
 ]
 
 /**
- * Mounts the plugins pane's real view over fixture data. The page's story provides the app runtime; this only
- * supplies the language context the view reads.
+ * Mounts the plugins page's real view over fixture data. The page's story provides the app runtime; this only
+ * supplies the language context and the selection the real navigation column would own.
  */
-export function mountExplorePlugins(input?: { plugins?: readonly PluginInfo[] }) {
+export function mountExplorePlugins(input?: { catalog?: readonly CatalogPlugin[] }) {
+  const catalog = input?.catalog ?? sample
+  const [openID, setOpenID] = createSignal<string>()
+
   const host = document.createElement("div")
   host.dataset.testid = "explore-plugins-fixture"
   host.style.cssText = "position:fixed;inset:24px;display:flex;flex-direction:column;min-height:0;overflow:hidden"
@@ -38,11 +54,12 @@ export function mountExplorePlugins(input?: { plugins?: readonly PluginInfo[] })
     () => (
       <LanguageProvider locale="en">
         <ExplorePluginsView
-          plugins={input?.plugins ?? sample}
-          status="ready"
-          own={false}
+          catalog={catalog}
+          catalogEntry={catalog.find((entry) => entry.id === openID())}
+          onSelectCatalog={setOpenID}
+          onBack={() => setOpenID(undefined)}
           onInstall={() => undefined}
-          onRetry={() => undefined}
+          onInstallCatalog={() => undefined}
         />
       </LanguageProvider>
     ),

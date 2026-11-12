@@ -70,9 +70,13 @@ export const INBOX_FILTERS = ["all", "pending", "failed", "done"] as const
 
 export const SCHEDULED_FILTERS = ["all", "active", "paused", "failed"] as const
 
+export const EXPLORE_SECTIONS = ["plugins", "skills"] as const
+
 export type InboxFilter = (typeof INBOX_FILTERS)[number]
 
 export type ScheduledFilter = (typeof SCHEDULED_FILTERS)[number]
+
+export type ExploreSection = (typeof EXPLORE_SECTIONS)[number]
 
 export const currentRoute = (pathname: string, search: string): LayoutRoute => {
   const parts = pathname.split("/").filter(Boolean)
@@ -284,10 +288,12 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
       inbox: { filter: InboxFilter; selected: string | undefined }
       scheduled: { filter: ScheduledFilter; selected: string | undefined }
       knowledge: { library: string | undefined }
+      explore: { section: ExploreSection; selected: string | undefined; catalog: string | undefined }
     }>({
       inbox: { filter: "all", selected: undefined },
       scheduled: { filter: "all", selected: undefined },
       knowledge: { library: undefined },
+      explore: { section: "plugins", selected: undefined, catalog: undefined },
     })
 
     /** Writes a session's strip and selection, carrying pane placement over from the stored strip. */
@@ -498,6 +504,28 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
           library: createMemo(() => destination.knowledge.library),
           setLibrary(id: string | undefined) {
             setDestination("knowledge", "library", id)
+          },
+        },
+        explore: {
+          section: createMemo(() => destination.explore.section),
+          setSection(section: ExploreSection) {
+            setDestination("explore", "section", section)
+            // A row from the other shelf is not in this list, so keep the pane from showing a stale detail.
+            setDestination("explore", "selected", undefined)
+            setDestination("explore", "catalog", undefined)
+          },
+          /** The installed entry the navigation column opened. */
+          selected: createMemo(() => destination.explore.selected),
+          setSelected(id: string | undefined) {
+            setDestination("explore", "selected", id)
+            // A catalog page and an installed entry are two different details, never one showing through the other.
+            if (id) setDestination("explore", "catalog", undefined)
+          },
+          /** The catalog entry the plugin list opened. */
+          catalog: createMemo(() => destination.explore.catalog),
+          setCatalog(id: string | undefined) {
+            setDestination("explore", "catalog", id)
+            if (id) setDestination("explore", "selected", undefined)
           },
         },
       },

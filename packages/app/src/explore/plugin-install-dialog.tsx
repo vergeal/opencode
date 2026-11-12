@@ -7,22 +7,23 @@ import { ExternalLink } from "@/runtime/platform/external-link"
 import { usePlatform } from "@/runtime/platform/platform"
 import { showToast } from "@/shell/notifications/toast"
 
-const CONFIG_SNIPPET = `{
-  "plugin": ["opencode-plugin-example"]
-}`
+const DEFAULT_PACKAGE = "opencode-plugin-example"
 
 /**
  * Installing a plugin means changing the server's config or dropping a module in its plugin directory, which no
  * client API offers. This explains the supported ways instead of pretending the button installed something.
  */
-export function PluginInstallDialog(props: { directory: string }) {
+export function PluginInstallDialog(props: { directory: string; package?: string }) {
   const language = useLanguage()
   const platform = usePlatform()
   const dialog = useDialog()
 
+  // A catalog entry arrives as a package name, so the snippet it copies is the one the user needs.
+  const snippet = () => `{\n  "plugin": ["${props.package ?? DEFAULT_PACKAGE}"]\n}`
+
   const copyConfig = async () => {
     try {
-      await (platform.writeClipboardText?.(CONFIG_SNIPPET) ?? navigator.clipboard.writeText(CONFIG_SNIPPET))
+      await (platform.writeClipboardText?.(snippet()) ?? navigator.clipboard.writeText(snippet()))
       showToast({ variant: "success", title: language.t("explore.plugins.install.copiedConfig") })
     } catch {
       showToast({ variant: "error", title: language.t("explore.plugins.install.copyFailed") })
@@ -51,7 +52,7 @@ export function PluginInstallDialog(props: { directory: string }) {
           <h3>{language.t("explore.plugins.install.npm.title")}</h3>
           <p class="explore-install-text">{language.t("explore.plugins.install.npm.description")}</p>
           <pre class="explore-install-code">
-            <code>{CONFIG_SNIPPET}</code>
+            <code>{snippet()}</code>
           </pre>
           <Button size="small" variant="ghost-muted" icon="copy" onClick={() => void copyConfig()}>
             {language.t("explore.plugins.install.copyConfig")}
