@@ -3367,6 +3367,16 @@ export type PluginUpdateInput = {
 
 export type PluginUpdateOutput = void
 
+export type ExperimentalPluginBundleInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+}
+
+export type ExperimentalPluginBundleOutput = {
+  location: LocationPublicRef
+  data: { id: PluginID; version: string; path: string }
+}
+
 export type SessionListInput = {
   readonly limit?: number | undefined
   readonly order?: "asc" | "desc" | undefined
@@ -4959,6 +4969,12 @@ export type ExperimentalServerKnowledgeAssignOutput = void
 export type ExperimentalServerKnowledgeUnassignInput = { readonly projectID: string; readonly libraryID: string }
 
 export type ExperimentalServerKnowledgeUnassignOutput = void
+
+/** @deprecated Use `ExperimentalPluginBundleInput`. Removed in the next minor. */
+export type PluginBundleInput = ExperimentalPluginBundleInput
+
+/** @deprecated Use `ExperimentalPluginBundleOutput`. Removed in the next minor. */
+export type PluginBundleOutput = ExperimentalPluginBundleOutput
 
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput

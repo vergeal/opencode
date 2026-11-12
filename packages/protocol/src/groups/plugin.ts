@@ -72,6 +72,23 @@ export const PluginGroup = HttpApiGroup.make("server.plugin")
         }),
       ),
   )
+  .add(
+    HttpApiEndpoint.post("plugin.bundle", "/api/experimental/plugin/bundle", {
+      query: LocationQuery,
+      payload: Schema.Struct({ id: Plugin.ID }),
+      success: Location.response(Schema.Struct({ id: Plugin.ID, version: Schema.String, path: Schema.String })),
+      error: InvalidRequestError,
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "experimental.plugin.bundle",
+          summary: "Install a plugin bundle",
+          description:
+            "Experimental: may change without compatibility guarantees. Find a local .ocplugin bundle for this plugin id, verify its checksums, unpack it into the config plugins directory, and load it.",
+        }),
+      ),
+  )
   .annotateMerge(
     OpenApi.annotations({
       title: "plugin",

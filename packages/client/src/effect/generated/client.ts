@@ -24,6 +24,8 @@ import type {
   PluginCheckOutput,
   PluginUpdateInput,
   PluginUpdateOutput,
+  ExperimentalPluginBundleInput,
+  ExperimentalPluginBundleOutput,
   SessionListInput,
   SessionListOutput,
   SessionCreateInput,
@@ -438,6 +440,17 @@ const adaptGroupPlugin = (raw: RawClient["server.plugin"]) => ({
   gui: EndpointPluginGui(raw),
   check: EndpointPluginCheck(raw),
   update: EndpointPluginUpdate(raw),
+})
+
+const EndpointExperimentalPluginBundle = (raw: RawClient["server.plugin"]) => (input: ExperimentalPluginBundleInput) =>
+  preserveEffect<ExperimentalPluginBundleOutput>()(
+    raw["plugin.bundle"]({ query: { location: input["location"] }, payload: { id: input["id"] } }).pipe(
+      Effect.mapError(mapClientError),
+    ),
+  )
+
+const adaptGroupExperimentalPlugin = (raw: RawClient["server.plugin"]) => ({
+  bundle: EndpointExperimentalPluginBundle(raw),
 })
 
 const EndpointSessionList = (raw: RawClient["server.session"]) => (input?: SessionListInput) =>
@@ -2046,9 +2059,9 @@ const adaptClient = (raw: RawClient) => {
     location: adaptGroupLocation(raw["server.location"]),
     agent: adaptGroupAgent(raw["server.agent"]),
     plugin: adaptGroupPlugin(raw["server.plugin"]),
-    session: adaptGroupSession(raw["server.session"]),
     experimental: {
       ...adaptGroupExperimental(raw["server.experimental"]),
+      plugin: adaptGroupExperimentalPlugin(raw["server.plugin"]),
       session: adaptGroupExperimentalSession(raw["server.session"]),
       generate: adaptGroupExperimentalGenerate(raw["server.generate"]),
       voice: adaptGroupExperimentalVoice(raw["server.voice"]),
@@ -2060,6 +2073,7 @@ const adaptClient = (raw: RawClient) => {
       config: adaptGroupExperimentalConfig(raw["server.config"]),
       "server.knowledge": adaptGroupExperimentalServerKnowledge(raw["server.knowledge"]),
     },
+    session: adaptGroupSession(raw["server.session"]),
     message: adaptGroupMessage(raw["server.message"]),
     model: adaptGroupModel(raw["server.model"]),
     provider: adaptGroupProvider(raw["server.provider"]),
@@ -2085,6 +2099,11 @@ const adaptClient = (raw: RawClient) => {
   }
   return {
     ...client,
+    plugin: {
+      ...client.plugin,
+      /** @deprecated Use `client.experimental.plugin.bundle`. Removed in the next minor. */
+      bundle: client.experimental.plugin.bundle,
+    },
     session: {
       ...client.session,
       /** @deprecated Use `client.experimental.session.stats`. Removed in the next minor. */

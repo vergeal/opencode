@@ -21,6 +21,8 @@ export function PluginInstallDialog(props: {
   integrated?: boolean
   /** A `.ocplugin` bundle: the host unpacks the file itself, so there is no package to write into the config. */
   bundle?: { file: string; format: "ocplugin" }
+  /** Plugin id a bundle install targets. */
+  id?: string
   onInstalled?: () => void
 }) {
   const language = useLanguage()
@@ -28,7 +30,8 @@ export function PluginInstallDialog(props: {
   const server = useServerSDK()
   const [state, setState] = createStore({ package: "", busy: false, error: "" })
 
-  if (props.bundle) return <BundleInstallDialog name={props.name} bundle={props.bundle} />
+  if (props.bundle)
+    return <BundleInstallDialog id={props.id ?? props.bundle.file} name={props.name} onInstalled={props.onInstalled} />
 
   const target = () => (props.package ?? state.package).trim()
 
@@ -130,13 +133,28 @@ export function PluginInstallDialog(props: {
   )
 }
 
-/**
- * A `.ocplugin` bundle is unpacked by the host, not fetched from a package registry, so the dialog reports the file
- * and the one manual step instead of writing a config entry that could not resolve.
- */
-function BundleInstallDialog(props: { name?: string; bundle: { file: string } }) {
+/** One button: the server finds the bundle, verifies it and unpacks it. Nothing for the user to configure. */
+function BundleInstallDialog(props: { id: string; name?: string; onInstalled?: () => void }) {
   const language = useLanguage()
   const dialog = useDialog()
+  const server = useServerSDK()
+  const [state, setState] = createStore({ busy: false, error: "" })
+
+  const submit = async () => {
+    if (state.busy) return
+    setState({ busy: true, error: "" })
+    try {
+      await server.api.experimental.plugin.bundle({ id: props.id })
+      dialog.close()
+      props.onInstalled?.()
+      showToast({
+        variant: "success",
+        title: language.t("explore.plugins.bundle.success", { name: props.name ?? props.id }),
+      })
+    } catch {
+      setState({ busy: false, error: language.t("explore.plugins.bundle.failed") })
+    }
+  }
 
   return (
     <Dialog fit containerClass="explore-install-dialog">
@@ -148,17 +166,21 @@ function BundleInstallDialog(props: { name?: string; bundle: { file: string } })
       </DialogHeader>
 
       <DialogBody class="explore-install-body">
-        <div class="explore-install-target">
-          <span class="explore-install-target-name">{props.name ?? props.bundle.file}</span>
-          <span class="explore-install-target-package" dir="ltr">
-            {props.bundle.file}
-          </span>
-        </div>
+        <Show when={state.error}>
+          {(message) => (
+            <p class="explore-form-error" role="alert">
+              {message()}
+            </p>
+          )}
+        </Show>
       </DialogBody>
 
       <DialogFooter>
-        <Button variant="submit" onClick={() => dialog.close()}>
-          {language.t("explore.plugins.bundle.close")}
+        <Button variant="neutral" disabled={state.busy} onClick={() => dialog.close()}>
+          {language.t("explore.plugins.install.cancel")}
+        </Button>
+        <Button variant="submit" disabled={state.busy} aria-busy={state.busy} onClick={() => void submit()}>
+          {language.t(state.busy ? "explore.plugins.bundle.installing" : "explore.plugins.bundle.install")}
         </Button>
       </DialogFooter>
     </Dialog>

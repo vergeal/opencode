@@ -128,6 +128,25 @@ export interface PluginApi<E = never> {
   readonly gui: PluginGuiOperation<E>
   readonly check: PluginCheckOperation<E>
   readonly update: PluginUpdateOperation<E>
+
+  /** @deprecated Use `client.experimental.plugin.bundle`. Removed in the next minor. */
+  readonly bundle: ExperimentalPluginBundleOperation<E>
+}
+
+export type ExperimentalPluginBundleInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: Plugin.ID
+}
+export type ExperimentalPluginBundleOutput = {
+  readonly location: Location.PublicRef
+  readonly data: { readonly id: Plugin.ID; readonly version: string; readonly path: string }
+}
+export type ExperimentalPluginBundleOperation<E = never> = (
+  input: ExperimentalPluginBundleInput,
+) => Effect.Effect<ExperimentalPluginBundleOutput, E>
+
+export interface ExperimentalPluginApi<E = never> {
+  readonly bundle: ExperimentalPluginBundleOperation<E>
 }
 
 export type SessionListInput = {
@@ -2914,6 +2933,15 @@ export interface ExperimentalServerKnowledgeApi<E = never> {
   readonly unassign: ExperimentalServerKnowledgeUnassignOperation<E>
 }
 
+/** @deprecated Use `ExperimentalPluginBundleInput`. Removed in the next minor. */
+export type PluginBundleInput = ExperimentalPluginBundleInput
+
+/** @deprecated Use `ExperimentalPluginBundleOutput`. Removed in the next minor. */
+export type PluginBundleOutput = ExperimentalPluginBundleOutput
+
+/** @deprecated Use `ExperimentalPluginBundleOperation`. Removed in the next minor. */
+export type PluginBundleOperation<E = never> = ExperimentalPluginBundleOperation<E>
+
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput
 
@@ -3204,8 +3232,8 @@ export interface AppApi<E = never> {
   readonly location: LocationApi<E>
   readonly agent: AgentApi<E>
   readonly plugin: PluginApi<E>
-  readonly session: SessionApi<E>
   readonly experimental: ExperimentalApi<E> & {
+    readonly plugin: ExperimentalPluginApi<E>
     readonly session: ExperimentalSessionApi<E>
     readonly generate: ExperimentalGenerateApi<E>
     readonly voice: ExperimentalVoiceApi<E>
@@ -3217,6 +3245,7 @@ export interface AppApi<E = never> {
     readonly config: ExperimentalConfigApi<E>
     readonly "server.knowledge": ExperimentalServerKnowledgeApi<E>
   }
+  readonly session: SessionApi<E>
   readonly message: MessageApi<E>
   readonly model: ModelApi<E>
   readonly provider: ProviderApi<E>

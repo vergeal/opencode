@@ -1,5 +1,7 @@
 import { Plugin } from "@opencode/core/plugin"
+import { PluginBundle } from "@opencode/core/plugin/bundle"
 import { PluginUpdate } from "@opencode/core/plugin/update"
+import { Global } from "@opencode/util/global"
 import { InvalidRequestError, PluginNotFoundError, ServiceUnavailableError } from "@opencode/protocol/errors"
 import { Cause, Effect, Exit } from "effect"
 import { HttpApiBuilder } from "effect/http-api"
@@ -62,6 +64,26 @@ export const PluginHandler = HttpApiBuilder.group(Api, "server.plugin", (handler
             }),
           ),
         )
+      }),
+    )
+    .handle("plugin.bundle", (ctx) =>
+      Effect.gen(function* () {
+        const global = yield* Global.Service
+        const installed = yield* Effect.tryPromise({
+          try: () =>
+            PluginBundle.install({
+              id: ctx.payload.id,
+              config: global.config,
+              cwd: process.cwd(),
+              home: global.home,
+            }),
+          catch: (error) =>
+            new InvalidRequestError({
+              message: error instanceof Error ? error.message : String(error),
+              field: "id",
+            }),
+        })
+        return yield* response(Effect.succeed({ ...installed, id: ctx.payload.id }))
       }),
     )
     .handle("plugin.update", (ctx) =>
