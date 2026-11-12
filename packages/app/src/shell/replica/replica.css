@@ -329,9 +329,9 @@ html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
 [data-slot="replica-sidebar"] [data-slot="replica-installed-row"] {
   display: flex;
   width: 100%;
-  min-height: 52px;
-  align-items: flex-start;
-  gap: 10px;
+  min-height: 60px;
+  align-items: center;
+  gap: 12px;
   margin: 0;
   padding: 8px;
   border: 0;
@@ -350,15 +350,22 @@ html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   background: var(--color-selected);
 }
 
+/* The same mark and tile Explore gives the plugin, sized to span its name and description. */
 [data-slot="replica-installed-icon"] {
   display: flex;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 40px;
   flex: none;
   align-items: center;
   justify-content: center;
-  margin-top: 1px;
-  color: var(--color-icon-secondary);
+  border-radius: 10px;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-icon-icon-muted);
+}
+
+[data-slot="replica-installed-icon"] svg {
+  width: 28px;
+  height: 28px;
 }
 
 [data-slot="replica-installed-copy"] {

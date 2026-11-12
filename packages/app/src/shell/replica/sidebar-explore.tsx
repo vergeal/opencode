@@ -103,7 +103,7 @@ export function ExploreNav() {
                       }}
                     >
                       <span data-slot="replica-installed-icon">
-                        <PluginIcon monochrome />
+                        <PluginIcon />
                       </span>
                       <span data-slot="replica-installed-copy">
                         <span data-slot="replica-installed-name">{item.label}</span>
