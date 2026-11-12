@@ -134,7 +134,6 @@ const source = {
   "ui.messagePart.providerCompaction": "Session compacted by provider",
   "ui.messagePart.compaction.usage": "{{input}} in · {{output}} out",
   "ui.messagePart.context.updates": "Updates",
-  "ui.messagePart.commands.ran": "Ran commands",
   "ui.messagePart.context.read.one": "{{count}} read",
   "ui.messagePart.context.read.other": "{{count}} reads",
   "ui.messagePart.context.search.one": "{{count}} search",

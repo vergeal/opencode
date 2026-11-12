@@ -1228,7 +1228,7 @@ test.describe("Working", () => {
     await expect(page.getByText("bun test", { exact: true })).toBeVisible()
   })
 
-  test("keeps a settled turn's steps visible and folds its commands", async ({ page }) => {
+  test("folds the working steps behind Worked and keeps the final answer", async ({ page }) => {
     const assistant = assistantMessage(
       [
         textPart("prt_step_note", "Looking at the file first."),
@@ -1240,27 +1240,27 @@ test.describe("Working", () => {
     await setupTimeline(page, { messages: [userMessage(), assistant] })
 
     const worked = page.locator('[data-component="session-worked"]')
+    const toggle = worked.getByRole("button")
     const step = page.getByText("Looking at the file first.", { exact: true })
     const answer = page.getByText("All tests pass.", { exact: true })
-    const commands = page.getByText("Ran commands", { exact: true })
-    const command = page.getByText("bun test", { exact: true })
 
     await expect(worked).toBeVisible()
-    // The header is a divider now, not a fold control: a settled turn keeps the trail it wrote.
-    await expect(worked.getByRole("button")).toHaveCount(0)
-    await expect(step).toBeVisible()
+    await expect(toggle).toHaveAttribute("aria-expanded", "false")
     await expect(answer).toBeVisible()
-    // The commands between the two paragraphs fold into one group, closed until asked for.
-    await expect(commands).toBeVisible()
-    await expect(command).toHaveCount(0)
+    await expect(step).toHaveCount(0)
+    // The folded answer takes the same 15px header gap as any other turn's first row.
+    const boxes = await Promise.all([worked.boundingBox(), answer.boundingBox()])
+    expect(boxes[1]!.y - (boxes[0]!.y + boxes[0]!.height)).toBeCloseTo(15, 0)
 
-    await commands.click()
+    await toggle.click()
 
-    await expect(command).toBeVisible()
+    await expect(toggle).toHaveAttribute("aria-expanded", "true")
+    await expect(step).toBeVisible()
 
-    await commands.click()
+    await toggle.click()
 
-    await expect(command).toHaveCount(0)
+    await expect(toggle).toHaveAttribute("aria-expanded", "false")
+    await expect(step).toHaveCount(0)
   })
 })
 

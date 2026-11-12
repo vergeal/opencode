@@ -470,21 +470,8 @@ export function CurrentContextToolGroup(props: {
     })
   })
 
-  // A run of shell commands between two paragraphs reads as what it is: the commands this step ran.
-  const commandsOnly = createMemo(
-    () =>
-      props.parts.length > 0 &&
-      props.parts.every((part) => part.type === "tool" && (part.name === "shell" || part.name === "execute")),
-  )
-
   const label = createMemo(() => {
     const thoughts = reasoning().length
-
-    if (commandsOnly()) {
-      const text = i18n.t("ui.messagePart.commands.ran")
-
-      return { text, title: "", before: text, count: undefined, between: "", after: "" }
-    }
 
     if (thinking()) {
       const text = i18n.t("ui.sessionTurn.status.thinking")
@@ -599,7 +586,7 @@ export function CurrentContextToolGroup(props: {
       data-timeline-part-ids={props.parts.map((part) => part.id).join(",")}
     >
       <BasicTool
-        icon={commandsOnly() ? "outline-console" : "glasses"}
+        icon="glasses"
         status={pending() ? "running" : "completed"}
         compact
         hasContent
