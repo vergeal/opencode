@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "OpenCode Chrome Agent",
+  "version": "1.0.0",
+  "description": "Lets OpenCode drive tabs in your own Chrome through DOM operations.",
+  "minimum_chrome_version": "116",
+  "permissions": ["tabs", "scripting", "storage", "alarms", "activeTab"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "OpenCode Chrome Agent"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["hooks.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}
