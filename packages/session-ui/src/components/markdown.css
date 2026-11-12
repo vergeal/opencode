@@ -34,6 +34,9 @@
      own. The dark scheme lifts both off the page with their own greys and flips the ink, because the light
      fill would otherwise leave black text on white in the middle of a dark answer. */
   --markdown-code-ink: #1a1a1a;
+  /* A chip sits inside body text, so it reads softer than a fenced block: dimmer ink and a lighter weight keep
+     it from looking like bold emphasis. Blocks keep `--markdown-code-ink`. */
+  --markdown-inline-code-ink: #3a3a3a;
   --markdown-inline-code-surface: rgb(233, 234, 234);
   --markdown-code-block-surface: rgb(233, 234, 234);
   --markdown-code-background: var(--markdown-code-block-surface);
@@ -46,6 +49,7 @@
   /* Stated once here: the same overrides would otherwise repeat on every code rule below. */
   :root[data-color-scheme="dark"] & {
     --markdown-code-ink: #eeeeee;
+    --markdown-inline-code-ink: #eeeeee;
     --markdown-inline-code-surface: rgb(50, 50, 50);
     --markdown-code-block-surface: rgb(47, 47, 47);
   }
@@ -454,12 +458,12 @@
     unicode-bidi: isolate;
     font-family: var(--font-family-mono);
     font-feature-settings: var(--font-family-mono--font-feature-settings);
-    color: var(--markdown-code-ink);
-    font-weight: 400;
+    color: var(--markdown-inline-code-ink);
+    font-weight: 350;
     /* A 4px side pad keeps the tint off the glyphs. It is not paid back by a negative margin: paying
        it back pulled neighbouring text into the chip, which reads as letters touching. */
     padding: 0 4px;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     background: var(--markdown-inline-code-background);
   }
 

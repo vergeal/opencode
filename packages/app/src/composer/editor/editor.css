@@ -5,12 +5,16 @@
   /* A drafted tick reads like a code block in a finished answer: the chip and the block keep separate
      greys, and the dark scheme flips the ink so a tick never shows black text on a white fill. */
   --composer-code-ink: #1a1a1a;
+  /* The inline chip reads softer than a fenced block, matching the answer's chip: dimmer ink and a lighter
+     weight keep drafted code from looking like bold text. Blocks keep `--composer-code-ink`. */
+  --composer-code-inline-ink: #3a3a3a;
   --composer-code-inline-surface: rgb(233, 234, 234);
   --composer-code-block-surface: rgb(233, 234, 234);
 }
 
 :root[data-color-scheme="dark"] [data-component="composer-editor"] {
   --composer-code-ink: #eeeeee;
+  --composer-code-inline-ink: #eeeeee;
   --composer-code-inline-surface: rgb(50, 50, 50);
   --composer-code-block-surface: rgb(47, 47, 47);
 }
@@ -102,9 +106,10 @@
    answer, so the draft reads the same before and after sending. */
 [data-component="composer-editor"] [data-md-code] {
   padding-inline: 4px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: var(--composer-code-inline-surface);
-  color: var(--composer-code-ink);
+  color: var(--composer-code-inline-ink);
+  font-weight: 350;
 }
 
 /* A code tick only paints the markdown; it must not occupy a character box or the draft reads as if
@@ -139,7 +144,7 @@
    highlight pseudo-element in every engine, so each value keeps its light fallback and the dark scheme
    restates both. */
 ::highlight(composer-md-code) {
-  color: var(--composer-code-ink, #1a1a1a);
+  color: var(--composer-code-inline-ink, #3a3a3a);
   background-color: var(--composer-code-inline-surface, rgb(233, 234, 234));
 }
 
