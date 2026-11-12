@@ -3,11 +3,13 @@ import electron, { type BrowserWindow, type WebContents } from "electron"
 import type { Protocol } from "devtools-protocol"
 import { Schema } from "effect"
 import type { Embeds } from "@opencode/plugin/gui/main"
-import { createCdp, abortError, waitFor } from "./cdp"
+import { createElectronCdp, abortError, waitFor } from "./cdp"
 import { createBrowserFiles } from "./files"
 import { createDiagnostics } from "./diagnostics"
 import { loadIcon } from "./icon"
 import { pageLetter, pageReload, pageShortcut, type PageShortcut } from "./keys"
+import { createPageCdp } from "./page-cdp"
+import type { Shared } from "./page-shared"
 import {
   createDocumentState,
   documentGeneration,
@@ -17,7 +19,7 @@ import {
   transitionDocument,
   type DocumentEvent,
 } from "./page-machine"
-import { createProfiling, type Recording } from "./profiling"
+import { createProfiling } from "./profiling"
 import type { BrowserNetwork } from "./network"
 import {
   allowedDestination,
@@ -31,10 +33,8 @@ import {
 } from "./policy"
 import type { PaneElement } from "./ipc"
 
-type Element = { backendID: number; frameID: string; sessionID?: string }
-
-/** State every page of the pane shares: the element ref allocator and the app-wide trace recording. */
-export type Shared = { ref: () => string; recording?: Recording }
+/** The shared state a page of the pane uses; exported for the pane's other page implementations. */
+export type { Shared }
 
 // Captures and downloads belong to the tab, not whichever document it now shows; navigate replaces it anyway.
 const retainedOperations: readonly Browser.Method[] = [
@@ -66,10 +66,6 @@ const pointerOperations: readonly Browser.Method[] = [
 ]
 
 /** Virtual key codes of the named keys `press` accepts. */
-interface KeyCodes {
-  readonly [key: string]: number
-}
-
 // Chromium DevTools' element picker colors, so the overlay matches the Elements panel.
 const inspectHighlight: Protocol.Overlay.HighlightConfig = {
   showInfo: true,
@@ -257,23 +253,26 @@ export function createBrowserPage(
     options.detail?.(next)
   }
 
-  const cdp = createCdp(contents)
+  const cdp = createElectronCdp(contents)
   const documents = new Map<string, string>()
   const sourceURLs = () => [...new Set([contents.getURL(), ...documents.values()])].sort()
   const files = createBrowserFiles(sourceURLs)
   const diagnostics = createDiagnostics(cdp)
+  const core = createPageCdp({
+    cdp,
+    files,
+    diagnostics,
+    shared: options.shared,
+    // A hidden WebContentsView can hold its compositor; this makes a scrolled element's position current.
+    nudge: async () => {
+      await contents.capturePage(undefined, { stayHidden: false, stayAwake: true })
+    },
+  })
   const profiling = createProfiling(contents, cdp, files, sourceURLs, options.shared)
-  const refs = new Map<string, Element>()
-  // Elements the user picked. Their refs outlive later snapshots, so a comment keeps pointing at
-  // the element until the document changes.
-  const picked = new Map<string, Element>()
   let inspecting = false
   // Bumped by every picker toggle and hide, so a pick still being described can tell it was cancelled.
   let picks = 0
   let flash: ReturnType<typeof setTimeout> | undefined
-  const sessions = new Map<string, string>()
-  const parents = new Map<string, string>()
-  const contexts = new Map<string, { id: number; sessionID?: string }>()
   const dialogs = new Set<() => void>()
   let dialog: { type: string; message: string; defaultValue: string } | null = null
   let dialogURL = ""
@@ -307,8 +306,8 @@ export function createBrowserPage(
       switch (effect.type) {
         case "reset-document":
           documents.clear()
-          refs.clear()
-          picked.clear()
+          core.refs.clear()
+          core.picked.clear()
 
           if (inspecting) void toggleInspect(false)
           break
@@ -437,23 +436,7 @@ export function createBrowserPage(
   }
 
   contents.session.on("will-download", download)
-  cdp.on("Runtime.executionContextCreated", ({ context }, sessionID) => {
-    // SAFETY: CDP documents a page execution context's auxData as `{ frameId, isDefault, type }`.
-    const aux = context.auxData as { frameId?: string; isDefault?: boolean } | undefined
-
-    if (aux?.frameId && aux.isDefault) contexts.set(aux.frameId, { id: context.id, sessionID })
-  })
-  cdp.on("Runtime.executionContextDestroyed", ({ executionContextId }, sessionID) => {
-    contexts.forEach((context, key) => {
-      if (context.id === executionContextId && context.sessionID === sessionID) contexts.delete(key)
-    })
-  })
-  cdp.on("Target.attachedToTarget", ({ sessionId, targetInfo }, parentSessionID) => {
-    if (targetInfo.type !== "iframe") return
-    const parentID = targetInfo.parentFrameId ?? Array.from(sessions).find(([, id]) => id === parentSessionID)?.[0]
-
-    if (parentID) parents.set(targetInfo.targetId, parentID)
-    sessions.set(targetInfo.targetId, sessionId)
+  core.track((sessionId) => {
     void Promise.all([
       diagnostics.enable(sessionId),
       cdp.send("Page.enable", {}, sessionId),
@@ -479,10 +462,10 @@ export function createBrowserPage(
     })
   })
   cdp.on("Target.detachedFromTarget", ({ sessionId }) => {
-    sessions.forEach((id, frameID) => {
+    core.sessions.forEach((id, frameID) => {
       if (id === sessionId) {
-        sessions.delete(frameID)
-        parents.delete(frameID)
+        core.sessions.delete(frameID)
+        core.parents.delete(frameID)
       }
     })
   })
@@ -683,8 +666,8 @@ export function createBrowserPage(
       contents.session.off("will-download", download)
       await profiling.dispose()
       cdp.dispose()
-      refs.clear()
-      picked.clear()
+      core.refs.clear()
+      core.picked.clear()
       embed.dispose()
 
       if (!contents.isDestroyed()) contents.close({ waitForBeforeUnload: false })
@@ -748,23 +731,23 @@ export function createBrowserPage(
       }
 
       case "frames":
-        return result({ tab: state(), frames: await frames() })
+        return result({ tab: state(), frames: await core.frames() })
       case "snapshot":
       case "find":
-        return result({ tab: state(), ...(await snapshot(action)) })
+        return result({ tab: state(), ...(await core.snapshot(action)) })
       case "evaluate": {
         if (action.ref && action.frameID)
           throw new Error(
             "Pass either ref or frameID to browser.evaluate, not both. A ref already runs in its element's frame.",
           )
-        const context = action.frameID ? contexts.get(action.frameID) : undefined
+        const context = action.frameID ? core.contexts.get(action.frameID) : undefined
 
         if (action.frameID && !context)
           throw new Error(
             "Frame context is unavailable. Call browser.frames({tabID}) and use a current frameID from this tab, or omit frameID to target the main frame.",
           )
-        const element = action.ref ? target(action.ref) : undefined
-        const objectId = element ? await resolve(element) : undefined
+        const element = action.ref ? core.target(action.ref) : undefined
+        const objectId = element ? await core.resolve(element) : undefined
 
         // With a ref, the script is a function that receives the element as its argument and as `this`.
         const value = await (element && objectId
@@ -804,19 +787,22 @@ export function createBrowserPage(
       }
 
       case "click":
-        await click(target(action.ref), action.button ?? "left", action.count ?? 1, action.modifiers)
+        await core.click(core.target(action.ref), action.button ?? "left", action.count ?? 1, action.modifiers)
         break
       case "hover":
-        await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...(await point(target(action.ref))) })
+        await cdp.send("Input.dispatchMouseEvent", {
+          type: "mouseMoved",
+          ...(await core.point(core.target(action.ref))),
+        })
         break
       case "drag": {
-        const source = target(action.from)
-        const destination = target(action.to)
-        await point(destination)
-        const from = await point(source)
-        const box = await rect(destination)
+        const source = core.target(action.from)
+        const destination = core.target(action.to)
+        await core.point(destination)
+        const from = await core.point(source)
+        const box = await core.rect(destination)
         const to = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-        const html5 = await call(source, "function() { return this.draggable; }")
+        const html5 = await core.call(source, "function() { return this.draggable; }")
         let data: Protocol.Input.DragData | undefined
 
         const off = cdp.on("Input.dragIntercepted", (event) => {
@@ -861,28 +847,28 @@ export function createBrowserPage(
       }
 
       case "fill":
-        await fill(target(action.ref), action.text, signal)
+        await core.fill(core.target(action.ref), action.text, signal)
         break
       case "fill_form":
         for (const field of action.fields) {
           abortError(signal)
 
-          if (field.type === "text") await fill(target(field.ref), field.value, signal)
+          if (field.type === "text") await core.fill(core.target(field.ref), field.value, signal)
 
-          if (field.type === "select") await select(target(field.ref), field.values)
+          if (field.type === "select") await core.select(core.target(field.ref), field.values)
 
-          if (field.type === "check") await check(target(field.ref), field.checked)
+          if (field.type === "check") await core.check(core.target(field.ref), field.checked)
         }
 
         break
       case "select":
-        await select(target(action.ref), action.values)
+        await core.select(core.target(action.ref), action.values)
         break
       case "check":
-        await check(target(action.ref), action.checked)
+        await core.check(core.target(action.ref), action.checked)
         break
       case "press":
-        await key(action.key)
+        await core.key(action.key)
         break
       case "scroll": {
         const bounds = view.getBounds()
@@ -904,7 +890,7 @@ export function createBrowserPage(
         await waitFor(
           async () => {
             if (action.condition === "load") return !contents.isLoading()
-            const context = action.frameID ? contexts.get(action.frameID) : undefined
+            const context = action.frameID ? core.contexts.get(action.frameID) : undefined
 
             if (action.frameID && !context)
               throw new Error(
@@ -947,7 +933,7 @@ export function createBrowserPage(
             )
           },
         )
-        const element = action.ref ? await rect(target(action.ref), true) : undefined
+        const element = action.ref ? await core.rect(core.target(action.ref), true) : undefined
         const metrics = await cdp.send("Page.getLayoutMetrics")
 
         const bounds = element
@@ -1019,13 +1005,13 @@ export function createBrowserPage(
           transfers.map(async (file) => files.get(await files.save(file.name, file.mime, file.data)).path),
         )
 
-        const element = target(action.ref)
+        const element = core.target(action.ref)
 
         if (action.type === "files.upload")
           await cdp.send("DOM.setFileInputFiles", { files: local, backendNodeId: element.backendID }, element.sessionID)
 
         if (action.type === "files.drop") {
-          const position = await point(element)
+          const position = await core.point(element)
 
           for (const type of ["dragEnter", "dragOver", "drop"])
             await cdp.send("Input.dispatchDragEvent", {
@@ -1121,10 +1107,10 @@ export function createBrowserPage(
 
     if (action.type === "trace.stop" || action.type === "cpu.stop")
       return profiling.target(action.type === "trace.stop" ? "trace" : "cpu")
-    const tree = await frames()
+    const tree = await core.frames()
     tree.forEach((frame) => documents.set(frame.id, frame.url))
 
-    const refs =
+    const selectedRefs =
       action.type === "drag"
         ? [action.from, action.to]
         : action.type === "fill_form"
@@ -1133,7 +1119,7 @@ export function createBrowserPage(
             ? [action.ref]
             : []
 
-    const selected = refs.map(target)
+    const selected = selectedRefs.map(core.target)
 
     const frameIDs = selected.length
       ? selected.map((element) => element.frameID)
@@ -1167,372 +1153,6 @@ export function createBrowserPage(
     }
   }
 
-  function target(ref: Browser.Ref): Element {
-    const key = ref.replace(/^@/, "")
-    const value = refs.get(key) ?? picked.get(key)
-
-    if (!value)
-      throw new Error(
-        "Element ref is stale or belongs to another tab. Call browser.snapshot({tabID}) and use a ref from that tab's newest snapshot. Do not reuse refs after navigation or a newer snapshot.",
-      )
-
-    return value
-  }
-
-  async function frames() {
-    const root = await cdp.send("Page.getFrameTree")
-    const result: { id: string; parentID?: string; url: string; name: string }[] = []
-
-    const walk = (tree: Protocol.Page.FrameTree, parentID?: string) => {
-      if (!result.some((frame) => frame.id === tree.frame.id))
-        result.push(
-          tree.frame.parentId || parentID
-            ? {
-                id: tree.frame.id,
-                parentID: tree.frame.parentId ?? parentID,
-                url: tree.frame.url,
-                name: tree.frame.name ?? "",
-              }
-            : { id: tree.frame.id, url: tree.frame.url, name: tree.frame.name ?? "" },
-        )
-      tree.childFrames?.forEach((child) => walk(child, tree.frame.id))
-    }
-
-    walk(root.frameTree)
-
-    const children = await Promise.all(
-      Array.from(sessions, async ([id, sessionID]) => ({
-        id,
-        tree: await cdp.send("Page.getFrameTree", {}, sessionID).catch(() => undefined),
-      })),
-    )
-
-    children.forEach(({ id, tree }) => {
-      if (tree) walk(tree.frameTree, parents.get(id) ?? root.frameTree.frame.id)
-    })
-
-    return result
-  }
-
-  async function call(element: Element, functionDeclaration: string, args: unknown[] = []) {
-    const objectId = await resolve(element)
-
-    try {
-      const result = await cdp.send(
-        "Runtime.callFunctionOn",
-        {
-          objectId,
-          functionDeclaration,
-          arguments: args.map((value) => ({ value })),
-          returnByValue: true,
-          awaitPromise: true,
-          userGesture: true,
-        },
-        element.sessionID,
-      )
-
-      if (result.exceptionDetails)
-        throw new Error(result.exceptionDetails.exception?.description ?? result.exceptionDetails.text)
-
-      // SAFETY: widens CDP's `any` value to unknown; every caller decodes or compares it.
-      return result.result.value as unknown
-    } finally {
-      await cdp.send("Runtime.releaseObject", { objectId }, element.sessionID).catch(() => undefined)
-    }
-  }
-
-  async function resolve(element: Element) {
-    const object = await cdp.send("DOM.resolveNode", { backendNodeId: element.backendID }, element.sessionID)
-
-    if (!object.object.objectId)
-      throw new Error(
-        "Element is no longer available. Call browser.snapshot({tabID}) and use a fresh ref; the page may have replaced the element.",
-      )
-
-    return object.object.objectId
-  }
-
-  async function rect(element: Element, scroll = false) {
-    if (scroll) {
-      await cdp.send("DOM.scrollIntoViewIfNeeded", { backendNodeId: element.backendID }, element.sessionID)
-      // Force a compositor update after scrolling. requestAnimationFrame can
-      // stall in a hidden WebContentsView, even with background throttling off.
-      await contents.capturePage(undefined, { stayHidden: false, stayAwake: true })
-    }
-
-    const bounds = Schema.Struct({ x: Schema.Finite, y: Schema.Finite, width: Schema.Finite, height: Schema.Finite })
-
-    const value = {
-      ...Schema.decodeUnknownSync(bounds)(
-        await call(
-          element,
-          "function() { const r = this.getBoundingClientRect(); return {x:r.x,y:r.y,width:r.width,height:r.height}; }",
-        ),
-      ),
-    }
-
-    const tree = await frames()
-    let frame = tree.find((frame) => frame.id === element.frameID)
-
-    while (frame?.parentID) {
-      const parent = { frameID: frame.parentID, sessionID: sessionFor(frame.parentID, tree) }
-      const owner = await cdp.send("DOM.getFrameOwner", { frameId: frame.id }, parent.sessionID)
-
-      // A CSS transform on the iframe scales its content box; the child's own coordinates are unscaled.
-      const box = Schema.decodeUnknownSync(
-        Schema.Struct({ ...bounds.fields, scaleX: Schema.Finite, scaleY: Schema.Finite }),
-      )(
-        await call(
-          { backendID: owner.backendNodeId, ...parent },
-          "function() { const r = this.getBoundingClientRect(); const sx = this.offsetWidth ? r.width / this.offsetWidth : 1; const sy = this.offsetHeight ? r.height / this.offsetHeight : 1; return {x:r.x+this.clientLeft*sx,y:r.y+this.clientTop*sy,width:r.width,height:r.height,scaleX:sx,scaleY:sy}; }",
-        ),
-      )
-
-      value.x = box.x + value.x * box.scaleX
-      value.y = box.y + value.y * box.scaleY
-      value.width *= box.scaleX
-      value.height *= box.scaleY
-      frame = tree.find((item) => item.id === frame?.parentID)
-    }
-
-    return value
-  }
-
-  // Same-process child frames have no CDP target of their own; the nearest ancestor with one owns them.
-  function sessionFor(frameID: string, tree: { id: string; parentID?: string }[]) {
-    let id: string | undefined = frameID
-
-    while (id && !sessions.has(id)) id = tree.find((frame) => frame.id === id)?.parentID
-
-    return id ? sessions.get(id) : undefined
-  }
-
-  async function point(element: Element) {
-    const box = await rect(element, true)
-
-    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-  }
-
-  async function click(element: Element, button = "left", count = 1, modifiers: readonly string[] = []) {
-    const position = await point(element)
-    const flags = modifiers.reduce((mask, key) => mask | ({ Alt: 1, Control: 2, Meta: 4, Shift: 8 }[key] ?? 0), 0)
-    await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", ...position, modifiers: flags })
-
-    for (let clickCount = 1; clickCount <= count; clickCount++) {
-      await cdp.send("Input.dispatchMouseEvent", {
-        type: "mousePressed",
-        ...position,
-        button,
-        clickCount,
-        modifiers: flags,
-      })
-      await cdp.send("Input.dispatchMouseEvent", {
-        type: "mouseReleased",
-        ...position,
-        button,
-        clickCount,
-        modifiers: flags,
-      })
-    }
-  }
-
-  async function fill(element: Element, value: string, signal: AbortSignal) {
-    const kind = await call(
-      element,
-      "function() { if (this.disabled || this.readOnly) return; if (this instanceof HTMLTextAreaElement || this.isContentEditable) return 'text'; if (!(this instanceof HTMLInputElement)) return; if (['date','time','datetime-local','month','week'].includes(this.type)) return 'structured'; if (!['file','checkbox','radio','button','submit','reset','image','hidden','range','color'].includes(this.type)) return 'text'; }",
-    )
-
-    if (!kind)
-      throw new Error(
-        "Target is not an enabled editable text field. Take a fresh snapshot and choose a textbox; use browser.select for dropdowns, browser.check for checkboxes/radios, or browser.files.upload for file inputs.",
-      )
-
-    // Keyboard input cannot compose a date or time control's value; Chromium clears a malformed one.
-    if (kind === "structured") {
-      await call(
-        element,
-        "function(value) { const previous = this.value; this.focus(); this.value = value; if (this.value !== value) { this.value = previous; throw new Error('The ' + this.type + ' input rejected this value and keeps its previous one. Use its required format, for example 2026-09-07 for date, 14:45 for time, 2026-09-07T14:45 for datetime-local, 2026-09 for month, or 2026-W37 for week.'); } this.dispatchEvent(new Event('input',{bubbles:true})); this.dispatchEvent(new Event('change',{bubbles:true})); }",
-        [value],
-      )
-
-      return
-    }
-
-    await cdp.send("DOM.focus", { backendNodeId: element.backendID }, element.sessionID)
-    // Focusing this field blurs the previous one; a validation dialog from that blur must stop here.
-    abortError(signal)
-    await key(process.platform === "darwin" ? "Meta+A" : "Control+A")
-    await key("Backspace")
-    abortError(signal)
-    await cdp.send("Input.insertText", { text: value })
-  }
-
-  async function select(element: Element, values: readonly string[]) {
-    await call(
-      element,
-      `function(values) { if (!(this instanceof HTMLSelectElement) || this.disabled) throw new Error('Target is not an enabled HTML select. Take a fresh snapshot and choose an enabled dropdown ref.'); if (!this.multiple && values.length !== 1) throw new Error('This dropdown accepts exactly one value; pass a one-item values array.'); for (const value of values) if (!Array.from(this.options).some(option => option.value === value && !option.disabled)) throw new Error('Option value was not found or is disabled. Inspect option values with browser.evaluate before retrying browser.select; values are not visible labels.'); for (const option of this.options) option.selected = values.includes(option.value); this.dispatchEvent(new Event('input',{bubbles:true})); this.dispatchEvent(new Event('change',{bubbles:true})); }`,
-      [values],
-    )
-  }
-
-  async function check(element: Element, checked: boolean) {
-    const current = await call(
-      element,
-      "function(checked) { if (!(this instanceof HTMLInputElement) || !['checkbox','radio'].includes(this.type) || this.disabled) throw new Error('Target is not an enabled checkbox or radio. Take a fresh snapshot and choose the correct ref.'); if (this.type === 'radio' && this.checked && !checked) throw new Error('A selected radio cannot be cleared by clicking it. Select a different radio in its group instead.'); return this.checked; }",
-      [checked],
-    )
-
-    if (current !== checked) await click(element)
-
-    if ((await call(element, "function() { return this.checked; }")) !== checked)
-      throw new Error(
-        "The page did not keep the requested checked state. Inspect the current snapshot and page validation before retrying; do not blindly toggle the control again.",
-      )
-  }
-
-  async function key(chord: string) {
-    if (!chord)
-      throw new Error(
-        "A key is required. Use a named key such as Enter or ArrowDown, a single character, or a chord such as Control+A.",
-      )
-    const parts = (chord.endsWith("+") ? chord.slice(0, -1) : chord).split("+")
-    const key = parts.pop() || "+"
-
-    const modifiers = parts.reduce((mask, key) => {
-      const bit = { Alt: 1, Control: 2, Meta: 4, Shift: 8 }[key]
-
-      if (!bit)
-        throw new Error(
-          `Unknown key modifier ${JSON.stringify(key)}. Supported modifiers are Alt, Control, Meta, and Shift; for example Control+A. Use Meta for macOS command shortcuts.`,
-        )
-
-      return mask | bit
-    }, 0)
-
-    const codes: KeyCodes = {
-      Enter: 13,
-      Tab: 9,
-      Escape: 27,
-      Backspace: 8,
-      Delete: 46,
-      ArrowUp: 38,
-      ArrowDown: 40,
-      ArrowLeft: 37,
-      ArrowRight: 39,
-      PageUp: 33,
-      PageDown: 34,
-      Home: 36,
-      End: 35,
-      Space: 32,
-    }
-
-    const code =
-      codes[key] ??
-      (key.length === 1
-        ? key.toUpperCase().charCodeAt(0)
-        : /^F([1-9]|1[0-2])$/.test(key)
-          ? 111 + Number(key.slice(1))
-          : undefined)
-
-    if (code === undefined)
-      throw new Error(
-        `Unknown key ${JSON.stringify(key)}. Use Enter, Tab, Escape, Backspace, Delete, ArrowUp/Down/Left/Right, PageUp/Down, Home, End, Space, F1–F12, or one character. Use browser.fill for text.`,
-      )
-    // Named keys need their character data too: Enter submits forms and inserts newlines only with "\r".
-    const text = key === "Enter" ? "\r" : key === "Space" ? " " : key.length === 1 ? key : undefined
-
-    const event = { key: key === "Space" ? " " : key, windowsVirtualKeyCode: code, modifiers }
-    const params = text !== undefined && !(modifiers & 6) ? { ...event, text } : event
-
-    await cdp.send("Input.dispatchKeyEvent", { type: "keyDown", ...params })
-    await cdp.send("Input.dispatchKeyEvent", { type: "keyUp", ...params })
-  }
-
-  async function snapshot(action: Extract<Browser.Action, { type: "snapshot" | "find" }>) {
-    const tree = await frames()
-    const selected = action.type === "snapshot" && action.ref ? target(action.ref) : undefined
-    const frameID = selected?.frameID ?? action.frameID ?? tree[0]?.id
-
-    if (!frameID || !tree.some((frame) => frame.id === frameID))
-      throw new Error(
-        "Frame is unavailable. Call browser.frames({tabID}) and use a current frameID from this tab; omit frameID for the main frame.",
-      )
-    const sessionID = sessionFor(frameID, tree)
-    const depth = action.type === "snapshot" ? (action.depth ?? 8) : 8
-    const ax = await cdp.send("Accessibility.getFullAXTree", { frameId: frameID, depth }, sessionID)
-    const nodes = new Map(ax.nodes.map((node) => [node.nodeId, node]))
-    const root = selected ? ax.nodes.find((node) => node.backendDOMNodeId === selected.backendID) : ax.nodes[0]
-
-    if (!root)
-      throw new Error(
-        "Element is absent from this frame's accessibility snapshot. Retry browser.snapshot with the same tabID and no ref to refresh the frame, then choose a returned ref.",
-      )
-    refs.clear()
-    const pinned = new Map(Array.from(picked, ([ref, element]) => [`${element.frameID}:${element.backendID}`, ref]))
-    const lines: string[] = []
-    let truncated = false
-
-    const walk = async (node: Protocol.Accessibility.AXNode, level: number): Promise<void> => {
-      if (level > depth || lines.length >= 500) {
-        truncated = true
-
-        return
-      }
-
-      const role = String(node.role?.value ?? "node")
-        .replace(/[^a-zA-Z0-9_-]/g, "")
-        .slice(0, 40)
-
-      const properties = new Map(node.properties?.map((property) => [property.name, property.value.value]) ?? [])
-
-      if (!node.ignored) {
-        const actionable =
-          role !== "RootWebArea" &&
-          (properties.get("focusable") || /^(button|link|textbox|combobox|checkbox|radio|option)$/.test(role))
-
-        // A picked element keeps the ref its comment names, even when it is not otherwise actionable.
-        const known = node.backendDOMNodeId ? pinned.get(`${frameID}:${node.backendDOMNodeId}`) : undefined
-        const ref = known ?? (actionable && node.backendDOMNodeId ? options.shared.ref() : "")
-        const element = node.backendDOMNodeId ? { backendID: node.backendDOMNodeId, frameID, sessionID } : undefined
-
-        if (ref && element && !known) refs.set(ref, element)
-
-        const flags = (["checked", "disabled", "expanded", "selected"] as const).flatMap((name) =>
-          properties.has(name) ? [`${name}=${properties.get(name)}`] : [],
-        )
-
-        const box =
-          action.type === "snapshot" && action.boxes && ref && element
-            ? await rect(element).catch(() => undefined)
-            : undefined
-
-        lines.push(
-          `${"  ".repeat(level)}${ref ? `@${ref} ` : ""}[${role}] ${JSON.stringify(
-            String(node.name?.value ?? "")
-              .replace(/\s+/g, " ")
-              .slice(0, 300),
-          )} ${flags.join(" ")}${box ? ` box=${JSON.stringify(box)}` : ""}`,
-        )
-      }
-
-      if (["textbox", "searchbox"].includes(role) || properties.get("editable")) return
-
-      for (const childID of node.childIds ?? []) {
-        const child = nodes.get(childID)
-
-        if (child) await walk(child, level + 1)
-      }
-    }
-
-    await walk(root, 0)
-
-    const content = (
-      action.type === "find" ? lines.filter((line) => line.toLowerCase().includes(action.text.toLowerCase())) : lines
-    ).join("\n")
-
-    return { content: content.slice(0, Browser.MAX_TEXT), truncated: truncated || content.length > Browser.MAX_TEXT }
-  }
-
   async function toggleInspect(enabled: boolean) {
     picks++
 
@@ -1540,7 +1160,7 @@ export function createBrowserPage(
       inspecting = enabled
       clearTimeout(flash)
       await Promise.all(
-        [undefined, ...sessions.values()].map((sessionID) =>
+        [undefined, ...core.sessions.values()].map((sessionID) =>
           (enabled ? arm(sessionID) : cdp.send("Overlay.setInspectMode", inspectOff, sessionID)).catch(() => undefined),
         ),
       )
@@ -1567,14 +1187,18 @@ export function createBrowserPage(
     const pick = ++picks
     const navigation = documentGeneration(documentState)
     await Promise.all(
-      [undefined, ...sessions.values()].map((id) =>
+      [undefined, ...core.sessions.values()].map((id) =>
         cdp.send("Overlay.setInspectMode", inspectOff, id).catch(() => undefined),
       ),
     )
     // Keep the box model on the picked element, without the tooltip, while the renderer freezes the page.
     await cdp.send("Overlay.highlightNode", { backendNodeId: backendID, highlightConfig: pickedHighlight }, sessionID)
     const element = { backendID, frameID: await frameOf(backendID, sessionID), sessionID }
-    const [details, box, accessible] = await Promise.all([describe(element), rect(element), accessibility(element)])
+    const [details, box, accessible] = await Promise.all([
+      core.describe(element),
+      core.rect(element),
+      core.accessibility(element),
+    ])
     await painted(sessionID)
 
     // Escape, a toggle, hiding, or navigation while the element was described cancels the pick.
@@ -1588,7 +1212,7 @@ export function createBrowserPage(
     }
 
     const ref = options.shared.ref()
-    picked.set(ref, element)
+    core.picked.set(ref, element)
     const zoom = contents.getZoomFactor()
 
     // The pick focused the page; the comment editor opens in the app window. Focus only moves
@@ -1607,7 +1231,7 @@ export function createBrowserPage(
 
   async function highlightPicked(ref?: Browser.Ref) {
     clearTimeout(flash)
-    const element = ref ? picked.get(ref.replace(/^@/, "")) : undefined
+    const element = ref ? core.picked.get(ref.replace(/^@/, "")) : undefined
 
     if (!element) return hideHighlight()
     await cdp.send("DOM.scrollIntoViewIfNeeded", { backendNodeId: element.backendID }, element.sessionID)
@@ -1621,7 +1245,7 @@ export function createBrowserPage(
 
   async function hideHighlight() {
     await Promise.all(
-      [undefined, ...sessions.values()].map((sessionID) =>
+      [undefined, ...core.sessions.values()].map((sessionID) =>
         cdp.send("Overlay.hideHighlight", {}, sessionID).catch(() => undefined),
       ),
     )
@@ -1630,9 +1254,10 @@ export function createBrowserPage(
   // The picker names a node but not its frame. A target owns its root frame plus any same-process
   // child frames, so match the node's document against each child frame's content document.
   async function frameOf(backendID: number, sessionID?: string) {
-    const tree = await frames()
-    const owned = tree.filter((frame) => sessionFor(frame.id, tree) === sessionID)
-    const root = owned.find((frame) => !frame.parentID || sessionFor(frame.parentID, tree) !== sessionID) ?? tree[0]
+    const tree = await core.frames()
+    const owned = tree.filter((frame) => core.sessionFor(frame.id, tree) === sessionID)
+    const root =
+      owned.find((frame) => !frame.parentID || core.sessionFor(frame.parentID, tree) !== sessionID) ?? tree[0]
     const nested = owned.filter((frame) => frame !== root)
 
     if (!nested.length) return root.id
@@ -1672,66 +1297,6 @@ export function createBrowserPage(
     )
 
     return owners.find((owner) => owner.document === described?.node.backendNodeId)?.id ?? root.id
-  }
-
-  async function describe(element: Element) {
-    return Schema.decodeUnknownSync(
-      Schema.Struct({ label: Schema.String, selector: Schema.String, text: Schema.optionalKey(Schema.String) }),
-    )(
-      await call(
-        element,
-        `function() {
-          const clip = (value, max) => (value.length > max ? value.slice(0, max - 1) + "\u2026" : value)
-          const label = this.localName + (this.id ? "#" + this.id : "") + Array.from(this.classList, (name) => "." + name).join("")
-          // One segment per document or shadow root, outermost first; " >>> " steps into a host's shadow root.
-          const segments = []
-          for (let start = this; start; ) {
-            const root = start.getRootNode()
-            const path = []
-            for (let node = start; node; node = node.parentElement) {
-              if (node.id && root.querySelectorAll("#" + CSS.escape(node.id)).length === 1) {
-                path.unshift("#" + CSS.escape(node.id))
-                break
-              }
-              if (node === node.ownerDocument.body) {
-                path.unshift("body")
-                break
-              }
-              const same = Array.from(node.parentNode?.children ?? []).filter((child) => child.localName === node.localName)
-              path.unshift(CSS.escape(node.localName) + (same.length > 1 ? ":nth-of-type(" + (same.indexOf(node) + 1) + ")" : ""))
-            }
-            segments.unshift(path.join(" > "))
-            start = root instanceof ShadowRoot ? root.host : undefined
-          }
-          const selector = segments.join(" >>> ")
-          const text = clip((this.innerText ?? this.textContent ?? "").replace(/\\s+/g, " ").trim(), 160)
-          // A cut selector is invalid syntax; leave it out rather than pass it off as usable.
-          return { label: clip(label, 200), selector: selector.length > 2000 ? "" : selector, ...(text ? { text } : {}) }
-        }`,
-      ),
-    )
-  }
-
-  async function accessibility(element: Element) {
-    const tree = await cdp
-      .send(
-        "Accessibility.getPartialAXTree",
-        { backendNodeId: element.backendID, fetchRelatives: false },
-        element.sessionID,
-      )
-      .catch(() => undefined)
-
-    const node = tree?.nodes.find((node) => node.backendDOMNodeId === element.backendID && !node.ignored)
-    const role = String(node?.role?.value ?? "")
-
-    const name = String(node?.name?.value ?? "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 160)
-
-    const labeled = role && !["generic", "none", "presentation"].includes(role) ? { role: role.slice(0, 128) } : {}
-
-    return name ? { ...labeled, name } : labeled
   }
 
   // Wait until the compositor shows the picked highlight without the hover tooltip, so the

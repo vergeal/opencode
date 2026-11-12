@@ -67,6 +67,8 @@ export type Attachment = {
   readonly browser: Browser.State | null
   /** Host embed per tab page of the current binding. */
   readonly embeds: Readonly<Record<string, string | undefined>>
+  /** Tabs whose page is in the user's local Chrome rather than an embed. */
+  readonly externals: Readonly<Record<string, true | undefined>>
   /** The raw code of the last failed request or reported error, such as `browser.address.web`. */
   readonly error: string | undefined
   readonly strip: Strip
@@ -149,6 +151,12 @@ export type Event =
       readonly attempt: number
       readonly tabID: Browser.TabID
       readonly embed: string
+    }
+  | {
+      readonly type: "pane.external"
+      readonly sessionKey: string
+      readonly attempt: number
+      readonly tabID: Browser.TabID
     }
   | {
       readonly type: "pane.focus"
@@ -320,6 +328,11 @@ export function sessionEmbed(state: State, sessionKey: string, tabID: string) {
   return attachmentOf(state, sessionKey)?.embeds[tabID]
 }
 
+/** Whether a tab's page lives in the user's local Chrome. */
+export function sessionExternal(state: State, sessionKey: string, tabID: string) {
+  return attachmentOf(state, sessionKey)?.externals[tabID] === true
+}
+
 /** The current binding's attempt; a new one, e.g. after a suspension, has no pages for restored tabs yet. */
 export function sessionRegistration(state: State, sessionKey: string) {
   const phase = attachmentOf(state, sessionKey)?.phase
@@ -374,7 +387,13 @@ function ipcChanged(state: Open, ipc: Ipc): Transition {
       return put(
         result.state,
         key,
-        { ...attachment, phase: { status: "registering", attempt, attempts: 0 }, embeds: {}, error: undefined },
+        {
+          ...attachment,
+          phase: { status: "registering", attempt, attempts: 0 },
+          embeds: {},
+          externals: {},
+          error: undefined,
+        },
         [...result.effects, ...stop(key, phase), ...register(key, attempt, attachment.browser)],
         attempt,
       )
@@ -403,6 +422,7 @@ function attached(state: Open, event: Extract<Event, { type: "session.attached" 
     phase: { status: "idle" },
     browser: null,
     embeds: {},
+    externals: {},
     error: undefined,
     strip: { located: event.located, mirrored: [], prune: false, focus: undefined },
     addressFocus: noFocus(),
@@ -510,6 +530,7 @@ function session(state: Open, key: string, attachment: Attachment, event: Sessio
           ...attachment,
           phase: { status: "registering", attempt, attempts: phase.attempts },
           embeds: {},
+          externals: {},
           error: undefined,
         },
         register(key, attempt, attachment.browser),
@@ -524,6 +545,12 @@ function session(state: Open, key: string, attachment: Attachment, event: Sessio
         return { state, effects: [] }
 
       return put(state, key, { ...attachment, embeds: { ...attachment.embeds, [event.tabID]: event.embed } })
+    }
+
+    case "pane.external": {
+      if (!current(phase, event.attempt) || attachment.externals[event.tabID]) return { state, effects: [] }
+
+      return put(state, key, { ...attachment, externals: { ...attachment.externals, [event.tabID]: true } })
     }
 
     case "pane.focus": {
@@ -583,7 +610,13 @@ function wake(state: Open, key: string, attachment: Attachment, created: boolean
   return put(
     state,
     key,
-    { ...attachment, phase: { status: "registering", attempt, attempts: 0 }, embeds: {}, error: undefined },
+    {
+      ...attachment,
+      phase: { status: "registering", attempt, attempts: 0 },
+      embeds: {},
+      externals: {},
+      error: undefined,
+    },
     register(key, attempt, restore),
     attempt,
   )
@@ -644,6 +677,7 @@ function command(
       ...attachment,
       phase: { status: "registering", attempt, attempts: 0 },
       embeds: {},
+      externals: {},
       error: undefined,
       addressFocus: focus,
     },
@@ -725,6 +759,7 @@ function paneState(
         phase: { status: "blocked", reason: replaced ? "replaced" : "missing" },
         browser: null,
         embeds: {},
+        externals: {},
         error: replaced ? event.error : undefined,
         strip: { located: attachment.strip.located, mirrored: [], prune: false, focus: undefined },
         addressFocus: noFocus(),
@@ -779,6 +814,7 @@ function backoff(state: Open, key: string, attachment: Attachment, phase: Bound)
       ...attachment,
       phase: { status: "backoff", attempt, attempts: prior + 1 },
       embeds: {},
+      externals: {},
       error: undefined,
       addressFocus: noFocus(),
     },
@@ -858,6 +894,7 @@ function suspend(attachment: Attachment, reason: "idle" | "ipc", browser = attac
     phase: { status: "suspended", reason },
     browser,
     embeds: {},
+    externals: {},
     error: undefined,
     addressFocus: noFocus(),
   }

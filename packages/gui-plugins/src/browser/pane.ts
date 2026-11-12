@@ -8,6 +8,9 @@ import { HttpClient, HttpClientRequest } from "effect/http"
 import type { BuiltinMainStorage } from "@opencode/plugin/gui/builtin"
 import type { Embeds, Persisted, ServerEndpoints, Windows } from "@opencode/plugin/gui/main"
 import { createBrowserPage, type BrowserPage, type Shared } from "./chromium"
+import { createExternalPage, type ExternalPage } from "./external"
+import { browserProfileDirectory, launchChrome, resolveBackend, type Backend } from "./backend"
+import { chromeCandidates } from "./discovery"
 import { browserFailure } from "./errors"
 import { createBrowserNetwork, type BrowserNetwork } from "./network"
 import { destinationOrigin, fileURLWithin, refusal } from "./policy"
@@ -50,11 +53,16 @@ type Handle = {
   timer?: ReturnType<typeof setTimeout>
   network?: BrowserNetwork
   sendState?: (state: Browser.State) => void
+  /** Which browser this attachment drives; resolved once when it registers. */
+  backend?: Backend
   /** Pages by attempt. */
-  pages: Map<number, BrowserPage>
+  pages: Map<number, AnyPage>
   /** Agent requests in flight by request ID. */
   requests: Map<string, AbortController>
 }
+
+/** A page the pane drives: an embedded view, or a tab in the local Chrome. */
+type AnyPage = BrowserPage | ExternalPage
 
 /** The pane machine's current state; only `dispatch` replaces it. */
 type PaneMachine = { state: PaneState }
@@ -77,9 +85,29 @@ export function createBrowserPane(input: {
   // Page disposals in flight. Finishing a trace or CPU profile can hold a page open, and the pane's own disposal waits
   // for them so a replacement never starts beside old pages still recording.
   const releasing = new Set<Promise<void>>()
-  const disposals = new WeakMap<BrowserPage, Promise<void>>()
+  const disposals = new WeakMap<AnyPage, Promise<void>>()
   // Keep long-lived RPC requests off Chromium's shared HTTP connection pool.
   const runtime = ManagedRuntime.make(NodeHttpClient.layerNodeHttp)
+
+  // One resolution for the whole pane: two windows registering together must not launch two Chromes into one profile.
+  let resolved: Promise<Backend> | undefined
+  const backend = () =>
+    (resolved ??= resolveBackend(
+      {
+        endpoint: process.env.OPENCODE_BROWSER_CDP_ENDPOINT ?? "http://127.0.0.1:9222/json/version",
+        port: Number(new URL(process.env.OPENCODE_BROWSER_CDP_ENDPOINT ?? "http://127.0.0.1:9222").port) || 9222,
+        userDataDir: browserProfileDirectory(electron.app.getPath("userData")),
+      },
+      {
+        // A configured path wins, so a Chrome outside the usual locations still works.
+        candidates: () => {
+          const override = process.env.OPENCODE_CHROME_PATH
+
+          return override ? [override, ...chromeCandidates()] : chromeCandidates()
+        },
+        launch: launchChrome,
+      },
+    ))
 
   return {
     async register(window: number, binding: string, target: Target) {
@@ -167,7 +195,11 @@ export function createBrowserPane(input: {
 
             const attachment = { sessionID, connectionID: crypto.randomUUID() }
             const rpc = client.rpc(Browser.Definition)
-            handle.network = yield* createBrowserNetwork({ rpc, attachment, location: options.location, partition })
+            handle.backend = yield* Effect.promise(backend)
+
+            // An embedded page loads through the server's tunnel; a local Chrome uses the user's own network.
+            if (handle.backend.mode === "embedded")
+              handle.network = yield* createBrowserNetwork({ rpc, attachment, location: options.location, partition })
             const connected = yield* Deferred.make<void>()
             const outbound = yield* Queue.unbounded<Effect.Effect<void>>()
 
@@ -354,6 +386,12 @@ export function createBrowserPane(input: {
      */
     async dispose() {
       dispatch({ type: "disposed" })
+
+      // Each pane owns its WebSocket; the local Chrome itself outlives the app so the user keeps their tabs.
+      if (resolved) {
+        const value = await resolved
+        if (value.mode === "external") value.cdp.dispose()
+      }
       await Promise.all(releasing)
       await runtime.dispose()
     },
@@ -428,7 +466,7 @@ export function createBrowserPane(input: {
     input.emit(handle.window, { binding, event })
   }
 
-  function release(page: BrowserPage) {
+  function release(page: AnyPage) {
     const done = page.dispose()
     const settled = done.catch(() => undefined)
     disposals.set(page, done)
@@ -480,14 +518,59 @@ export function createBrowserPane(input: {
       readonly initialize?: boolean
       readonly popupOptions?: Electron.BrowserWindowConstructorOptions
     } = {},
-  ) {
+  ): AnyPage {
     const entry = selectBinding(machine.state, binding)
     const handle = handles.get(binding)
 
-    if (entry?.status !== "attached" || !handle?.network)
+    if (entry?.status !== "attached" || !handle?.backend)
       throw new Error("Browser network is not ready; no tab was opened.")
     const id = options.restore?.id ?? Browser.TabID.make(`tab_${crypto.randomUUID()}`)
     const attempt = entry.nextAttempt
+
+    if (handle.backend.mode === "external") {
+      const current = () => isCurrentPage(machine.state, binding, id, attempt)
+      const page = createExternalPage({
+        cdp: handle.backend.cdp,
+        shared,
+        id,
+        restore: options.restore,
+        publish: () => {
+          if (current()) dispatchBinding(binding, { type: "tab.published", tabID: id, attempt, tab: page.state() })
+        },
+        closed: () => !current(),
+        fileRoots: () => selectFileRoots(machine.state, binding),
+      })
+
+      handle.pages.set(attempt, page)
+      dispatchBinding(binding, { type: "tab.opened", tabID: id, attempt, tab: options.restore ?? page.state() })
+      emit(binding, { type: "external", tabID: id, url: options.restore?.url ?? "about:blank" })
+      void page.ready.then(
+        () => {
+          if (current()) dispatchBinding(binding, { type: "tab.published", tabID: id, attempt, tab: page.state() })
+        },
+        () => {
+          if (current()) dispatchBinding(binding, { type: "tab.crashed", tabID: id, attempt, tab: page.state() })
+        },
+      )
+
+      return page
+    }
+
+    return createEmbedded(binding, handle, id, attempt, options)
+  }
+
+  function createEmbedded(
+    binding: string,
+    handle: Handle,
+    id: Browser.TabID,
+    attempt: number,
+    options: {
+      readonly restore?: Browser.Tab
+      readonly initialize?: boolean
+      readonly popupOptions?: Electron.BrowserWindowConstructorOptions
+    },
+  ) {
+    if (!handle.network) throw new Error("Browser network is not ready; no tab was opened.")
     const win = handle.win
     // Every callback is fenced to this page: a later page of the same tab has another attempt.
     const current = () => isCurrentPage(machine.state, binding, id, attempt)
@@ -539,9 +622,10 @@ export function createBrowserPane(input: {
       popup: (popupOptions, background) => {
         const popup = create(binding, { initialize: false, popupOptions })
 
+        // A popup is always an embedded page: only the embedded branch opens windows.
         if (!background) dispatchBinding(binding, { type: "tab.focused", tabID: popup.state().id })
 
-        return popup.contents
+        return (popup as BrowserPage).contents
       },
     })
 
@@ -557,7 +641,7 @@ export function createBrowserPane(input: {
   }
 
   /** Reports the page's state after a command, which may have changed it without a page event yet. */
-  function refresh(binding: string, tabID: Browser.TabID, page: BrowserPage) {
+  function refresh(binding: string, tabID: Browser.TabID, page: AnyPage) {
     const attempt = selectPageAttempt(machine.state, binding, tabID)
 
     if (attempt === undefined || handles.get(binding)?.pages.get(attempt) !== page) return

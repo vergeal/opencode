@@ -1,5 +1,6 @@
 import { Browser } from "@opencode/plugin-browser/rpc"
 import type { Protocol } from "devtools-protocol"
+import type { ProtocolMapping } from "devtools-protocol/types/protocol-mapping.js"
 import type { Cdp } from "./cdp"
 
 type Request = {
@@ -24,6 +25,8 @@ const levels = ["debug", "info", "warning", "error"] as const
 // Values the model must not read; the header name still shows it was sent.
 const redacted: readonly string[] = ["cookie", "set-cookie", "authorization", "proxy-authorization"]
 
+export type Diagnostics = ReturnType<typeof createDiagnostics>
+
 export function createDiagnostics(cdp: Cdp) {
   const messages: Browser.ConsoleEntry[] = []
   const requests = new Map<string, Request>()
@@ -37,6 +40,15 @@ export function createDiagnostics(cdp: Cdp) {
   let sequence = 0
   let droppedMessages = 0
   let droppedRequests = 0
+
+  // Every listener is removed by `dispose`, so a closed external tab stops feeding this store.
+  const stops: (() => void)[] = []
+  function listen<Method extends keyof ProtocolMapping.Events>(
+    method: Method,
+    callback: (params: ProtocolMapping.Events[Method][0], sessionID?: string) => void,
+  ) {
+    stops.push(cdp.on(method, callback))
+  }
 
   const add = (
     level: (typeof levels)[number],
@@ -59,7 +71,7 @@ export function createDiagnostics(cdp: Cdp) {
     }
   }
 
-  cdp.on("Runtime.consoleAPICalled", (event) => {
+  listen("Runtime.consoleAPICalled", (event) => {
     const source = event.stackTrace?.callFrames[0]
     add(
       event.type === "error" || event.type === "assert"
@@ -86,7 +98,7 @@ export function createDiagnostics(cdp: Cdp) {
   })
   // Chromium's own messages (CSP refusals, mixed content, failed resource loads, deprecations)
   // are Log entries, not Runtime console calls.
-  cdp.on("Log.entryAdded", (event) => {
+  listen("Log.entryAdded", (event) => {
     const entry = event.entry
     add(
       entry.level === "verbose" ? "debug" : entry.level,
@@ -97,7 +109,7 @@ export function createDiagnostics(cdp: Cdp) {
         : undefined,
     )
   })
-  cdp.on("Runtime.exceptionThrown", (event) => {
+  listen("Runtime.exceptionThrown", (event) => {
     const error = event.exceptionDetails
     add(
       "error",
@@ -190,7 +202,7 @@ export function createDiagnostics(cdp: Cdp) {
         : { ...request.info, state: "failed", failure: failure.slice(0, 2_048), durationMs }
   }
 
-  cdp.on("Network.requestWillBeSent", (event, sessionID) => {
+  listen("Network.requestWillBeSent", (event, sessionID) => {
     const key = `${sessionID ?? ""}:${event.requestId}`
     const previous = latest(key)
 
@@ -227,14 +239,14 @@ export function createDiagnostics(cdp: Cdp) {
   })
   // ExtraInfo for a redirect hop can land after the renderer already started the next hop, so it
   // goes to the earliest hop that has not consumed its own rather than to the latest.
-  cdp.on("Network.requestWillBeSentExtraInfo", (event, sessionID) => {
+  listen("Network.requestWillBeSentExtraInfo", (event, sessionID) => {
     const key = `${sessionID ?? ""}:${event.requestId}`
     const request = hops.get(key)?.find((hop) => !hop.wire.request)
 
     if (request) return requestHeaders(request, event.headers)
     extra.set(key, { ...extra.get(key), request: event.headers })
   })
-  cdp.on("Network.responseReceived", (event, sessionID) => {
+  listen("Network.responseReceived", (event, sessionID) => {
     const request = latest(`${sessionID ?? ""}:${event.requestId}`)
 
     if (!request) return
@@ -246,7 +258,7 @@ export function createDiagnostics(cdp: Cdp) {
 
     if (!event.hasExtraInfo) request.wire = { request: true, response: true }
   })
-  cdp.on("Network.responseReceivedExtraInfo", (event, sessionID) => {
+  listen("Network.responseReceivedExtraInfo", (event, sessionID) => {
     const key = `${sessionID ?? ""}:${event.requestId}`
     const request = hops.get(key)?.find((hop) => !hop.wire.response)
 
@@ -254,7 +266,7 @@ export function createDiagnostics(cdp: Cdp) {
     extra.set(key, { ...extra.get(key), response: event })
   })
   // WebSockets never emit requestWillBeSent; their handshake is the whole request lifecycle.
-  cdp.on("Network.webSocketCreated", (event, sessionID) => {
+  listen("Network.webSocketCreated", (event, sessionID) => {
     begin(
       `${sessionID ?? ""}:${event.requestId}`,
       sessionID,
@@ -265,7 +277,7 @@ export function createDiagnostics(cdp: Cdp) {
       { headers: {}, hasPostData: false },
     )
   })
-  cdp.on("Network.webSocketWillSendHandshakeRequest", (event, sessionID) => {
+  listen("Network.webSocketWillSendHandshakeRequest", (event, sessionID) => {
     const request = latest(`${sessionID ?? ""}:${event.requestId}`)
 
     if (!request) return
@@ -273,7 +285,7 @@ export function createDiagnostics(cdp: Cdp) {
     request.info = { ...request.info, timestampMs: event.wallTime * 1000 }
     requestHeaders(request, event.request.headers)
   })
-  cdp.on("Network.webSocketHandshakeResponseReceived", (event, sessionID) => {
+  listen("Network.webSocketHandshakeResponseReceived", (event, sessionID) => {
     const key = `${sessionID ?? ""}:${event.requestId}`
     const request = latest(key)
 
@@ -281,22 +293,26 @@ export function createDiagnostics(cdp: Cdp) {
     responseInfo(request, { headers: event.response.headers, statusCode: event.response.status })
     finish(key, event.timestamp)
   })
-  cdp.on("Network.webSocketFrameError", (event, sessionID) =>
+  listen("Network.webSocketFrameError", (event, sessionID) =>
     finish(`${sessionID ?? ""}:${event.requestId}`, event.timestamp, event.errorMessage),
   )
-  cdp.on("Network.webSocketClosed", (event, sessionID) => {
+  listen("Network.webSocketClosed", (event, sessionID) => {
     const key = `${sessionID ?? ""}:${event.requestId}`
 
     if (latest(key)?.info.state === "pending") finish(key, event.timestamp, "Closed before the handshake completed")
   })
-  cdp.on("Network.loadingFinished", (event, sessionID) =>
+  listen("Network.loadingFinished", (event, sessionID) =>
     finish(`${sessionID ?? ""}:${event.requestId}`, event.timestamp),
   )
-  cdp.on("Network.loadingFailed", (event, sessionID) =>
+  listen("Network.loadingFailed", (event, sessionID) =>
     finish(`${sessionID ?? ""}:${event.requestId}`, event.timestamp, event.errorText),
   )
 
   return {
+    dispose() {
+      stops.forEach((stop) => stop())
+      stops.length = 0
+    },
     clear() {
       messages.length = 0
       requests.clear()

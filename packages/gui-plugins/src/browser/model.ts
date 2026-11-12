@@ -24,6 +24,7 @@ import {
   sessionAttached,
   sessionBrowser,
   sessionEmbed,
+  sessionExternal,
   sessionError,
   sessionPending,
   sessionRegistration,
@@ -270,6 +271,8 @@ export function createModel(ctx: SetupContext<typeof definition>) {
     if (event.type === "embed")
       return dispatch({ type: "pane.embed", sessionKey, attempt, tabID: event.tabID, embed: event.embed })
 
+    if (event.type === "external") return dispatch({ type: "pane.external", sessionKey, attempt, tabID: event.tabID })
+
     if (event.type === "focus") return dispatch({ type: "pane.focus", sessionKey, attempt, tabID: event.tabID })
 
     if (event.type === "preview") return preview(drive, event.path)
@@ -343,7 +346,8 @@ export function createModel(ctx: SetupContext<typeof definition>) {
     const attachment = current.status === "open" ? current.sessions[sessionKey] : undefined
 
     attachment?.browser?.tabs.forEach((tab) => {
-      if (tab.loading || tab.loadError || !attachment.embeds[tab.id] || !recordable(tab.url)) return
+      if (tab.loading || tab.loadError || !(attachment.embeds[tab.id] || attachment.externals[tab.id])) return
+      if (!recordable(tab.url)) return
       const visit = `${tab.url}\n${tab.title}`
 
       if (recorded.get(`${sessionKey}\n${tab.id}`) === visit) return
@@ -628,6 +632,8 @@ export function createModel(ctx: SetupContext<typeof definition>) {
     suspended: (session: Session) => sessionSuspended(machine(), session.key),
     /** The host embed of a tab's page, once main created the page. */
     embed: (session: Session, tabID: string) => sessionEmbed(machine(), session.key, tabID),
+    /** Whether the tab's page lives in the user's local Chrome, which the pane reports instead of embedding. */
+    external: (session: Session, tabID: string) => sessionExternal(machine(), session.key, tabID),
     /**
      * Creates a restored tab's page, which then reports its embed. Holds for the caller's scope: a new registration,
      * e.g. after a suspension, has no page for the tab and loads it again.

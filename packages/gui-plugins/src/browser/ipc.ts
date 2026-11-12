@@ -35,6 +35,8 @@ export const PaneEvent = Schema.Union([
   }),
   // A tab's page exists; the renderer lays it out through this host embed.
   Schema.Struct({ type: Schema.Literal("embed"), tabID: Browser.TabID, embed: text(256) }),
+  // The tab lives in the user's local Chrome, so the pane shows its address instead of embedding it.
+  Schema.Struct({ type: Schema.Literal("external"), tabID: Browser.TabID, url: text(16_384) }),
   // The page's element picker started, stopped, or picked an element.
   Schema.Struct({
     type: Schema.Literal("inspect"),
