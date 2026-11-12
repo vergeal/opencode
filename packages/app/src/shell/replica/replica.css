@@ -149,15 +149,21 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   color: var(--color-text-secondary);
 }
 
-[data-slot="replica-titlebar-main"] .session-location-tooltip {
-  flex-shrink: 1;
-  max-inline-size: min(45%, 360px);
+/* The UI font's ink hangs below the box centre of a 13px line, so an avatar or icon centred by the
+   flex row reads a pixel high next to the labels. Drop them onto the text's optical band instead. */
+[data-slot="replica-titlebar-main"]
+  [data-slot="session-location-trigger"]
+  > div:has([data-slot="project-avatar-surface"]),
+[data-slot="replica-titlebar-main"] [data-slot="session-location-trigger"] > svg {
+  position: relative;
+  inset-block-start: 1px;
 }
 
-[data-slot="replica-titlebar-main"] [data-slot="session-location-project"],
-[data-slot="replica-titlebar-main"] [data-slot="session-location-worktree"],
-[data-slot="replica-titlebar-main"] [data-slot="session-location-branch"] {
-  max-inline-size: 180px;
+/* The location keeps its whole crumb inside the title's row: it never shrinks below the width its
+   project, worktree and branch need, so the title is the part that gives way and truncates. */
+[data-slot="replica-titlebar-main"] .session-location-tooltip {
+  flex-shrink: 0;
+  max-inline-size: min(60%, 560px);
 }
 
 [data-slot="replica-titlebar-left"] {

@@ -187,7 +187,7 @@ export function ReplicaTitleBar(props: {
       </div>
 
       <div data-slot="replica-titlebar-main" data-ui="titlebar-main">
-        <span class="flex min-w-0 items-center gap-2.5">
+        <span class="flex min-w-0 flex-1 items-center gap-2.5">
           <Icon name="titlebar-chat" size="small" class="shrink-0 text-[var(--color-icon-secondary)]" />
           <Show when={conversation()}>
             {(value) => (
