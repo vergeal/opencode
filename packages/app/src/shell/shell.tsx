@@ -115,11 +115,17 @@ function ReplicaLayer(props: ParentProps) {
 
   // The v6 column is 300px until dragging pins an explicit width, so the resize handle starts from the width
   // the sidebar is really laid out at instead of snapping to another value on the first move.
-  // A window on a system backdrop drops its opaque theme fill, so the translucent chrome shows the desktop instead.
-  // Windows only gets there with the acrylic material; releases that lack it keep the painted background.
+  // A window on a system backdrop drops its opaque theme fill so the desktop shows through. macOS vibrancy names its
+  // own material, Windows gets acrylic from the acrylic backdrop; anything else keeps the painted background.
   createEffect(() => {
     document.documentElement.dataset.replicaWindow =
-      platform.platform === "desktop" && (platform.os === "macos" || platform.glass) ? "translucent" : "opaque"
+      platform.platform !== "desktop"
+        ? "opaque"
+        : platform.os === "macos"
+          ? "vibrancy"
+          : platform.glass
+            ? "acrylic"
+            : "opaque"
   })
 
   const sidebarWidth = () => preferences.appearance.sidebarWidth()

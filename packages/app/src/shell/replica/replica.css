@@ -123,25 +123,42 @@
 /* One titlebar split at the sidebar boundary: window controls on the left, conversation title on the right. */
 /* On macOS the window is a blurred material, so the page root gives up its opaque fill and the frame
    colour above sits directly on the desktop. Other platforms keep the painted root. */
-html[data-replica-window="translucent"]:has([data-replica]),
-html[data-replica-window="translucent"] #root:has([data-replica]) {
+html[data-replica-window="vibrancy"]:has([data-replica]),
+html[data-replica-window="acrylic"]:has([data-replica]),
+html[data-replica-window="vibrancy"] #root:has([data-replica]),
+html[data-replica-window="acrylic"] #root:has([data-replica]) {
   /* The theme paints the root from an inline style, so only an important rule clears it. */
   background-color: transparent !important;
 }
 
-/* The frame keeps the single chrome tint so the whole window is one sheet of glass; the columns and the title bar
-   sit on that tint instead of washing it a second time. The workbench still gives up its fill, because everything
-   inside it is either the opaque conversation or the navigation column's own tint. */
-html[data-replica-window="translucent"] [data-slot="replica-titlebar"],
-html[data-replica-window="translucent"] [data-slot="replica-rail"],
-html[data-replica-window="translucent"] [data-slot="replica-sidebar"],
-html[data-replica-window="translucent"] [data-slot="destination-bar"] {
+/* macOS vibrancy already darkens what sits behind it, so the chrome there gives up its tint entirely. Windows
+   acrylic only blurs the desktop, so the chrome keeps a tint over it or the desk colour bleeds into the workbench. */
+html[data-replica-window="vibrancy"] [data-slot="replica-titlebar"],
+html[data-replica-window="vibrancy"] [data-slot="replica-rail"],
+html[data-replica-window="vibrancy"] [data-slot="replica-sidebar"],
+html[data-replica-window="vibrancy"] [data-slot="destination-bar"] {
   background: transparent;
 }
 
 /* The conversation keeps an opaque surface; only the chrome acts as glass. */
-html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
+html[data-replica-window="vibrancy"] [data-slot="replica-workbench"],
+html[data-replica-window="acrylic"] [data-slot="replica-workbench"] {
   background: transparent;
+}
+
+/* Acrylic shows the desk through a neutral blur, which reads lighter than the workbench in dark mode and washed out
+   in light mode. These tints sit closer to the theme surface so the chrome reads as the same sheet of glass, while
+   the remaining third still lets the backdrop through. macOS needs no equivalent: vibrancy already does this tinting. */
+html[data-replica-window="acrylic"] [data-replica] {
+  --color-titlebar: rgb(250 250 250 / 72%);
+  --color-rail: rgb(246 246 246 / 72%);
+  --color-sidebar: rgb(252 252 252 / 72%);
+}
+
+[data-color-scheme="dark"][data-replica-window="acrylic"] [data-replica] {
+  --color-titlebar: rgb(8 8 8 / 72%);
+  --color-rail: rgb(8 8 8 / 72%);
+  --color-sidebar: rgb(21 21 21 / 72%);
 }
 
 /* A hairline of light along the top edge reads as the glass catching the room. */
