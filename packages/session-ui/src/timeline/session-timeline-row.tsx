@@ -305,6 +305,8 @@ export function createSessionTimelineRowRenderer(input: {
             onSizeChange?.()
           }}
         >
+          <Icon name="terminal" size="small" />
+          <span>{i18n.t("ui.messagePart.commands.label")}</span>
           {/* The disclosure arrow keeps its slot so revealing it never shifts the label. */}
           <span
             data-slot="commands-group-disclosure"
@@ -317,37 +319,42 @@ export function createSessionTimelineRowRenderer(input: {
               class={open() ? "rotate-90 transition-transform" : "transition-transform"}
             />
           </span>
-          <Icon name="terminal" size="small" />
-          <span>{i18n.t("ui.messagePart.commands.label")}</span>
         </button>
-        <Show when={open()}>
-          <div data-slot="commands-group-list" class="mt-1 flex w-full min-w-0 flex-col gap-1 pl-5">
-            <For each={items()}>
-              {(item) => (
-                <div
-                  data-slot="commands-group-item"
-                  class="flex w-full min-w-0 items-baseline gap-2 text-13-regular leading-text-compact"
-                >
-                  <span data-slot="commands-group-prefix" class="shrink-0 text-v2-text-text-faint">
-                    {i18n.t("ui.messagePart.commands.item")}
-                  </span>
-                  <span
-                    data-slot="commands-group-line"
-                    class="min-w-0 flex-1 truncate text-v2-text-text-base font-mono"
-                    title={item.line}
+        <div
+          data-slot="commands-group-content"
+          aria-hidden={!open()}
+          class="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
+          classList={{ "[grid-template-rows:1fr]": open(), "[grid-template-rows:0fr]": !open() }}
+        >
+          <div class="min-h-0 overflow-hidden">
+            <div data-slot="commands-group-list" class="mt-1 flex w-full min-w-0 flex-col gap-1 pl-5">
+              <For each={items()}>
+                {(item) => (
+                  <div
+                    data-slot="commands-group-item"
+                    class="flex w-full min-w-0 items-baseline gap-2 text-13-regular leading-text-compact"
                   >
-                    {item.line}
-                  </span>
-                  <Show when={item.duration !== undefined}>
-                    <span data-slot="commands-group-duration" class="shrink-0 tabular-nums text-v2-text-text-faint">
-                      {formatCommandDuration(item.duration!)}
+                    <span data-slot="commands-group-prefix" class="shrink-0 text-v2-text-text-faint">
+                      {i18n.t("ui.messagePart.commands.item")}
                     </span>
-                  </Show>
-                </div>
-              )}
-            </For>
+                    <span
+                      data-slot="commands-group-line"
+                      class="min-w-0 flex-1 truncate text-v2-text-text-base font-mono"
+                      title={item.line}
+                    >
+                      {item.line}
+                    </span>
+                    <Show when={item.duration !== undefined}>
+                      <span data-slot="commands-group-duration" class="shrink-0 tabular-nums text-v2-text-text-faint">
+                        {formatCommandDuration(item.duration!)}
+                      </span>
+                    </Show>
+                  </div>
+                )}
+              </For>
+            </div>
           </div>
-        </Show>
+        </div>
       </div>
     )
   }
