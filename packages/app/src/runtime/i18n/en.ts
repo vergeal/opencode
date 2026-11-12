@@ -1035,8 +1035,6 @@ export const dict = {
   "explore.plugins.detail.mcp": "MCP servers",
   "explore.plugins.detail.skills": "Skills",
   "explore.plugins.detail.tools": "Tools",
-  "explore.plugins.detail.install":
-    "Plugins load from opencode.json or a local module. Use Install plugin for the exact setup.",
   "explore.plugins.state.active": "Active",
   "explore.plugins.state.failed": "Failed",
   "explore.plugins.feature.server": "Server",

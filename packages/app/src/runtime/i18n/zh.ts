@@ -735,7 +735,6 @@ export const dict = {
   "explore.plugins.detail.mcp": "MCP 服务器",
   "explore.plugins.detail.skills": "技能",
   "explore.plugins.detail.tools": "工具",
-  "explore.plugins.detail.install": "插件从 opencode.json 或本地模块加载。使用「安装插件」查看具体配置。",
   "explore.plugins.state.active": "运行中",
   "explore.plugins.state.failed": "加载失败",
   "explore.plugins.feature.server": "服务端",

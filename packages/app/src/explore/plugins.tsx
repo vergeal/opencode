@@ -259,7 +259,7 @@ export function ExplorePluginsView(props: {
           </Show>
         }
       >
-        {(plugin) => <PluginDetail plugin={plugin()} onBack={props.onBack} onInstall={props.onInstall} />}
+        {(plugin) => <PluginDetail plugin={plugin()} onBack={props.onBack} />}
       </Show>
     </Show>
   )
@@ -424,7 +424,7 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; installed?: boolean;
 }
 
 /** An installed plugin's page: how it loads, whether it is healthy, and where its module lives. */
-function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onInstall: () => void }) {
+function PluginDetail(props: { plugin: PluginInfo; onBack: () => void }) {
   const language = useLanguage()
 
   const failed = () => (props.plugin.state.status === "failed" ? props.plugin.state : undefined)
@@ -546,14 +546,6 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onInstall
                 {state().error}
               </p>
             )}
-          </Show>
-
-          <Show when={props.plugin.source.type !== "builtin"}>
-            <p class="explore-note explore-catalog-detail-note">{language.t("explore.plugins.detail.install")}</p>
-
-            <Button size="small" variant="neutral" icon="plus" onClick={props.onInstall}>
-              {language.t("explore.plugins.install")}
-            </Button>
           </Show>
         </div>
       </div>
