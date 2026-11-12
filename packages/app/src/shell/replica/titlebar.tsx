@@ -65,7 +65,7 @@ export function ReplicaTitleBar(props: {
     if (route.type !== "session") return
     const ctx = global.serverCtx(route.server)
     const session = ctx?.data.session.get(route.sessionId)
-    const conn = servers.list().find((item) => ServerConnection.key(item) === route.server)
+    const conn = servers.list.find((item) => ServerConnection.key(item) === route.server)
 
     if (!ctx || !session) return
 
