@@ -1,6 +1,7 @@
 import type { PluginInfo } from "@opencode/client"
 import { Button } from "@opencode/ui/button"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
+import { Progress } from "@opencode/ui/progress"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Icon } from "@opencode/ui/icon"
 import { TextInput } from "@opencode/ui/text-input"
@@ -589,7 +590,7 @@ function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () =
       showToast({ variant: "success", title: language.t("explore.plugins.uninstall.success", { name: name() }) })
     } catch (error) {
       console.error("plugin uninstall failed", error)
-      setState({ busy: false, error: language.t("explore.plugins.uninstall.failed") })
+      setState({ busy: false, error: language.t(unsupportedRoute(error) ? "explore.plugins.unsupported" : "explore.plugins.uninstall.failed") })
     }
   }
 
@@ -603,6 +604,10 @@ function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () =
       </DialogHeader>
 
       <DialogBody class="explore-install-body">
+        <Show when={state.busy}>
+          <Progress indeterminate aria-label={language.t("explore.plugins.uninstall.installing")} />
+        </Show>
+
         <Show when={state.error}>
           {(message) => (
             <p class="explore-form-error" role="alert">
@@ -622,4 +627,10 @@ function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () =
       </DialogFooter>
     </Dialog>
   )
+}
+
+/** A server built before this feature answers 404 for the route, which the user fixes by updating it. */
+function unsupportedRoute(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return /\b404\b|not found/i.test(message)
 }

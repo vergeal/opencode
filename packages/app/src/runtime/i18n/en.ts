@@ -1069,6 +1069,8 @@ export const dict = {
   "explore.plugins.uninstall.description": "Remove {{name}}? Its tools and skills stop working right away.",
   "explore.plugins.uninstall.success": "{{name}} uninstalled",
   "explore.plugins.uninstall.failed": "Uninstall failed. Try again.",
+  "explore.plugins.unsupported": "This build does not support plugin management yet. Update OpenCode, then try again.",
+  "explore.plugins.uninstall.installing": "Uninstalling…",
   "explore.plugins.install.success": "Installed {{name}}",
   "explore.plugins.installed": "Installed",
   "explore.plugins.enabled": "Enabled {{name}}",

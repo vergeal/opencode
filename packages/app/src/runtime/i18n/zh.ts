@@ -769,6 +769,8 @@ export const dict = {
   "explore.plugins.uninstall.description": "要卸载 {{name}} 吗？它提供的工具和技能会立刻不可用。",
   "explore.plugins.uninstall.success": "{{name}} 已卸载",
   "explore.plugins.uninstall.failed": "卸载失败，请重试。",
+  "explore.plugins.unsupported": "当前版本还不支持插件管理，请更新 OpenCode 后重试。",
+  "explore.plugins.uninstall.installing": "正在卸载…",
   "explore.plugins.install.success": "已安装 {{name}}",
   "explore.plugins.installed": "已安装",
   "explore.plugins.enabled": "已启用 {{name}}",

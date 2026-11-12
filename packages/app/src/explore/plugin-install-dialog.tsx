@@ -3,6 +3,7 @@ import { PluginIcon } from "@/explore/plugin-icon"
 import type { CatalogPlugin } from "@/explore/catalog"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
+import { Progress } from "@opencode/ui/progress"
 import { TextInput } from "@opencode/ui/text-input"
 import { Show } from "solid-js"
 import { createStore } from "solid-js/store"
@@ -158,7 +159,7 @@ function BundleInstallDialog(props: { entry: CatalogPlugin; onInstalled?: () => 
     } catch (error) {
       // Keep the user-facing copy short; the detail belongs in the console for a bug report.
       console.error("plugin install failed", error)
-      setState({ busy: false, error: language.t("explore.plugins.bundle.failed") })
+      setState({ busy: false, error: language.t(unsupported(error) ? "explore.plugins.unsupported" : "explore.plugins.bundle.failed") })
     }
   }
 
@@ -171,6 +172,10 @@ function BundleInstallDialog(props: { entry: CatalogPlugin; onInstalled?: () => 
       </DialogHeader>
 
       <DialogBody class="explore-install-body">
+        <Show when={state.busy}>
+          <Progress indeterminate aria-label={language.t("explore.plugins.bundle.installing")} />
+        </Show>
+
         <div class="explore-install-head">
           <span class="explore-install-head-icon">
             <PluginIcon />
@@ -229,4 +234,10 @@ function BundleInstallDialog(props: { entry: CatalogPlugin; onInstalled?: () => 
       </DialogFooter>
     </Dialog>
   )
+}
+
+/** A server built before this feature answers 404 for the route, which the user fixes by updating it. */
+function unsupported(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return /\b404\b|not found/i.test(message)
 }
