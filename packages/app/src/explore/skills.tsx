@@ -3,7 +3,6 @@ import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { Icon } from "@opencode/ui/icon"
-import { Loader } from "@opencode/ui/loader"
 import { Switch } from "@opencode/ui/switch"
 import { TextInput } from "@opencode/ui/text-input"
 import { Textarea } from "@opencode/ui/textarea"
@@ -17,6 +16,7 @@ import { useData } from "@/runtime/server/current"
 import { useLayout } from "@/shell/state/layout"
 import { showToast } from "@/shell/notifications/toast"
 import "./explore.css"
+import { ExploreSkeleton } from "./skeleton"
 
 const groups = {
   project: "settings.skills.group.project",
@@ -366,15 +366,7 @@ export const ExploreSkills: Component = () => {
             )}
           </Show>
 
-          <Show
-            when={!state.syncing || skills().length > 0}
-            fallback={
-              <div class="explore-loading" role="status" aria-busy="true">
-                <Loader />
-                <span>{language.t("explore.skills.loading")}</span>
-              </div>
-            }
-          >
+          <Show when={!state.syncing || skills().length > 0} fallback={<ExploreSkeleton rows={6} />}>
             <Show
               when={filtered().length > 0}
               fallback={

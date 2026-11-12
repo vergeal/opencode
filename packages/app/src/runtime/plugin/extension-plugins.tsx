@@ -19,7 +19,13 @@ import { useReservedPlugins } from "./root"
  * The plugins a server lists, for the Plugins tab of Extensions. Only the desktop app's own server (`own`) runs its
  * plugins' GUIs in this window, so only its rows add the window's controls; other servers and the web list names.
  */
-export function ExtensionPlugins(props: { plugins: readonly PluginInfo[]; own: boolean; showSource?: boolean }) {
+export function ExtensionPlugins(props: {
+  plugins: readonly PluginInfo[]
+  own: boolean
+  showSource?: boolean
+  selected?: string
+  onSelect?: (id: string) => void
+}) {
   const listed = () => props.plugins.filter((plugin) => plugin.source.type !== "builtin")
 
   return (
@@ -28,8 +34,10 @@ export function ExtensionPlugins(props: { plugins: readonly PluginInfo[]; own: b
       fallback={
         <SettingsList variant="catalog">
           <For each={listed()}>
-            {(plugin) => (
-              <div class="settings-extension-row">
+            {(plugin) => {
+              const id = plugin.id ?? pluginLabel(plugin)
+
+              const lead = (
                 <div class="settings-extension-lead">
                   <Icon name="cube" class="text-v2-icon-icon-muted shrink-0" />
                   <span class="settings-extension-name truncate">{pluginLabel(plugin)}</span>
@@ -37,13 +45,31 @@ export function ExtensionPlugins(props: { plugins: readonly PluginInfo[]; own: b
                     <PluginSource source={plugin.source.type} />
                   </Show>
                 </div>
-              </div>
-            )}
+              )
+
+              return props.onSelect ? (
+                <button
+                  type="button"
+                  class="settings-extension-row explore-plugin-row"
+                  data-selected={props.selected === id ? "" : undefined}
+                  onClick={() => props.onSelect?.(id)}
+                >
+                  {lead}
+                </button>
+              ) : (
+                <div class="settings-extension-row">{lead}</div>
+              )
+            }}
           </For>
         </SettingsList>
       }
     >
-      <OwnServerPlugins plugins={listed()} showSource={props.showSource} />
+      <OwnServerPlugins
+        plugins={listed()}
+        showSource={props.showSource}
+        selected={props.selected}
+        onSelect={props.onSelect}
+      />
     </Show>
   )
 }
@@ -55,7 +81,7 @@ const sourceLabels = {
   sdk: "explore.plugins.source.sdk",
 } as const
 
-function PluginSource(props: { source: PluginInfo["source"]["type"] }) {
+export function PluginSource(props: { source: PluginInfo["source"]["type"] }) {
   const language = useLanguage()
 
   return <Badge>{language.t(sourceLabels[props.source])}</Badge>
@@ -66,7 +92,12 @@ function PluginSource(props: { source: PluginInfo["source"]["type"] }) {
  * switch that turns off only the desktop UI, Reload, status and errors, and rows for plugins main lists that the
  * server list does not name. Built-ins always run and stay hidden unless they failed, which only this list reports.
  */
-function OwnServerPlugins(props: { plugins: readonly PluginInfo[]; showSource?: boolean }) {
+function OwnServerPlugins(props: {
+  plugins: readonly PluginInfo[]
+  showSource?: boolean
+  selected?: string
+  onSelect?: (id: string) => void
+}) {
   const language = useLanguage()
   const host = usePluginHost()
   const bridge = usePlatform().plugins
@@ -162,52 +193,63 @@ function OwnServerPlugins(props: { plugins: readonly PluginInfo[]; showSource?: 
     const part = input.builtin ? "builtin" : "config"
     const live = () => (state() === "loaded" ? input.id : undefined)
 
-    return (
-      <div class="settings-extension-row">
-        <div class="settings-extension-lead">
-          <Icon name="cube" class="text-v2-icon-icon-muted shrink-0" />
-          <div class="flex min-w-0 flex-col gap-0.5">
-            <div class="settings-provider-main">
-              <bdi dir="ltr" class="settings-extension-name truncate">
-                {input.name}
-              </bdi>
-              <Show when={live()}>
-                {(id) => (
-                  <>
-                    <Show when={props.showSource && input.source}>
-                      {(source) => <PluginSource source={source()} />}
-                    </Show>
-                    <Show when={input.builtin}>
-                      <Badge>{language.t("settings.plugins.builtin")}</Badge>
-                    </Show>
-                    {/* The parts besides the desktop UI that this row's switch leaves running. */}
-                    <Show when={itemOf(id(), part)?.server}>
-                      <Badge>{language.t("settings.plugins.part.server")}</Badge>
-                    </Show>
-                    <Show when={itemOf(id(), part)?.tui}>
-                      <Badge>{language.t("settings.plugins.part.tui")}</Badge>
-                    </Show>
-                    <Show when={status(id(), part)}>
-                      {(label) => <span class="text-11-regular text-v2-text-text-muted">{label()}</span>}
-                    </Show>
-                  </>
-                )}
-              </Show>
-            </div>
+    const leadContent = (
+      <>
+        <Icon name="cube" class="text-v2-icon-icon-muted shrink-0" />
+        <div class="flex min-w-0 flex-col gap-0.5">
+          <div class="settings-provider-main">
+            <bdi dir="ltr" class="settings-extension-name truncate">
+              {input.name}
+            </bdi>
             <Show when={live()}>
-              {(id) => <Show when={errorOf(id(), part)}>{(error) => <PluginError error={error()} />}</Show>}
-            </Show>
-            <Show when={state() === "unsupported"}>
-              <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.plugins.unsupported")}</span>
-            </Show>
-            <Show when={state() === "unreadable" && input.id && itemOf(input.id, part)?.error}>
-              {(error) => <PluginError error={error()} />}
-            </Show>
-            <Show when={state() === "reserved"}>
-              <span class="settings-server-dialog-error">{language.t("settings.plugins.reserved")}</span>
+              {(id) => (
+                <>
+                  <Show when={props.showSource && input.source}>{(source) => <PluginSource source={source()} />}</Show>
+                  <Show when={input.builtin}>
+                    <Badge>{language.t("settings.plugins.builtin")}</Badge>
+                  </Show>
+                  {/* The parts besides the desktop UI that this row's switch leaves running. */}
+                  <Show when={itemOf(id(), part)?.server}>
+                    <Badge>{language.t("settings.plugins.part.server")}</Badge>
+                  </Show>
+                  <Show when={itemOf(id(), part)?.tui}>
+                    <Badge>{language.t("settings.plugins.part.tui")}</Badge>
+                  </Show>
+                  <Show when={status(id(), part)}>
+                    {(label) => <span class="text-11-regular text-v2-text-text-muted">{label()}</span>}
+                  </Show>
+                </>
+              )}
             </Show>
           </div>
+          <Show when={live()}>
+            {(id) => <Show when={errorOf(id(), part)}>{(error) => <PluginError error={error()} />}</Show>}
+          </Show>
+          <Show when={state() === "unsupported"}>
+            <span class="text-11-regular text-v2-text-text-muted">{language.t("settings.plugins.unsupported")}</span>
+          </Show>
+          <Show when={state() === "unreadable" && input.id && itemOf(input.id, part)?.error}>
+            {(error) => <PluginError error={error()} />}
+          </Show>
+          <Show when={state() === "reserved"}>
+            <span class="settings-server-dialog-error">{language.t("settings.plugins.reserved")}</span>
+          </Show>
         </div>
+      </>
+    )
+
+    return (
+      <div class="settings-extension-row">
+        <Show when={input.id && props.onSelect} fallback={<div class="settings-extension-lead">{leadContent}</div>}>
+          <button
+            type="button"
+            class="settings-extension-lead explore-plugin-select"
+            data-selected={props.selected === input.id ? "" : undefined}
+            onClick={() => input.id && props.onSelect?.(input.id)}
+          >
+            {leadContent}
+          </button>
+        </Show>
         <Show when={live()}>
           {(id) => (
             <div class="settings-servers-actions">
