@@ -18,7 +18,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { useSettings } from "@/settings/model"
 import { useServer } from "@/runtime/server/current"
 import { useWorkspaceLocation } from "@/workspaces/location"
-import { Timeline, TimelineRow } from "@opencode/session-ui/timeline/projection"
+import { Timeline, TimelineRow, isInterruptedError } from "@opencode/session-ui/timeline/projection"
 import { createSessionTimelineRowRenderer } from "@opencode/session-ui/timeline/row"
 import { getReadyMarkdown, preloadMarkdown } from "@opencode/session-ui/markdown-cache"
 import { createTimelineController, type TimelineController, type TimelineSessionSource } from "./controller"
@@ -40,7 +40,12 @@ import {
 import { SessionHeaderSpacer } from "@/session/header/session-header"
 import { SessionHeaderGap } from "@/session/header/drag-area"
 import { SessionWorkingIndicator } from "@/session/header/session-working-indicator"
-import { SessionAssistantActivity, SessionWorkedHeader, SessionWorkingHeader } from "./working-activity"
+import {
+  SessionAssistantActivity,
+  SessionInterruptedHeader,
+  SessionWorkedHeader,
+  SessionWorkingHeader,
+} from "./working-activity"
 import { buildWorkingStep } from "./working-step"
 
 type BlockingTask = { type: "shell" | "subagent"; partID: string; id?: string; label?: string }
@@ -517,6 +522,27 @@ function MessageTimelineView(
     return result
   })
 
+  // A stopped turn ends with an aborted assistant message, so `workedHeaders` drops it and the turn would otherwise
+  // settle with no header at all. It gets its own footer instead, stating that the user interrupted it.
+  const interruptedHeaders = createMemo(() => {
+    const result = new Map<string, { started: number; completed: number }>()
+    const active = projection.activeMessageID()
+    const running = sessionStatus().type !== "idle"
+
+    for (const [turnID, messages] of projection.assistantMessagesByParent()) {
+      if (running && turnID === active) continue
+      const last = messages.at(-1)
+
+      if (!last?.time.completed || last.retry || !isInterruptedError(last.error)) continue
+      result.set(turnID, {
+        started: messageByID().get(turnID)?.time.created ?? messages[0]!.time.created,
+        completed: last.time.completed,
+      })
+    }
+
+    return result
+  })
+
   const [expandedTurns, setExpandedTurns] = createSignal<ReadonlySet<string>>(new Set())
 
   const toggleWorked = (turnID: string) =>
@@ -588,6 +614,7 @@ function MessageTimelineView(
   const firstAssistantRowKeys = createMemo(() => {
     const active = projection.activeMessageID()
     const headers = workedHeaders()
+    const interrupted = interruptedHeaders()
     const collapsed = collapsedRowKeys()
     const keys = new Set<string>()
     const seen = new Set<string>()
@@ -598,7 +625,12 @@ function MessageTimelineView(
       if (collapsed.has(TimelineRow.key(row))) continue
 
       seen.add(row.userMessageID)
-      if (!headers.has(row.userMessageID) && !(showWorking() && row.userMessageID === active)) continue
+      if (
+        !headers.has(row.userMessageID) &&
+        !interrupted.has(row.userMessageID) &&
+        !(showWorking() && row.userMessageID === active)
+      )
+        continue
 
       keys.add(TimelineRow.key(row))
     }
@@ -678,21 +710,35 @@ function MessageTimelineView(
                   <Show
                     when={showWorking() && row().userMessageID === projection.activeMessageID()}
                     fallback={
-                      <Show when={workedHeaders().get(row().userMessageID)}>
-                        {(header) => (
-                          <div class={`w-full pb-[15px] pt-4 ${turnPadding()}`}>
-                            <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
-                              <SessionWorkedHeader
-                                started={header().started}
-                                completed={header().completed}
-                                expandable={workedFinalAnswer().has(row().userMessageID)}
-                                expanded={expandedTurns().has(row().userMessageID)}
-                                onToggle={() => toggleWorked(row().userMessageID)}
-                              />
+                      <>
+                        <Show when={workedHeaders().get(row().userMessageID)}>
+                          {(header) => (
+                            <div class={`w-full pb-[15px] pt-4 ${turnPadding()}`}>
+                              <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                                <SessionWorkedHeader
+                                  started={header().started}
+                                  completed={header().completed}
+                                  expandable={workedFinalAnswer().has(row().userMessageID)}
+                                  expanded={expandedTurns().has(row().userMessageID)}
+                                  onToggle={() => toggleWorked(row().userMessageID)}
+                                />
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </Show>
+                          )}
+                        </Show>
+                        <Show when={interruptedHeaders().get(row().userMessageID)}>
+                          {(header) => (
+                            <div class={`w-full pb-[15px] pt-4 ${turnPadding()}`}>
+                              <div classList={{ "md:max-w-session md:mx-auto": props.centered }}>
+                                <SessionInterruptedHeader
+                                  started={header().started}
+                                  completed={header().completed}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </Show>
+                      </>
                     }
                   >
                     <div class={`w-full pb-[15px] pt-4 ${turnPadding()}`}>

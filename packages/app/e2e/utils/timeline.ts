@@ -614,6 +614,10 @@ export function status(type: SessionStatus["type"], attempt = 1, id = sessionID)
   })
 }
 
+export function interrupted(reason: "user" | "shutdown" | "superseded" | "inactivity" = "user", id = sessionID) {
+  return makeEvent("session.execution.interrupted", { sessionID: id, reason })
+}
+
 export function stepStarted(message: SessionMessageAssistant) {
   return makeEvent("session.step.started", {
     sessionID,

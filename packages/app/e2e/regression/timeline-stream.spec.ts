@@ -15,6 +15,7 @@ import {
   directory,
   inboxDelivered,
   inboxEnqueued,
+  interrupted,
   messageUpdated,
   partDelta,
   partUpdated,
@@ -1194,6 +1195,37 @@ test.describe("Working", () => {
     expect(Math.abs(after!.x - before!.x)).toBeLessThanOrEqual(1)
     // Settling must not push the answer further down.
     expect((await answer.boundingBox())!.y - (after!.y + after!.height)).toBeCloseTo(gapBefore, 0)
+  })
+
+  test("settles a stopped turn as Interrupted and leaves its steps visible", async ({ page }) => {
+    const assistant = assistantMessage(
+      [
+        textPart("prt_interrupted_note", "Checking the file first."),
+        toolPart("prt_interrupted_command", "shell", "completed", { command: "bun test" }),
+      ],
+      { completed: false },
+    )
+    const timeline = await setupTimeline(page, { messages: [userMessage(), assistant] })
+
+    const working = page.locator('[data-component="session-working"]')
+    await expect(working).toBeVisible()
+
+    await timeline.send(
+      messageUpdated({ ...assistant, error: { type: "aborted", message: "Step interrupted" } }),
+    )
+    await timeline.send(interrupted())
+
+    const stopped = page.locator('[data-component="session-interrupted"]')
+    const worked = page.locator('[data-component="session-worked"]')
+    await expect(stopped).toBeVisible()
+    await expect(stopped).toContainText("Interrupted for")
+    await expect(page.locator('[data-slot="session-interrupted-divider"]')).toBeVisible()
+    await expect(working).toHaveCount(0)
+    await expect(worked).toHaveCount(0)
+    // A stopped turn never folds: the steps it was in the middle of stay readable under the header.
+    await expect(stopped.getByRole("button")).toHaveCount(0)
+    await expect(page.getByText("Checking the file first.", { exact: true })).toBeVisible()
+    await expect(page.getByText("bun test", { exact: true })).toBeVisible()
   })
 
   test("folds the working steps behind Worked and keeps the final answer", async ({ page }) => {

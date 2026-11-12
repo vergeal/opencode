@@ -30,6 +30,8 @@ import {
 } from "./turn-phase-machine"
 
 export { TimelineRow, type PartGroup, type PartRef, type TimelineRowMap, type TurnPhase }
+// Callers that decide how a settled turn reads need the same interruption test the projection uses.
+export { isInterruptedError }
 
 export type ReasoningMode = "hidden" | "compact" | "full"
 

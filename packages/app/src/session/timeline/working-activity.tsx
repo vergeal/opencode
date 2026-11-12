@@ -64,14 +64,41 @@ export function SessionWorkedHeader(props: {
   expanded?: boolean
   onToggle?: () => void
 }) {
+  return <SettledHeader state="worked" {...props} />
+}
+
+// A turn the user stopped settles as interrupted instead of worked. It never folds: the steps it was in the middle
+// of stay visible under the header, which is what the user wants to see after stopping a run.
+export function SessionInterruptedHeader(props: { started: number; completed: number }) {
+  return <SettledHeader state="interrupted" started={props.started} completed={props.completed} />
+}
+
+function SettledHeader(props: {
+  state: "worked" | "interrupted"
+  started: number
+  completed: number
+  expandable?: boolean
+  expanded?: boolean
+  onToggle?: () => void
+}) {
   const language = useLanguage()
   const duration = () => Math.max(0, props.completed - props.started)
   const showDuration = () => duration() >= 1000
+  const label = () =>
+    language.t(
+      props.state === "interrupted"
+        ? showDuration()
+          ? "session.interrupted.for"
+          : "session.interrupted"
+        : showDuration()
+          ? "session.worked.for"
+          : "session.worked",
+    )
   const content = () => (
     <>
-      <span>{language.t(showDuration() ? "session.worked.for" : "session.worked")}</span>
+      <span>{label()}</span>
       <Show when={showDuration()}>
-        <span data-slot="session-worked-duration" class="tabular-nums">
+        <span data-slot={`session-${props.state}-duration`} class="tabular-nums">
           {formatWorkingDuration(duration())}
         </span>
       </Show>
@@ -93,7 +120,7 @@ export function SessionWorkedHeader(props: {
   )
 
   return (
-    <div data-component="session-worked" role="status" class="min-w-0 w-full">
+    <div data-component={`session-${props.state}`} role="status" class="min-w-0 w-full">
       <Show when={props.expandable} fallback={row()}>
         <button
           type="button"
@@ -105,7 +132,7 @@ export function SessionWorkedHeader(props: {
           {row()}
         </button>
       </Show>
-      <div data-slot="session-worked-divider" class="mt-2 w-full border-t border-v2-border-border-muted" />
+      <div data-slot={`session-${props.state}-divider`} class="mt-2 w-full border-t border-v2-border-border-muted" />
     </div>
   )
 }
