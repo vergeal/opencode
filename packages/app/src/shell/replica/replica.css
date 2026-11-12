@@ -146,19 +146,20 @@ html[data-replica-window="acrylic"] [data-slot="replica-workbench"] {
   background: transparent;
 }
 
-/* Acrylic shows the desk through a neutral blur, which reads lighter than the workbench in dark mode and washed out
-   in light mode. These tints sit closer to the theme surface so the chrome reads as the same sheet of glass, while
-   the remaining part still lets the backdrop through. macOS needs no equivalent: vibrancy already does this tinting. */
+/* Acrylic only blurs the desk, so the chrome needs a tint over it. */
 html[data-replica-window="acrylic"] [data-replica] {
-  --color-titlebar: rgb(250 250 250 / 84%);
-  --color-rail: rgb(246 246 246 / 84%);
-  --color-sidebar: rgb(252 252 252 / 84%);
+  --color-titlebar: rgb(246 246 246 / 95%);
+  --color-rail: rgb(246 246 246 / 95%);
+  --color-sidebar: rgb(252 252 252 / 95%);
 }
 
+/* The frame has to stay a step darker than the workbench or its rounded cutout turns into a bright notch (see the
+   dark-mode history in this file). Over acrylic the frame is tint mixed with the wallpaper, so the tint is pressed
+   to near black in dark mode: 5% of even a white wallpaper still lands under the panel's 15. */
 [data-color-scheme="dark"][data-replica-window="acrylic"] [data-replica] {
-  --color-titlebar: rgb(8 8 8 / 84%);
-  --color-rail: rgb(8 8 8 / 84%);
-  --color-sidebar: rgb(21 21 21 / 84%);
+  --color-titlebar: rgb(0 0 0 / 95%);
+  --color-rail: rgb(0 0 0 / 95%);
+  --color-sidebar: rgb(21 21 21 / 95%);
 }
 
 /* Windows rounds the window itself, but the page still paints square corners underneath it. Clip the frame to the
