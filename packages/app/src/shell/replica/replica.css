@@ -70,8 +70,8 @@
 
   /* The dock leaves 14px under the card; a taller blur would be clipped by the work area's bottom edge. */
   --shadow-composer: 0 2px 12px rgba(0, 0, 0, 0.05);
-  /* The main panel is inset by the shell gutter, which also clips anything wider than it, so the lift stays inside. */
-  --shadow-panel: 0 1px 2px rgb(0 0 0 / 6%), 0 3px 7px -2px rgb(0 0 0 / 12%);
+  /* The panel sheds this shadow onto the title bar and rail, so it needs a soft falloff rather than a 1px ring. */
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 8%), 0 4px 12px -2px rgb(0 0 0 / 12%);
   --shadow-popover: 0 6px 24px rgba(0, 0, 0, 0.1);
   --shadow-dialog: 0 16px 44px rgba(0, 0, 0, 0.15);
 
@@ -113,7 +113,7 @@
   --color-send-bg: var(--v2-background-bg-layer-04);
   --color-send-fg: var(--v2-text-text-contrast);
   /* The work area is darker than its backdrop here, so the lift needs more weight to read in dark mode. */
-  --shadow-panel: 0 1px 2px rgb(0 0 0 / 45%), 0 3px 7px -2px rgb(0 0 0 / 50%);
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 45%), 0 4px 12px -2px rgb(0 0 0 / 50%);
 }
 
 /* One titlebar split at the sidebar boundary: window controls on the left, conversation title on the right. */
@@ -189,7 +189,8 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  /* The workbench shadow paints past this grid into the title bar and the rail; the window frame still clips it. */
+  overflow: visible;
 }
 
 /* The sidebar and the conversation are one main panel, rounded as a whole. A 1px gutter on every side matches the
