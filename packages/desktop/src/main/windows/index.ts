@@ -22,6 +22,7 @@ import {
   windowAppearance,
   wireFocus,
   wireFullscreen,
+  wireReload,
   wireZoom,
 } from "./appearance"
 import { registerRendererProtocol, setProtocolReporter } from "./protocol"
@@ -195,6 +196,7 @@ export const mainWindows = Effect.fn("Window.make")(function* () {
     })
     register(win, id)
     wireFullscreen(win)
+    wireReload(win)
     wireFocus(win)
 
     if (!early) loadWindow(win, "index.html")

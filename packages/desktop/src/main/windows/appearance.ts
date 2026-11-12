@@ -151,6 +151,21 @@ export function wireFullscreen(win: BrowserWindow) {
   win.on("leave-full-screen", () => send(false))
 }
 
+// Windows and Linux install no native application menu, so the reload role's Ctrl+R never exists there. Handle the
+// key on the window itself; macOS keeps its menu accelerator.
+export function wireReload(win: BrowserWindow) {
+  if (process.platform === "darwin") return
+
+  win.webContents.on("before-input-event", (event, input) => {
+    if (input.type !== "keyDown") return
+    if (!input.control || input.shift || input.alt || input.meta) return
+    if (input.key.toLowerCase() !== "r") return
+
+    event.preventDefault()
+    win.webContents.reload()
+  })
+}
+
 export function wireFocus(win: BrowserWindow) {
   const send = (focused: boolean) => {
     if (win.isDestroyed() || win.webContents.isDestroyed()) return
