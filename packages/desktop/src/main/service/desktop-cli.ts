@@ -65,7 +65,8 @@ const make = Effect.fn("DesktopCli.resolve")(function* () {
         // Bun's transpiler cache key includes the define table, and the dev version changes on every
         // run. Reading it from the inherited environment keeps the define fixed and the cache warm.
         command: [
-          "bun",
+          // Electron's executable is not Bun, and Windows may not resolve the Bun shim through PATH.
+          process.env.OPENCODE_DESKTOP_BUN ?? "bun",
           "run",
           "--cwd",
           development,

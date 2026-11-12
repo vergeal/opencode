@@ -9,6 +9,9 @@ const MAX_SUMMARY = 200
 
 const MAX_FLAGS = 60
 
+// Summaries are optional; a provider that never answers must not leave the import running forever.
+const REVIEW_TIMEOUT_MS = 30_000
+
 export type LibraryReview = {
   summary?: string
   /** Documents that clearly do not help the library, as described when it was created. */
@@ -57,7 +60,10 @@ export async function reviewLibrary(input: {
   ].join("\n")
 
   try {
-    const result = await input.api.generate.text({ prompt, small: true })
+    const result = await input.api.generate.text(
+      { prompt, small: true },
+      { signal: AbortSignal.timeout(REVIEW_TIMEOUT_MS) },
+    )
     const text = result.text?.trim()
 
     if (!text) return { irrelevant: [] }
