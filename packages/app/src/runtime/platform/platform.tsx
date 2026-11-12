@@ -229,6 +229,8 @@ export type Platform = PlatformBase &
         os?: DesktopOS
         /** The window sits on a system-drawn backdrop, so the shell may draw translucent chrome instead of fills. */
         glass?: boolean
+        /** Average brightness (0–255) of the desktop wallpaper, used to size the faked glass tint on Windows. */
+        wallpaperLuma?: number
         /** Stable platform window identity for window-scoped persistence */
         windowID: string
         openDirectoryPickerDialog(opts?: OpenDirectoryPickerOptions): Promise<PickerPaths>

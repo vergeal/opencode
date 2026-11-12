@@ -4,6 +4,7 @@ import { windowBootstrapArgument, type WindowBootstrap } from "../../shared/wind
 import { FIRST_LAUNCH_ONBOARDING_COMPLETE_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
 import { translucentWindow } from "./defaults"
+import { wallpaperLuma } from "./wallpaper"
 
 // The settings store is already in memory when a window is created, so the renderer gets the
 // answers its shell gate would otherwise ask for over IPC. A fresh install has no onboarding
@@ -16,6 +17,7 @@ export function windowBootstrap(id: string): WindowBootstrap {
     firstLaunchPending: Predicate.isBoolean(complete) ? !complete : undefined,
     packaged: app.isPackaged,
     glass: translucentWindow(),
+    wallpaperLuma: process.platform === "win32" ? wallpaperLuma() : undefined,
   }
 }
 

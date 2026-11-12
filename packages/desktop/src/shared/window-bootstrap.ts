@@ -7,6 +7,8 @@ export type WindowBootstrap = {
   packaged?: boolean
   /** The window sits on a system-drawn backdrop (macOS vibrancy, Windows acrylic), so the shell may draw glass. */
   glass?: boolean
+  /** Average brightness (0–255) of the desktop wallpaper, sampled once at startup to size the fake glass tint. */
+  wallpaperLuma?: number
 }
 
 const prefix = "--opencode-window="
