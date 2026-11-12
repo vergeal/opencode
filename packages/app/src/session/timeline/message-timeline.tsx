@@ -609,6 +609,13 @@ function MessageTimelineView(
     return keys
   })
 
+  // The first prompt keeps a gap under the window bar, the way the composer keeps one at the other end.
+  const firstUserRowKey = createMemo(() => {
+    const row = projection.rows().find((row) => Predicate.isTagged(row, "UserMessage"))
+
+    return row ? TimelineRow.key(row) : undefined
+  })
+
   // A turn header already supplies the gap above the turn's first assistant row. Clear that row's own text margin
   // for settled turns as well, otherwise the gap jumps from 15px to 39px when Working settles into Worked.
   const firstAssistantRowKeys = createMemo(() => {
@@ -700,7 +707,16 @@ function MessageTimelineView(
               <>
                 <Show
                   when={firstAssistantRowKeys().has(TimelineRow.key(row()))}
-                  fallback={<rowRenderer.Row row={row} onSizeChange={onSizeChange} />}
+                  fallback={
+                    <Show
+                      when={firstUserRowKey() === TimelineRow.key(row())}
+                      fallback={<rowRenderer.Row row={row} onSizeChange={onSizeChange} />}
+                    >
+                      <div data-session-first-message>
+                        <rowRenderer.Row row={row} onSizeChange={onSizeChange} />
+                      </div>
+                    </Show>
+                  }
                 >
                   <div data-session-first-assistant>
                     <rowRenderer.Row row={row} onSizeChange={onSizeChange} />

@@ -303,6 +303,16 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   display: none;
 }
 
+/* Without the title row the first prompt would start on the window bar's edge. It keeps the gap the composer leaves
+   at the other end, and rows scrolling up fade out at the top edge instead of ending on a hard cut. */
+[data-replica] [data-session-first-message] {
+  padding-block-start: 20px;
+}
+
+[data-replica] [data-slot="session-timeline-scroll"] > .scroll-view__viewport {
+  --session-timeline-fade-top: 20px;
+}
+
 [data-slot="replica-main"] {
   position: relative;
   display: flex;
