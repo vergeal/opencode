@@ -105,10 +105,10 @@ const source = (entry: Info & { readonly removed: boolean }) =>
       initial: (value) => renderBlock(entry.key, value),
       changed: (_previous, value) =>
         [
-          `The context under "${entry.key}" changed and supersedes the previous value:`,
+          `"${entry.key}" 下的上下文有变化，取代之前的值：`,
           renderBlock(entry.key, value),
         ].join("\n"),
-      removed: () => `The context under "${entry.key}" no longer applies. Disregard it.`,
+      removed: () => `"${entry.key}" 下的上下文已不再适用，请忽略。`,
     },
   })
 

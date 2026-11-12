@@ -81,7 +81,7 @@ const client = Layer.mock(LLMClient.Service)({
       Stream.drain,
       Stream.concat(
         Stream.make(
-          LLMEvent.textDelta({ id: "summary", text: "## Objective\n- manual summary" }),
+          LLMEvent.textDelta({ id: "summary", text: "## 目标\n- manual summary" }),
           LLMEvent.stepFinish({
             index: 0,
             reason: { normalized: "stop" },
@@ -130,11 +130,11 @@ const it = testEffect(
 test("compaction prompt preserves detailed work state and relevant files", () => {
   const prompt = SessionCompaction.buildPrompt(false)
 
-  expect(prompt).toContain("## Work State")
-  expect(prompt).toContain("### Completed")
-  expect(prompt).toContain("### Active")
-  expect(prompt).toContain("### Blocked")
-  expect(prompt).toContain("## Relevant Files")
+  expect(prompt).toContain("## 工作状态")
+  expect(prompt).toContain("### 已完成")
+  expect(prompt).toContain("### 进行中")
+  expect(prompt).toContain("### 受阻")
+  expect(prompt).toContain("## 相关文件")
 })
 
 it.effect("compaction describes tool media without embedding base64", () =>
@@ -150,7 +150,7 @@ it.effect("compaction describes tool media without embedding base64", () =>
       },
     ])
 
-    expect(recent).toContain("[Tool result]: Image read successfully\n[Attached image/png: pixel.png]")
+    expect(recent).toContain("[工具结果]：Image read successfully\n[附件 image/png：pixel.png]")
     expect(recent).not.toContain(base64)
   }),
 )
@@ -165,8 +165,8 @@ it.effect("compaction truncation does not split surrogate pairs", () =>
       { type: "text", text: "😀".repeat(1_250) },
     ])
 
-    expect(split).toEndWith(`[Tool result]: ${prefix}😀\n[truncated]`)
-    expect(whole).toEndWith(`[Tool result]: ${"😀".repeat(1_250)}`)
+    expect(split).toEndWith(`[工具结果]：${prefix}😀\n[已截断]`)
+    expect(whole).toEndWith(`[工具结果]：${"😀".repeat(1_250)}`)
   }),
 )
 
@@ -180,8 +180,8 @@ it.effect("summaries written before kept-message references keep their stored re
     const legacy = {
       status: "completed" as const,
       reason: "auto" as const,
-      summary: "## Objective\n- legacy",
-      recent: "[User]: Kept question as flattened then",
+      summary: "## 目标\n- legacy",
+      recent: "[用户]：Kept question as flattened then",
       time: { created: 0 },
     }
     yield* db
@@ -200,7 +200,7 @@ it.effect("summaries written before kept-message references keep their stored re
     const [compaction] = yield* store.context(id)
     expect(compaction).toMatchObject({
       type: "compaction",
-      metadata: { recent: "[User]: Kept question as flattened then" },
+      metadata: { recent: "[用户]：Kept question as flattened then" },
     })
     expect(compaction).not.toHaveProperty("recent")
   }),
@@ -216,7 +216,7 @@ it.effect("forks rebuild the recent text of a summary they copied", () =>
     expect(yield* compactManually(session, messages)).toEqual({ status: "completed" })
     const store = yield* SessionStore.Service
     const [parent] = yield* store.context(parentID)
-    expect(parent).toMatchObject({ type: "compaction", metadata: { recent: "[User]: Kept question" } })
+    expect(parent).toMatchObject({ type: "compaction", metadata: { recent: "[用户]：Kept question" } })
 
     const bus = yield* Bus.Service
     yield* bus.publish(SessionEvent.Forked, {
@@ -225,7 +225,7 @@ it.effect("forks rebuild the recent text of a summary they copied", () =>
       boundary: { type: "through", messageID: parent.id },
     })
     const [child] = yield* store.context(childID)
-    expect(child).toMatchObject({ type: "compaction", metadata: { recent: "[User]: Kept question" } })
+    expect(child).toMatchObject({ type: "compaction", metadata: { recent: "[用户]：Kept question" } })
     expect(child.metadata?.keepID).not.toBe(parent.metadata?.keepID)
   }),
 )
@@ -240,7 +240,7 @@ it.effect("ignores non-message keepID strings when loading history or forking", 
       type: "compaction",
       status: "completed",
       reason: "manual",
-      summary: "## Objective\n- plugin summary",
+      summary: "## 目标\n- plugin summary",
       metadata: { keepID: "not-a-msg-id" },
       time: { created: DateTime.makeUnsafe(0) },
     })
@@ -331,7 +331,7 @@ it.effect("history never decodes rows before the latest compaction or its kept t
     const history = yield* SessionHistory.load(db, id, resolved.ref)
     expect(toLLMMessages(history, resolved.ref)).toEqual(
       toLLMMessages(
-        [{ ...compaction, metadata: { keepID: kept.id, recent: "[User]: Kept question" } }, tail],
+        [{ ...compaction, metadata: { keepID: kept.id, recent: "[用户]：Kept question" } }, tail],
         resolved.ref,
       ),
     )
@@ -359,21 +359,21 @@ const textUser = (text: string) =>
 test("compaction prompt requires the checkpoint headings in order", () => {
   const prompt = SessionCompaction.buildPrompt(false)
   expect(prompt.match(/^#{2,3} .+$/gm)).toEqual([
-    "## Objective",
-    "## Requirements",
-    "## Decisions",
-    "## Work State",
-    "### Completed",
-    "### Active",
-    "### Blocked",
-    "## Next Move",
-    "## Relevant Files",
-    "## Important Context",
+    "## 目标",
+    "## 需求",
+    "## 决策",
+    "## 工作状态",
+    "### 已完成",
+    "### 进行中",
+    "### 受阻",
+    "## 下一步",
+    "## 相关文件",
+    "## 重要上下文",
   ])
 })
 
 test("compaction update prompt rewrites legacy checkpoints only when asked", () => {
-  const rewrite = "The existing checkpoint was written with an earlier format"
+  const rewrite = "已有的 checkpoint 是用更早的格式写的"
   expect(SessionCompaction.buildPrompt(true, true)).toContain(rewrite)
   expect(SessionCompaction.buildPrompt(true)).not.toContain(rewrite)
   expect(SessionCompaction.buildPrompt(false, true)).not.toContain(rewrite)
@@ -381,7 +381,7 @@ test("compaction update prompt rewrites legacy checkpoints only when asked", () 
 
 test("compaction prompts prohibit task execution", () => {
   for (const update of [false, true])
-    expect(SessionCompaction.buildPrompt(update)).toContain("Do not continue the task or call tools")
+    expect(SessionCompaction.buildPrompt(update)).toContain("不要继续任务，也不要调用工具")
 })
 
 it.effect("auto compaction estimates current content against the buffered prompt ceiling", () =>
@@ -676,7 +676,7 @@ it.effect("manual compaction summarizes short context instead of no-op", () =>
     yield* hooks.register("session", "compaction", (event) =>
       Effect.sync(() => {
         hooked = event.messages.length
-        expect(JSON.stringify(event.messages)).not.toContain("Summarize only what")
+        expect(JSON.stringify(event.messages)).not.toContain("只总结用户和 assistant")
       }),
     )
     const messages = [
@@ -707,7 +707,7 @@ it.effect("manual compaction summarizes short context instead of no-op", () =>
       status: "completed",
     })
     expect(Array.from(yield* Fiber.join(delta)).map((event) => event.data.text)).toEqual([
-      "## Objective\n- manual summary",
+      "## 目标\n- manual summary",
     ])
 
     expect(requests).toHaveLength(1)
@@ -728,14 +728,14 @@ it.effect("manual compaction summarizes short context instead of no-op", () =>
     expect(JSON.stringify(requests[0]?.messages)).toContain("Use Effect services and generators.")
     expect(JSON.stringify(requests[0]?.messages)).toContain("User shell pwd completed: /project")
     expect(requests[0]?.messages).toHaveLength(hooked + 1)
-    expect(JSON.stringify(requests[0]?.messages.at(-1))).toContain("Summarize only what")
+    expect(JSON.stringify(requests[0]?.messages.at(-1))).toContain("只总结用户和 assistant")
     expect(JSON.stringify(requests[0]?.messages)).not.toContain("display-only-output")
     // The compaction message carries its own request usage so clients can show what compacting cost.
     expect(yield* store.context(sessionID)).toMatchObject([
       {
         type: "compaction",
         reason: "manual",
-        summary: "## Objective\n- manual summary",
+        summary: "## 目标\n- manual summary",
         cost: 0.0000233,
         tokens: { input: 10, output: 4, reasoning: 2, cache: { read: 3, write: 2 } },
       },
@@ -770,8 +770,8 @@ it.effect("summary updates include the retained tail in compaction hooks and the
         type: "compaction",
         status: "completed",
         reason: "auto",
-        summary: "## Objective\n- Previous objective",
-        metadata: { recent: "[User]: Previous exact request" },
+        summary: "## 目标\n- Previous objective",
+        metadata: { recent: "[用户]：Previous exact request" },
         time: { created: DateTime.makeUnsafe(0) },
       }),
       SessionMessage.User.make({
@@ -917,7 +917,7 @@ it.effect("compaction hooks can supply the summary instead of the model", () =>
         expect(event.sessionID).toBe(sessionID)
         expect(event.agent).toBe(Agent.defaultID)
         expect(JSON.stringify(event.messages)).toContain("Hooked compaction should see this conversation.")
-        event.result = { summary: "## Objective\n- hooked summary" }
+        event.result = { summary: "## 目标\n- hooked summary" }
       }),
     )
 
@@ -928,7 +928,7 @@ it.effect("compaction hooks can supply the summary instead of the model", () =>
     expect(contexts).toBe(0)
     expect(requests).toEqual([])
     expect(yield* store.context(sessionID)).toMatchObject([
-      { type: "compaction", reason: "manual", summary: "## Objective\n- hooked summary" },
+      { type: "compaction", reason: "manual", summary: "## 目标\n- hooked summary" },
     ])
     expect(
       yield* db
@@ -1249,10 +1249,10 @@ it.effect("automatic compaction swaps in the background summary without another 
       {
         type: "compaction",
         reason: "auto",
-        summary: "## Objective\n- manual summary",
+        summary: "## 目标\n- manual summary",
         metadata: {
           keepID: history.anchor.id,
-          recent: "[Assistant]: Second answer\n\n[User]: Third question\n\n[Assistant]: Third answer",
+          recent: "[助手]：Second answer\n\n[用户]：Third question\n\n[助手]：Third answer",
         },
         tokens: { input: 10, output: 4, reasoning: 2, cache: { read: 3, write: 2 } },
       },

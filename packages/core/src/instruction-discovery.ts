@@ -121,7 +121,7 @@ export function configured(options?: Options) {
 export const node = configured()
 
 function render(files: ReadonlyArray<File>) {
-  return files.map((file) => `Instructions from: ${file.path}\n${file.content}`).join("\n\n")
+  return files.map((file) => `来自以下文件的指令：${file.path}\n${file.content}`).join("\n\n")
 }
 
 function renderUpdate(previous: ReadonlyArray<File>, current: ReadonlyArray<File>) {
@@ -132,17 +132,17 @@ function renderUpdate(previous: ReadonlyArray<File>, current: ReadonlyArray<File
     (before, after) => before.content !== after.content,
   )
   const parts = [
-    ...changes.removed.map((file) => `The instructions from ${file.path} no longer apply.`),
-    ...changes.added.map((file) => `New instructions apply from:\n${render([file])}`),
+    ...changes.removed.map((file) => `来自 ${file.path} 的指令不再适用。`),
+    ...changes.added.map((file) => `新的指令开始生效：\n${render([file])}`),
     ...changes.changed.map(({ previous: before, current: after }) => {
       const patch = createPatch(after.path, before.content, after.content, "", "", { context: 3 })
       const diff = [
-        `The instructions from ${after.path} changed. Here's the diff:`,
+        `来自 ${after.path} 的指令有变化。差异如下：`,
         "```diff",
         patch.slice(patch.indexOf("@@")).trimEnd(),
         "```",
       ].join("\n")
-      const replacement = `The instructions changed:\n${render([after])}`
+      const replacement = `指令有变化：\n${render([after])}`
       return diff.length < replacement.length ? diff : replacement
     }),
   ]

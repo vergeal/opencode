@@ -170,63 +170,63 @@ const PRECOMPUTED_TAIL_SHARE = 0.4
 /** Failed background summaries after which no new one starts until the next compaction. */
 const PRECOMPUTE_MAX_FAILURES = 2
 
-const SUMMARY_TEMPLATE = `You MUST use this format for your response (you may omit sections that aren't applicable). Do not include the <template> tags in your response.
+const SUMMARY_TEMPLATE = `你必须使用以下格式回复（不适用的章节可以省略）。不要在回复中包含 <template> 标签。
 <template>
-## Objective
-- [one or two brief sentences describing what the user is trying to accomplish]
+## 目标
+- [用一两句话描述用户想达成什么]
 
-## Requirements
-- [constraints, preferences, requirements, and scope boundaries stated by the user, or "(none)"]
+## 需求
+- [用户提出的约束、偏好、要求和范围边界；没有就写「无」]
 
-## Decisions
-- [decisions already made and why, or "(none)"]
+## 决策
+- [已经做出的决定及原因；没有就写「无」]
 
-## Work State
-Break the objective into smaller goals and report which are completed, which are being worked on, and which are blocked.
-### Completed
-- [goals that have been completed; otherwise "(none)"]
+## 工作状态
+把目标拆成更小的目标，说明哪些已完成、哪些进行中、哪些被阻塞。
+### 已完成
+- [已完成的目标；没有就写「无」]
 
-### Active
-- [goals currently being worked on; otherwise "(none)"]
+### 进行中
+- [正在处理的目标；没有就写「无」]
 
-### Blocked
-- [anything blocking progress, and why; otherwise "(none)"]
+### 受阻
+- [阻碍进展的事项及原因；没有就写「无」]
 
-## Next Move
-1. [ordered list of next actions, or "(none)"]
+## 下一步
+1. [按顺序排列的后续动作；没有就写「无」]
 
-## Relevant Files
-List the files and directories, other than the current working directory, that another agent would need to open to continue this work. Include at most 15, most important first. Do not list every file that was read or changed. Include paths outside the current working directory when relevant. If none, write "(none)".
-- \`[file or directory path]\`: [brief reason it matters]
+## 相关文件
+列出另一个 agent 继续这项工作需要打开的文件和目录（当前工作目录除外）。最多 15 个，最重要的在前。不要列出每个读过或改过的文件。相关时包含当前工作目录之外的路径。没有就写「无」。
+- \`[文件或目录路径]\`：[它为什么重要的简短理由]
 
-## Important Context
-- [facts the next agent cannot continue without and cannot easily find on its own; or "(none)"]
+## 重要上下文
+- [下一个 agent 没有它就无法继续、且自己不容易找到的事实；没有就写「无」]
 </template>`
 
-const SUMMARY_RULES = `Rules:
-- Keep each section concise. Use terse, single-line bullets, not prose paragraphs or nested lists.
-- Prefer short references over detailed restatement. It is fine to leave out information the next agent can recover from the code or the files listed above.
-- Preserve exact file paths, symbols, commands, error strings, URLs, and identifiers.
-- Carry forward only user questions or requests that remain unanswered or require further action. Do not repeat ones that newer history has answered or resolved. Preserve exact wording when carrying one forward.
-- Preserve consequential workflow state, including whether changes are uncommitted, committed, pushed, under review, or merged.
-- Do not mention the summary process or that context was compacted.`
+const SUMMARY_RULES = `规则：
+- 每个章节保持简洁。用简短的单行条目，不要写散文段落或嵌套列表。
+- 优先用简短引用，不要详细复述。下一个 agent 能从代码或上面列出的文件里找回的信息可以省略。
+- 保留精确的文件路径、符号、命令、错误信息、URL 和标识符。
+- 只保留尚未回答或仍需后续处理的问题和请求。较新的历史已经回答或解决的不要重复。保留原话。
+- 保留关键的工作流状态，包括改动是否未提交、已提交、已推送、在评审中或已合并。
+- 不要提到总结过程，也不要提到上下文被压缩过。`
 
 export const buildPrompt = (update: boolean, legacy = false) => {
   const shared = [
-    "Summarize only what the user and the assistant said and did. Leave out instructions and setup the assistant was given rather than told by the user: repository conventions, instruction files such as AGENTS.md, and environment details like the session ID. The next agent receives current versions of all of these separately.",
+    "只总结用户和 assistant 说过和做过的事。不要写 assistant 收到的、而非用户提出的指令和设置：仓库约定、AGENTS.md 这类指令文件、会话 ID 这类环境细节。下一个 agent 会单独收到这些内容的当前版本。",
     SUMMARY_TEMPLATE,
     SUMMARY_RULES,
-    "Do not continue the task or call tools.",
-    "Return only the structured summary in the requested format. Do not include a preamble, explanation, or other commentary.",
+    "不要继续任务，也不要调用工具。",
+    "只返回要求格式的结构化摘要。不要加前言、解释或其他评论。",
   ]
   if (!update) {
     return [
-      "You MUST summarize the conversation above into a structured summary that will be given to another agent to resume the work.",
+      "你必须把上面的对话总结成结构化摘要，交给另一个 agent 继续工作。",
       ...shared,
     ].join("\n\n")
   }
   return [
-    "Update the existing checkpoint in the conversation above into one consolidated summary.",
+    "把上面对话里已有的 checkpoint 更新成一份合并后的摘要。",
     // Before #48058 (Sep 2026), summaries kept nearly everything: every file touched, per-edit changelogs,
     // restated AGENTS.md conventions, and an "Additional Context" section that grew on every update. The
     // preserve-first update prompt would carry that detail forward indefinitely, so a checkpoint from that
@@ -234,18 +234,18 @@ export const buildPrompt = (update: boolean, legacy = false) => {
     // updates skip this. Remove once no session still in use has a latest checkpoint older than #48058.
     ...(legacy
       ? [
-          "The existing checkpoint was written with an earlier format that recorded far more detail than this one asks for. Rewrite it at the level of detail described below rather than carrying its detail forward. Keep its requirements, decisions, and open questions; they came from earlier conversation with the user.",
+          "已有的 checkpoint 是用更早的格式写的，记录的细节比现在要求的更多。按下面描述的详细程度重写，不要把这些细节带过来。保留其中的需求、决策和未解决的问题；它们来自之前与用户的对话。",
         ]
       : []),
-    "Newer history always takes precedence over the existing checkpoint. Preserve previous information unless newer history clearly contradicts, supersedes, resolves, or makes it stale. If something is no longer relevant to continuing the work, you may remove it.",
-    "Incorporate newer requirements, decisions, progress, and context. Reconcile Work State and Next Move: move completed work out of Active, remove resolved blockers and answered questions, and preserve unresolved or pending work.",
-    "Return only the updated Markdown sections. Do not reproduce the `<conversation-checkpoint>`, `<summary>`, or `<recent-context>` wrapper tags from the previous checkpoint.",
+    "较新的历史总是优先于已有 checkpoint。保留之前的信息，除非较新的历史明确与它矛盾、取代它、解决它或使它过时。如果某项内容不再与继续工作相关，可以删除。",
+    "纳入较新的需求、决策、进展和上下文。校准「工作状态」和「下一步」：把已完成的工作移出「进行中」，移除已解决的阻塞和已回答的问题，保留未解决或待处理的工作。",
+    "只返回更新后的 Markdown 章节。不要重复上一个 checkpoint 里的 `<conversation-checkpoint>`、`<summary>` 或 `<recent-context>` 包装标签。",
     ...shared,
   ].join("\n\n")
 }
 
 const NUDGE =
-  "The previous response did not fill in the required summary template. Do not call tools. Return the summary as text using the exact section headings from the template."
+  "上一条回复没有按要求填写摘要模板。不要调用工具。用模板里的确切章节标题，以文本形式返回摘要。"
 
 /** Summaries written with the previous template carry this catch-all heading. */
 const LEGACY_HEADING = "## Additional Context"
@@ -754,7 +754,7 @@ export const layer = Layer.effect(
       ]
       if (exchanges.length === 0) return undefined
       const note = (omitted: number) =>
-        omitted ? `[${omitted} older ${omitted === 1 ? "exchange" : "exchanges"} omitted]\n\n` : ""
+        omitted ? `[已省略更早的 ${omitted} 轮对话]\n\n` : ""
       const size = (text: string) => (text ? Token.estimate(text) + 1 : 0)
       // Room for the longest possible note is set aside before choosing what to keep.
       const room =
@@ -1075,25 +1075,25 @@ const flattenMessage = (message: Message, level: number) => {
       if (part.type === "text") {
         if (!part.text) return []
         const text = level >= USER_ONLY ? clip(part.text) : part.text
-        return [`[${message.role === "user" ? "User" : "Assistant"}]: ${text}`]
+        return [`[${message.role === "user" ? "用户" : "助手"}]：${text}`]
       }
       if (level >= USER_ONLY) return []
-      if (part.type === "media") return [`[${part.media.mediaType} omitted]`]
+      if (part.type === "media") return [`[${part.media.mediaType} 已省略]`]
       if (part.type === "tool-call") {
         const input = JSON.stringify(part.input) ?? ""
-        return [`[Assistant tool call]: ${part.name}(${level >= OUTPUTS_REMOVED ? clip(input) : input})`]
+        return [`[助手工具调用]：${part.name}(${level >= OUTPUTS_REMOVED ? clip(input) : input})`]
       }
       if (part.type !== "tool-result") return []
       const result = part.result
-      const label = result.type === "error" ? "Tool error" : "Tool result"
-      if (level >= OUTPUTS_REMOVED) return [`[${label} omitted]`]
+      const label = result.type === "error" ? "工具错误" : "工具结果"
+      if (level >= OUTPUTS_REMOVED) return [`[${label}已省略]`]
       const output =
         result.type === "content"
           ? SessionRecentText.serializeToolContent(result.value)
           : typeof result.value === "string"
             ? result.value
             : (JSON.stringify(result.value) ?? "")
-      return [`[${label}]: ${level >= OUTPUTS_CLIPPED ? clip(output) : output}`]
+      return [`[${label}]：${level >= OUTPUTS_CLIPPED ? clip(output) : output}`]
     })
     .join("\n")
 }
@@ -1105,7 +1105,7 @@ const clip = (value: string) => {
   if (chars.length <= TRANSCRIPT_CLIP) return value
   const half = TRANSCRIPT_CLIP / 2
   const omitted = chars.length - TRANSCRIPT_CLIP
-  return `${chars.slice(0, half).join("")}\n[… ${omitted} characters omitted …]\n${chars.slice(-half).join("")}`
+  return `${chars.slice(0, half).join("")}\n[… 省略 ${omitted} 个字符 …]\n${chars.slice(-half).join("")}`
 }
 
 /** The newest whole, real user messages within `keep` tokens: no synthetic guidance, no half of an attachment. */

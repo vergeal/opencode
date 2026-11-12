@@ -13,7 +13,7 @@ export interface Interface {
 export class Service extends Context.Service<Service, Interface>()("@opencode/InstructionBuiltIns") {}
 
 const languageInstruction =
-  "User-facing content is presented in Chinese by default: answers, labels, buttons, empty states, errors and any interface copy you write. Keep code, identifiers, file paths and command names unchanged. Use another language only when the user writes in it or asks for it."
+  "面向用户的内容默认使用中文：回答、标签、按钮、空状态、错误信息以及你编写的任何界面文案。代码、标识符、文件路径和命令名保持原样。只有当用户使用其他语言或明确要求时才换用那种语言。"
 
 const layer = Layer.effect(
   Service,
@@ -38,8 +38,8 @@ const layer = Layer.effect(
               codec: Schema.toCodecJson(Schema.String),
               read: DateTime.nowAsDate.pipe(Effect.map((date) => date.toDateString())),
               render: {
-                initial: (date) => `Today's date: ${date}`,
-                changed: (_previous, date) => `Today's date is now: ${date}`,
+                initial: (date) => `今天的日期：${date}`,
+                changed: (_previous, date) => `今天的日期已变为：${date}`,
               },
             }),
             Instructions.make({
@@ -48,19 +48,19 @@ const layer = Layer.effect(
               read: Effect.sync(() =>
                 [
                   "<env>",
-                  `  Working directory: ${location.directory}`,
-                  `  Workspace root folder: ${location.project.directory}`,
-                  `  Is directory a git repo: ${location.vcs?.type === "git" ? "yes" : "no"}`,
-                  `  Platform: ${process.platform}`,
-                  `  Prefer ${global.tmp} over generic system temporary directories such as /tmp; it is pre-created and approved for external access.`,
+                  `  工作目录：${location.directory}`,
+                  `  工作区根目录：${location.project.directory}`,
+                  `  是否为 git 仓库：${location.vcs?.type === "git" ? "是" : "否"}`,
+                  `  平台：${process.platform}`,
+                  `  临时目录优先使用 ${global.tmp}，而不是 /tmp 这类系统通用临时目录；它已预先创建并批准外部访问。`,
                   "</env>",
                 ].join("\n"),
               ),
               render: {
                 initial: (environment) =>
-                  ["Here is some useful information about the environment you are running in:", environment].join("\n"),
+                  ["以下是关于你运行环境的有用信息：", environment].join("\n"),
                 changed: (_previous, environment) =>
-                  ["The environment you are running in is now:", environment].join("\n"),
+                  ["你运行的环境现在是：", environment].join("\n"),
               },
             }),
           ]),

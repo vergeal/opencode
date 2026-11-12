@@ -23,46 +23,46 @@ export const messageToText = (message: SessionMessage.Info | SessionStored.User)
     case "user": {
       const skills =
         message.skills?.flatMap((skill) =>
-          skill.text === undefined ? [] : [`[Skill activated: ${skill.name}]\n${skill.text}`],
+          skill.text === undefined ? [] : [`[技能已激活：${skill.name}]\n${skill.text}`],
         ) ?? []
       const files =
         message.files?.map((file) => {
-          const name = file.name ?? (file.source.type === "uri" ? file.source.uri : "inline attachment")
-          return `[Attached ${file.mime}: ${name}]`
+          const name = file.name ?? (file.source.type === "uri" ? file.source.uri : "内联附件")
+          return `[附件 ${file.mime}：${name}]`
         }) ?? []
-      return [...skills, `[User]: ${message.text}`, ...files].join("\n")
+      return [...skills, `[用户]：${message.text}`, ...files].join("\n")
     }
 
     case "location-switched":
-      return `[User]: The working directory has been changed to ${message.location.directory}.`
+      return `[用户]：工作目录已切换为 ${message.location.directory}。`
 
     case "assistant":
       return message.content
         .flatMap((part) => {
-          if (part.type === "text") return [`[Assistant]: ${part.text}`]
+          if (part.type === "text") return [`[助手]：${part.text}`]
           // Providers return summaries of the real reasoning, and written out as text it can read like an attempt to
           // extract the model's thinking.
           if (part.type === "reasoning") return []
 
           const input = typeof part.state.input === "string" ? part.state.input : JSON.stringify(part.state.input)
-          const call = `[Assistant tool call]: ${part.name}(${input})`
+          const call = `[助手工具调用]：${part.name}(${input})`
           if (part.state.status === "completed") {
-            return [call, `[Tool result]: ${truncateToolOutput(serializeToolContent(part.state.content))}`]
+            return [call, `[工具结果]：${truncateToolOutput(serializeToolContent(part.state.content))}`]
           }
-          if (part.state.status === "error") return [call, `[Tool error]: ${part.state.error.message}`]
+          if (part.state.status === "error") return [call, `[工具错误]：${part.state.error.message}`]
           return [call]
         })
         .join("\n")
 
     case "synthetic":
-      return `[Synthetic context]: ${message.text}`
+      return `[合成上下文]：${message.text}`
 
     case "skill":
-      return `[Skill activated: ${message.name}]\n${message.text}`
+      return `[技能已激活：${message.name}]\n${message.text}`
 
     case "shell":
       if (message.metadata?.background === true) return ""
-      return `[Shell]: ${message.command}\n${truncateToolOutput(message.output?.output ?? "")}`
+      return `[Shell 命令]：${message.command}\n${truncateToolOutput(message.output?.output ?? "")}`
 
     default:
       return ""
@@ -81,13 +81,13 @@ export const truncateToolOutput = (value: string) => {
     kept++
   }
   if (end === value.length) return value
-  return `${value.slice(0, end)}\n[truncated]`
+  return `${value.slice(0, end)}\n[已截断]`
 }
 
 export const serializeToolContent = (content: ReadonlyArray<SessionMessage.ToolStateCompleted["content"][number]>) =>
   content
     .map((item) => {
       if (item.type === "text") return item.text
-      return `[Attached ${item.mime}${item.name === undefined ? "" : `: ${item.name}`}]`
+      return `[附件 ${item.mime}${item.name === undefined ? "" : `：${item.name}`}]`
     })
     .join("\n")

@@ -24,11 +24,11 @@ const entries = (skills: ReadonlyArray<Summary>) =>
 
 const render = (skills: ReadonlyArray<Summary>) =>
   [
-    "Skills provide specialized instructions and workflows for specific tasks.",
-    "Use the skill tool to load a skill when a task matches its description.",
-    "The user may also invoke a skill directly. When that happens, its instructions appear in the conversation as a <skill_content> block, the same shape the skill tool returns. A skill that is already present this way does not need to be invoked again.",
+    "技能（skill）为特定任务提供专门的指令和工作流。",
+    "当任务与某个技能的描述匹配时，用 skill 工具加载它。",
+    "用户也可能直接调用技能。这种情况下，它的指令会以 <skill_content> 块出现在对话里，形状与 skill 工具返回的一致。已经以这种方式出现的技能不需要再次调用。",
     ...(skills.length === 0
-      ? ["No skills are currently available."]
+      ? ["当前没有可用的技能。"]
       : ["<available_skills>", ...entries(skills), "</available_skills>"]),
   ].join("\n")
 
@@ -38,10 +38,10 @@ const update = Instructions.listUpdate<Summary>({
   entries,
   render,
   text: {
-    replaced: "The available skills have changed. This list supersedes the previous available skills list.",
-    added: "New skills are available in addition to those previously listed:",
-    changed: "The following skills have changed. Each entry replaces the previously listed skill with the same ID:",
-    removed: (ids) => `The following skill IDs are no longer available and must not be used: ${ids}.`,
+    replaced: "可用技能已变化。本列表取代之前的可用技能列表。",
+    added: "除了之前列出的技能，新增了以下技能：",
+    changed: "以下技能有变化。每一项替换之前列出的同一 ID 的技能：",
+    removed: (ids) => `以下技能 ID 已不可用，不得再使用：${ids}。`,
   },
 })
 
@@ -73,7 +73,7 @@ const layer = Layer.effect(
           render: {
             initial: render,
             changed: update,
-            removed: () => "Skill guidance is no longer available. Do not use any previously listed skill.",
+            removed: () => "技能指引已不可用。不要再使用任何之前列出的技能。",
           },
         })
       }),

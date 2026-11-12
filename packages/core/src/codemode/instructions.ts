@@ -8,21 +8,21 @@ import { CodeModeCatalog } from "./catalog.js"
 // prettier-ignore
 const prompt = (hasMoreTools: boolean) => `# Code Mode
 
-The tools listed below${hasMoreTools ? ", and \`search\`," : ""} cannot be called directly: they only work as JavaScript inside the \`execute\` tool. Every other tool you have is a normal tool call: call it directly, never inside \`execute\`.
+下面列出的工具${hasMoreTools ? "，以及 \`search\`，" : ""}不能直接调用：它们只能作为 JavaScript 在 \`execute\` 工具内部调用。其他工具都是普通工具调用，直接在回复中调用，绝不要放进 \`execute\` 里。
 
-${hasMoreTools ? `The catalog is partial. Before calling a tool that is not listed below, find it with the global \`search(...)\` function. Do not guess tool names. Each result's \`path\` is the complete call expression: write it out as code, for example \`await tools.ns.tool_name({ ... })\`. Do not use it as a key such as \`tools[path]\`.
+${hasMoreTools ? `目录并不完整。调用下面没有列出的工具前，先用全局 \`search(...)\` 查找。不要猜工具名。每条结果里的 \`path\` 就是完整的调用表达式：把它写成代码，例如 \`await tools.ns.tool_name({ ... })\`。不要把它当成键名，例如 \`tools[path]\`。
 
-- ${searchSignature}` : "The catalog is complete. Do not guess tool names."}
+- ${searchSignature}` : "目录是完整的。不要猜工具名。"}
 
-Every other tool you can call, such as \`shell\`, \`grep\`, \`glob\` or \`read\`, is a native tool. Call it directly in the response; it is not reachable as \`tools.<name>\` inside \`execute\`.
+其他可调用的工具，例如 \`shell\`、\`grep\`、\`glob\` 或 \`read\`，都是原生工具。直接在回复中调用；它们不能通过 \`execute\` 里的 \`tools.<name>\` 访问。
 
-## Code Mode tools (call only inside \`execute\`)
+## Code Mode 工具（只能在 \`execute\` 内调用）
 
-## Available tools`
+## 可用工具`
 
 export function render(catalog: CodeModeCatalog.Summary) {
   if (catalog.total === 0)
-    return "No Code Mode tools are currently available. Later Code Mode catalog updates may add or remove tools. Do not call `execute` unless there is at least one available Code Mode tool."
+    return "当前没有可用的 Code Mode 工具。之后的目录更新可能会加入或移除工具。至少有一个可用工具时才可以调用 `execute`。"
 
   const tools = catalog.namespaces.flatMap((namespace) => {
     return [CodeModeCatalog.namespaceLine(namespace), ...namespace.entries.map((entry) => entry.line)]
@@ -34,7 +34,7 @@ ${tools.join("\n")}`
 }
 
 export function update(previous: CodeModeCatalog.Summary, current: CodeModeCatalog.Summary) {
-  const replacement = `The Code Mode tool catalog has changed. This catalog supersedes the previous Code Mode tool catalog.
+  const replacement = `Code Mode 工具目录已变化。本目录取代之前的 Code Mode 工具目录。
 
 ${render(current)}`
   if (current.total === 0) return replacement
@@ -70,26 +70,26 @@ ${render(current)}`
     const changed = namespaces.added.length > 0 || namespaces.removed.length > 0 || namespaces.changed.length > 0
     if (!changed) return replacement
 
-    const parts = ["The Code Mode tool catalog has changed."]
+    const parts = ["Code Mode 工具目录已变化。"]
     if (namespaces.added.length > 0) {
       parts.push(
-        `New tool namespaces are available: ${namespaces.added
-          .map((namespace) => `\`${namespace.name}\` (${namespace.count} tools)`)
-          .join(", ")}.`,
+        `新增了这些工具命名空间：${namespaces.added
+          .map((namespace) => `\`${namespace.name}\`（${namespace.count} 个工具）`)
+          .join("、")}。`,
       )
     }
     if (namespaces.changed.length > 0) {
       parts.push(
-        `The following namespace inventories changed; search them again before relying on previous results: ${namespaces.changed
-          .map((change) => `\`${change.current.name}\` now has ${change.current.count} tools`)
-          .join(", ")}.`,
+        `以下命名空间的工具清单有变化；依赖之前的结果前请重新搜索：${namespaces.changed
+          .map((change) => `\`${change.current.name}\` 现在有 ${change.current.count} 个工具`)
+          .join("、")}。`,
       )
     }
     if (namespaces.removed.length > 0) {
       parts.push(
-        `The following tool namespaces are no longer available and must not be used: ${namespaces.removed
+        `以下工具命名空间已不可用，不得再使用：${namespaces.removed
           .map((namespace) => `\`${namespace.name}\``)
-          .join(", ")}.`,
+          .join("、")}。`,
       )
     }
     const delta = parts.join("\n\n")
@@ -98,11 +98,11 @@ ${render(current)}`
   }
 
   if (!entriesChanged) return replacement
-  const parts = ["The Code Mode tool catalog has changed."]
+  const parts = ["Code Mode 工具目录已变化。"]
   if (diff.added.length > 0) {
     parts.push(
       [
-        "New tools are available in addition to those previously listed:",
+        "除了之前列出的工具，新增了以下工具：",
         ...diff.added.map((entry) => entry.line),
       ].join("\n"),
     )
@@ -110,16 +110,16 @@ ${render(current)}`
   if (diff.changed.length > 0) {
     parts.push(
       [
-        "Changed tool listings supersede the previously listed ones:",
+        "有变化的工具条目取代之前列出的条目：",
         ...diff.changed.map((change) => change.current.line),
       ].join("\n"),
     )
   }
   if (diff.removed.length > 0) {
     parts.push(
-      `The following tools are no longer available and must not be called: ${diff.removed
+      `以下工具已不可用，不得再调用：${diff.removed
         .map((entry) => toolExpression(entry.path))
-        .join(", ")}.`,
+        .join("、")}。`,
     )
   }
   const delta = parts.join("\n\n")
@@ -139,7 +139,7 @@ export const make = (inventory?: CodeModeCatalog.Inventory): Instructions.List =
     render: {
       initial: render,
       changed: update,
-      removed: () => "Code Mode tools are no longer available. Do not use any previously listed Code Mode tools.",
+      removed: () => "Code Mode 工具已不可用。不要再使用任何之前列出的 Code Mode 工具。",
     },
   })
 }

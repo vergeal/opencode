@@ -166,7 +166,7 @@ describe("InstructionDiscovery", () => {
         })
       })
       const modified = (yield* readUpdate(yield* discovery.load(), initial)).text
-      expect(modified).toContain("The instructions from /repo/AGENTS.md changed. Here's the diff:")
+      expect(modified).toContain("来自 /repo/AGENTS.md 的指令有变化。差异如下：")
       expect(modified).toContain("-old\n+new")
       expect(modified).not.toContain("global")
 
@@ -180,16 +180,16 @@ describe("InstructionDiscovery", () => {
         })
       })
       expect((yield* readUpdate(yield* discovery.load(), rewritten)).text).toBe(
-        "The instructions changed:\nInstructions from: /repo/AGENTS.md\nnew",
+        "指令有变化：\n来自以下文件的指令：/repo/AGENTS.md\nnew",
       )
 
       yield* discovery.transform((editor) => {
         editor.add(file("/repo/packages/AGENTS.md", "package"))
       })
       const structural = (yield* readUpdate(yield* discovery.load(), initial)).text
-      expect(structural).toContain("The instructions from /global/AGENTS.md no longer apply.")
-      expect(structural).toContain("New instructions apply from:\nInstructions from: /repo/packages/AGENTS.md\npackage")
-      expect(structural).not.toContain("Instructions from: /global/AGENTS.md\nglobal")
+      expect(structural).toContain("来自 /global/AGENTS.md 的指令不再适用。")
+      expect(structural).toContain("新的指令开始生效：\n来自以下文件的指令：/repo/packages/AGENTS.md\npackage")
+      expect(structural).not.toContain("来自以下文件的指令：/global/AGENTS.md\nglobal")
     }).pipe(Effect.provide(AppNodeBuilder.build(LayerNode.group([InstructionDiscovery.node, Bus.node])))),
   )
 })
@@ -236,10 +236,10 @@ describe("ConfigInstructionPlugin.Plugin", () => {
           const initialized = yield* readInitial(yield* discovery.load())
           expect(initialized.text).toBe(
             [
-              `Instructions from: ${globalFile}\nglobal`,
-              `Instructions from: ${packageFile}\npackage`,
-              `Instructions from: ${projectFile}\nproject`,
-              `Instructions from: ${sharedFile}\nshared`,
+              `来自以下文件的指令：${globalFile}\nglobal`,
+              `来自以下文件的指令：${packageFile}\npackage`,
+              `来自以下文件的指令：${projectFile}\nproject`,
+              `来自以下文件的指令：${sharedFile}\nshared`,
             ].join("\n\n"),
           )
           expect(initialized.text).not.toContain("outside")
@@ -247,14 +247,14 @@ describe("ConfigInstructionPlugin.Plugin", () => {
           yield* Effect.promise(() => fs.writeFile(packageFile, "changed"))
           yield* emitAndWait({ type: "update", path: packageFile })
           const changed = (yield* readUpdate(yield* discovery.load(), initialized)).text
-          expect(changed).toContain(`The instructions changed:\nInstructions from: ${packageFile}\nchanged`)
-          expect(changed).not.toContain(`Instructions from: ${globalFile}\nglobal`)
+          expect(changed).toContain(`指令有变化：\n来自以下文件的指令：${packageFile}\nchanged`)
+          expect(changed).not.toContain(`来自以下文件的指令：${globalFile}\nglobal`)
 
           yield* Effect.promise(() => fs.rm(packageFile))
           yield* emitAndWait({ type: "delete", path: packageFile })
           const removed = (yield* readUpdate(yield* discovery.load(), initialized)).text
-          expect(removed).toContain(`The instructions from ${packageFile} no longer apply.`)
-          expect(removed).not.toContain(`Instructions from: ${globalFile}\nglobal`)
+          expect(removed).toContain(`来自 ${packageFile} 的指令不再适用。`)
+          expect(removed).not.toContain(`来自以下文件的指令：${globalFile}\nglobal`)
 
           yield* Effect.promise(() => fs.rm(globalFile))
           yield* emitAndWait({ type: "delete", path: globalFile })
@@ -321,21 +321,21 @@ describe("ConfigInstructionPlugin.Plugin", () => {
           // The unreachable URL and missing file are skipped without making AGENTS.md unavailable.
           expect(initialized.text).toBe(
             [
-              `Instructions from: ${agents}\nagents`,
-              `Instructions from: ${first}\nfirst`,
-              `Instructions from: ${second}\nsecond`,
-              `Instructions from: ${absolute}\nabsolute`,
-              `Instructions from: ${homeFile}\nhome`,
-              `Instructions from: ${noteTop}\nnote top`,
-              `Instructions from: ${noteNested}\nnote nested`,
-              `Instructions from: ${remote}\nremote`,
+              `来自以下文件的指令：${agents}\nagents`,
+              `来自以下文件的指令：${first}\nfirst`,
+              `来自以下文件的指令：${second}\nsecond`,
+              `来自以下文件的指令：${absolute}\nabsolute`,
+              `来自以下文件的指令：${homeFile}\nhome`,
+              `来自以下文件的指令：${noteTop}\nnote top`,
+              `来自以下文件的指令：${noteNested}\nnote nested`,
+              `来自以下文件的指令：${remote}\nremote`,
             ].join("\n\n"),
           )
 
           yield* Effect.promise(() => fs.writeFile(first, "changed"))
           yield* emitAndWait({ type: "update", path: first })
           expect((yield* readUpdate(yield* discovery.load(), initialized)).text).toBe(
-            `The instructions changed:\nInstructions from: ${first}\nchanged`,
+            `指令有变化：\n来自以下文件的指令：${first}\nchanged`,
           )
           // File rescans reuse fetched URLs instead of requesting them again.
           expect(requests).toHaveLength(2)
@@ -390,13 +390,13 @@ describe("ConfigInstructionPlugin.Plugin", () => {
           const discovery = yield* start(host({ event: { subscribe: () => Stream.fromPubSub(events) } }))
           const initialized = yield* readInitial(yield* discovery.load())
           expect(initialized.text).toBe(
-            [`Instructions from: ${first}\nfirst`, `Instructions from: ${remote}\nremote`].join("\n\n"),
+            [`来自以下文件的指令：${first}\nfirst`, `来自以下文件的指令：${remote}\nremote`].join("\n\n"),
           )
 
           yield* config.setEntries([configured([second, remote])])
           yield* triggerAndWait(PubSub.publish(events, configUpdated()).pipe(Effect.asVoid))
           expect((yield* readInitial(yield* discovery.load())).text).toBe(
-            [`Instructions from: ${second}\nsecond`, `Instructions from: ${remote}\nremote`].join("\n\n"),
+            [`来自以下文件的指令：${second}\nsecond`, `来自以下文件的指令：${remote}\nremote`].join("\n\n"),
           )
         }).pipe(
           Effect.provide(
@@ -422,7 +422,7 @@ describe("ConfigInstructionPlugin.Plugin", () => {
           const file = path.join(tmp.path, "AGENTS.md")
           yield* Effect.promise(() => fs.writeFile(file, ""))
           const discovery = yield* start()
-          expect((yield* readInitial(yield* discovery.load())).text).toBe(`Instructions from: ${file}\n`)
+          expect((yield* readInitial(yield* discovery.load())).text).toBe(`来自以下文件的指令：${file}\n`)
         }).pipe(
           Effect.provide(
             instructionLayer({
@@ -451,13 +451,13 @@ describe("ConfigInstructionPlugin.Plugin", () => {
           yield* Effect.promise(() => fs.mkdir(directory, { recursive: true }))
           yield* Effect.promise(() => fs.writeFile(projectFile, "project"))
           const discovery = yield* start()
-          expect((yield* readInitial(yield* discovery.load())).text).toBe(`Instructions from: ${projectFile}\nproject`)
+          expect((yield* readInitial(yield* discovery.load())).text).toBe(`来自以下文件的指令：${projectFile}\nproject`)
 
           yield* Effect.promise(() => fs.writeFile(intermediate, "intermediate"))
           yield* emitAndWait({ type: "create", path: intermediate })
 
           expect((yield* readInitial(yield* discovery.load())).text).toBe(
-            [`Instructions from: ${projectFile}\nproject`, `Instructions from: ${intermediate}\nintermediate`].join(
+            [`来自以下文件的指令：${projectFile}\nproject`, `来自以下文件的指令：${intermediate}\nintermediate`].join(
               "\n\n",
             ),
           )
@@ -541,7 +541,7 @@ describe("ConfigInstructionPlugin.Plugin", () => {
               { path: path.join(directory, "AGENTS.md"), type: "file" },
             ])
             expect((yield* readInitial(yield* discovery.load())).text).toBe(
-              `Instructions from: ${path.join(directory, "AGENTS.md")}\nproject`,
+              `来自以下文件的指令：${path.join(directory, "AGENTS.md")}\nproject`,
             )
           }).pipe(
             Effect.provide(
@@ -647,7 +647,7 @@ describe("ConfigInstructionPlugin.Plugin", () => {
     ).pipe(Layer.provide(LayerNode.compile(FSUtil.node)))
     return Effect.gen(function* () {
       const discovery = yield* start()
-      expect((yield* readInitial(yield* discovery.load())).text).toBe(`Instructions from: ${readable}\npackage`)
+      expect((yield* readInitial(yield* discovery.load())).text).toBe(`来自以下文件的指令：${readable}\npackage`)
     }).pipe(
       Effect.provide(
         instructionLayer({

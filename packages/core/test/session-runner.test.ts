@@ -685,7 +685,7 @@ const incompleteStream = () =>
   })
 
 const INCOMPLETE_STREAM_CONTINUATION =
-  "The previous response was interrupted. Continue from where you left off without repeating completed content."
+  "上一条回复被中断了。从中断处继续，不要重复已经完成的内容。"
 
 const providerRejected = (input: { readonly message: string; readonly classification?: "context-overflow" }) =>
   new AIError({ reason: new InvalidRequestError(input) })
@@ -1344,7 +1344,7 @@ describe("SessionRunnerLLM", () => {
     )
     yield* s.llm.push(
       TestLLM.text("First answer", "text-first"),
-      TestLLM.text("## Objective\n- summary", "hook-summary"),
+      TestLLM.text("## 目标\n- summary", "hook-summary"),
       TestLLM.text("Second answer", "text-second"),
     )
 
@@ -1362,7 +1362,7 @@ describe("SessionRunnerLLM", () => {
     const hooks = yield* PluginHooks.Service
     const idles: Session.ID[] = []
     yield* hooks.register("session", "experimental.idle", (event) => Effect.sync(() => idles.push(event.sessionID)))
-    yield* s.llm.push(TestLLM.text("## Objective\n- summary", "idle-summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- summary", "idle-summary"))
 
     yield* s.session.compact({ sessionID })
     yield* s.resume
@@ -1488,7 +1488,7 @@ describe("SessionRunnerLLM", () => {
 
   scenario("surfaces project instruction edits in the next request", function* (s) {
     yield* s.runPrompt("First")
-    expect(s.requests.at(-1)?.system.some((part) => part.text.includes("# Project instructions"))).toBe(false)
+    expect(s.requests.at(-1)?.system.some((part) => part.text.includes("# 项目指令"))).toBe(false)
 
     // The fixture directory is virtual, so Location resolves it without persisting a row. Persist it here to model a
     // real Project, then set the prompt on every row the test could read.
@@ -1502,10 +1502,10 @@ describe("SessionRunnerLLM", () => {
     // synchronized rather than relying on the notice alone.
     expect(
       request.system.some(
-        (part) => part.text.includes("# Project instructions") && part.text.includes("Prefer bun over npm."),
+        (part) => part.text.includes("# 项目指令") && part.text.includes("Prefer bun over npm."),
       ),
     ).toBe(true)
-    expect(systemTexts(request).some((text) => text.includes("The project instructions changed"))).toBe(true)
+    expect(systemTexts(request).some((text) => text.includes("项目指令已变化"))).toBe(true)
   })
 
   scenario("reads the session's own instructions for each request", function* (s) {
@@ -1740,7 +1740,7 @@ describe("SessionRunnerLLM", () => {
     yield* s.admit("Echo before moving")
     yield* s.llm.push(
       TestLLM.toolCall("call-entry", "echo", { text: "moving" }),
-      TestLLM.text("## Objective\n- Entry summary", "entry-summary"),
+      TestLLM.text("## 目标\n- Entry summary", "entry-summary"),
       TestLLM.text("Continued", "entry-continuation"),
     )
     const stream = yield* s.llm.gate()
@@ -1775,7 +1775,7 @@ describe("SessionRunnerLLM", () => {
     yield* runner.drain({ sessionID, force: false, continuation: moved.continuation })
 
     expect(s.requests).toHaveLength(3)
-    expect(userTexts(s.requests[2])[0]).toContain("<summary>\n## Objective\n- Entry summary\n</summary>")
+    expect(userTexts(s.requests[2])[0]).toContain("<summary>\n## 目标\n- Entry summary\n</summary>")
     expect(yield* s.inbox).toEqual([])
   })
 
@@ -2040,7 +2040,7 @@ describe("SessionRunnerLLM", () => {
     yield* s.resume
 
     expect(s.requests.at(-1)?.system.map((part) => part.text)).toEqual([
-      expect.stringContaining("# Delegation"),
+      expect.stringContaining("# 委派"),
       gptIdentity,
       "Initial context",
     ])
@@ -2061,7 +2061,7 @@ describe("SessionRunnerLLM", () => {
     yield* s.resume
 
     expect(s.requests.at(-1)?.system.map((part) => part.text)).toEqual([
-      expect.stringContaining("# Delegation"),
+      expect.stringContaining("# 委派"),
       gptIdentity,
       "Initial context",
     ])
@@ -2265,7 +2265,7 @@ describe("SessionRunnerLLM", () => {
     expect(s.requests[1]?.messages.at(1)?.content).toEqual([
       Expected.text(
         [
-          'The context under "deploy-target" changed and supersedes the previous value:',
+          '"deploy-target" 下的上下文有变化，取代之前的值：',
           '<context key="deploy-target">',
           "{",
           '  "region": "us-east-1"',
@@ -2282,7 +2282,7 @@ describe("SessionRunnerLLM", () => {
 
     expect(messageRoles(s.requests[2])).toEqual(["user", "system", "user", "system", "user"])
     expect(s.requests[2]?.messages.at(-2)?.content).toEqual([
-      Expected.text('The context under "deploy-target" no longer applies. Disregard it.'),
+      Expected.text('"deploy-target" 下的上下文已不再适用，请忽略。'),
     ])
     expect(yield* contextEntries.list(sessionID)).toEqual([])
   })
@@ -2298,7 +2298,7 @@ describe("SessionRunnerLLM", () => {
     expect(s.requests[1]?.messages.at(1)?.content).toEqual([
       Expected.text(
         [
-          'The context under "nullable" changed and supersedes the previous value:',
+          '"nullable" 下的上下文有变化，取代之前的值：',
           '<context key="nullable">',
           "null",
           "</context>",
@@ -2414,7 +2414,7 @@ describe("SessionRunnerLLM", () => {
   scenario("moves the epoch at compaction and narrates later changes", function* (s) {
     yield* s.runPrompt("First")
     s.systemBaseline = "Changed before compaction"
-    yield* s.llm.push(TestLLM.text("## Objective\n- summary", "epoch-summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- summary", "epoch-summary"))
     yield* s.session.compact({ sessionID })
     yield* s.resume
     expect(systemTexts(s.requests[1])).toEqual([])
@@ -2443,7 +2443,7 @@ describe("SessionRunnerLLM", () => {
       s.currentModel = recoveryModel
       yield* s.llm.push(
         TestLLM.text("Active complete", "active"),
-        TestLLM.text("## Objective\n- Active work checkpoint", "summary"),
+        TestLLM.text("## 目标\n- Active work checkpoint", "summary"),
         TestLLM.text("Steers complete", "steers"),
       )
       yield* s.admit("Active work")
@@ -2461,7 +2461,7 @@ describe("SessionRunnerLLM", () => {
       expect((yield* s.messages).some((message) => message.type === "compaction")).toBe(false)
       yield* active.finish
 
-      expect(userTexts(s.requests[1]).at(-1)).toContain("Summarize only what the user and the assistant said and did")
+      expect(userTexts(s.requests[1]).at(-1)).toContain("只总结用户和 assistant 说过和做过的事")
       expect(s.requests).toHaveLength(3)
       expect(userTexts(s.requests[1])).not.toContain("STEER_A")
       expect(userTexts(s.requests[1])).not.toContain("STEER_B")
@@ -2484,7 +2484,7 @@ describe("SessionRunnerLLM", () => {
   scenario("waits for active tools before prioritizing compaction over pending steers", function* (s) {
     yield* s.llm.push(
       TestLLM.toolCall("call-active", "echo", { text: "active" }),
-      TestLLM.text("## Objective\n- Tool work checkpoint", "summary"),
+      TestLLM.text("## 目标\n- Tool work checkpoint", "summary"),
       TestLLM.text("Steers complete", "steers"),
     )
     yield* s.admit("Active work")
@@ -2500,7 +2500,7 @@ describe("SessionRunnerLLM", () => {
     yield* Fiber.join(run)
 
     expect(s.requests).toHaveLength(3)
-    expect(userTexts(s.requests[1]).at(-1)).toContain("Summarize only what the user and the assistant said and did")
+    expect(userTexts(s.requests[1]).at(-1)).toContain("只总结用户和 assistant 说过和做过的事")
     expect(s.requests[1].messages.some((message) => message.role === "tool")).toBe(true)
     expect(userTexts(s.requests[2]).slice(-2)).toEqual(["STEER_A", "STEER_B"])
     expect(yield* s.inbox).toEqual([])
@@ -2514,7 +2514,7 @@ describe("SessionRunnerLLM", () => {
     const release = yield* Deferred.make<void>()
     s.systemLoadHook = Deferred.succeed(preparing, undefined).pipe(Effect.andThen(Deferred.await(release)))
     yield* s.llm.push(
-      TestLLM.text("## Objective\n- Earlier work checkpoint", "summary"),
+      TestLLM.text("## 目标\n- Earlier work checkpoint", "summary"),
       TestLLM.text("Steers complete", "steers"),
     )
     const run = yield* s.resume.pipe(Effect.forkChild)
@@ -2523,7 +2523,7 @@ describe("SessionRunnerLLM", () => {
     yield* Deferred.succeed(release, undefined)
     yield* Fiber.join(run)
     expect(s.requests).toHaveLength(3)
-    expect(userTexts(s.requests[1]).at(-1)).toContain("Summarize only what the user and the assistant said and did")
+    expect(userTexts(s.requests[1]).at(-1)).toContain("只总结用户和 assistant 说过和做过的事")
     expect(userTexts(s.requests[2]).slice(-2)).toEqual(["STEER_A", "STEER_B"])
     expect(yield* s.inbox).toEqual([])
   })
@@ -2544,7 +2544,7 @@ describe("SessionRunnerLLM", () => {
 
       expect(s.requests).toHaveLength(outcome === "cancelled" ? 2 : 3)
       if (outcome === "failed") {
-        expect(userTexts(s.requests[1]).at(-1)).toContain("Summarize only what the user and the assistant said and did")
+        expect(userTexts(s.requests[1]).at(-1)).toContain("只总结用户和 assistant 说过和做过的事")
         expect((yield* s.messages).find((message) => message.id === compact.id)).toMatchObject({
           status: "failed",
           error: { type: "provider.invalid-request", message: "summary unavailable" },
@@ -2565,11 +2565,11 @@ describe("SessionRunnerLLM", () => {
     yield* s.runPrompt("Earlier work")
     const first = yield* s.admit("STEER_A")
     const second = yield* s.admit("STEER_B")
-    yield* s.llm.push(TestLLM.text("## Objective\n- Interrupted checkpoint", "summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- Interrupted checkpoint", "summary"))
     const summary = yield* s.llm.gate()
     const compact = yield* s.session.compact({ sessionID })
     yield* summary.started
-    expect(userTexts(s.requests[1]).at(-1)).toContain("Summarize only what the user and the assistant said and did")
+    expect(userTexts(s.requests[1]).at(-1)).toContain("只总结用户和 assistant 说过和做过的事")
     expect((yield* s.inbox).map((item) => item.id)).toEqual([first.id, second.id])
     yield* s.session.interrupt(sessionID)
     yield* s.session.wait(sessionID)
@@ -2603,13 +2603,13 @@ describe("SessionRunnerLLM", () => {
     yield* s.sessionInbox.admitCompaction({ id: SessionMessage.ID.create(), sessionID, delivery: "steer" })
     yield* s.llm.push(
       TestLLM.text("First steer complete", "first"),
-      TestLLM.text("## Objective\n- Source work checkpoint", "summary"),
+      TestLLM.text("## 目标\n- Source work checkpoint", "summary"),
       TestLLM.text("Second steer complete", "second"),
     )
     yield* s.resume
     expect(s.requests).toHaveLength(3)
     expect(userTexts(s.requests[0])).toEqual(["STEER_A"])
-    expect(userTexts(s.requests[1]).at(-1)).toContain("Summarize only what the user and the assistant said and did")
+    expect(userTexts(s.requests[1]).at(-1)).toContain("只总结用户和 assistant 说过和做过的事")
     expect(userTexts(s.requests[2]).at(-1)).toBe("STEER_B")
     expect(
       (yield* recordedEventTypes(sessionID)).filter(
@@ -2623,7 +2623,7 @@ describe("SessionRunnerLLM", () => {
     yield* s.llm.push(
       TestLLM.toolCall("call-active", "echo", { text: "active" }),
       TestLLM.text("Steer complete", "text-steer"),
-      [LLMEvent.textDelta({ id: "summary", text: "## Objective\n- durable summary" })],
+      [LLMEvent.textDelta({ id: "summary", text: "## 目标\n- durable summary" })],
       TestLLM.text("Queue complete", "text-queue"),
     )
     yield* s.admit("Active work")
@@ -2655,7 +2655,7 @@ describe("SessionRunnerLLM", () => {
     expect((yield* s.messages).find((message) => message.id === first.id)).toMatchObject({
       type: "compaction",
       status: "completed",
-      summary: "## Objective\n- durable summary",
+      summary: "## 目标\n- durable summary",
     })
   })
 
@@ -2718,7 +2718,7 @@ describe("SessionRunnerLLM", () => {
     yield* s.runPrompt("Earlier question")
 
     s.requests.length = 0
-    yield* s.llm.push(TestLLM.text("## Objective\n- Manual summary", "text-manual-unknown-summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- Manual summary", "text-manual-unknown-summary"))
     const compaction = yield* s.session.compact({ sessionID, delivery: "steer" })
     yield* s.resume
 
@@ -2727,7 +2727,7 @@ describe("SessionRunnerLLM", () => {
     expect((yield* s.messages).find((message) => message.id === compaction.id)).toMatchObject({
       type: "compaction",
       status: "completed",
-      summary: "## Objective\n- Manual summary",
+      summary: "## 目标\n- Manual summary",
     })
   })
 
@@ -2735,7 +2735,7 @@ describe("SessionRunnerLLM", () => {
     s.currentModel = recoveryModel
     yield* s.llm.push(
       TestLLM.text("Active complete", "text-active-steer-compact"),
-      [LLMEvent.textDelta({ id: "summary", text: "## Objective\n- durable summary" })],
+      [LLMEvent.textDelta({ id: "summary", text: "## 目标\n- durable summary" })],
       TestLLM.text("Queue complete", "text-queue-after-compact"),
     )
     yield* s.admit("Active work")
@@ -2753,7 +2753,7 @@ describe("SessionRunnerLLM", () => {
     expect((yield* s.messages).find((message) => message.id === compaction.id)).toMatchObject({
       type: "compaction",
       status: "completed",
-      summary: "## Objective\n- durable summary",
+      summary: "## 目标\n- durable summary",
     })
   })
 
@@ -2761,7 +2761,7 @@ describe("SessionRunnerLLM", () => {
     s.currentModel = recoveryModel
     yield* s.llm.push(
       TestLLM.toolCall("call-active", "echo", { text: "active" }),
-      [LLMEvent.textDelta({ id: "summary", text: "## Objective\n- durable summary" })],
+      [LLMEvent.textDelta({ id: "summary", text: "## 目标\n- durable summary" })],
       TestLLM.text("Continued", "text-continued-after-compact"),
     )
     yield* s.admit("Active work")
@@ -2775,7 +2775,7 @@ describe("SessionRunnerLLM", () => {
     expect((yield* s.messages).find((message) => message.id === compaction.id)).toMatchObject({
       type: "compaction",
       status: "completed",
-      summary: "## Objective\n- durable summary",
+      summary: "## 目标\n- durable summary",
     })
   })
 
@@ -2840,7 +2840,7 @@ describe("SessionRunnerLLM", () => {
               reason: { normalized: "stop" },
               providerMetadata: { [s.currentModel.provider]: { responseId: "summary" } },
             },
-            LLMEvent.textDelta({ id: "prefix-summary", text: "## Objective\n- Checkpoint summary" }),
+            LLMEvent.textDelta({ id: "prefix-summary", text: "## 目标\n- Checkpoint summary" }),
           ),
         )
         yield* s.runPrompt("Review these changes")
@@ -2917,9 +2917,9 @@ describe("SessionRunnerLLM", () => {
               ? TestLLM.toolCall("call-summary", "echo", { text: "must not execute" })
               : response === "reasoning"
                 ? TestLLM.stop(
-                    LLMEvent.reasoningDelta({ id: "summary-reasoning", text: "## Objective\n- Not a summary" }),
+                    LLMEvent.reasoningDelta({ id: "summary-reasoning", text: "## 目标\n- Not a summary" }),
                   )
-                : TestLLM.text("Let me search the codebase. I will fill in ## Objective later.", "invalid-summary")
+                : TestLLM.text("Let me search the codebase. I will fill in ## 目标 later.", "invalid-summary")
           yield* s.llm.push(
             invalid.map((event) =>
               LLMEvent.is.stepFinish(event)
@@ -2927,7 +2927,7 @@ describe("SessionRunnerLLM", () => {
                 : event,
             ),
             summary
-              ? [LLMEvent.textDelta({ id: "summary-recovered", text: "### Active\n- Recovered summary" })]
+              ? [LLMEvent.textDelta({ id: "summary-recovered", text: "### 进行中\n- Recovered summary" })]
               : invalid,
           )
           const compact = yield* s.session.compact({ sessionID })
@@ -2935,13 +2935,13 @@ describe("SessionRunnerLLM", () => {
 
           expect(s.requests).toHaveLength(2)
           expect(s.requests[1].messages.slice(0, -1)).toEqual([...s.requests[0].messages])
-          expect(userTexts(s.requests[1]).at(-1)).toContain("did not fill in the required summary template")
+          expect(userTexts(s.requests[1]).at(-1)).toContain("没有按要求填写摘要模板")
           expect(s.requests.every((request) => request.toolChoice === undefined)).toBe(true)
           expect(s.executions).toEqual([])
           expect(JSON.stringify(yield* s.messages)).not.toContain("rejected-summary-state")
           expect((yield* s.messages).find((message) => message.id === compact.id)).toMatchObject(
             summary
-              ? { status: "completed", summary: "### Active\n- Recovered summary" }
+              ? { status: "completed", summary: "### 进行中\n- Recovered summary" }
               : {
                   status: "failed",
                   error: {
@@ -3000,17 +3000,17 @@ describe("SessionRunnerLLM", () => {
         usage: { nonCachedInputTokens: 10 },
         providerMetadata: { openai: { responseId: "discarded-draft" } },
       },
-      LLMEvent.textDelta({ id: "draft", text: "## Objective\n- Partial draft" }),
+      LLMEvent.textDelta({ id: "draft", text: "## 目标\n- Partial draft" }),
     )
     yield* s.llm.push(
       TestLLM.failAfter(streamDisconnected(), ...draft.slice(0, -1)),
       draft,
       TestLLM.complete(
         { reason: { normalized: "error" } },
-        LLMEvent.textDelta({ id: "failed", text: "## Objective\n- Failed draft" }),
+        LLMEvent.textDelta({ id: "failed", text: "## 目标\n- Failed draft" }),
       ),
       Stream.fail(rateLimited(60_000)),
-      TestLLM.textWithUsage("## Objective\n- Accepted summary", "accepted", 30),
+      TestLLM.textWithUsage("## 目标\n- Accepted summary", "accepted", 30),
     )
     const compaction = yield* s.session.compact({ sessionID })
     yield* s.resume
@@ -3022,7 +3022,7 @@ describe("SessionRunnerLLM", () => {
     expect(retries[3].decision).toEqual({ retry: true, delay: 60_000 })
     expect((yield* s.messages).find((message) => message.id === compaction.id)).toMatchObject({
       status: "completed",
-      summary: "## Objective\n- Accepted summary",
+      summary: "## 目标\n- Accepted summary",
     })
     expect(JSON.stringify(yield* s.messages)).not.toContain("discarded-draft")
     expect((yield* s.session.get(sessionID))?.tokens.input).toBe(50)
@@ -3132,7 +3132,7 @@ describe("SessionRunnerLLM", () => {
       yield* s.llm.push(
         TestLLM.complete(
           { reason: { normalized: response } },
-          LLMEvent.textDelta({ id: "truncated", text: "## Objective\n- Incomplete summary" }),
+          LLMEvent.textDelta({ id: "truncated", text: "## 目标\n- Incomplete summary" }),
         ),
       )
       const compaction = yield* s.session.compact({ sessionID })
@@ -3200,8 +3200,8 @@ describe("SessionRunnerLLM", () => {
     expect(s.requests).toHaveLength(6)
     expect(s.requests[0]?.messages.some((message) => message.content.some((part) => part.type === "media"))).toBeTrue()
     expect(s.requests[1]?.messages.every((message) => message.role === "user")).toBeTrue()
-    expect(userTexts(s.requests[1])[0]).toContain("[image/png omitted]")
-    expect(userTexts(s.requests[1])[0]).not.toMatch(/older exchanges? omitted/)
+    expect(userTexts(s.requests[1])[0]).toContain("[image/png 已省略]")
+    expect(userTexts(s.requests[1])[0]).not.toContain("已省略更早的")
     expect(userTexts(s.requests[2])[0].length).toBeLessThan(userTexts(s.requests[1])[0].length)
     expect(userTexts(s.requests[3])[0].length).toBeLessThan(userTexts(s.requests[2])[0].length)
     expect(userTexts(s.requests[4])[0].length).toBeLessThan(userTexts(s.requests[3])[0].length)
@@ -3221,14 +3221,14 @@ describe("SessionRunnerLLM", () => {
     yield* s.resume
     s.currentModel = testModel("smaller-history", { context: 7_000, output: 1_000 })
     s.requests.length = 0
-    yield* s.llm.push(TestLLM.text("## Objective\n- Recovered", "summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- Recovered", "summary"))
     const compaction = yield* s.session.compact({ sessionID })
     yield* s.resume
 
     // The only exchange is over the estimated limit, so its text is cut to its start and end rather than sent whole.
     expect(s.requests).toHaveLength(1)
     expect(s.requests[0]?.messages.every((message) => message.role === "user")).toBeTrue()
-    expect(userTexts(s.requests[0])[0]).toContain("characters omitted")
+    expect(userTexts(s.requests[0])[0]).toContain("个字符")
     expect(userTexts(s.requests[0])[0]).not.toContain("x".repeat(2_001))
     expect((yield* s.messages).find((message) => message.id === compaction.id)).toMatchObject({ status: "completed" })
   })
@@ -3244,7 +3244,7 @@ describe("SessionRunnerLLM", () => {
     )
     s.currentModel = testModel("smaller-history", { context: 12_000, output: 1_000 })
     s.requests.length = 0
-    yield* s.llm.push(Stream.fail(payloadTooLarge()), TestLLM.text("## Objective\n- Recovered", "summary"))
+    yield* s.llm.push(Stream.fail(payloadTooLarge()), TestLLM.text("## 目标\n- Recovered", "summary"))
     const compaction = yield* s.session.compact({ sessionID })
     yield* s.resume
 
@@ -3277,7 +3277,7 @@ describe("SessionRunnerLLM", () => {
     s.requests.length = 0
     yield* s.llm.push(
       TestLLM.failAfter(providerRejected({ message: "prompt too long", classification: "context-overflow" })),
-      TestLLM.text("## Objective\n- Recovered", "summary"),
+      TestLLM.text("## 目标\n- Recovered", "summary"),
       TestLLM.text("Recovered", "recovered"),
     )
     yield* s.runPrompt("Continue")
@@ -3298,14 +3298,14 @@ describe("SessionRunnerLLM", () => {
     s.requests.length = 0
     yield* s.llm.push(
       TestLLM.failAfter(providerRejected({ message: "prompt too long", classification: "context-overflow" })),
-      TestLLM.text("## Objective\n- Recovered", "summary"),
+      TestLLM.text("## 目标\n- Recovered", "summary"),
       TestLLM.text("Recovered", "recovered"),
     )
     yield* s.runPrompt("Continue")
 
     // The history fits the model's window by estimate, but the provider just rejected it, so older exchanges are cut.
     expect(s.requests).toHaveLength(3)
-    expect(userTexts(s.requests[1])[0]).toContain("characters omitted")
+    expect(userTexts(s.requests[1])[0]).toContain("个字符")
     expect(userTexts(s.requests[1])[0]).not.toContain(`Request 0: ${filler}`)
     expect(userTexts(s.requests[1])[0]).toContain("Request 3:")
   })
@@ -3336,7 +3336,7 @@ describe("SessionRunnerLLM", () => {
     s.requests.length = 0
     yield* s.llm.push(
       TestLLM.failAfter(providerRejected({ message: "Too long", classification: "context-overflow" })),
-      TestLLM.text("## Objective\n- Recovered", "summary"),
+      TestLLM.text("## 目标\n- Recovered", "summary"),
     )
     const compaction = yield* s.session.compact({ sessionID })
     yield* s.resume
@@ -3344,8 +3344,8 @@ describe("SessionRunnerLLM", () => {
     expect(s.requests).toHaveLength(2)
     expect(s.requests[0]?.messages.some((message) => message.content.some((part) => part.type === "media"))).toBeTrue()
     expect(s.requests[1]?.messages.every((message) => message.role === "user")).toBeTrue()
-    expect(userTexts(s.requests[1])[0]).toContain("[image/png omitted]")
-    expect(userTexts(s.requests[1])[0]).toContain("[Tool result]:")
+    expect(userTexts(s.requests[1])[0]).toContain("[image/png 已省略]")
+    expect(userTexts(s.requests[1])[0]).toContain("[工具结果]：")
     // Tool output is only cut when the transcript would not fit whole.
     expect(userTexts(s.requests[1])[0]).toContain("x".repeat(5_000))
     expect(s.requests[1]?.system).toEqual(s.requests[0]?.system)
@@ -3383,14 +3383,14 @@ describe("SessionRunnerLLM", () => {
     yield* Effect.forEach([0, 1], (index) => s.runPrompt(`Request ${index}`))
     s.currentModel = testModel("smaller-history", { context: 7_000, output: 1_000 })
     s.requests.length = 0
-    yield* s.llm.push(TestLLM.text("## Objective\n- Recovered", "summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- Recovered", "summary"))
     yield* s.session.compact({ sessionID })
     yield* s.resume
 
     expect(s.requests).toHaveLength(1)
     expect(userTexts(s.requests[0])[0]).toContain("Request 0")
     // The oldest exchange loses its tool outputs rather than being dropped.
-    expect(userTexts(s.requests[0])[0]).toContain("[Tool result omitted]")
+    expect(userTexts(s.requests[0])[0]).toContain("[工具结果已省略]")
     expect(userTexts(s.requests[0])[0]).not.toMatch(/older exchanges? omitted/)
   })
 
@@ -3405,19 +3405,19 @@ describe("SessionRunnerLLM", () => {
     )
     s.currentModel = testModel("smaller-history", { context: 7_000, output: 1_000 })
     s.requests.length = 0
-    yield* s.llm.push(TestLLM.text("## Objective\n- Recovered", "summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- Recovered", "summary"))
     const compaction = yield* s.session.compact({ sessionID })
     yield* s.resume
 
     // Even cut to the user's text, the older exchanges do not all fit, so the oldest are omitted.
     expect(s.requests).toHaveLength(1)
-    expect(userTexts(s.requests[0])[0]).toContain("older exchanges omitted")
+    expect(userTexts(s.requests[0])[0]).toContain("已省略更早的")
     expect(userTexts(s.requests[0])[0]).not.toContain("Request 0:")
     // The newest exchanges are the retained tail, so shrinking drops only exchanges before them.
     expect(userTexts(s.requests[0])[0]).not.toContain("Request 15:")
     expect((yield* s.messages).find((message) => message.id === compaction.id)).toMatchObject({
       status: "completed",
-      summary: "## Objective\n- Recovered",
+      summary: "## 目标\n- Recovered",
     })
   })
 
@@ -3502,24 +3502,24 @@ describe("SessionRunnerLLM", () => {
     s.currentModel = compactModel
     s.requests.length = 0
     yield* s.llm.push(
-      TestLLM.text("## Objective\n- Preserve the task", "text-summary"),
+      TestLLM.text("## 目标\n- Preserve the task", "text-summary"),
       TestLLM.textWithUsage("Continued", "text-final", 3_950),
     )
     yield* s.runPrompt("Recent exact request ".repeat(180))
 
     expect(s.requests).toHaveLength(2)
     expect(JSON.stringify(s.requests[0].messages)).toContain("Recent exact request ".repeat(180))
-    expect(userTexts(s.requests[0]).at(-1)).toContain("## Objective")
+    expect(userTexts(s.requests[0]).at(-1)).toContain("## 目标")
     expect(userTexts(s.requests[1])).toHaveLength(1)
-    expect(userTexts(s.requests[1])[0]).toContain("<summary>\n## Objective\n- Preserve the task\n</summary>")
-    expect(userTexts(s.requests[1])[0]).toContain(`[User]: ${"Recent exact request ".repeat(180)}`)
+    expect(userTexts(s.requests[1])[0]).toContain("<summary>\n## 目标\n- Preserve the task\n</summary>")
+    expect(userTexts(s.requests[1])[0]).toContain(`[用户]：${"Recent exact request ".repeat(180)}`)
 
     const context = yield* store.context(sessionID)
     expect(context.map((message) => message.type)).toEqual(["compaction", "assistant"])
     expect(context[0]).toMatchObject({
       type: "compaction",
-      summary: "## Objective\n- Preserve the task",
-      metadata: { recent: `[User]: ${"Recent exact request ".repeat(180)}` },
+      summary: "## 目标\n- Preserve the task",
+      metadata: { recent: `[用户]：${"Recent exact request ".repeat(180)}` },
     })
     // Only a reference to the kept messages is stored; history rebuilds their text.
     const db = (yield* Database.Service).db
@@ -3542,19 +3542,19 @@ describe("SessionRunnerLLM", () => {
     s.requests.length = 0
     s.executions.length = 0
     yield* s.llm.push(
-      TestLLM.text("## Objective\n- Preserve the updated task", "text-summary-2"),
+      TestLLM.text("## 目标\n- Preserve the updated task", "text-summary-2"),
       TestLLM.text("Continued again", "text-final-2"),
     )
     yield* s.runPrompt("Newest exact request ".repeat(180))
 
     expect(s.requests).toHaveLength(2)
-    expect(userTexts(s.requests[0])[0]).toContain("<summary>\n## Objective\n- Preserve the task\n</summary>")
+    expect(userTexts(s.requests[0])[0]).toContain("<summary>\n## 目标\n- Preserve the task\n</summary>")
     expect(userTexts(s.requests[0])[0]).toContain("Recent exact request")
     expect(userTexts(s.requests[0]).at(-1)).toBe(SessionCompaction.buildPrompt(true))
     expect((yield* store.context(sessionID))[0]).toMatchObject({
       type: "compaction",
-      summary: "## Objective\n- Preserve the updated task",
-      metadata: { recent: `[User]: ${"Newest exact request ".repeat(180)}` },
+      summary: "## 目标\n- Preserve the updated task",
+      metadata: { recent: `[用户]：${"Newest exact request ".repeat(180)}` },
     })
   })
 
@@ -3686,16 +3686,16 @@ describe("SessionRunnerLLM", () => {
         providerRejected({ message: "prompt too long", classification: "context-overflow" }),
         LLMEvent.stepStart({ index: 0 }),
       ),
-      TestLLM.text("## Objective\n- Recover overflow", "text-summary"),
+      TestLLM.text("## 目标\n- Recover overflow", "text-summary"),
       TestLLM.text("Recovered", "text-final"),
     )
     yield* s.runPrompt("Continue")
 
     expect(s.requests).toHaveLength(3)
-    expect(userTexts(s.requests[1]).at(-1)).toContain("## Objective")
-    expect(userTexts(s.requests[2])[0]).toContain("<summary>\n## Objective\n- Recover overflow\n</summary>")
+    expect(userTexts(s.requests[1]).at(-1)).toContain("## 目标")
+    expect(userTexts(s.requests[2])[0]).toContain("<summary>\n## 目标\n- Recover overflow\n</summary>")
     expect(yield* s.context).toMatchObject([
-      { type: "compaction", summary: "## Objective\n- Recover overflow" },
+      { type: "compaction", summary: "## 目标\n- Recover overflow" },
       { type: "assistant", finish: "stop" },
     ])
     yield* replaySessionProjection(sessionID)
@@ -3716,7 +3716,7 @@ describe("SessionRunnerLLM", () => {
     yield* s.admit("Continue")
     yield* s.llm.push(
       TestLLM.failAfter(providerRejected({ message: "prompt too long", classification: "context-overflow" })),
-      TestLLM.text("## Objective\n- Overflow summary", "overflow-summary"),
+      TestLLM.text("## 目标\n- Overflow summary", "overflow-summary"),
       TestLLM.text("Recovered", "overflow-recovered"),
       TestLLM.stop(),
       TestLLM.stop(),
@@ -3757,7 +3757,7 @@ describe("SessionRunnerLLM", () => {
       "Initial context",
     ])
     expect(systemTexts(s.requests[2])).toContain("Changed during compaction")
-    expect(userTexts(s.requests[2])[0]).toContain("<summary>\n## Objective\n- Overflow summary\n</summary>")
+    expect(userTexts(s.requests[2])[0]).toContain("<summary>\n## 目标\n- Overflow summary\n</summary>")
     expect(userTexts(s.requests[2]).join("\n")).not.toContain("Queued during compaction")
     expect(userTexts(s.requests[2]).join("\n")).not.toContain("Steered during compaction")
     expect((yield* s.inbox).map((item) => item.id)).toEqual([queued.id, steered.id])
@@ -3803,14 +3803,14 @@ describe("SessionRunnerLLM", () => {
     s.currentModel = unknownContextModel
     yield* s.llm.push(
       TestLLM.failAfter(providerRejected({ message: "prompt too long", classification: "context-overflow" })),
-      TestLLM.text("## Objective\n- Recover unknown limit", "text-summary-unknown-limit"),
+      TestLLM.text("## 目标\n- Recover unknown limit", "text-summary-unknown-limit"),
       TestLLM.text("Recovered", "text-final-unknown-limit"),
     )
     yield* s.runPrompt("Continue")
 
     expect(s.requests).toHaveLength(3)
     expect(yield* s.context).toMatchObject([
-      { type: "compaction", summary: "## Objective\n- Recover unknown limit" },
+      { type: "compaction", summary: "## 目标\n- Recover unknown limit" },
       { type: "assistant", finish: "stop" },
     ])
   })
@@ -3819,14 +3819,14 @@ describe("SessionRunnerLLM", () => {
     yield* setupOverflowRecovery(s)
     s.currentModel = undersizedContextModel
     yield* s.llm.push(
-      TestLLM.text("## Objective\n- Recover undersized limit", "text-summary-undersized-limit"),
+      TestLLM.text("## 目标\n- Recover undersized limit", "text-summary-undersized-limit"),
       TestLLM.text("Recovered", "text-final-undersized-limit"),
     )
     yield* s.runPrompt("Continue")
 
     expect(s.requests).toHaveLength(2)
     expect(yield* s.context).toMatchObject([
-      { type: "compaction", summary: "## Objective\n- Recover undersized limit" },
+      { type: "compaction", summary: "## 目标\n- Recover undersized limit" },
       { type: "assistant", finish: "stop" },
     ])
   })
@@ -3838,7 +3838,7 @@ describe("SessionRunnerLLM", () => {
         providerRejected({ message: "prompt too long", classification: "context-overflow" }),
         LLMEvent.stepStart({ index: 0 }),
       )
-    yield* s.llm.push(overflow(), TestLLM.text("## Objective\n- Recover once", "text-summary"), overflow())
+    yield* s.llm.push(overflow(), TestLLM.text("## 目标\n- Recover once", "text-summary"), overflow())
     yield* s.admit("Continue")
     expect((yield* s.resume.pipe(Effect.flip)).message).toBe("prompt too long")
 
@@ -3862,14 +3862,14 @@ describe("SessionRunnerLLM", () => {
       ),
     )
     yield* s.llm.push(
-      TestLLM.text("## Objective\n- Recover raw overflow", "text-summary"),
+      TestLLM.text("## 目标\n- Recover raw overflow", "text-summary"),
       TestLLM.text("Recovered", "text-final"),
     )
     yield* s.runPrompt("Continue")
 
     expect(s.requests).toHaveLength(3)
     expect(yield* s.context).toMatchObject([
-      { type: "compaction", summary: "## Objective\n- Recover raw overflow" },
+      { type: "compaction", summary: "## 目标\n- Recover raw overflow" },
       { type: "assistant", finish: "stop" },
     ])
   })
@@ -3902,13 +3902,13 @@ describe("SessionRunnerLLM", () => {
     yield* s.runPrompt("Earlier question")
     s.requests.length = 0
     yield* s.llm.push(
-      TestLLM.text("## Objective\n- Preserve the task", "text-budget-summary"),
+      TestLLM.text("## 目标\n- Preserve the task", "text-budget-summary"),
       TestLLM.text("Continued", "text-budget-final"),
     )
     yield* s.runPrompt("Recent request ".repeat(400))
 
     expect(s.requests).toHaveLength(2)
-    expect(userTexts(s.requests[0]).at(-1)).toContain("## Objective")
+    expect(userTexts(s.requests[0]).at(-1)).toContain("## 目标")
     // The summary may use the whole 30k reserve of a 200k window.
     expect(s.requests[0]?.maxTokens).toBe(30_000)
     expect(s.requests[1]?.maxTokens).toBe(32_000)
@@ -3921,13 +3921,13 @@ describe("SessionRunnerLLM", () => {
     yield* s.runPrompt("Earlier question")
     s.requests.length = 0
     yield* s.llm.push(
-      TestLLM.text("## Objective\n- Preserve the task", "text-small-summary"),
+      TestLLM.text("## 目标\n- Preserve the task", "text-small-summary"),
       TestLLM.text("Continued", "text-small-final"),
     )
     yield* s.runPrompt("Recent request ".repeat(400))
 
     expect(s.requests).toHaveLength(2)
-    expect(userTexts(s.requests[0]).at(-1)).toContain("## Objective")
+    expect(userTexts(s.requests[0]).at(-1)).toContain("## 目标")
     expect(s.requests[0]?.maxTokens).toBe(16_000)
     expect(s.requests[1]?.maxTokens).toBe(16_000)
   })
@@ -3962,7 +3962,7 @@ describe("SessionRunnerLLM", () => {
     yield* setupOverflowRecovery(s)
     yield* s.llm.push(
       TestLLM.failAfter(providerRejected({ message: "prompt too long", classification: "context-overflow" })),
-      TestLLM.text("## Objective\n- Interrupted", "text-summary"),
+      TestLLM.text("## 目标\n- Interrupted", "text-summary"),
     )
     const first = yield* s.llm.gate()
     yield* s.admit("Continue")
@@ -4839,7 +4839,7 @@ describe("SessionRunnerLLM", () => {
     yield* s.bus.publish(SessionEvent.Compaction.Ended, {
       sessionID,
       reason: "manual",
-      text: "## Objective\n- Earlier completed checkpoint",
+      text: "## 目标\n- Earlier completed checkpoint",
     })
     yield* s.bus.publish(SessionEvent.Compaction.Started, {
       sessionID,
@@ -4856,17 +4856,17 @@ describe("SessionRunnerLLM", () => {
     const run = yield* s.resumePaused
     expect((yield* s.messages).filter((message) => message.type === "compaction").toReversed()).toMatchObject([
       { id: first, status: "failed", reason: "manual", error: { type: "compaction.interrupted" } },
-      { id: completed, status: "completed", summary: "## Objective\n- Earlier completed checkpoint" },
+      { id: completed, status: "completed", summary: "## 目标\n- Earlier completed checkpoint" },
       { id: last, status: "failed", reason: "auto", error: { type: "compaction.interrupted" } },
     ])
     yield* run.finish
 
-    yield* s.llm.push(TestLLM.text("## Objective\n- New checkpoint", "new-summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- New checkpoint", "new-summary"))
     const next = yield* s.session.compact({ sessionID })
     yield* s.session.wait(sessionID)
     expect((yield* s.messages).find((message) => message.id === next.id)).toMatchObject({
       status: "completed",
-      summary: "## Objective\n- New checkpoint",
+      summary: "## 目标\n- New checkpoint",
     })
     expect(
       (yield* s.messages).filter((message) => message.type === "compaction" && message.status === "running"),
@@ -4881,7 +4881,7 @@ describe("SessionRunnerLLM", () => {
       reason: "manual",
       inputID: previous,
     })
-    yield* s.llm.push(TestLLM.text("## Objective\n- New checkpoint", "new-summary"))
+    yield* s.llm.push(TestLLM.text("## 目标\n- New checkpoint", "new-summary"))
     const gate = yield* s.llm.gate()
     const next = yield* s.session.compact({ sessionID })
     yield* gate.started
@@ -5033,7 +5033,7 @@ describe("SessionRunnerLLM", () => {
     yield* s.bus.publish(SessionEvent.Compaction.Ended, {
       sessionID,
       reason: "manual",
-      text: "## Objective\n- Checkpoint",
+      text: "## 目标\n- Checkpoint",
     })
     const done = SessionMessage.ID.create()
     yield* startStep(done)
@@ -6130,7 +6130,7 @@ describe("SessionRunnerLLM", () => {
   for (const type of ["text", "reasoning"] as const) {
     scenario(`continues ${type} after an output token limit`, function* (s) {
       const nudge =
-        "Your last response hit the output token limit (stop reason: length). Do not apologize, recap, or repeat yourself. Break the remaining work into smaller pieces."
+        "上一条回复达到了输出长度上限（停止原因：length）。不要道歉、不要复述、不要重复自己。把剩余工作拆成更小的步骤。"
       const partial =
         type === "text"
           ? [
@@ -6180,14 +6180,14 @@ describe("SessionRunnerLLM", () => {
         reason: { normalized: "length" },
         usage: { inputTokens: 199_994, nonCachedInputTokens: 199_994, outputTokens: 0 },
       }),
-      TestLLM.text("## Objective\n- summary", "summary"),
+      TestLLM.text("## 目标\n- summary", "summary"),
       TestLLM.text("Done", "done"),
     )
 
     yield* s.runPrompt("Large prompt")
 
     expect(s.requests).toHaveLength(3)
-    expect(userTexts(s.requests[1]).at(-1)).toContain("Summarize only what the user and the assistant said and did")
+    expect(userTexts(s.requests[1]).at(-1)).toContain("只总结用户和 assistant 说过和做过的事")
     expect((yield* s.messages).filter((message) => message.type === "compaction")).toMatchObject([
       { status: "completed" },
     ])
@@ -6790,7 +6790,7 @@ describe("SessionRunnerLLM", () => {
           error: {
             type: "tool.input-incomplete",
             message:
-              "The tool call was not executed because the output token limit (stop reason: length) was reached before you could complete the arguments. Break large payloads into smaller tool calls and reissue the call with complete arguments.",
+              "工具调用没有执行，因为在参数补全之前就达到了输出长度上限（停止原因：length）。把大参数拆成更小的工具调用，并用完整参数重新发起调用。",
           },
         },
       },
@@ -6816,7 +6816,7 @@ describe("SessionRunnerLLM", () => {
       const raw = `{"text":"${marker}${"x".repeat(3000)}omitted-marker`
       const guidance =
         finish === "length"
-          ? "The tool call was not executed because the output token limit (stop reason: length) was reached before you could complete the arguments. Break large payloads into smaller tool calls and reissue the call with complete arguments."
+          ? "工具调用没有执行，因为在参数补全之前就达到了输出长度上限（停止原因：length）。把大参数拆成更小的工具调用，并用完整参数重新发起调用。"
           : "The tool input could not be parsed as JSON, so the call was not executed. Reissue the call with valid JSON arguments."
       const message = [
         guidance,

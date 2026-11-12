@@ -8,19 +8,19 @@ export const key = Instructions.Key.make("core/project")
 /** Rendered as its own system part on every Step, so the newest text always reaches the model. */
 export const block = (prompt: string) =>
   [
-    "# Project instructions",
+    "# 项目指令",
     "",
-    "The project owner wrote these instructions for every session in this project.",
-    "They apply on top of your own instructions for as long as this project is the working directory.",
+    "这些指令是项目所有者为本项目的所有会话编写的。",
+    "只要本项目仍是工作目录，它们就叠加在你自己的指令之上。",
     "",
     prompt,
   ].join("\n")
 
-const notice = "The project instructions changed. The latest project instructions are in the system prompt."
+const notice = "项目指令已变化。最新的项目指令在系统提示词里。"
 
 // The baseline intentionally omits this key, so these renderers only feed the "instructions updated" notice.
 export const render = {
   initial: () => notice,
   changed: () => notice,
-  removed: () => "The project instructions no longer apply.",
+  removed: () => "项目指令不再适用。",
 }
