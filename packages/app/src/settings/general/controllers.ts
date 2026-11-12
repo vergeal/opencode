@@ -2,7 +2,7 @@ import { createMemo, createResource, onMount, type Accessor } from "solid-js"
 import type { ColorScheme } from "@opencode/ui/theme/context"
 import { useTheme } from "@opencode/ui/theme/context"
 import {
-  monoDefault,
+  monoDefaultFor,
   monoFontFamily,
   monoInput,
   sansDefault,
@@ -110,7 +110,7 @@ export function createAppearanceSettingsController() {
       code: createMemo(() => ({
         value: monoInput(settings.appearance.font()),
         family: monoFontFamily(settings.appearance.font()),
-        placeholder: monoDefault,
+        placeholder: monoDefaultFor(),
       })),
       terminal: createMemo(() => ({
         value: terminalInput(settings.appearance.terminalFont()),

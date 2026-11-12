@@ -7,6 +7,7 @@ import {
   settingsPersistence,
   defaultSettings,
   monoDefault,
+  monoDefaultFor,
   monoFontFamily,
   sansDefault,
   sansFontFamily,
@@ -203,9 +204,17 @@ describe("settings schema", () => {
   })
 })
 
-test("font defaults are Inter and IBM Plex Mono", () => {
+test("font defaults are Inter and JetBrains Mono", () => {
   expect(sansDefault).toBe("Inter")
-  expect(monoDefault).toBe("IBM Plex Mono")
+  expect(monoDefault).toBe("JetBrains Mono")
+  expect(monoDefaultFor(true)).toBe("system-ui")
+  expect(monoDefaultFor(false)).toBe("JetBrains Mono")
+})
+
+test("code font starts from the system stack on macOS", () => {
+  expect(monoFontFamily(undefined, true)).toStartWith("system-ui, ")
+  expect(monoFontFamily("Custom Mono", true)).toStartWith('"Custom Mono", system-ui, ')
+  expect(monoFontFamily(undefined, false)).toStartWith('"JetBrains Mono", ')
 })
 
 test.each([
@@ -213,10 +222,30 @@ test.each([
   { name: "sans", family: sansFontFamily, font: "", prefix: '"Inter", ' },
   { name: "sans", family: sansFontFamily, font: "   ", prefix: '"Inter", ' },
   { name: "sans", family: sansFontFamily, font: "Custom Sans", prefix: '"Custom Sans", "Inter", ' },
-  { name: "mono", family: monoFontFamily, font: undefined, prefix: '"IBM Plex Mono", ' },
-  { name: "mono", family: monoFontFamily, font: "", prefix: '"IBM Plex Mono", ' },
-  { name: "mono", family: monoFontFamily, font: "   ", prefix: '"IBM Plex Mono", ' },
-  { name: "mono", family: monoFontFamily, font: "Custom Mono", prefix: '"Custom Mono", "IBM Plex Mono", ' },
+  {
+    name: "mono",
+    family: (font: string | undefined) => monoFontFamily(font, false),
+    font: undefined,
+    prefix: '"JetBrains Mono", ',
+  },
+  {
+    name: "mono",
+    family: (font: string | undefined) => monoFontFamily(font, false),
+    font: "",
+    prefix: '"JetBrains Mono", ',
+  },
+  {
+    name: "mono",
+    family: (font: string | undefined) => monoFontFamily(font, false),
+    font: "   ",
+    prefix: '"JetBrains Mono", ',
+  },
+  {
+    name: "mono",
+    family: (font: string | undefined) => monoFontFamily(font, false),
+    font: "Custom Mono",
+    prefix: '"Custom Mono", "JetBrains Mono", ',
+  },
   { name: "terminal", family: terminalFontFamily, font: undefined, prefix: '"JetBrainsMono Nerd Font Mono", ' },
 ])("$name font family for $font starts with $prefix", ({ family, font, prefix }) => {
   expect(family(font)).toStartWith(prefix)

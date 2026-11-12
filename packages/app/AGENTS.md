@@ -79,10 +79,12 @@ Users choose three fonts in Settings > Appearance. Every surface uses one of the
 | Code font     | Shell commands, code, paths shown as code, diffs, logs, tool input | `var(--font-family-mono)`, `var(--v2-font-family-code)`, `font-mono`, or a `<code>` / `<pre>` element |
 | Terminal font | Terminal output only                                               | `appearance.font("mono")` from the GUI plugin SDK                                                     |
 
+- The font pickers offer the app's bundled faces and the system stack; they never enumerate the system's font list, so icon, symbol and legacy bitmap families cannot reach the UI. A family a user selected earlier stays listed so it can still be re-selected or replaced: `bundledFonts` in `src/runtime/platform/fonts.ts` is the source.
 - Never write a literal family (`Inter`, `"IBM Plex Mono"`, `monospace`, `Menlo`, `system-ui`) in production CSS, classes, inline styles, canvas `font` strings or widget options. A literal ignores the user's setting.
-- Never add an `@font-face`, font file, or font package outside `packages/app/src/index.css`. That file is the only place the app ships faces: Inter (variable), IBM Plex Mono Text (weights below 600), Bold (600 and up) and Text Italic, and JetBrainsMono Nerd Font Mono Regular and Bold. If a design needs a face that is not shipped, add it there and say why in the PR.
+- Never add an `@font-face`, font file, or font package outside `packages/app/src/index.css`. That file is the only place the app ships faces: Inter (variable), IBM Plex Mono Text (weights below 600), Bold (600 and up) and Text Italic, JetBrains Mono Regular (weights below 600) and Bold (600 and up), and JetBrainsMono Nerd Font Mono Regular and Bold. If a design needs a face that is not shipped, add it there and say why in the PR.
+- The Code font defaults to the system stack on macOS and to JetBrains Mono elsewhere. IBM Plex Mono stays bundled as a fallback and as a choice in the picker; every default face ships with the app. `monoDefaultFor()` and `monoFontFamily()` in `src/settings/model.tsx` own the platform switch; do not test for macOS in a component.
 - Show shell commands with the timeline shell metrics: code font, `13px`, weight `440`, `-0.04px` letter spacing. Do not invent another size for the same content.
-- Prefer weight tokens (`font-medium`, `var(--font-weight-medium)`) over literal weights. Mono at `600` or more renders IBM Plex Mono Bold, so reserve it for real emphasis.
+- Prefer weight tokens (`font-medium`, `var(--font-weight-medium)`) over literal weights. Mono at `600` or more renders the bold face, so reserve it for real emphasis.
 - Do not read font settings directly. `src/settings/model.tsx` writes them to the CSS variables above, and the plugin host passes the terminal font through `appearance.font`.
 
 ## Loading Indicators

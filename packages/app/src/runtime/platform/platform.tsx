@@ -103,9 +103,6 @@ type PlatformBase = {
   /** App version */
   version?: string
 
-  /** Names of the fonts installed on this system; the web build leaves this undefined (desktop only) */
-  listSystemFonts?(): Promise<readonly string[]>
-
   /** Open a web or mail URL in the default system application */
   openExternal(url: string): void
 

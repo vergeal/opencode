@@ -34,14 +34,17 @@ export function projectSettingsKey(scope: ServerScope, projectID: string | undef
   return projectID ? ScopedKey.from(scope, projectID) : undefined
 }
 
-export const monoDefault = "IBM Plex Mono"
+export const monoDefault = "JetBrains Mono"
 
 export const sansDefault = "Inter"
 
 export const terminalDefault = "JetBrainsMono Nerd Font Mono"
 
 const monoFallback =
-  '"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+  '"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
+
+// macOS reads text best in its own face, so code surfaces there default to the system stack instead of JetBrains Mono.
+const monoMacFallback = `system-ui, ${monoFallback}`
 
 const sansFallback = '"Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 
@@ -80,8 +83,17 @@ export function sansInput(font: string | undefined) {
   return input(font)
 }
 
-export function monoFontFamily(font: string | undefined) {
-  return stack(font, monoBase)
+export function monoFontFamily(font: string | undefined, macos = isMacOS()) {
+  return stack(font, macos ? monoMacFallback : monoBase)
+}
+
+/** The code font family the Code row shows when the user has not chosen one. */
+export function monoDefaultFor(macos = isMacOS()) {
+  return macos ? "system-ui" : monoDefault
+}
+
+function isMacOS() {
+  return typeof navigator !== "undefined" && /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
 }
 
 export function sansFontFamily(font: string | undefined) {

@@ -4,12 +4,12 @@ import { SettingsScreen } from "@/settings/shell"
 import { SettingsSurfaceProvider, type SettingsRootTab } from "@/settings/surface"
 import { LayoutProvider } from "@/shell/state/layout"
 
-function SettingsStory(props: { tab: SettingsRootTab; fonts?: readonly string[] }) {
+function SettingsStory(props: { tab: SettingsRootTab }) {
   const history = createMemoryHistory()
   history.set({ value: `/settings?tab=${props.tab}`, replace: true, scroll: false })
 
   return (
-    <DialogStoryRuntime fonts={props.fonts}>
+    <DialogStoryRuntime>
       <div class="h-full min-h-[640px] w-full overflow-hidden bg-v2-background-bg-base">
         <MemoryRouter
           history={history}
@@ -46,14 +46,7 @@ export const Models = {
   render: () => <SettingsStory tab="models" />,
 }
 
-// A desktop install enumerates these; the story keeps them stable so the picker's filtering and ordering are
-// inspectable without depending on the machine's fonts.
-const storyFonts = ["Inter", "IBM Plex Mono", "JetBrainsMono Nerd Font Mono", "Menlo", "Arial", "Georgia"]
-
+// The picker offers the app's bundled faces and System, so the story needs no machine font list.
 export const Appearance = {
-  render: () => <SettingsStory tab="appearance" fonts={storyFonts} />,
-}
-
-export const AppearanceWithoutSystemFonts = {
   render: () => <SettingsStory tab="appearance" />,
 }

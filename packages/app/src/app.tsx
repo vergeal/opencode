@@ -8,7 +8,7 @@ import { ThemeProvider } from "@opencode/ui/theme/context"
 import { MetaProvider, Title } from "@solidjs/meta"
 import { type BaseRouterProps, Router } from "@solidjs/router"
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
-import { type Component, createRenderEffect, ErrorBoundary, type JSX, onMount, type ParentProps } from "solid-js"
+import { type Component, createRenderEffect, ErrorBoundary, type JSX, type ParentProps } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import { CommandProvider } from "@/shell/commands/command"
 import { DesktopCommands } from "@/shell/commands/desktop"
@@ -21,8 +21,6 @@ import { TabsProvider } from "@/shell/tabs/tabs"
 import { ErrorPage } from "@/shell/errors/error"
 import { AppRoutes, File, preloadRoute } from "@/shell/routes/routes"
 import { PluginRoot } from "@/runtime/plugin/root"
-import { usePlatform } from "@/runtime/platform/platform"
-import { loadFontOptions } from "@/runtime/platform/fonts"
 
 export { preloadRoute }
 
@@ -46,15 +44,6 @@ function BodyTypography() {
     document.body.classList.remove("text-12-regular")
     document.body.classList.add("font-(family-name:--font-family-text)", "text-[15px]", "font-[400]")
   })
-
-  return null
-}
-
-function SystemFonts() {
-  const platform = usePlatform()
-
-  // Read once at startup so the settings font rows open with the full list already measured.
-  onMount(() => void loadFontOptions(platform))
 
   return null
 }
@@ -109,7 +98,6 @@ export function AppInterface(props: {
       <GlobalProvider>
         <ProjectIconsProvider>
           <BodyTypography />
-          <SystemFonts />
           <CommandProvider>
             <DesktopCommands />
             <VoiceProvider>
