@@ -1,0 +1,5 @@
+/* `#e60013` is fully saturated, and on the near-black canvas it reads as an alarm rather than a brand mark.
+   Pulling saturation and a little brightness back keeps the red recognisable without the glow. */
+[data-color-scheme="dark"] [data-slot="wordmark-logo"] {
+  filter: saturate(0.62) brightness(0.86);
+}

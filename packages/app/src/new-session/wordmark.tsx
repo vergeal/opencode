@@ -1,3 +1,5 @@
+import "./wordmark-logo.css"
+
 export type LodgerBall = {
   radius: () => number
   at: () => { x: number; y: number }
@@ -27,7 +29,13 @@ export function NewSessionWordmark(props: {
   return (
     <div data-component="new-session-wordmark" aria-hidden="true" class="pointer-events-none mx-auto w-full max-w-[660px]">
       <div ref={(element) => props.ref(element)} data-slot="wordmark-box" class="relative mx-auto w-4/5">
-        <img src="/assets/changhong.svg" alt="" draggable={false} class="h-auto w-full select-none" />
+        <img
+          src="/assets/changhong.svg"
+          alt=""
+          draggable={false}
+          data-slot="wordmark-logo"
+          class="h-auto w-full select-none"
+        />
       </div>
     </div>
   )
