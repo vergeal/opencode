@@ -278,9 +278,11 @@ export function createSessionTimelineRowRenderer(input: {
             ? inputData.command
             : typeof inputData.code === "string"
               ? inputData.code
-              : typeof meta.command === "string"
-                ? meta.command
-                : ""
+              : typeof inputData.path === "string"
+                ? inputData.path
+                : typeof meta.command === "string"
+                  ? meta.command
+                  : ""
         const line = command.replace(/\r\n?/g, "\n").split("\n", 1)[0] ?? ""
         const completed = content.time.completed
         const start = content.time.ran ?? content.time.created

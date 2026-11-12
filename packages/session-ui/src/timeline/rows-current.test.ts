@@ -1156,8 +1156,11 @@ describe("current session timeline rows", () => {
       "tool_1",
       "tool_2",
     ])
-    expect(groups[3]?.type === "context" ? groups[3].refs.map((ref) => ref.partID) : []).toEqual([
+    expect(groups[2]?.type === "commands" ? groups[2].refs.map((ref) => ref.partID) : []).toEqual([
+      "tool_3",
       "tool_4",
+    ])
+    expect(groups[3]?.type === "context" ? groups[3].refs.map((ref) => ref.partID) : []).toEqual([
       "tool_5",
       "tool_6",
     ])
@@ -1165,9 +1168,9 @@ describe("current session timeline rows", () => {
 
   test.each([
     { shell: false, edit: false, types: ["commands", "context"] },
-    { shell: true, edit: false, types: ["part", "context"] },
+    { shell: true, edit: false, types: ["part", "commands", "context"] },
     { shell: false, edit: true, types: ["commands", "file", "context"] },
-    { shell: true, edit: true, types: ["part", "file", "context"] },
+    { shell: true, edit: true, types: ["part", "commands", "file", "context"] },
   ])("keeps tools expanded by settings outside collapsed groups ($shell, $edit)", ({ shell, edit, types }) => {
     const source = [
       { id: "msg_user", type: "user", text: "work", time: { created: 1 } },

@@ -1126,13 +1126,14 @@ function toolGroupType(
   hasContextGroup: boolean,
   detail?: TimelineDetail,
 ) {
-  if (timelineCategory(content) === "shell") {
+  if (timelineCategory(content) === "shell" || content.name === "edit") {
     // A background shell reports `completed` while its metadata still says it is running; keep that one live.
     const running =
       content.state.status === "running" ||
       ("metadata" in content.state && content.state.metadata?.status === "running")
     const completed = content.state.status === "completed" || content.state.status === "error"
-    const expanded = detail ? detail.shell.details === "expanded" : shellExpanded
+    const expanded =
+      content.name === "edit" ? false : detail ? detail.shell.details === "expanded" : shellExpanded
 
     // Completed commands collapse into the digest at their place in the transcript, live or settled, so the reader
     // can see what ran between two commentary stages. The command still running keeps its own row.
