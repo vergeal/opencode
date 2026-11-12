@@ -223,7 +223,7 @@ export function ReplicaTitleBar(props: {
                   data-ui="titlebar-context"
                   data-replica-control
                   aria-label={language.t("replica.context.open")}
-                  class="flex h-6 shrink-0 items-center gap-1.5 rounded-[6px] px-1.5 text-[12px] leading-4 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-hover)] hover:text-[var(--color-text-main)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-border)]"
+                  class="flex h-[22px] shrink-0 items-center gap-1.5 rounded-full px-2 text-[12px] leading-4 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-selected)] hover:text-[var(--color-text-main)] active:bg-[var(--color-selected)] focus-visible:outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-border)]"
                   onClick={openContext}
                 >
                   <ProgressCircle
