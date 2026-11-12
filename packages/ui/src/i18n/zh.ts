@@ -270,6 +270,8 @@ export const dict = {
   "ui.messagePart.context.updates": "更新",
   "ui.messagePart.tools.used.one": "使用了 {{count}} 个 {{tools}}",
   "ui.messagePart.tools.used.other": "使用了 {{count}} 个 {{tools}}",
+  "ui.messagePart.commands.label": "运行了命令",
+  "ui.messagePart.commands.item": "已运行",
   "ui.tool.browser": "浏览器",
   "ui.common.fileCount.one": "{{count}} 个文件",
   "ui.common.fileCount.other": "{{count}} 个文件",

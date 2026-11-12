@@ -561,7 +561,7 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onUninsta
 
           <Show when={props.plugin.source.type !== "builtin"}>
             <div class="explore-catalog-detail-actions">
-              <Button size="small" variant="danger" icon="trash" onClick={() => props.onUninstall?.(props.plugin)}>
+              <Button size="small" variant="ghost-danger" icon="trash" onClick={() => props.onUninstall?.(props.plugin)}>
                 {language.t("explore.plugins.uninstall")}
               </Button>
             </div>
@@ -621,7 +621,7 @@ function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () =
         <Button variant="neutral" disabled={state.busy} onClick={() => dialog.close()}>
           {language.t("explore.plugins.install.cancel")}
         </Button>
-        <Button variant="danger" disabled={state.busy} aria-busy={state.busy} onClick={() => void submit()}>
+        <Button variant="ghost-danger" disabled={state.busy} aria-busy={state.busy} onClick={() => void submit()}>
           {language.t("explore.plugins.uninstall")}
         </Button>
       </DialogFooter>

@@ -565,6 +565,15 @@ export namespace Timeline {
         groupContent(items, shellToolDefaultOpen, editToolDefaultOpen, commentary, detail).forEach((group) => {
           const tool = group.type !== "part" || items[offset]?.content.type !== "text"
           offset += group.type === "part" ? 1 : group.refs.length
+
+          // A commands group is its own row so the settled turn's Worked fold cannot hide it.
+          if (group.type === "commands") {
+            rows.push(new TimelineRow.Commands({ userMessageID: turnID, group }))
+            previousAssistantTool = true
+
+            return
+          }
+
           rows.push(
             new TimelineRow.AssistantPart({
               userMessageID: turnID,
@@ -1022,11 +1031,6 @@ function renderable(content: Content, showReasoning: boolean, detail?: TimelineD
   if (content.type === "reasoning")
     return (detail ? detail.thinking.placement !== "hidden" : showReasoning) && !!content.text.trim()
 
-  // A hidden shell stays hidden even when it failed: the row renderer drops it entirely, so keeping the
-  // row here would leave an empty spacer between the surrounding answers.
-  if (detail?.shell.placement === "hidden" && content.type === "tool" && timelineCategory(content) === "shell")
-    return false
-
   if (detail && currentToolFailed(content)) return true
 
   if (content.name === "todowrite") return false
@@ -1046,7 +1050,7 @@ function groupContent(
   detail?: TimelineDetail,
 ): PartGroup[] {
   const groups: PartGroup[] = []
-  let adjacent: { type: "context" | "file" | "read"; refs: PartRef[]; tools: boolean } | undefined
+  let adjacent: { type: "commands" | "context" | "file" | "read"; refs: PartRef[]; tools: boolean } | undefined
 
   const flush = () => {
     const current = adjacent
@@ -1066,9 +1070,11 @@ function groupContent(
     groups.push({
       type: current.type,
       key:
-        current.type !== "context"
-          ? `part:${first.messageID}:${first.partID}`
-          : `context:${first.messageID}:${first.partID}`,
+        current.type === "commands"
+          ? `commands:${first.messageID}:${first.partID}`
+          : current.type !== "context"
+            ? `part:${first.messageID}:${first.partID}`
+            : `context:${first.messageID}:${first.partID}`,
       refs: current.refs,
     })
     adjacent = undefined
@@ -1127,6 +1133,18 @@ function toolGroupType(
   hasContextGroup: boolean,
   detail?: TimelineDetail,
 ) {
+  if (timelineCategory(content) === "shell") {
+    // A background shell reports `completed` while its metadata still says it is running; keep that one live.
+    const running =
+      content.state.status === "running" ||
+      ("metadata" in content.state && content.state.metadata?.status === "running")
+    const settled = content.state.status === "completed" || content.state.status === "error"
+    const expanded = detail ? detail.shell.details === "expanded" : shellExpanded
+
+    // The commands summary stays visible in the text-only preset, which hides activity detail but not this digest.
+    if (settled && !running && !expanded) return "commands"
+  }
+
   if (detail) {
     if (content.name === "question" && !currentToolFailed(content)) return undefined
     const category = timelineCategory(content)!

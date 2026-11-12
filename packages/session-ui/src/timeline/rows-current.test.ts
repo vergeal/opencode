@@ -351,9 +351,9 @@ describe("current session timeline rows", () => {
         timelineDetail: detail,
       }).rows.map((row) => row._tag)
 
-    expect(rows(timelinePresets[2].value)).toEqual(["UserMessage", "AssistantPart", "AssistantPart"])
-    // Nothing renders for a hidden shell, so the row must not survive as an empty spacer.
-    expect(rows(timelinePresets[4].value)).toEqual(["UserMessage", "AssistantPart"])
+    expect(rows(timelinePresets[2].value)).toEqual(["UserMessage", "Commands", "AssistantPart"])
+    // The text-only preset hides activity but keeps the ran-commands digest.
+    expect(rows(timelinePresets[4].value)).toEqual(["UserMessage", "Commands", "AssistantPart"])
   })
 
   test("stops thinking on idle, message completion, errors and retries", () => {
@@ -1143,23 +1143,22 @@ describe("current session timeline rows", () => {
       Predicate.isTagged(row, "AssistantPart") ? [row.group] : [],
     )
 
-    expect(groups.map((group) => group.type)).toEqual(["context", "part", "context"])
+    expect(groups.map((group) => group.type)).toEqual(["context", "context", "part"])
     expect(groups[0]?.type === "context" ? groups[0].refs.map((ref) => ref.partID) : []).toEqual([
-      "tool_0",
       "tool_1",
       "tool_2",
-      "tool_3",
+    ])
+    expect(groups[1]?.type === "context" ? groups[1].refs.map((ref) => ref.partID) : []).toEqual([
       "tool_4",
       "tool_5",
       "tool_6",
     ])
-    expect(groups[2]?.type === "context" ? groups[2].refs.map((ref) => ref.partID) : []).toEqual(["tool_after_text"])
   })
 
   test.each([
     { shell: false, edit: false, types: ["context"] },
     { shell: true, edit: false, types: ["part", "context"] },
-    { shell: false, edit: true, types: ["context", "file", "context"] },
+    { shell: false, edit: true, types: ["file", "context"] },
     { shell: true, edit: true, types: ["part", "file", "context"] },
   ])("keeps tools expanded by settings outside collapsed groups ($shell, $edit)", ({ shell, edit, types }) => {
     const source = [
@@ -1287,7 +1286,8 @@ describe("current session timeline rows", () => {
     ])
   })
 
-  test.each(["shell", "execute", "subagent"])("keeps %s in an existing group throughout execution", (name) => {
+  // Completed shell and execute calls become their own commands row, so only subagents stay in one group.
+  test.each(["subagent"])("keeps %s in an existing group throughout execution", (name) => {
     const initial = createTimelineProjection({
       sessionMessages: storyDocument([storyTool("earlier", "read", "completed", {})]).messages,
       status: { type: "busy" },
@@ -1410,7 +1410,7 @@ describe("current session timeline rows", () => {
       Timeline.constructSessionMessageRows(source, false, { type: "busy" }).rows.flatMap((row) =>
         Predicate.isTagged(row, "AssistantPart") ? [row.group.type] : [],
       ),
-    ).toEqual(["part", "part", "context"])
+    ).toEqual(["part", "part"])
   })
 
   test("keeps failed calls inside a collapsed mixed-tool stack", () => {
@@ -1474,7 +1474,6 @@ describe("current session timeline rows", () => {
         refs: [
           { messageID: "msg_assistant", partID: "tool_glob_failed" },
           { messageID: "msg_assistant", partID: "tool_grep_failed" },
-          { messageID: "msg_assistant", partID: "tool_shell_failed" },
         ],
       },
     ])

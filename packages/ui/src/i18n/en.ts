@@ -148,6 +148,8 @@ const source = {
   "ui.messagePart.context.match.other": "({{count}} matches)",
   "ui.messagePart.tools.used.one": "Used {{count}} {{tools}}",
   "ui.messagePart.tools.used.other": "Used {{count}} {{tools}}",
+  "ui.messagePart.commands.label": "Ran commands",
+  "ui.messagePart.commands.item": "Ran",
 
   "ui.list.loading": "Loading",
   "ui.list.empty": "No results",

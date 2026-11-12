@@ -38,6 +38,7 @@ import {
   SessionUserMessage,
   currentContentDefaultOpen,
 } from "../message/current-message"
+import { currentToolInput, currentToolMetadata } from "../message/current-tool-state"
 import {
   AssistantReasoningContent,
   SessionCompactionMessage,
@@ -55,6 +56,7 @@ import {
   Timeline,
   TimelineRow,
   unwrapErrorMessage,
+  type PartGroup,
   type PartRef,
   type ReasoningMode,
 } from "./projection"
@@ -258,6 +260,85 @@ export function createSessionTimelineRowRenderer(input: {
     return result
   }
 
+  const renderCommands = (
+    group: Extract<PartGroup, { type: "commands" }>,
+    onSizeChange?: () => void,
+  ) => {
+    const items = createMemo(() => {
+      const contents = indexGroupContents(group.refs)
+
+      return group.refs.flatMap((ref) => {
+        const content = contents.get(ref.messageID)?.get(ref.partID)
+
+        if (content?.type !== "tool") return []
+        const inputData = currentToolInput(content)
+        const meta = currentToolMetadata(content)
+        const command =
+          typeof inputData.command === "string"
+            ? inputData.command
+            : typeof inputData.code === "string"
+              ? inputData.code
+              : typeof meta.command === "string"
+                ? meta.command
+                : ""
+        const line = command.replace(/\r\n?/g, "\n").split("\n", 1)[0] ?? ""
+        const completed = content.time.completed
+        const start = content.time.ran ?? content.time.created
+        const duration = completed !== undefined ? Math.max(0, completed - start) : undefined
+
+        return [{ id: ref.partID, line, duration }]
+      })
+    })
+
+    const disclosureKey = `commands:${group.key}`
+    const open = () => input.disclosure.value(disclosureKey) === true
+
+    return (
+      <div data-component="commands-group" class="w-full min-w-0">
+        <button
+          type="button"
+          data-slot="commands-group-trigger"
+          class="flex items-center gap-2 text-13-regular leading-text-compact text-v2-text-text-faint hover:text-v2-text-text-base"
+          onClick={() => {
+            input.disclosure.set(disclosureKey, !open())
+            onSizeChange?.()
+          }}
+        >
+          <Icon name={open() ? "fill-triangle-down" : "chevron-right"} size="small" />
+          <span>{i18n.t("ui.messagePart.commands.label")}</span>
+        </button>
+        <Show when={open()}>
+          <div data-slot="commands-group-list" class="mt-1 flex w-full min-w-0 flex-col gap-1 pl-5">
+            <For each={items()}>
+              {(item) => (
+                <div
+                  data-slot="commands-group-item"
+                  class="flex w-full min-w-0 items-baseline gap-2 text-13-regular leading-text-compact"
+                >
+                  <span data-slot="commands-group-prefix" class="shrink-0 text-v2-text-text-faint">
+                    {i18n.t("ui.messagePart.commands.item")}
+                  </span>
+                  <span
+                    data-slot="commands-group-line"
+                    class="min-w-0 flex-1 truncate text-v2-text-text-base font-mono"
+                    title={item.line}
+                  >
+                    {item.line}
+                  </span>
+                  <Show when={item.duration !== undefined}>
+                    <span data-slot="commands-group-duration" class="shrink-0 tabular-nums text-v2-text-text-faint">
+                      {formatCommandDuration(item.duration!)}
+                    </span>
+                  </Show>
+                </div>
+              )}
+            </For>
+          </div>
+        </Show>
+      </div>
+    )
+  }
+
   const renderAssistant = (row: Accessor<TimelineRow.AssistantPart>, onSizeChange?: () => void) => {
     // A hidden shell placement removes the command and its output from the transcript, failures included.
     const hideShell = (item: SessionMessageAssistant["content"][number]) =>
@@ -361,7 +442,11 @@ export function createSessionTimelineRowRenderer(input: {
       )
     }
 
-    if (row().group.type === "read") {
+    const group = row().group
+
+    if (group.type === "commands") return renderCommands(group, onSizeChange)
+
+    if (group.type === "read") {
       const tools = createMemo(() => {
         const group = row().group
 
@@ -626,6 +711,7 @@ export function createSessionTimelineRowRenderer(input: {
         "min-w-0 w-full max-w-full": true,
         "md:max-w-session md:mx-auto": input.centered?.(),
         "pt-2": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "tool",
+        "py-2": Predicate.isTagged(props.row, "Commands"),
         "pt-4": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "content",
         "pt-6": Predicate.isTagged(props.row, "Error"),
       }}
@@ -1087,6 +1173,24 @@ export function createSessionTimelineRowRenderer(input: {
       )
     }
 
+    if (Predicate.isTagged(row(), "Commands")) {
+      const current = () => {
+        const value = row()
+
+        if (!Predicate.isTagged(value, "Commands")) throw new Error("Expected a commands timeline row")
+
+        return value
+      }
+
+      return (
+        <Frame row={current()}>
+          <div data-slot="session-turn-message-container" class={`w-full ${padding()}`}>
+            {renderCommands(current().group, onSizeChange)}
+          </div>
+        </Frame>
+      )
+    }
+
     if (Predicate.isTagged(row(), "AssistantPart")) {
       const current = () => {
         const value = row()
@@ -1315,6 +1419,12 @@ export function createSessionTimelineRowRenderer(input: {
   }
 
   return { Row }
+}
+
+function formatCommandDuration(ms: number) {
+  if (ms < 1000) return `${Math.round(ms)}ms`
+  if (ms < 10000) return `${(ms / 1000).toFixed(1)}s`
+  return `${Math.round(ms / 1000)}s`
 }
 
 function capitalizeAgent(agent: string) {
