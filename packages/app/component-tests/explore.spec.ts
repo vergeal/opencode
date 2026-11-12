@@ -159,13 +159,14 @@ story("shows a catalog bundle and reports it once installed", async ({ page }) =
   }
 
   expect(result.catalogOnly.state.name).toBe("Webwright")
-  expect(result.catalogOnly.state.hasInstall).toBe(true)
+  expect(result.catalogOnly.state.hasInstall).toBe(false)
   expect(result.catalogOnly.state.installed).toBe("")
   expect(result.catalogOnly.detail.hasInstall).toBe(true)
   expect(result.catalogOnly.detail.type).toBe("Type")
 
   expect(result.installed.state.name).toBe("Webwright")
-  expectInstalled(result.installed.state.hasInstall, result.installed.state.installed)
+  expect(result.installed.state.hasInstall).toBe(false)
+  expect(result.installed.state.installed).toBe("")
   expect(result.installed.detail.type).toBe("Type")
   expectInstalled(result.installed.detail.hasInstall, result.installed.detail.installed)
 })

@@ -231,10 +231,7 @@ export function ExplorePluginsView(props: {
                               name={entry.name}
                               description={entry.description}
                               folder={!entry.integrated}
-                              installed={installedIDs().has(entry.id)}
-                              addLabel={language.t("explore.plugins.install")}
                               onOpen={() => props.onSelectCatalog?.(entry.id)}
-                              onAdd={() => props.onInstallCatalog?.(entry)}
                             />
                           )}
                         </For>
@@ -269,19 +266,13 @@ export function ExplorePluginsView(props: {
   )
 }
 
-/** One catalog or installed plugin: the whole row opens its page, the trailing plus installs it. */
+/** One catalog plugin: the whole row opens its page. The page owns the install action, so the list only shows what exists. */
 function PluginCard(props: {
   name: string
   description: string
   folder?: boolean
-  /** Already loaded by the server, so the card reports it instead of offering another install. */
-  installed?: boolean
-  addLabel?: string
   onOpen?: () => void
-  onAdd?: () => void
 }) {
-  const language = useLanguage()
-
   return (
     <div class="explore-catalog-card">
       <button type="button" class="explore-catalog-card-main" onClick={() => props.onOpen?.()}>
@@ -298,20 +289,6 @@ function PluginCard(props: {
           <span class="explore-catalog-card-description">{props.description}</span>
         </span>
       </button>
-      <Show when={props.installed}>
-        <span class="explore-catalog-card-installed">{language.t("explore.plugins.installed")}</span>
-      </Show>
-      <Show when={props.onAdd && !props.installed}>
-        <button
-          type="button"
-          class="explore-catalog-card-add"
-          aria-label={props.addLabel}
-          title={props.addLabel}
-          onClick={() => props.onAdd?.()}
-        >
-          <Icon name="plus" />
-        </button>
-      </Show>
     </div>
   )
 }
