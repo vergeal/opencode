@@ -92,8 +92,7 @@ export function ExploreNav() {
                     <button
                       type="button"
                       data-replica-control
-                      data-slot="replica-row"
-                      class="flex min-h-[40px] w-full items-start gap-2 rounded-[var(--radius-row)] px-2 py-1.5 text-start text-[14px] leading-5 text-[var(--color-text-primary)]"
+                      data-slot="replica-installed-row"
                       title={item.label}
                       data-state={layout.destination.explore.selected() === item.id ? "pressed" : undefined}
                       onClick={() => {
@@ -103,14 +102,14 @@ export function ExploreNav() {
                         layout.destination.explore.setSelected(item.id)
                       }}
                     >
-                      <PluginIcon class="mt-0.5 size-4 shrink-0 text-[var(--color-icon-secondary)]" monochrome />
-                      <span class="flex min-w-0 flex-1 flex-col">
-                        <span class="truncate">{item.label}</span>
+                      <span data-slot="replica-installed-icon">
+                        <PluginIcon monochrome />
+                      </span>
+                      <span data-slot="replica-installed-copy">
+                        <span data-slot="replica-installed-name">{item.label}</span>
                         <Show when={item.description}>
                           {(description) => (
-                            <span class="truncate text-[12px] leading-4 text-[var(--color-text-secondary)]">
-                              {description()}
-                            </span>
+                            <span data-slot="replica-installed-description">{description()}</span>
                           )}
                         </Show>
                       </span>

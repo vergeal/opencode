@@ -230,7 +230,6 @@ export function ExplorePluginsView(props: {
                             <PluginCard
                               name={entry.name}
                               description={entry.description}
-                              folder={!entry.integrated}
                               onOpen={() => props.onSelectCatalog?.(entry.id)}
                             />
                           )}
@@ -270,7 +269,6 @@ export function ExplorePluginsView(props: {
 function PluginCard(props: {
   name: string
   description: string
-  folder?: boolean
   onOpen?: () => void
 }) {
   return (
@@ -282,9 +280,6 @@ function PluginCard(props: {
         <span class="explore-catalog-card-copy">
           <span class="explore-catalog-card-name">
             <bdi dir="ltr">{props.name}</bdi>
-            <Show when={props.folder}>
-              <Icon name="folder" class="explore-catalog-card-folder" />
-            </Show>
           </span>
           <span class="explore-catalog-card-description">{props.description}</span>
         </span>
@@ -326,9 +321,6 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; installed?: boolean;
             <div class="explore-catalog-hero-copy">
               <h1 class="explore-catalog-hero-name">
                 <bdi dir="ltr">{props.entry.name}</bdi>
-                <Show when={!props.entry.integrated}>
-                  <Icon name="folder" class="explore-catalog-card-folder" />
-                </Show>
               </h1>
               <p class="explore-catalog-hero-meta">
                 {language.t("explore.plugins.by", { author: props.entry.author })} · {props.entry.description}

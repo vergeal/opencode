@@ -324,6 +324,69 @@ html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   white-space: nowrap;
 }
 
+/* An installed plugin reads as a small block: mark, name and description. It keeps its own metrics because the
+   one-line row above pins a 29px height and never wraps. */
+[data-slot="replica-sidebar"] [data-slot="replica-installed-row"] {
+  display: flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--radius-row);
+  background: transparent;
+  text-align: start;
+  white-space: normal;
+}
+
+[data-slot="replica-sidebar"] [data-slot="replica-installed-row"]:hover {
+  background: var(--color-hover);
+}
+
+[data-slot="replica-sidebar"] [data-slot="replica-installed-row"][data-state="pressed"],
+[data-slot="replica-sidebar"] [data-slot="replica-installed-row"][data-state="pressed"]:hover {
+  background: var(--color-selected);
+}
+
+[data-slot="replica-installed-icon"] {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  color: var(--color-icon-secondary);
+}
+
+[data-slot="replica-installed-copy"] {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+[data-slot="replica-installed-name"] {
+  overflow: hidden;
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-slot="replica-installed-description"] {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 16px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 [data-slot="replica-sidebar"] [data-slot="replica-row"]:hover {
   background: var(--color-hover);
 }
