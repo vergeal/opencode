@@ -120,6 +120,230 @@
   overflow-wrap: anywhere;
 }
 
+/* Plugins: the same master-detail shape as skills, with search above the list. */
+
+.explore-plugins {
+  display: grid;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  padding: 16px 24px 24px;
+}
+
+.explore-plugins-list {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  padding-inline-end: 20px;
+}
+
+.explore-plugins-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+}
+
+.explore-plugins-search {
+  flex-shrink: 0;
+  padding-bottom: 12px;
+}
+
+.explore-plugins-search [data-component="text-input-v2"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.explore-plugins-scroll {
+  flex: 1;
+  min-height: 0;
+  padding-inline-end: 2px;
+  overflow-y: auto;
+}
+
+.explore-plugin-row {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: default;
+}
+
+.explore-plugin-select {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: default;
+}
+
+@media (hover: hover) {
+  .explore-plugin-row:hover,
+  .explore-plugin-select:hover {
+    background: var(--v2-overlay-simple-overlay-hover);
+  }
+}
+
+.explore-plugin-row[data-selected],
+.explore-plugin-row[data-selected]:hover,
+.explore-plugin-select[data-selected],
+.explore-plugin-select[data-selected]:hover {
+  background: var(--v2-overlay-simple-overlay-pressed);
+}
+
+.explore-plugin-row:focus-visible,
+.explore-plugin-select:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: -2px;
+}
+
+.explore-plugins-detail {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding-inline-start: 28px;
+  border-inline-start: 0.5px solid var(--v2-border-border-base);
+}
+
+.explore-plugin-detail-header {
+  min-width: 0;
+  width: 100%;
+}
+
+.explore-plugin-detail-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.explore-plugin-facts {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding-block: 16px;
+  border-block: 0.5px solid var(--v2-border-border-base);
+}
+
+.explore-plugin-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explore-plugin-facts dt {
+  margin: 0;
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
+}
+
+.explore-plugin-facts dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-base);
+  overflow-wrap: anywhere;
+}
+
+.explore-plugin-facts code {
+  font-family: var(--v2-font-family-code);
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-base);
+  user-select: text;
+}
+
+.explore-plugin-feature {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--v2-background-bg-layer-02);
+  font-size: 11px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
+}
+
+.explore-plugin-detail-note {
+  margin-bottom: 12px;
+}
+
+/* Loading skeletons reserve the list's shape while its data loads. */
+
+.explore-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.explore-skeleton-row {
+  height: 32px;
+  border-radius: 6px;
+  background: var(--v2-background-bg-layer-02);
+  animation: explore-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.explore-skeleton-row:nth-child(2n) {
+  width: 82%;
+}
+
+@keyframes explore-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explore-skeleton-row {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .explore-plugins {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(96px, 42%) minmax(0, 1fr);
+  }
+
+  .explore-plugins-list {
+    padding-inline-end: 0;
+    padding-bottom: 16px;
+  }
+
+  .explore-plugins-detail {
+    padding-inline-start: 0;
+    padding-block-start: 16px;
+    border-inline-start: 0;
+    border-block-start: 0.5px solid var(--v2-border-border-base);
+  }
+}
+
 /* Skills: a master-detail pane that owns its height instead of scrolling the whole page. */
 
 .explore-skills {
