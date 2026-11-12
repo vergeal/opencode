@@ -57,12 +57,6 @@ export namespace TimelineRow {
     spacing?: "tool" | "content"
   }> {}
 
-  /** Completed shell and execute calls between text segments, folded into one row. */
-  export class Commands extends Data.TaggedClass("Commands")<{
-    userMessageID: string
-    group: Extract<PartGroup, { type: "commands" }>
-  }> {}
-
   export class Thinking extends Data.TaggedClass("Thinking")<{
     userMessageID: string
     ref: PartRef
@@ -120,7 +114,6 @@ export namespace TimelineRow {
     | Notice
     | TurnDivider
     | AssistantPart
-    | Commands
     | Thinking
     | Error
     | Retry
@@ -138,7 +131,6 @@ export namespace TimelineRow {
     // and its rows regroup under the real user message once older history loads.
     // The group key already carries the owning message and part IDs.
     AssistantPart: (row) => `assistant-part:${row.group.type}:${row.group.key}`,
-    Commands: (row) => `commands-row:${row.group.key}`,
     Thinking: (row) => `thinking:${row.userMessageID}`,
     Error: (row) => `error:${row.userMessageID}`,
     Retry: (row) => `retry:${row.userMessageID}`,
@@ -162,8 +154,6 @@ export namespace TimelineRow {
       other.previousAssistantPart === row.previousAssistantPart &&
       other.spacing === row.spacing &&
       sameGroup(other.group, row.group),
-    Commands: (row) => (other: TimelineRow) =>
-      Predicate.isTagged(other, "Commands") && sameGroup(other.group, row.group),
     Thinking: (row) => (other: TimelineRow) => Predicate.isTagged(other, "Thinking") && sameRef(other.ref, row.ref),
     Error: (row) => (other: TimelineRow) =>
       Predicate.isTagged(other, "Error") &&
@@ -223,7 +213,6 @@ export type TimelineRowMap = {
     previousAssistantPart: boolean
     spacing?: "tool" | "content"
   }
-  Commands: { userMessageID: string; group: Extract<PartGroup, { type: "commands" }> }
   Thinking: { userMessageID: string; ref: PartRef }
   Retry: { userMessageID: string; attempt: number; message: string; next: number }
   Error: {

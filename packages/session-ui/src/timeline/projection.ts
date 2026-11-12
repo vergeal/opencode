@@ -562,17 +562,10 @@ export namespace Timeline {
 
       const appendGroups = (items: typeof refs) => {
         let offset = 0
-        groupContent(items, shellToolDefaultOpen, editToolDefaultOpen, commentary, detail).forEach((group) => {
-          const tool = group.type !== "part" || items[offset]?.content.type !== "text"
+        groupContent(items, shellToolDefaultOpen, editToolDefaultOpen, commentary, detail).forEach(
+          (group) => {
+            const tool = group.type !== "part" || items[offset]?.content.type !== "text"
           offset += group.type === "part" ? 1 : group.refs.length
-
-          // A commands group is its own row so the settled turn's Worked fold cannot hide it.
-          if (group.type === "commands") {
-            rows.push(new TimelineRow.Commands({ userMessageID: turnID, group }))
-            previousAssistantTool = true
-
-            return
-          }
 
           rows.push(
             new TimelineRow.AssistantPart({
@@ -1138,11 +1131,12 @@ function toolGroupType(
     const running =
       content.state.status === "running" ||
       ("metadata" in content.state && content.state.metadata?.status === "running")
-    const settled = content.state.status === "completed" || content.state.status === "error"
+    const completed = content.state.status === "completed" || content.state.status === "error"
     const expanded = detail ? detail.shell.details === "expanded" : shellExpanded
 
-    // The commands summary stays visible in the text-only preset, which hides activity detail but not this digest.
-    if (settled && !running && !expanded) return "commands"
+    // Completed commands collapse into the digest at their place in the transcript, live or settled, so the reader
+    // can see what ran between two commentary stages. The command still running keeps its own row.
+    if (completed && !running && !expanded) return "commands"
   }
 
   if (detail) {

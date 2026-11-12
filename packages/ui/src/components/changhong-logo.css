@@ -5,49 +5,83 @@
   color: var(--changhong-logo-color, #e60013);
 }
 
-[data-component="changhong-logo"] > svg {
+[data-component="changhong-logo"] > svg,
+[data-component="changhong-logo"] .changhong-logo-sweep-art {
   display: block;
   width: 100%;
   height: auto;
 }
 
 /* `#e60013` is fully saturated, and on the near-black canvas it reads as an alarm rather than a brand mark.
-   Pulling saturation and a little brightness back keeps the red recognisable without the glow. */
-[data-color-scheme="dark"] [data-component="changhong-logo"] {
+   Pulling saturation and a little brightness back keeps the red recognisable without the glow. Only the base mark
+   is dimmed: the sweep has to stay bright, and a filter here would also isolate its blend from the canvas. */
+[data-color-scheme="dark"] [data-component="changhong-logo"] .changhong-logo-art {
   filter: saturate(0.62) brightness(0.86);
 }
 
-/* The sweep is the same artwork in white, so the light band only lands on the letterforms. */
+/* The sweep is the same artwork in white, so the light band only lands on the letterforms. A narrow window travels
+   across the mark while the artwork inside it moves back by the same distance: the letterforms stay aligned with the
+   base mark and the effect runs on compositor transforms instead of an animated mask position. */
 [data-component="changhong-logo"] .changhong-logo-sweep {
+  --changhong-logo-sweep-width: 30%;
+  --changhong-logo-sweep-duration: 2400ms;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+[data-component="changhong-logo"] .changhong-logo-sweep-window {
   position: absolute;
   inset: 0;
   fill: #fff;
   mix-blend-mode: screen;
-  mask-image: linear-gradient(to right, transparent 38%, #000 50%, transparent 62%);
-  mask-size: 300% 100%;
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(0 0 0 / 0.35) 24%,
+    #000 50%,
+    rgb(0 0 0 / 0.35) 76%,
+    transparent 100%
+  );
+  mask-size: var(--changhong-logo-sweep-width) 100%;
+  mask-position: 50% 0;
   mask-repeat: no-repeat;
-  animation: changhong-logo-sweep 1800ms ease-in-out infinite;
+  animation: changhong-logo-sweep-window var(--changhong-logo-sweep-duration) linear infinite;
 }
 
-/* Oversizing the mask moves its highlight physically left to right, including in RTL. */
-@keyframes changhong-logo-sweep {
+[data-component="changhong-logo"] .changhong-logo-sweep-art {
+  animation: changhong-logo-sweep-art var(--changhong-logo-sweep-duration) linear infinite;
+}
+
+/* The window's centre runs from one band before the mark to one band past it, so the light enters and leaves the
+   letterforms instead of popping in at the edges. */
+@keyframes changhong-logo-sweep-window {
   0% {
-    mask-position: 100% 0;
+    translate: -100% 0;
     opacity: 0;
   }
 
-  18%,
-  82% {
-    opacity: 0.9;
+  10%,
+  90% {
+    opacity: 1;
   }
 
   100% {
-    mask-position: 0% 0;
+    translate: 100% 0;
     opacity: 0;
+  }
+}
+
+@keyframes changhong-logo-sweep-art {
+  from {
+    translate: 100% 0;
+  }
+
+  to {
+    translate: -100% 0;
   }
 }
 
 :root[data-motion="reduce"] [data-component="changhong-logo"] .changhong-logo-sweep {
-  animation: none;
-  opacity: 0;
+  display: none;
 }

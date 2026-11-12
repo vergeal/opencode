@@ -711,7 +711,6 @@ export function createSessionTimelineRowRenderer(input: {
         "min-w-0 w-full max-w-full": true,
         "md:max-w-session md:mx-auto": input.centered?.(),
         "pt-2": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "tool",
-        "py-2": Predicate.isTagged(props.row, "Commands"),
         "pt-4": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "content",
         "pt-6": Predicate.isTagged(props.row, "Error"),
       }}
@@ -1168,24 +1167,6 @@ export function createSessionTimelineRowRenderer(input: {
             <div data-slot="session-turn-compaction">
               <SessionCompactionQueued />
             </div>
-          </div>
-        </Frame>
-      )
-    }
-
-    if (Predicate.isTagged(row(), "Commands")) {
-      const current = () => {
-        const value = row()
-
-        if (!Predicate.isTagged(value, "Commands")) throw new Error("Expected a commands timeline row")
-
-        return value
-      }
-
-      return (
-        <Frame row={current()}>
-          <div data-slot="session-turn-message-container" class={`w-full ${padding()}`}>
-            {renderCommands(current().group, onSizeChange)}
           </div>
         </Frame>
       )

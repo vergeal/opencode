@@ -351,9 +351,9 @@ describe("current session timeline rows", () => {
         timelineDetail: detail,
       }).rows.map((row) => row._tag)
 
-    expect(rows(timelinePresets[2].value)).toEqual(["UserMessage", "Commands", "AssistantPart"])
+    expect(rows(timelinePresets[2].value)).toEqual(["UserMessage", "AssistantPart", "AssistantPart"])
     // The text-only preset hides activity but keeps the ran-commands digest.
-    expect(rows(timelinePresets[4].value)).toEqual(["UserMessage", "Commands", "AssistantPart"])
+    expect(rows(timelinePresets[4].value)).toEqual(["UserMessage", "AssistantPart", "AssistantPart"])
   })
 
   test("stops thinking on idle, message completion, errors and retries", () => {
@@ -1143,12 +1143,20 @@ describe("current session timeline rows", () => {
       Predicate.isTagged(row, "AssistantPart") ? [row.group] : [],
     )
 
-    expect(groups.map((group) => group.type)).toEqual(["context", "context", "part"])
-    expect(groups[0]?.type === "context" ? groups[0].refs.map((ref) => ref.partID) : []).toEqual([
+    expect(groups.map((group) => group.type)).toEqual([
+      "commands",
+      "context",
+      "commands",
+      "context",
+      "part",
+      "commands",
+    ])
+    expect(groups[0]?.type === "commands" ? groups[0].refs.map((ref) => ref.partID) : []).toEqual(["tool_0"])
+    expect(groups[1]?.type === "context" ? groups[1].refs.map((ref) => ref.partID) : []).toEqual([
       "tool_1",
       "tool_2",
     ])
-    expect(groups[1]?.type === "context" ? groups[1].refs.map((ref) => ref.partID) : []).toEqual([
+    expect(groups[3]?.type === "context" ? groups[3].refs.map((ref) => ref.partID) : []).toEqual([
       "tool_4",
       "tool_5",
       "tool_6",
@@ -1156,9 +1164,9 @@ describe("current session timeline rows", () => {
   })
 
   test.each([
-    { shell: false, edit: false, types: ["context"] },
+    { shell: false, edit: false, types: ["commands", "context"] },
     { shell: true, edit: false, types: ["part", "context"] },
-    { shell: false, edit: true, types: ["file", "context"] },
+    { shell: false, edit: true, types: ["commands", "file", "context"] },
     { shell: true, edit: true, types: ["part", "file", "context"] },
   ])("keeps tools expanded by settings outside collapsed groups ($shell, $edit)", ({ shell, edit, types }) => {
     const source = [
@@ -1361,7 +1369,7 @@ describe("current session timeline rows", () => {
     ])
   })
 
-  test("keeps active and background work standalone when no group precedes them", () => {
+  test("keeps active and background work standalone and collapses a finished command while live", () => {
     const source: SessionMessageInfo[] = [
       { id: "msg_user", type: "user", text: "work", time: { created: 1 } },
       {
@@ -1410,7 +1418,42 @@ describe("current session timeline rows", () => {
       Timeline.constructSessionMessageRows(source, false, { type: "busy" }).rows.flatMap((row) =>
         Predicate.isTagged(row, "AssistantPart") ? [row.group.type] : [],
       ),
-    ).toEqual(["part", "part"])
+    ).toEqual(["part", "part", "commands"])
+  })
+
+  test("collapses commands between commentary while the turn is still live", () => {
+    const source: SessionMessageInfo[] = [
+      { id: "msg_user", type: "user", text: "work", time: { created: 1 } },
+      {
+        id: "msg_assistant",
+        type: "assistant",
+        agent: "build",
+        model: { id: "model", providerID: "provider" },
+        content: [
+          { type: "text", text: "looking" },
+          {
+            type: "tool",
+            id: "tool_done",
+            name: "shell",
+            state: {
+              status: "completed",
+              input: {},
+              content: [{ type: "text", text: "done" }],
+              metadata: {},
+            },
+            time: { created: 2, completed: 3 },
+          },
+          { type: "text", text: "still looking" },
+        ],
+        time: { created: 2 },
+      },
+    ]
+
+    expect(
+      Timeline.constructSessionMessageRows(source, false, { type: "busy" }).rows.flatMap((row) =>
+        Predicate.isTagged(row, "AssistantPart") ? [row.group.type] : [],
+      ),
+    ).toEqual(["part", "commands", "part"])
   })
 
   test("keeps failed calls inside a collapsed mixed-tool stack", () => {
@@ -1475,6 +1518,11 @@ describe("current session timeline rows", () => {
           { messageID: "msg_assistant", partID: "tool_glob_failed" },
           { messageID: "msg_assistant", partID: "tool_grep_failed" },
         ],
+      },
+      {
+        type: "commands",
+        key: "commands:msg_assistant:tool_shell_failed",
+        refs: [{ messageID: "msg_assistant", partID: "tool_shell_failed" }],
       },
     ])
     expect(

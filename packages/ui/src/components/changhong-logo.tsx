@@ -16,9 +16,13 @@ export function ChanghongLogo(props: { class?: string; sweep?: boolean }) {
         </g>
       </svg>
       <Show when={props.sweep}>
-        <svg class="changhong-logo-sweep" viewBox="0 0 264.58333 42.29704" aria-hidden="true">
-          <Artwork />
-        </svg>
+        <span class="changhong-logo-sweep" aria-hidden="true">
+          <span class="changhong-logo-sweep-window">
+            <svg class="changhong-logo-sweep-art" viewBox="0 0 264.58333 42.29704">
+              <Artwork />
+            </svg>
+          </span>
+        </span>
       </Show>
     </span>
   )
