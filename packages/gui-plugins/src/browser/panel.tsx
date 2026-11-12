@@ -178,6 +178,13 @@ export default function SessionBrowserPane(props: {
     return tab ? props.model.embed(props.session, tab.id) : undefined
   }
 
+  // The tab's page is in the user's local Chrome; the pane shows its address instead of embedding it.
+  const external = () => {
+    const tab = state()
+
+    return tab ? props.model.external(props.session, tab.id) : false
+  }
+
   let root: HTMLElement | undefined
   let box: HTMLDivElement | undefined
   let input: HTMLInputElement | undefined
@@ -193,7 +200,7 @@ export default function SessionBrowserPane(props: {
     return value
   }
 
-  const inspectable = () => !!address() && !failed() && !suspended()
+  const inspectable = () => !!address() && !failed() && !suspended() && !external()
   const picking = () => store.picking?.sessionKey === props.session.key && store.picking?.tabID === state()?.id
   // A comment on a picked element freezes the page so its editor can float above it.
   const commenting = () => store.comment?.sessionKey === props.session.key && store.comment?.tabID === state()?.id
@@ -908,6 +915,26 @@ export default function SessionBrowserPane(props: {
         class="relative min-h-0 flex-1 bg-v2-background-bg-base flex items-center justify-center"
       >
         <div ref={box} aria-hidden="true" class="pointer-events-none absolute inset-0" />
+        <Show when={external() && !failed() && !suspended()}>
+          <div
+            dir="auto"
+            class="mx-auto flex max-w-[420px] flex-col items-center gap-3 px-6 pt-20 text-center"
+            role="status"
+          >
+            <Icon name="outline-globe" size="large" class="text-v2-icon-icon-muted" />
+            <div class="flex flex-col gap-2">
+              <div class="text-[15px] font-[530] leading-[var(--line-height-compact)] text-v2-text-text-base">
+                {plugin.t("external.local.title")}
+              </div>
+              <div class="text-13-regular leading-[var(--line-height-base)] text-v2-text-text-muted">
+                {plugin.t("external.local.description")}
+              </div>
+            </div>
+            <div dir="ltr" class="max-w-full truncate text-12-regular text-v2-text-text-faint" title={address()}>
+              {address()}
+            </div>
+          </div>
+        </Show>
         <Show when={empty() && !failed() && !suspended()}>
           <div dir="auto" class="size-full overflow-y-auto">
             <Show

@@ -51,6 +51,9 @@ export default {
   "page.add": "Add page to session",
   "page.placeholder": "Add context about this page",
   "external.open": "Open in system browser",
+  "external.local.title": "Opened in your local Chrome",
+  "external.local.description":
+    "This tab runs in Chrome on this computer. Use that window to interact with the page; the agent can still read and control it.",
   "external.menu": "Open in browser",
   "external.unavailable": "This address only works on the server's machine.",
   options: "Browser options",
