@@ -111,7 +111,7 @@ story(
     await expect(component.getByRole("option", { selected: true })).toHaveText("Explain the latest changes")
     await expect(
       component.getByRole("option", { name: "Explain the latest changes", exact: true }).locator("bdi"),
-    ).toHaveCSS("font-weight", "440")
+    ).toHaveCSS("font-weight", "400")
     await search.press("ArrowDown")
     await expect(component.getByRole("option", { selected: true })).toHaveText(
       "Review the composer layout Keep keyboard navigation accessible",
