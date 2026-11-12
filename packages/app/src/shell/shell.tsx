@@ -119,9 +119,10 @@ function ReplicaLayer(props: ParentProps) {
       platform.platform === "desktop" && platform.os === "macos" ? "translucent" : "opaque"
   })
 
-  const [sidebarWidth, setSidebarWidth] = createSignal<number>()
+  const sidebarWidth = () => preferences.appearance.sidebarWidth()
   const [resizing, setResizing] = createSignal(false)
-  const sidebarSize = () => sidebarWidth() ?? 300
+  // The handle clamps while dragging; clamp again so an edited store cannot push the column out of range.
+  const sidebarSize = () => Math.min(Math.max(sidebarWidth(), 220), 480)
 
   let root: HTMLDivElement | undefined
   let draggingWidth: number | undefined
@@ -151,7 +152,7 @@ function ReplicaLayer(props: ParentProps) {
     const width = draggingWidth
     draggingWidth = undefined
 
-    if (width !== undefined) setSidebarWidth(width)
+    if (width !== undefined) preferences.appearance.setSidebarWidth(width)
   }
 
   const onDraggingChange = (value: boolean) => {

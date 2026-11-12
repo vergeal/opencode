@@ -148,6 +148,8 @@ const appearanceSchema = Persistence.struct({
   // "inbox" is experimental: the vertical layout with a server-wide session inbox in place of tabs.
   tabLayout: Schema.Literals(["horizontal", "vertical", "inbox"]),
   sidebarOpen: Persistence.optional(Schema.Boolean),
+  // The width the user pinned by dragging the navigation edge. Absent means the default column width.
+  sidebarWidth: Persistence.optional(Schema.Number),
   reduceMotion: Schema.Literals(["system", "on", "off"]),
 })
 
@@ -469,6 +471,10 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         sidebarOpen: withFallback(() => store.appearance?.sidebarOpen, true),
         setSidebarOpen(value: boolean) {
           setStore("appearance", "sidebarOpen", value)
+        },
+        sidebarWidth: withFallback(() => store.appearance?.sidebarWidth, 300),
+        setSidebarWidth(value: number) {
+          setStore("appearance", "sidebarWidth", value)
         },
         reduceMotion,
         setReduceMotion(value: ReduceMotion) {
