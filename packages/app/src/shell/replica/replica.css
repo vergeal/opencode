@@ -1,7 +1,9 @@
 /* v6 workbench: the window is one continuous surface. Three columns share the frame with the titlebar,
    and every size below comes from the v6 token table rather than ad-hoc component values. */
 [data-replica] {
-  --titlebar-height: 39px;
+  /* Windows draws its caption buttons in the window controls overlay, whose height follows the zoom level. The bar
+     has to be at least that tall, otherwise the buttons' hover background spills over the workbench below it. */
+  --titlebar-height: max(39px, env(titlebar-area-height, 39px));
   --primary-rail-width: 46px;
   /* The window controls keep this much room even when the sidebar collapses, so the traffic lights and the
      three buttons never run under the title. */
@@ -28,7 +30,6 @@
   --composer-radius: 19px;
 
   --font-family-ui: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
-  --font-family-mono: "SFMono-Regular", "SF Mono", Menlo, Monaco, monospace;
   --font-size-workspace-title: 19px;
   --font-size-sidebar: 14px;
   --font-size-section: 13px;
@@ -83,7 +84,7 @@
   overflow: hidden;
   background: var(--color-rail);
   color: var(--color-text-primary);
-  font-family: var(--font-family-ui);
+  font-family: var(--font-family-sans, var(--font-family-ui));
   font-size: var(--font-size-body);
   font-weight: 400;
   letter-spacing: 0;
