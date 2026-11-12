@@ -91,10 +91,12 @@
   font-optical-sizing: auto;
 }
 
-/* Dark mode steps the three surfaces down: the window frame (29), the navigation column (21), the work area (15). */
+/* Dark mode steps the three surfaces down: the window frame (8), the navigation column (21), the work area (15).
+   The frame sits below the panel — as it does in light mode — so the cutout of the workbench's rounded corner reads
+   as a recess; a frame above the panel turned that corner into a bright square poking out of the panel. */
 [data-color-scheme="dark"] [data-replica] {
-  --color-titlebar: rgb(29 29 29 / 62%);
-  --color-rail: rgb(29 29 29 / 62%);
+  --color-titlebar: rgb(8 8 8 / 62%);
+  --color-rail: rgb(8 8 8 / 62%);
   --color-sidebar: rgb(21 21 21 / 62%);
   --color-main: rgb(15 15 15);
   --color-composer: var(--v2-background-bg-layer-01);
@@ -238,16 +240,6 @@ html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   overflow: hidden;
   background: var(--color-main);
   box-shadow: var(--shadow-panel);
-}
-
-/* Light mode reads as one piece because its frame is a step darker than the panel, so the cutout of the rounded
-   corner is just more frame. Dark mode has the frame lighter than the panel, which turned that cutout into a bright
-   square sitting outside the corner. A wide, dark halo fades the frame into the panel instead of ending on a hard
-   edge, so the corner reads as depth rather than a notch. */
-[data-color-scheme="dark"] [data-slot="replica-workbench"] {
-  box-shadow:
-    0 0 14px 0 rgb(0 0 0 / 70%),
-    var(--shadow-panel);
 }
 
 [data-slot="replica-sidebar-slot"] {
