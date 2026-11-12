@@ -298,13 +298,26 @@ export function createSessionTimelineRowRenderer(input: {
         <button
           type="button"
           data-slot="commands-group-trigger"
-          class="flex items-center gap-2 text-13-regular leading-text-compact text-v2-text-text-faint hover:text-v2-text-text-base"
+          class="group flex items-center gap-1.5 text-13-regular leading-text-compact text-v2-text-text-faint hover:text-v2-text-text-base"
+          aria-expanded={open()}
           onClick={() => {
             input.disclosure.set(disclosureKey, !open())
             onSizeChange?.()
           }}
         >
-          <Icon name={open() ? "fill-triangle-down" : "chevron-right"} size="small" />
+          {/* The disclosure arrow keeps its slot so revealing it never shifts the label. */}
+          <span
+            data-slot="commands-group-disclosure"
+            data-open={open() ? "" : undefined}
+            class="flex w-3 shrink-0 items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 data-[open]:opacity-100"
+          >
+            <Icon
+              name="chevron-right"
+              size="small"
+              class={open() ? "rotate-90 transition-transform" : "transition-transform"}
+            />
+          </span>
+          <Icon name="outline-console" size="small" />
           <span>{i18n.t("ui.messagePart.commands.label")}</span>
         </button>
         <Show when={open()}>
