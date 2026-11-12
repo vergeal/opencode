@@ -83,6 +83,9 @@ export const PluginHandler = HttpApiBuilder.group(Api, "server.plugin", (handler
               field: "id",
             }),
         })
+        // The install only wrote files. Wait for the plugin source to reload and activate so every session's next
+        // step and this response observe the same settled inventory.
+        yield* settle(ctx.payload.id, true)
         return yield* response(Effect.succeed({ ...installed, id: ctx.payload.id }))
       }),
     )
@@ -97,6 +100,7 @@ export const PluginHandler = HttpApiBuilder.group(Api, "server.plugin", (handler
               field: "id",
             }),
         })
+        yield* settle(ctx.payload.id, false)
         return yield* response(Effect.succeed({ ...removed, id: ctx.payload.id }))
       }),
     )
@@ -131,3 +135,16 @@ export const PluginHandler = HttpApiBuilder.group(Api, "server.plugin", (handler
       }),
     ),
 )
+
+/** Bounded wait until the plugin inventory reflects an install or uninstall, so callers never read the old state. */
+function settle(pluginID: Plugin.ID, present: boolean) {
+  return Effect.gen(function* () {
+    const plugins = yield* Plugin.Service
+    const deadline = Date.now() + 10_000
+    while (Date.now() < deadline) {
+      const listed = (yield* plugins.list()).some((plugin) => plugin.id === pluginID)
+      if (listed === present) return
+      yield* Effect.sleep(100)
+    }
+  })
+}
