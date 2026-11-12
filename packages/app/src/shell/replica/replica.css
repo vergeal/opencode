@@ -352,6 +352,21 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   min-height: 0;
 }
 
+/* The side panel is part of the conversation surface, not a card floating beside it: it takes the shell's corner
+   radius, sits flush against the conversation instead of an 8px gutter, and is marked by a hairline rather than its
+   own elevation. */
+[data-replica] [data-pane-row] {
+  gap: 0;
+}
+
+[data-replica] #review-panel {
+  box-shadow: none;
+}
+
+[data-replica] #review-panel:not([aria-hidden="true"]) {
+  border-inline-start: 1px solid var(--color-divider);
+}
+
 @media (max-width: 767px) {
   [data-slot="replica-titlebar"] {
     grid-template-columns: minmax(0, 1fr);
