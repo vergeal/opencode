@@ -570,10 +570,12 @@ function MessageTimelineView(
     scroller.style.overflowAnchor = "none"
 
     requestAnimationFrame(() => {
-      const after = top()
+      requestAnimationFrame(() => {
+        const after = top()
 
-      if (after !== undefined) scroller.scrollTop += after - before
-      scroller.style.overflowAnchor = anchor
+        if (after !== undefined) scroller.scrollTop += after - before
+        scroller.style.overflowAnchor = anchor
+      })
     })
   }
 
