@@ -19,6 +19,7 @@ import {
   storedZoomLevel,
   titlebarOverlay,
   tone,
+  translucentWindow,
 } from "./defaults"
 
 const titlebarThemes = new WeakMap<BrowserWindow, Partial<TitlebarTheme>>()
@@ -26,11 +27,6 @@ const titlebarThemes = new WeakMap<BrowserWindow, Partial<TitlebarTheme>>()
 const pinchZoomEnabled = new WeakMap<BrowserWindow, boolean>()
 
 const maxZoomLevel = 10
-
-/** macOS windows sit on a blurred material; the other platforms paint an opaque theme colour. */
-function translucentWindow() {
-  return process.platform === "darwin"
-}
 
 const minZoomLevel = 0.2
 
@@ -63,7 +59,7 @@ export function setBackgroundColor(color: string) {
   // settings file on each set, so only persist a change.
   if (getBackgroundColor() !== color) getStore().set(BACKGROUND_COLOR_KEY, color)
   backgroundColor = color
-  // macOS keeps the window transparent so the vibrancy layer shows through the replica chrome.
+  // A translucent window keeps its transparent backdrop so the system material shows through the replica chrome.
   if (translucentWindow()) return
   BrowserWindow.getAllWindows().forEach((win) => {
     win.setBackgroundColor(color)

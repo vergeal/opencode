@@ -5,6 +5,8 @@ export type WindowBootstrap = {
   firstLaunchPending?: boolean
   /** The app runs packaged (`app.isPackaged`), as plugins' `App.packaged` reports in both processes. */
   packaged?: boolean
+  /** The window sits on a system-drawn backdrop (macOS vibrancy, Windows acrylic), so the shell may draw glass. */
+  glass?: boolean
 }
 
 const prefix = "--opencode-window="

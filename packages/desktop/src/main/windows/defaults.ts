@@ -54,6 +54,15 @@ export function titlebarOverlay(mode: "light" | "dark" = tone(), zoom = 1) {
   }
 }
 
+// Whether the window sits on a system-drawn backdrop it can show through: macOS vibrancy, or the acrylic material
+// Windows 11 22H2 (build 22621) introduced. Older Windows ignores the material, so it keeps an opaque window instead of
+// becoming a see-through hole with no blur behind it.
+export function translucentWindow() {
+  if (process.platform !== "win32") return process.platform === "darwin"
+
+  return Number(process.getSystemVersion().split(".")[2]) >= 22621
+}
+
 // macOS and Windows hide the titlebar; Windows draws its window controls in an overlay sized to the zoom.
 export function platformFrame(mode: "light" | "dark", zoom: number) {
   const frame: BrowserWindowConstructorOptions = {}
@@ -70,6 +79,11 @@ export function platformFrame(mode: "light" | "dark", zoom: number) {
     frame.frame = false
     frame.titleBarStyle = "hidden"
     frame.titleBarOverlay = titlebarOverlay(mode, zoom)
+
+    // Acrylic is the material the Windows 11 taskbar itself uses. Electron makes the background of a frameless
+    // window with a material transparent on its own; setting `transparent: true` as well would let clicks pass
+    // through the empty parts of the sidebar, so the window stays a normal window.
+    if (translucentWindow()) frame.backgroundMaterial = "acrylic"
   }
 
   return frame

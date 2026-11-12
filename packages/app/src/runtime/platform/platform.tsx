@@ -227,6 +227,8 @@ export type Platform = PlatformBase &
     | {
         platform: "desktop"
         os?: DesktopOS
+        /** The window sits on a system-drawn backdrop, so the shell may draw translucent chrome instead of fills. */
+        glass?: boolean
         /** Stable platform window identity for window-scoped persistence */
         windowID: string
         openDirectoryPickerDialog(opts?: OpenDirectoryPickerOptions): Promise<PickerPaths>
