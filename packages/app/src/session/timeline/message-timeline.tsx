@@ -545,13 +545,7 @@ function MessageTimelineView(
 
   const [expandedTurns, setExpandedTurns] = createSignal<ReadonlySet<string>>(new Set())
 
-  const toggleWorked = (turnID: string) => {
-    const selector = `[data-timeline-row="UserMessage"][data-message-id="${CSS.escape(turnID)}"]`
-
-    // Folding changes the row count, so stop following the end before toggling; otherwise the virtualizer would
-    // scroll to the new end and push the header up. Following resumes when the user scrolls back to the end.
-    virtualized.detachFollow()
-
+  const toggleWorked = (turnID: string) =>
     setExpandedTurns((current) => {
       const next = new Set(current)
 
@@ -560,18 +554,6 @@ function MessageTimelineView(
 
       return next
     })
-
-    // Folding can leave scrollTop past the shorter content, which shows an empty band below the turn. Keep the
-    // header in view instead so the scroll position settles on real content.
-    requestAnimationFrame(() => {
-      virtualized.remeasure()
-      const scroller = document
-        .querySelector<HTMLElement>(selector)
-        ?.closest<HTMLElement>("[data-scrollable]")
-
-      if (scroller) scroller.scrollTop = Math.min(scroller.scrollTop, scroller.scrollHeight - scroller.clientHeight)
-    })
-  }
 
   // A settled turn keeps only the words written after its last tool call; everything before that folds away behind
   // the Worked header. A turn with no answer after its last tool call has nothing to fold to, so it stays open.
