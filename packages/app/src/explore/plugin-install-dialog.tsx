@@ -19,12 +19,16 @@ export function PluginInstallDialog(props: {
   package?: string
   name?: string
   integrated?: boolean
+  /** A `.ocplugin` bundle: the host unpacks the file itself, so there is no package to write into the config. */
+  bundle?: { file: string; format: "ocplugin" }
   onInstalled?: () => void
 }) {
   const language = useLanguage()
   const dialog = useDialog()
   const server = useServerSDK()
   const [state, setState] = createStore({ package: "", busy: false, error: "" })
+
+  if (props.bundle) return <BundleInstallDialog name={props.name} bundle={props.bundle} />
 
   const target = () => (props.package ?? state.package).trim()
 
@@ -120,6 +124,41 @@ export function PluginInstallDialog(props: {
         </Button>
         <Button variant="submit" disabled={state.busy} aria-busy={state.busy} onClick={() => void submit()}>
           {language.t(props.integrated ? "explore.plugins.enable.submit" : "explore.plugins.install.submit")}
+        </Button>
+      </DialogFooter>
+    </Dialog>
+  )
+}
+
+/**
+ * A `.ocplugin` bundle is unpacked by the host, not fetched from a package registry, so the dialog reports the file
+ * and the one manual step instead of writing a config entry that could not resolve.
+ */
+function BundleInstallDialog(props: { name?: string; bundle: { file: string } }) {
+  const language = useLanguage()
+  const dialog = useDialog()
+
+  return (
+    <Dialog fit containerClass="explore-install-dialog">
+      <DialogHeader hideClose>
+        <DialogTitleGroup
+          title={language.t("explore.plugins.install.title")}
+          description={language.t("explore.plugins.bundle.description")}
+        />
+      </DialogHeader>
+
+      <DialogBody class="explore-install-body">
+        <div class="explore-install-target">
+          <span class="explore-install-target-name">{props.name ?? props.bundle.file}</span>
+          <span class="explore-install-target-package" dir="ltr">
+            {props.bundle.file}
+          </span>
+        </div>
+      </DialogBody>
+
+      <DialogFooter>
+        <Button variant="submit" onClick={() => dialog.close()}>
+          {language.t("explore.plugins.bundle.close")}
         </Button>
       </DialogFooter>
     </Dialog>

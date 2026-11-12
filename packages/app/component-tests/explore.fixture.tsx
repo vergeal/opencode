@@ -38,35 +38,34 @@ const sample: CatalogPlugin[] = [
   },
 ]
 
-/** The one integration the build ships: installing it only enables code already present. */
-export const chromeCatalog: CatalogPlugin[] = [
+/** A discoverable bundle: it ships as one `.ocplugin` file, so the card shows the bundle instead of a package. */
+export const webwrightCatalog: CatalogPlugin[] = [
   {
-    id: "opencode.chrome",
-    name: "Chrome 浏览器",
+    id: "opencode.webwright",
+    name: "Webwright",
     category: "automation",
     author: "OpenCode",
-    description: "让 AI 直接操作专用 Chrome 窗口：打开网页、点击、填表、截图。",
-    package: "opencode.chrome",
-    repository: "https://github.com/anomalyco/opencode/tree/dev/packages/plugin-chrome",
-    integrated: true,
-    icon: "chrome",
-    skills: [{ name: "Chrome 浏览器", description: "用 chrome.* 工具操作专用 Chrome 窗口。" }],
+    description: "让 AI 直接操作浏览器：打开网页、点击、填表、抓取内容。",
+    package: "opencode.webwright",
+    repository: "https://github.com/anomalyco/opencode/tree/dev/packages/plugins/webwright",
+    bundle: { file: "opencode.webwright-2.2.5.ocplugin", format: "ocplugin" },
+    skills: [{ name: "Webwright", description: "用 webwright.* 工具操作专用浏览器。" }],
   },
 ]
 
-/** What the server reports once that integration is enabled. */
-export const chromeInstalled: PluginInfo[] = [
+/** What the server reports once that bundle is unpacked into the plugins directory. */
+export const webwrightInstalled: PluginInfo[] = [
   {
-    id: "opencode.chrome",
-    source: { type: "builtin" },
+    id: "opencode.webwright",
+    source: { type: "local", path: "plugins/opencode.webwright" },
     features: { server: true },
     state: { status: "active" },
     display: {
-      name: "Chrome 浏览器",
-      description: "让 AI 直接操作专用 Chrome 窗口：打开网页、点击、填表、截图。",
+      name: "Webwright",
+      description: "让 AI 直接操作浏览器：打开网页、点击、填表、抓取内容。",
       category: "automation",
-      skills: [{ id: "chrome", name: "Chrome 浏览器", description: "用 chrome.* 工具操作专用 Chrome 窗口。" }],
-      tools: ["chrome.*"],
+      skills: [{ id: "webwright", name: "Webwright", description: "用 webwright.* 工具操作专用浏览器。" }],
+      tools: ["webwright.*"],
     },
   },
 ]

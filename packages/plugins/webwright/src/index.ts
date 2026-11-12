@@ -1,14 +1,11 @@
 import { Plugin } from "@opencode/plugin/effect"
 import { Effect } from "effect"
 import manifest from "../ocplugin.json" with { type: "json" }
-import { ChromeBridge } from "./bridge.js"
-import { ChromeTools } from "./tools.js"
+import { BrowserRuntime } from "./browser.js"
+import { BrowserTools } from "./tools.js"
 
 export default Plugin.define({
   id: manifest.id,
-  // Enabled from the plugin browser, not on first launch, so a new user chooses it instead of finding a Chrome window
-  // the agent opened on its own.
-  defaultEnabled: false,
   // The manifest is the single source of truth for what the plugin browser shows: the same file is what discovery
   // reads before the package is installed, so the two views cannot drift.
   display: {
@@ -24,7 +21,11 @@ export default Plugin.define({
   },
   effect: (ctx) =>
     Effect.gen(function* () {
-      const bridge = yield* ChromeBridge.make(ctx)
-      yield* ChromeTools.register(ctx, bridge)
+      // The browser starts lazily on the first tool call, so activating the plugin never opens a window.
+      const runtime = yield* Effect.acquireRelease(
+        Effect.sync(() => BrowserRuntime.create(ctx.options)),
+        (value) => Effect.promise(() => value.dispose()),
+      )
+      yield* BrowserTools.register(ctx, runtime)
     }),
 })

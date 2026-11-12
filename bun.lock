@@ -1,4 +1,4 @@
-{
+﻿{
   "lockfileVersion": 1,
   "configVersion": 1,
   "workspaces": {
@@ -267,7 +267,6 @@
         "@opencode/codemode": "workspace:*",
         "@opencode/plugin": "workspace:*",
         "@opencode/plugin-browser": "workspace:*",
-        "@opencode/plugin-chrome": "workspace:*",
         "@opencode/pty": "0.4.0",
         "@opencode/schema": "workspace:*",
         "@opencode/util": "workspace:*",
@@ -561,8 +560,8 @@
         "typescript": "catalog:",
       },
     },
-    "packages/plugins/chrome": {
-      "name": "@opencode/plugin-chrome",
+    "packages/plugins/webwright": {
+      "name": "@opencode/plugin-webwright",
       "version": "2.2.5",
       "dependencies": {
         "@opencode/plugin": "workspace:*",
@@ -573,6 +572,7 @@
         "@tsconfig/bun": "catalog:",
         "@types/bun": "catalog:",
         "@typescript/native": "catalog:",
+        "playwright-core": "1.60.0",
         "typescript": "catalog:",
       },
     },
@@ -1967,7 +1967,7 @@
 
     "@opencode/plugin-browser": ["@opencode/plugin-browser@workspace:packages/plugin-browser"],
 
-    "@opencode/plugin-chrome": ["@opencode/plugin-chrome@workspace:packages/plugins/chrome"],
+    "@opencode/plugin-webwright": ["@opencode/plugin-webwright@workspace:packages/plugins/webwright"],
 
     "@opencode/plugin-figma": ["@opencode/plugin-figma@workspace:packages/plugins/figma"],
 

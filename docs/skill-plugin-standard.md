@@ -198,7 +198,7 @@ frontmatter 使用 YAML（经 `gray-matter` 解析，兼容未加引号的值里
 
 | 能力       | 注册方式                            | 说明                                     |
 | ---------- | ----------------------------------- | ---------------------------------------- |
-| 工具       | `ctx.tool.transform`                | 模型可调用的动作，例如 `chrome.click`。  |
+| 工具       | `ctx.tool.transform`                | 模型可调用的动作，例如 `webwright.click`。  |
 | 命令       | `ctx.command.transform`             | 斜杠命令。                               |
 | MCP 服务器 | `ctx.mcp.transform` / `ctx.mcp.add` | 外部进程（含 Python server）或远程服务。 |
 | 技能       | `ctx.skill.transform`               | 教模型何时、如何使用这些工具的说明。     |
@@ -233,7 +233,7 @@ export default Plugin.define({
 })
 ```
 
-产品能力不要为此新增内置插件：Chrome 浏览器现在就是一个 `.ocplugin`（第三章），`display` 由包内 `ocplugin.json` 派生，安装与否都与 Core 解耦。
+产品能力不要为此新增内置插件：浏览器能力现在就是一个 `.ocplugin`（第三章），`display` 由包内 `ocplugin.json` 派生，安装与否都与 Core 解耦。
 
 规则：
 
@@ -289,8 +289,8 @@ export default Plugin.define({
 
 #### 现有案例
 
-- `packages/plugin-browser`：桌面浏览器插件，通过 CDP/proxy 控制浏览器，作为内置插件编译进 Core。
-- `packages/plugins/chrome`（`opencode.chrome`）：独立的 `.ocplugin` 组合包，通过本地 WebSocket 桥接 Manifest V3 扩展，注册 `chrome.*` 工具与 `chrome` 技能；图标、文案、技能清单都在 `ocplugin.json` 里，不随 Core 编译。
+- `packages/plugin-browser`：桌面浏览器插件，通过 CDP/proxy 控制浏览器，作为内置插件编译进 Core，注册 `browser.*` 工具与 `browser` 技能。
+- `packages/plugins/webwright`（`opencode.webwright`）：独立的 `.ocplugin` 组合包，用 Playwright 驱动专用浏览器（默认系统 Chrome + 专属 profile），注册 `webwright.*` 工具与 `webwright` 技能；Playwright 驱动作为包内资源放在 `assets/playwright-core`，不随 Core 编译。
 
 ---
 
@@ -321,6 +321,8 @@ export default Plugin.define({
 
 打包必须**可重复**：文件按路径排序，归档内 mtime 固定（例如 `0`），保证同样的输入产出逐字节相同的文件与 sha256。
 
+- 读取/解包用 `Bun.Archive`。写入不要用 `Bun.Archive.write`：它会用写入时刻作为条目 mtime，破坏可重复性。`packages/plugins/webwright/script/pack.ts` 直接写 ustar 头（mtime 固定为 0）并 `Bun.gzipSync` 压缩，同样的 `dist/` 连续打包两次得到相同 sha256。
+
 ### 3.3 包内布局
 
 ```
@@ -336,35 +338,35 @@ README.md                # 可选
 ```
 
 - 入口文件必须是**构建产物**：ESM、已在打包阶段 bundle，不含 TypeScript 源码。
-- `assets/` 不参与入口解析，插件在运行时用 `import.meta.url` 相对定位；例如 `assets/extension/` 存放 Manifest V3 扩展。
-- 包内**不得**出现 `node_modules/`；依赖处理见 3.5。
+- `assets/` 不参与入口解析，插件在运行时用 `import.meta.url` 相对定位。无法安全 bundle 的运行时依赖整包放在这里，例如 `assets/playwright-core/`：Playwright 的 driver 按自身包目录解析文件，内联进 `server/index.js` 会破坏查找，因此它以完整包的形式随包分发，入口动态加载它。这类依赖**不是** `externals`——`externals` 只列宿主提供的模块。
+- 包内**不得**出现 `node_modules/`；命中宿主模块的依赖走 `externals`，其余见上一条与 3.5。
 
 ### 3.4 `ocplugin.json`
 
 ```jsonc
 {
   "apiVersion": 1,
-  "id": "opencode.chrome",
+  "id": "opencode.webwright",
   "version": "2.2.5",
   "requires": { "opencode": "^2.2.5" },
   "entry": { "server": "server/index.js" },
   "externals": ["effect", "@opencode/plugin", "@opencode/schema", "@opencode/util"],
   "display": {
-    "name": "Chrome 浏览器",
-    "description": "让 AI 直接操作专用 Chrome 窗口……",
+    "name": "Webwright",
+    "description": "让 AI 直接操作浏览器……",
     "category": "automation",
     "icon": "<svg viewBox=\"0 0 24 24\">…</svg>",
-    "tools": ["chrome.*"]
+    "tools": ["webwright.*"]
   },
   "skills": [
     {
-      "id": "chrome",
-      "name": "Chrome 浏览器",
-      "description": "用 chrome.* 工具操作专用 Chrome 窗口……",
-      "path": "skills/chrome/SKILL.md"
+      "id": "webwright",
+      "name": "Webwright",
+      "description": "用 webwright.* 工具操作专用浏览器……",
+      "path": "skills/webwright/SKILL.md"
     }
   ],
-  "assets": ["assets/extension"]
+  "assets": ["assets/playwright-core"]
 }
 ```
 
@@ -408,7 +410,7 @@ README.md                # 可选
 
   宿主在自己的进程里能解析到这些模块，安装器因此可以复制它实际加载的那份入口 URL，保证版本一致。
 
-- 除 `externals` 之外的所有依赖（工具库、协议实现等）必须在构建阶段打进 `server/index.js`。
+- 除 `externals` 之外的所有依赖（工具库、协议实现等）必须在构建阶段打进 `server/index.js`；无法安全 bundle 的依赖整包放进 `assets/`（见 3.3），入口用动态加载读取。
 - 安装器不执行 `npm install`、`postinstall` 或包内任意脚本。
 
 ### 3.6 构建与打包（作者侧）
@@ -425,7 +427,7 @@ README.md                # 可选
 安装位置：配置目录下的 `plugins/`（全局即 `~/.config/opencode/plugins/<id>/`）。该目录已在自动发现范围内，因此：
 
 - **安装 = 解包到插件目录**，不写 `plugins` 配置。
-- **卸载 = 删除目录**；临时禁用可在配置里写 `-opencode.chrome`（见 2.1 顺序规则）。
+- **卸载 = 删除目录**；临时禁用可在配置里写 `-opencode.webwright`（见 2.1 顺序规则）。
 
 安装步骤（原子、可回滚）：
 
@@ -488,6 +490,6 @@ README.md                # 可选
 - `packages/core/src/plugin.ts`：`Plugin.Info` 快照与激活 scope。
 - `packages/plugin/src/host.ts`：插件入口解析与 id 规则。
 - `packages/plugin/src/effect/plugin.ts`：Effect 插件 Context 与 `display` 声明。
-- `packages/plugins/chrome/ocplugin.json`：组合包声明与内联图标，`packages/plugins/chrome/src/skill.ts` 演示从 manifest 与 `SKILL.md` 加载技能。
+- `packages/plugins/webwright/ocplugin.json`：组合包声明与内联图标，`packages/plugins/webwright/src/skill.ts` 演示从 manifest 与 `SKILL.md` 加载技能，`script/pack.ts` 演示可重复打包。
 - `packages/schema/src/config.ts`：`skills`、`plugins` 字段定义。
 - `packages/schema/src/plugin.ts`：`Plugin.Info` 与 `Plugin.Display` 契约。

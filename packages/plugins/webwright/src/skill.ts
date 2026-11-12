@@ -1,4 +1,4 @@
-export * as ChromeSkill from "./skill.js"
+export * as BrowserSkill from "./skill.js"
 
 import { AbsolutePath } from "@opencode/schema/schema"
 import { Skill } from "@opencode/schema/skill"
@@ -8,7 +8,7 @@ import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import manifest from "../ocplugin.json" with { type: "json" }
 
-const entry = manifest.skills.find((skill) => skill.id === "chrome")!
+const entry = manifest.skills.find((skill) => skill.id === "webwright")!
 
 export const id = Skill.ID.make(entry.id)
 

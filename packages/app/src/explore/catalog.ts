@@ -26,8 +26,11 @@ export type CatalogPlugin = {
    * Ships inside the app: installing only writes the config entry that enables it, so no package is downloaded.
    */
   integrated?: boolean
-  /** Brand mark to render instead of the generic plugin icon. */
-  icon?: "chrome"
+  /**
+   * A single-file `.ocplugin` bundle. There is no package to fetch and no config entry to write: the host unpacks the
+   * file into its plugins directory, so the card shows the bundle instead of offering a package install.
+   */
+  bundle?: { file: string; format: "ocplugin" }
   /** MCP servers the plugin starts, when the catalog knows them. */
   mcpServers?: readonly { name: string }[]
   /** Skills the plugin ships, when the catalog knows them. */
@@ -48,26 +51,25 @@ export type CatalogSource = {
   skills: readonly CatalogSkill[]
 }
 
-// The catalog currently lists the one integration this build carries: Chrome is compiled into the server, so
-// installing it enables a plugin that is already here instead of downloading a package.
+// Webwright ships as one `.ocplugin` bundle, so the catalog entry carries the manifest's user-facing fields rather
+// than a package to download. The bundle itself is distributed separately.
 const plugins: readonly CatalogPlugin[] = [
   {
-    id: "opencode.chrome",
-    name: "Chrome 浏览器",
+    id: "opencode.webwright",
+    name: "Webwright",
     category: "automation",
     author: "OpenCode",
-    description: "让 AI 直接操作专用 Chrome 窗口：打开网页、点击、填表、截图，不用你一步步教。",
+    description: "让 AI 直接操作浏览器：打开网页、点击、填表、抓取内容，不需要安装扩展。",
     details:
-      "启用后，AI 会打开一个和你日常浏览器分开的专用 Chrome 窗口。它能在里面打开网页、点击按钮、填写表单、截图，也能操作在线文档、地图、白板这类没有普通按钮的页面。\n\n需要登录的网站，在那个窗口里登录一次即可，登录状态会保留。窗口可以随时关掉，关掉后 AI 就停下来。",
-    package: "opencode.chrome",
-    repository: "https://github.com/anomalyco/opencode/tree/dev/packages/plugin-chrome",
-    integrated: true,
-    icon: "chrome",
+      "Webwright 用 Playwright 驱动一个和日常浏览分开的专用浏览器：默认使用系统 Chrome，其次 Edge，都没有时用自带 Chromium。它能打开网页、点击和拖拽、填写表单、执行页面脚本、截图，也能为 canvas 这类没有 DOM 的表面提供坐标元数据。\n\n配置目录独立保存在 ~/.opencode/webwright/profile，登录状态会保留。",
+    package: "opencode.webwright",
+    repository: "https://github.com/anomalyco/opencode/tree/dev/packages/plugins/webwright",
+    bundle: { file: "opencode.webwright-2.2.5.ocplugin", format: "ocplugin" },
     skills: [
       {
-        name: "Chrome 浏览器",
+        name: "Webwright",
         description:
-          "用 `chrome.*` 工具操作专用的 OpenCode Chrome 窗口：列出和切换标签页、读取页面结构、点击和填表、执行页面脚本、截图、上传文件，并在页面上显示光标。第一次调用 `chrome.*` 前先加载本技能。",
+          "用 `webwright.*` 工具操作专用的 Playwright 浏览器：打开和切换标签页、读取页面结构、点击、填表、执行页面脚本、截图并抓取页面内容。第一次调用 `webwright.*` 前先加载本技能。",
       },
     ],
   },

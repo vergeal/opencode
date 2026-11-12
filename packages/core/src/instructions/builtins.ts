@@ -12,6 +12,9 @@ export interface Interface {
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/InstructionBuiltIns") {}
 
+const languageInstruction =
+  "User-facing content is presented in Chinese by default: answers, labels, buttons, empty states, errors and any interface copy you write. Keep code, identifiers, file paths and command names unchanged. Use another language only when the user writes in it or asks for it."
+
 const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
@@ -21,6 +24,15 @@ const layer = Layer.effect(
       load: () =>
         Effect.succeed(
           Instructions.combine([
+            Instructions.make({
+              key: Instructions.Key.make("core/language"),
+              codec: Schema.toCodecJson(Schema.String),
+              read: Effect.succeed("zh"),
+              render: {
+                initial: () => languageInstruction,
+                changed: () => languageInstruction,
+              },
+            }),
             Instructions.make({
               key: Instructions.Key.make("core/date"),
               codec: Schema.toCodecJson(Schema.String),

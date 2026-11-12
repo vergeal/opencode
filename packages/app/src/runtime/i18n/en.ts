@@ -1016,8 +1016,6 @@ export const dict = {
   "explore.plugins.description": "Connect plugins so OpenCode works with the tools you use",
   "explore.plugins.add": "Add",
   "explore.plugins.refresh": "Refresh",
-  "explore.plugins.tab.public": "Public",
-  "explore.plugins.tab.personal": "Personal",
   "explore.plugins.category.developer-tools": "Developer Tools",
   "explore.plugins.category.productivity": "Productivity",
   "explore.plugins.category.automation": "Automation",
@@ -1055,6 +1053,9 @@ export const dict = {
   "explore.plugins.source.sdk": "SDK",
   "explore.plugins.install.title": "Install a plugin",
   "explore.plugins.install.description": "Enter a plugin name and it installs in one step",
+  "explore.plugins.bundle.description":
+    "This plugin ships as one .ocplugin file. Unpack it into the OpenCode plugins directory, then reload; it appears under Installed.",
+  "explore.plugins.bundle.close": "Close",
   "explore.plugins.install.package": "Plugin name or link",
   "explore.plugins.install.package.placeholder": "For example @scope/plugin-name",
   "explore.plugins.install.required": "Enter a plugin name",

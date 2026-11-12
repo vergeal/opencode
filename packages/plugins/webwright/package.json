@@ -1,14 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "@opencode/plugin-chrome",
+  "name": "@opencode/plugin-webwright",
   "version": "2.2.5",
-  "description": "OpenCode's Chrome extension bridge: drive the user's own Chrome tabs over a local WebSocket",
+  "description": "Playwright-driven browser tools: open pages, click, fill forms and scrape content in a dedicated profile",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/anomalyco/opencode.git",
-    "directory": "packages/plugin-chrome"
+    "directory": "packages/plugins/browser"
   },
   "publishConfig": {
     "access": "public"
@@ -21,7 +21,7 @@
     "./rpc": "./src/rpc.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && bun run script/build.ts",
+    "build": "bun run script/build.ts",
     "pack": "bun run script/pack.ts",
     "typecheck": "bun check --no-script -p tsconfig.test.json",
     "typecheck:tsc": "tsc --noEmit -p tsconfig.test.json",
@@ -36,6 +36,8 @@
     "@tsconfig/bun": "catalog:",
     "@types/bun": "catalog:",
     "@typescript/native": "catalog:",
+    "playwright-core": "1.60.0",
     "typescript": "catalog:"
   }
 }
+

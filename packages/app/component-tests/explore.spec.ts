@@ -111,9 +111,9 @@ story("groups the catalog, filters it, opens a plugin's page, and returns", asyn
   expect(result.empty).toEqual({ title: "No matching plugins", cards: 0 })
 })
 
-story("shows the built-in Chrome integration and stops offering it once installed", async ({ page }) => {
+story("shows a catalog bundle and reports it once installed", async ({ page }) => {
   const result = await page.evaluate(async (fixture) => {
-    const { chromeCatalog, chromeInstalled, mountExplorePlugins } = await import(fixture)
+    const { webwrightCatalog, webwrightInstalled, mountExplorePlugins } = await import(fixture)
 
     const frame = () =>
       new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
@@ -122,10 +122,6 @@ story("shows the built-in Chrome integration and stops offering it once installe
       const mounted = mountExplorePlugins(input as never)
       // SAFETY: mountExplorePlugins builds its host with document.createElement("div").
       const host = mounted.host as HTMLDivElement
-      await frame()
-
-      // The page opens on Installed, so reach the catalog before reading its card.
-      host.querySelector<HTMLButtonElement>('[role="tab"]:not([data-selected])')?.click()
       await frame()
 
       const card = host.querySelector<HTMLElement>(".explore-catalog-card")!
@@ -152,26 +148,24 @@ story("shows the built-in Chrome integration and stops offering it once installe
     }
 
     return {
-      catalogOnly: await read({ catalog: chromeCatalog }),
-      installed: await read({ catalog: chromeCatalog, installed: chromeInstalled }),
+      catalogOnly: await read({ catalog: webwrightCatalog }),
+      installed: await read({ catalog: webwrightCatalog, installed: webwrightInstalled }),
     }
   }, fixture)
 
-  const expectChrome = (value: { brandColor: string; type?: string }, hasInstall: boolean, installed: string) => {
-    expect(value.brandColor).toBe("#EA4335")
+  const expectInstalled = (hasInstall: boolean, installed: string) => {
     expect(hasInstall).toBe(false)
     expect(installed).toBe("Installed")
   }
 
-  expect(result.catalogOnly.state.name).toBe("Chrome 浏览器")
-  expect(result.catalogOnly.state.brandColor).toBe("#EA4335")
+  expect(result.catalogOnly.state.name).toBe("Webwright")
   expect(result.catalogOnly.state.hasInstall).toBe(true)
   expect(result.catalogOnly.state.installed).toBe("")
   expect(result.catalogOnly.detail.hasInstall).toBe(true)
   expect(result.catalogOnly.detail.type).toBe("Type")
 
-  expect(result.installed.state.name).toBe("Chrome 浏览器")
-  expectChrome(result.installed.state, result.installed.state.hasInstall, result.installed.state.installed)
+  expect(result.installed.state.name).toBe("Webwright")
+  expectInstalled(result.installed.state.hasInstall, result.installed.state.installed)
   expect(result.installed.detail.type).toBe("Type")
-  expectChrome(result.installed.detail, result.installed.detail.hasInstall, result.installed.detail.installed)
+  expectInstalled(result.installed.detail.hasInstall, result.installed.detail.installed)
 })

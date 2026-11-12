@@ -15,7 +15,6 @@ import { useLayout } from "@/shell/state/layout"
 import "@/settings/settings.css"
 import "./explore.css"
 import { loadCatalog, PLUGIN_CATEGORIES, type CatalogPlugin, type PluginCategory } from "./catalog"
-import { ChromeIcon } from "./chrome-icon"
 import { PluginInstallDialog } from "./plugin-install-dialog"
 import { PluginIcon } from "./plugin-icon"
 import { ExploreStatus } from "./status"
@@ -47,19 +46,7 @@ const sourceDetail = (plugin: PluginInfo) => {
 
 const pluginKey = (plugin: PluginInfo) => plugin.id ?? pluginLabel(plugin)
 
-/**
- * Brand marks for integrations that carry a recognisable logo, keyed by plugin id. An installed plugin reports only
- * its id, so this is how its card and page show the same mark as its catalog entry.
- */
-const PLUGIN_MARKS: Record<string, string> = { "opencode.chrome": "chrome" }
-
-const markOf = (input: { icon?: string; id?: string }) =>
-  input.icon ?? (input.id === undefined ? undefined : PLUGIN_MARKS[input.id])
-
-/** The catalog entry's brand mark, or the generic plugins mark when the entry has none. */
-function PluginMark(props: { mark?: string }) {
-  return props.mark === "chrome" ? <ChromeIcon /> : <PluginIcon />
-}
+/** One installed plugin's card, with the generic plugins mark. */
 
 /** The published plugins this project can install, and whichever entry the list or the column opened. */
 export function ExplorePlugins() {
@@ -93,6 +80,7 @@ export function ExplorePlugins() {
         package={entry.package}
         name={entry.name}
         integrated={entry.integrated}
+        bundle={entry.bundle}
         onInstalled={() => void installed.refetchPlugins()}
       />
     ))
@@ -108,7 +96,6 @@ export function ExplorePlugins() {
       catalog={catalogPlugins()}
       selected={selected()}
       catalogEntry={catalogEntry()}
-      onSelectInstalled={(id) => layout.destination.explore.setSelected(id)}
       onSelectCatalog={(id) => layout.destination.explore.setCatalog(id)}
       onBack={back}
       onInstall={install}
@@ -123,7 +110,7 @@ export function ExplorePlugins() {
  * the user opened. It owns no server state, so the same view renders the real page and the component test.
  */
 export function ExplorePluginsView(props: {
-  /** Plugins this project already loads, listed under the personal tab. */
+  /** Plugins this project already loads, so the column and cards can mark an entry installed. */
   installed?: readonly PluginInfo[]
   /** Publishable plugins from the catalog. */
   catalog?: readonly CatalogPlugin[]
@@ -131,7 +118,6 @@ export function ExplorePluginsView(props: {
   selected?: PluginInfo
   /** The catalog entry the list opened. */
   catalogEntry?: CatalogPlugin
-  onSelectInstalled?: (id: string) => void
   onSelectCatalog?: (id: string) => void
   onBack: () => void
   onInstall: () => void
@@ -140,12 +126,7 @@ export function ExplorePluginsView(props: {
 }) {
   const language = useLanguage()
 
-  const [state, setState] = createStore<{ query: string; tab: "public" | "personal" }>({
-    query: "",
-    // Built-in capability bundles and installed packages land on "personal", so opening the page shows what already
-    // works instead of an empty catalog.
-    tab: "personal",
-  })
+  const [state, setState] = createStore<{ query: string }>({ query: "" })
 
   const query = () => state.query.trim().toLowerCase()
 
@@ -167,16 +148,6 @@ export function ExplorePluginsView(props: {
 
       return entries.length > 0 ? [{ category, entries }] : []
     })
-  })
-
-  const personal = createMemo(() => {
-    const needle = query()
-
-    if (!needle) return props.installed ?? []
-
-    return (props.installed ?? []).filter((plugin) =>
-      `${pluginLabel(plugin)}\n${plugin.source.type}`.toLowerCase().includes(needle),
-    )
   })
 
   // An installed plugin opened from the column, or a catalog entry opened from the list, takes over the page.
@@ -235,69 +206,40 @@ export function ExplorePluginsView(props: {
 
           <div class="explore-catalog-body" data-scrollable>
             <div class="explore-page-inner">
-              <div class="explore-catalog-tabs" role="tablist">
-                <button
-                  type="button"
-                  role="tab"
-                  class="explore-catalog-tab"
-                  aria-selected={state.tab === "public"}
-                  data-selected={state.tab === "public" ? "" : undefined}
-                  onClick={() => setState("tab", "public")}
-                >
-                  {language.t("explore.plugins.tab.public")}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  class="explore-catalog-tab"
-                  aria-selected={state.tab === "personal"}
-                  data-selected={state.tab === "personal" ? "" : undefined}
-                  onClick={() => setState("tab", "personal")}
-                >
-                  {language.t("explore.plugins.tab.personal")}
-                </button>
-              </div>
-
               <Show
-                when={state.tab === "public"}
-                fallback={<InstalledGrid plugins={personal()} onOpen={props.onSelectInstalled} />}
-              >
-                <Show
-                  when={groups().length > 0}
-                  fallback={
-                    <ExploreStatus
-                      icon="outline-pair"
-                      title={language.t(query() ? "explore.plugins.noResults.title" : "explore.plugins.none.title")}
-                      description={language.t(
-                        query() ? "explore.plugins.noResults.description" : "explore.plugins.none.description",
-                      )}
-                    />
-                  }
-                >
-                  <For each={groups()}>
-                    {(group) => (
-                      <section class="explore-catalog-group">
-                        <h2 class="explore-catalog-group-title">{language.t(CATEGORY_LABELS[group.category])}</h2>
-                        <div class="explore-catalog-grid">
-                          <For each={group.entries}>
-                            {(entry) => (
-                              <PluginCard
-                                name={entry.name}
-                                description={entry.description}
-                                mark={markOf(entry)}
-                                folder={!entry.integrated}
-                                installed={installedIDs().has(entry.id)}
-                                addLabel={language.t("explore.plugins.install")}
-                                onOpen={() => props.onSelectCatalog?.(entry.id)}
-                                onAdd={() => props.onInstallCatalog?.(entry)}
-                              />
-                            )}
-                          </For>
-                        </div>
-                      </section>
+                when={groups().length > 0}
+                fallback={
+                  <ExploreStatus
+                    icon="outline-pair"
+                    title={language.t(query() ? "explore.plugins.noResults.title" : "explore.plugins.none.title")}
+                    description={language.t(
+                      query() ? "explore.plugins.noResults.description" : "explore.plugins.none.description",
                     )}
-                  </For>
-                </Show>
+                  />
+                }
+              >
+                <For each={groups()}>
+                  {(group) => (
+                    <section class="explore-catalog-group">
+                      <h2 class="explore-catalog-group-title">{language.t(CATEGORY_LABELS[group.category])}</h2>
+                      <div class="explore-catalog-grid">
+                        <For each={group.entries}>
+                          {(entry) => (
+                            <PluginCard
+                              name={entry.name}
+                              description={entry.description}
+                              folder={!entry.integrated}
+                              installed={installedIDs().has(entry.id)}
+                              addLabel={language.t("explore.plugins.install")}
+                              onOpen={() => props.onSelectCatalog?.(entry.id)}
+                              onAdd={() => props.onInstallCatalog?.(entry)}
+                            />
+                          )}
+                        </For>
+                      </div>
+                    </section>
+                  )}
+                </For>
               </Show>
             </div>
           </div>
@@ -325,45 +267,10 @@ export function ExplorePluginsView(props: {
   )
 }
 
-function InstalledGrid(props: { plugins: readonly PluginInfo[]; onOpen?: (id: string) => void }) {
-  const language = useLanguage()
-
-  return (
-    <Show
-      when={props.plugins.length > 0}
-      fallback={
-        <ExploreStatus
-          icon="outline-pair"
-          title={language.t("explore.plugins.empty.title")}
-          description={language.t("explore.plugins.empty.description")}
-        />
-      }
-    >
-      <div class="explore-catalog-grid">
-        <For each={props.plugins}>
-          {(plugin) => (
-            <PluginCard
-              name={pluginLabel(plugin)}
-              description={
-                plugin.display?.description ??
-                (plugin.source.type === "package" ? plugin.source.target : (sourceDetail(plugin) ?? ""))
-              }
-              mark={markOf({ id: plugin.id })}
-              onOpen={() => props.onOpen?.(pluginKey(plugin))}
-            />
-          )}
-        </For>
-      </div>
-    </Show>
-  )
-}
-
 /** One catalog or installed plugin: the whole row opens its page, the trailing plus installs it. */
 function PluginCard(props: {
   name: string
   description: string
-  /** Brand mark for the leading icon; the generic plugins mark when absent. */
-  mark?: string
   folder?: boolean
   /** Already loaded by the server, so the card reports it instead of offering another install. */
   installed?: boolean
@@ -377,7 +284,7 @@ function PluginCard(props: {
     <div class="explore-catalog-card">
       <button type="button" class="explore-catalog-card-main" onClick={() => props.onOpen?.()}>
         <span class="explore-catalog-card-icon">
-          <PluginMark mark={props.mark} />
+          <PluginIcon />
         </span>
         <span class="explore-catalog-card-copy">
           <span class="explore-catalog-card-name">
@@ -435,7 +342,7 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; installed?: boolean;
         <div class="explore-catalog-page-body">
           <header class="explore-catalog-hero">
             <span class="explore-catalog-hero-icon">
-              <PluginMark mark={markOf(props.entry)} />
+              <PluginIcon />
             </span>
             <div class="explore-catalog-hero-copy">
               <h1 class="explore-catalog-hero-name">
@@ -559,7 +466,7 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onInstall
         <div class="explore-catalog-page-body">
           <header class="explore-catalog-hero">
             <span class="explore-catalog-hero-icon">
-              <PluginMark mark={markOf({ id: props.plugin.id })} />
+              <PluginIcon />
             </span>
             <div class="explore-catalog-hero-copy">
               <h1 class="explore-catalog-hero-name">

@@ -1,0 +1,28 @@
+{
+  "apiVersion": 1,
+  "id": "opencode.webwright",
+  "version": "2.2.5",
+  "requires": {
+    "opencode": "^2.2.5"
+  },
+  "entry": {
+    "server": "server/index.js"
+  },
+  "externals": ["effect", "@opencode/plugin", "@opencode/schema", "@opencode/util"],
+  "display": {
+    "name": "Webwright",
+    "description": "让 AI 直接操作浏览器：打开网页、点击、填表和抓取内容，不需要安装扩展。",
+    "category": "automation",
+    "tools": ["webwright.*"],
+    "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"12\" cy=\"12\" r=\"10.5\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M2.5 9h19M2.5 15h19\" stroke=\"currentColor\" stroke-width=\"1.5\"/><circle cx=\"12\" cy=\"12\" r=\"4.5\" fill=\"currentColor\" fill-opacity=\"0.18\"/></svg>"
+  },
+  "skills": [
+    {
+      "id": "webwright",
+      "name": "Webwright",
+      "description": "用 `webwright.*` 工具操作专用的 Playwright 浏览器：打开和切换标签页、读取页面结构、点击、填表、执行页面脚本、截图并抓取页面内容。第一次调用 `webwright.*` 前先加载本技能。",
+      "path": "skills/webwright/SKILL.md"
+    }
+  ],
+  "assets": ["assets/playwright-core"]
+}
