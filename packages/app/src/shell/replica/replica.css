@@ -126,9 +126,17 @@ html[data-replica-window="translucent"] #root:has([data-replica]) {
   background-color: transparent !important;
 }
 
-/* The frame and its workbench give up their fills on macOS so the vibrancy material shows through the chrome. The
-   conversation keeps an opaque surface; only the chrome acts as glass. */
-html[data-replica-window="translucent"] [data-replica],
+/* The frame keeps the single chrome tint so the whole window is one sheet of glass; the columns and the title bar
+   sit on that tint instead of washing it a second time. The workbench still gives up its fill, because everything
+   inside it is either the opaque conversation or the navigation column's own tint. */
+html[data-replica-window="translucent"] [data-slot="replica-titlebar"],
+html[data-replica-window="translucent"] [data-slot="replica-rail"],
+html[data-replica-window="translucent"] [data-slot="replica-sidebar"],
+html[data-replica-window="translucent"] [data-slot="destination-bar"] {
+  background: transparent;
+}
+
+/* The conversation keeps an opaque surface; only the chrome acts as glass. */
 html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   background: transparent;
 }
