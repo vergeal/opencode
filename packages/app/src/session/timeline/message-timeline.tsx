@@ -565,12 +565,15 @@ function MessageTimelineView(
 
     if (before === undefined || !scroller) return
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const after = top()
+    // Browser scroll anchoring would also react to the new rows; we own the adjustment, so disable it until measured.
+    const anchor = scroller.style.overflowAnchor
+    scroller.style.overflowAnchor = "none"
 
-        if (after !== undefined) scroller.scrollTop += after - before
-      })
+    requestAnimationFrame(() => {
+      const after = top()
+
+      if (after !== undefined) scroller.scrollTop += after - before
+      scroller.style.overflowAnchor = anchor
     })
   }
 
