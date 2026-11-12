@@ -317,7 +317,7 @@ export function createSessionTimelineRowRenderer(input: {
               class={open() ? "rotate-90 transition-transform" : "transition-transform"}
             />
           </span>
-          <Icon name="outline-console" size="small" />
+          <Icon name="terminal" size="small" />
           <span>{i18n.t("ui.messagePart.commands.label")}</span>
         </button>
         <Show when={open()}>
