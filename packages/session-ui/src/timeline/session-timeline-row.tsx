@@ -320,18 +320,13 @@ export function createSessionTimelineRowRenderer(input: {
             />
           </span>
         </button>
-        <Show when={open()}>
-          <div
-            data-slot="commands-group-content"
-            ref={(el) => {
-              // Slide the list in without fading its text; the layout expands immediately.
-              if (prefersReducedMotion()) return
-              el.animate(
-                { transform: ["translateY(4px)", "none"] },
-                { duration: 200, easing: "cubic-bezier(0.16,1,0.3,1)" },
-              )
-            }}
-          >
+        <div
+          data-slot="commands-group-content"
+          aria-hidden={!open()}
+          class="grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
+          classList={{ "[grid-template-rows:1fr]": open(), "[grid-template-rows:0fr]": !open() }}
+        >
+          <div class="min-h-0 overflow-hidden">
             <div data-slot="commands-group-list" class="mt-1 flex w-full min-w-0 flex-col gap-1 pl-5">
               <For each={items()}>
                 {(item) => (
@@ -359,7 +354,7 @@ export function createSessionTimelineRowRenderer(input: {
               </For>
             </div>
           </div>
-        </Show>
+        </div>
       </div>
     )
   }
