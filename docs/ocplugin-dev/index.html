@@ -372,16 +372,19 @@
           <li>
             <a href="#s2">2. 工程目录</a>
             <ol>
-              <li><a href="#s2-1">2.1 完整目录树</a></li>
-              <li><a href="#s2-2">2.2 各文件的作用</a></li>
-              <li><a href="#s2-3">2.3 ocplugin.json</a></li>
-              <li><a href="#s2-4">2.4 package.json（解包后）</a></li>
-              <li><a href="#s2-5">2.5 package.json（工程）</a></li>
-              <li><a href="#s2-6">2.6 tsconfig.json</a></li>
-              <li><a href="#s2-7">2.7 src/index.ts（服务端）</a></li>
-              <li><a href="#s2-8">2.8 src/gui.tsx（界面）</a></li>
-              <li><a href="#s2-9">2.9 skills/</a></li>
-              <li><a href="#s2-10">2.10 script/build.ts</a></li>
+              <li><a href="#s2-0">2.0 入口标准</a></li>
+              <li><a href="#s2-1">2.1 插件运行时（Python）</a></li>
+              <li><a href="#s2-2">2.2 完整目录树</a></li>
+              <li><a href="#s2-3">2.3 各文件的作用</a></li>
+              <li><a href="#s2-4">2.4 ocplugin.json</a></li>
+              <li><a href="#s2-5">2.5 package.json（解包后）</a></li>
+              <li><a href="#s2-6">2.6 package.json（工程）</a></li>
+              <li><a href="#s2-7">2.7 tsconfig.json</a></li>
+              <li><a href="#s2-8">2.8 server/main.ts（服务端）</a></li>
+              <li><a href="#s2-9">2.9 gui/main.tsx（界面）</a></li>
+              <li><a href="#s2-10">2.10 skills/</a></li>
+              <li><a href="#s2-11">2.11 script/build.ts</a></li>
+              <li><a href="#s2-12">2.12 create-ocplugin 脚手架</a></li>
             </ol>
           </li>
           <li>
@@ -415,6 +418,7 @@
               <li><a href="#s4-15">4.15 事件订阅</a></li>
               <li><a href="#s4-16">4.16 RPC（服务端）</a></li>
               <li><a href="#s4-17">4.17 窗口桥（Ipc / Contract）</a></li>
+              <li><a href="#s4-18">4.18 收件箱（ctx.inbox）</a></li>
             </ol>
           </li>
           <li><a href="#s5">5. 调试</a></li>
@@ -448,11 +452,11 @@
         </tr>
         <tr>
           <td>服务端入口</td>
-          <td>在 OpenCode 服务进程里运行的代码，负责注册工具、技能、hooks。文件通常叫 <code>server/index.js</code>。</td>
+          <td>在 OpenCode 服务进程里运行的代码，负责注册工具、技能、hooks。入口是 <code>server/main.ts</code>（或编译后的 <code>server/main.js</code>）。</td>
         </tr>
         <tr>
           <td>GUI 入口</td>
-          <td>在桌面应用窗口里运行的界面代码，CommonJS 文件，通常叫 <code>gui-experimental.cjs</code>。</td>
+          <td>在桌面应用窗口里运行的界面代码，CommonJS 产物，入口是 <code>gui/main.cjs</code>（源码 <code>gui/main.tsx</code>）。</td>
         </tr>
         <tr>
           <td>主进程入口</td>
@@ -470,7 +474,272 @@
 
       <h2 id="s2">2. 工程目录</h2>
 
-      <h3 id="s2-1">2.1 完整目录树</h3>
+      <h3 id="s2-0">2.0 入口标准（Entry Contract）</h3>
+
+      <p>
+        入口的文件名与目录名决定了插件能不能被加载。<b><code>ocplugin.json</code> 的 <code>entry</code> 是唯一权威</b>：
+        每个部件声明成「相对插件根目录、不含扩展名、以 <code>/main</code> 结尾」的路径，宿主再按该部件的扩展名顺序去找文件。
+      </p>
+
+      <table>
+        <tr><th>项</th><th>规则</th></tr>
+        <tr>
+          <td>入口文件名</td>
+          <td>固定为 <code>main</code>。每个部件用自己的目录，目录名 = 入口名：<code>server/</code>、<code>gui/</code>、<code>tui/</code>、<code>rpc/</code>。</td>
+        </tr>
+        <tr>
+          <td><code>entry</code> 的值</td>
+          <td>
+            相对插件根目录、<b>不含扩展名</b>、以 <code>/main</code> 结尾，例如 <code>server/main</code>。
+            不能以 <code>/</code> 或 <code>./</code> 开头，不能含 <code>..</code> 段。
+            schema 校验这个形状；不合规的条目按<b>没写</b>处理，走下面的旧路径回退而不是直接报错。
+          </td>
+        </tr>
+        <tr>
+          <td><code>server</code> / <code>tui</code> / <code>rpc</code> 的扩展名</td>
+          <td>按 <code>.ts</code> → <code>.tsx</code> → <code>.js</code> → <code>.mjs</code> 取第一个存在的文件。</td>
+        </tr>
+        <tr>
+          <td><code>gui</code> 的扩展名</td>
+          <td>按 <code>.js</code> → <code>.cjs</code> 解析，<b>必须是 CommonJS</b>：应用用 <code>eval</code> 执行 CJS 文本，TS 源码与 ESM 都不能作为界面入口。</td>
+        </tr>
+        <tr>
+          <td><code>package.json</code></td>
+          <td>
+            <b>不参与本地目录的入口解析</b>，但要存在：清单没写 <code>id</code> 时，宿主用 <code>packageID</code>
+            读它的 <code>name</code> 兜底（再退到目录名）；从 npm 安装的包还要靠它自己的 <code>exports</code>
+            解析入口（过渡回退，见下）。
+          </td>
+        </tr>
+        <tr>
+          <td>打包产物</td>
+          <td>产物目录结构与源码一致，打包<b>不改写</b> <code>ocplugin.json</code>。允许 <code>dist/server/main</code> 这类前缀，文件本身仍叫 <code>main</code>。</td>
+        </tr>
+      </table>
+
+      <pre><span class="path">ocplugin.json</span><code>{
+  "entry": {
+    "server": "server/main",
+    "gui": "gui/main"
+  }
+}</code></pre>
+      <pre>my-plugin/
+├── ocplugin.json
+├── package.json
+├── tsconfig.json
+├── server/
+│   └── main.ts
+├── gui/
+│   └── main.tsx
+└── skills/</pre>
+
+      <h4 id="s2-0-legacy">旧路径的回退（过渡性，非永久）</h4>
+
+      <p>入口解析是三步。<b>回退是正常加载，不是宽容错误</b>：</p>
+      <ol>
+        <li>先按 <code>entry</code> 声明的 <code>main</code> 找，按该部件的扩展名顺序取第一个存在的文件。</li>
+        <li>找不到就回退到旧路径，<b>照常加载</b>，同时打一条 deprecation 警告。</li>
+        <li>新旧都没有才拒绝，错误信息列出全部候选文件（见 <a href="#s6">6</a>）。</li>
+      </ol>
+
+      <table>
+        <tr><th>部件</th><th>回退顺序</th></tr>
+        <tr><td><code>server</code></td><td><code>server/index</code>、<code>src/index</code>、<code>index</code></td></tr>
+        <tr><td><code>tui</code></td><td><code>tui/index</code>、<code>tui</code></td></tr>
+        <tr><td><code>rpc</code></td><td><code>rpc/index</code>、<code>rpc</code></td></tr>
+        <tr><td><code>gui</code></td><td><code>gui/index</code>、<code>gui-experimental</code></td></tr>
+      </table>
+
+      <p>
+        <code>main</code> 与旧入口<b>并存</b>时用 <code>main</code>，<b>不报警告</b>：警告只在真的走到旧路径时出现。
+      </p>
+
+      <h4>警告长什么样</h4>
+      <p>
+        加载路径（<code>packages/core/src/plugin/module.ts</code>）记一条<b>结构化日志</b>，不是拼接字符串：
+      </p>
+      <pre><span class="path">服务端日志</span><code>msg:      "plugin uses a legacy entry"
+target:   "/Users/…/ocplugins/opencode.webwright"   # 插件目标或 id
+kind:     "server"
+found:    "server/index"                            # 实际命中的旧路径
+expected: "server/main"                             # 应该改成的路径</code></pre>
+      <p>
+        <code>Host.resolve</code> 本身是纯函数：只返回 <code>deprecated</code> 列表，由调用点决定怎么记。
+        配置发现与 <code>plugin list</code> 只把它当数据、<b>不记日志</b>——那两条路径在每次配置变化或列表刷新时都会跑，
+        每次都警告会刷屏。所以同一个插件可能「列表里已经出现」但日志还没警告。
+        安装期（<code>packages/core/src/plugin/bundle.ts</code>）仍是控制台警告：
+      </p>
+      <pre><span class="path">服务端日志</span><code>[opencode] Plugin "test.bundle" server entry "server/index" is deprecated; this bundle should declare and ship "server/main".</code></pre>
+
+      <div class="warn">
+        <b>只进服务端日志。</b>这类警告没有界面通道、不需要 i18n：插件列表、设置页、toast 都不会提示。
+        它是给开发者查日志用的，用户看不到。
+      </div>
+
+      <p>
+        安装期同样接受旧路径（带警告）。<b>只有「<code>entry</code> 指向的文件在压缩包里根本不存在」这类真正不合规的形态才拒绝安装</b>，
+        错误为第 6 章的 <code>no &lt;kind&gt; entry ... tried ...</code>。等回退按下面的条件移除，旧路径才会重新变成硬性拒绝。
+      </p>
+
+      <p>
+        通过 npm 安装的包仍走 <code>package.json</code> 的 self-reference / <code>exports</code>
+        （<code>&lt;name&gt;/server</code>、<code>&lt;name&gt;</code>、<code>&lt;name&gt;/tui</code>、<code>&lt;name&gt;/rpc</code>、
+        <code>&lt;name&gt;/gui-experimental</code>）作为过渡回退。这条与上面的旧路径一起，按同样的条件移除。
+      </p>
+      <div class="note">
+        新插件不要依赖回退：它能加载，但每次都会打 deprecation 警告。
+        从零创建用 <a href="#s2-12">2.12</a> 的脚手架，生成的清单直接符合本节规则。
+      </div>
+
+      <h4 id="s2-0-exit">回退什么时候移除</h4>
+      <p>回退<b>不会因为「过了下个 minor」就自动消失</b>：只有在<b>四条全部满足</b>后才删——</p>
+      <ol>
+        <li><code>packages/plugins/*</code> 的内置插件全部在 <code>ocplugin.json</code> 声明 <code>main</code>，且源码布局符合标准（目录名 = 入口名）。</li>
+        <li>本文档不再出现旧路径写法，2.0 里的旧行为描述与迁移对照表已删除。</li>
+        <li>至少经过一个 minor 的 deprecation 周期，并在 <code>CHANGELOG.md</code> 记录。</li>
+        <li>真实加载路径上不再出现回退警告。</li>
+      </ol>
+      <p>
+        移除回退本身是一次独立的行为变更，必须在同一次改动里完成：删回退代码与旧路径列表、
+        删「旧入口仍可加载并警告」的回归测试、新增「旧入口被拒绝」的测试、
+        删掉 <code>module.ts</code> 里那处 <code>plugin uses a legacy entry</code> 警告。
+      </p>
+
+      <h4 id="s2-0-built">构建型插件：源码与产物同名</h4>
+      <p>
+        前面以源码直载为例（<code>entry</code> 指向 <code>server/main.ts</code>）。需要打包的插件——用 Bun 打包、
+        或带非 JS 资源——必须满足同一个入口形状：
+      </p>
+      <table>
+        <tr><th>位置</th><th>server 入口</th></tr>
+        <tr><td>源码（包根）</td><td><code>server/main.ts</code></td></tr>
+        <tr><td>构建产物</td><td><code>dist/server/main.js</code></td></tr>
+        <tr><td><code>ocplugin.json</code>（两处都用这一份）</td><td><code>"entry": { "server": "server/main" }</code></td></tr>
+      </table>
+      <p>
+        包根与 <code>dist/</code> 共用一份 <code>ocplugin.json</code>：宿主在包根按 <code>.ts</code> 命中源码，
+        在解包目录按 <code>.js</code> 命中产物，<code>entry</code> 不用改。所以构建输出<b>必须命名成 <code>main.js</code></b>，
+        不能沿用旧的 <code>index.js</code>。
+      </p>
+      <pre><span class="path">script/build.ts（片段）</span><code>const build = await Bun.build({
+  entrypoints: [join(root, "server", "main.ts")],
+  target: "bun",
+  format: "esm",
+  outdir: join(dist, "server"),
+  naming: "main.js",                 // → dist/server/main.js
+  external: [...manifest.externals, "node:*"],
+})</code></pre>
+      <p>
+        <code>dist/package.json</code> 的 <code>main</code> / <code>exports</code> 同样指向
+        <code>./server/main.js</code>。打包时把 <code>ocplugin.json</code> 原样拷进 <code>dist/</code>，<b>不改写</b> <code>entry</code>。
+      </p>
+      <p>
+        <code>packages/plugins/webwright</code> 就是这种形态：<code>server/main.ts</code> 构建成
+        <code>dist/server/main.js</code>，<code>entry.server</code> 始终是 <code>server/main</code>。
+        <code>packages/plugins/figma</code> 是源码直载的样本，没有构建步骤。
+      </p>
+      <div class="note">
+        <b>旧布局已废弃</b>（源码在 <code>src/index.ts</code>、<code>entry.server</code> 写 <code>server/index.js</code>）。
+        仓库内的插件都已迁到 <code>server/main</code>；回退分支只为仓库外尚未迁移的插件保留，
+        每次加载都会打警告，见上一小节。
+      </div>
+
+      <h3 id="s2-1">2.1 插件运行时（Python）</h3>
+
+      <p>
+        依赖 Python 的插件在清单里声明运行时与依赖。平台为每个插件准备一个独立环境，
+        <b>不写系统 site-packages，不改全局环境</b>。
+      </p>
+
+      <pre><span class="path">ocplugin.json</span><code>"runtime": {
+  "python": "&gt;=3.10",
+  "dependencies": ["pymysql&gt;=1.0", "psycopg2-binary&gt;=2.9"]
+}</code></pre>
+      <p>
+        <code>python</code> 与 <code>dependencies</code> 都可选。目前只实现 Python，字段结构预留给以后的其他运行时。
+      </p>
+
+      <h4>环境位置</h4>
+      <table>
+        <tr><th>项</th><th>说明</th></tr>
+        <tr><td>目录</td><td><code>~/.opencode/plugin-runtime/&lt;id&gt;/</code>，id 里的 <code>/</code> 换成 <code>+</code>。</td></tr>
+        <tr><td>卸载时</td><td>整个目录删除。它是可重建的，与 <code>plugin-cache</code> 同一类。</td></tr>
+        <tr><td>标记文件</td><td>环境目录里的 <code>runtime.json</code> 记录约束与依赖的 hash、解释器版本和准备时间。</td></tr>
+      </table>
+
+      <h4>检测与准备</h4>
+      <p>每次加载都会检测三项，任一项不过就重新准备：</p>
+      <ol>
+        <li>虚拟环境存在且解释器可用。</li>
+        <li>解释器版本满足 <code>runtime.python</code>。约束里的运算符（<code>&gt;=</code>、<code>^</code>、<code>~</code>）只用来取最低版本，比较时只校验下限，与 <code>requires.opencode</code> 的判定方式相同。</li>
+        <li>依赖规范化后的 hash 与标记文件一致。</li>
+      </ol>
+      <ul>
+        <li>
+          优先 <code>uv venv --python &lt;最低版本&gt;</code>；<code>uv</code> 不可用时回退系统 <code>python3</code>
+          （<code>-m venv</code>），并先校验版本。
+        </li>
+        <li>依赖安装：有 <code>uv</code> 用 <code>uv pip install</code>，否则用 <code>python -m pip install</code>。</li>
+        <li>两者都不满足 → <code>failed</code>，错误信息包含所需版本与实际版本。<b>失败不会自动重试。</b></li>
+      </ul>
+
+      <h4>状态与通知</h4>
+      <table>
+        <tr><th><code>Plugin.Info.runtime</code></th><th>含义</th></tr>
+        <tr><td><code>{ status: "preparing" }</code></td><td>正在准备。</td></tr>
+        <tr><td><code>{ status: "ready" }</code></td><td>可用。</td></tr>
+        <tr><td><code>{ status: "failed", error, ref }</code></td><td>失败；<code>error</code> 是原因，<code>ref</code> 对应服务端的一条日志。</td></tr>
+      </table>
+      <p>
+        未声明 <code>runtime</code> 的插件<b>没有这个字段</b>。状态变化通过 <code>Plugin.Event.Updated</code> 通知客户端，
+        与插件列表的其他变化走同一条推送。
+      </p>
+
+      <h4>异步，不阻塞安装</h4>
+      <ul>
+        <li>安装接口立即返回，环境在后台准备：<code>preparing</code> → <code>ready</code> / <code>failed</code>。</li>
+        <li><b>环境失败不等于插件失败</b>：插件保留、仍可加载，只是依赖它的功能用不了。</li>
+        <li>加载已有插件时也会检测，所以「先装好、之后才在清单里加 <code>runtime</code>」的场景会自动补装，不用重装插件。</li>
+      </ul>
+
+      <h4>失败后重新准备</h4>
+      <p>准备失败不会自动重试。修好环境（装 <code>uv</code> 或合适版本的 Python）后调端点，或点界面上的「重新准备」：</p>
+      <table>
+        <tr><th>方法 / 路径</th><th>请求</th><th>响应</th></tr>
+        <tr>
+          <td><code>POST /api/experimental/plugin/runtime/retry</code></td>
+          <td>query <code>LocationQuery</code>；body <code>{ "id": "&lt;plugin id&gt;" }</code></td>
+          <td>200 <code>{ id }</code>；404 <code>PluginNotFoundError</code>（id 不在 inventory，或该插件没有声明 <code>runtime</code>）</td>
+        </tr>
+      </table>
+      <p>
+        它<b>只重新准备环境，不重载插件</b>；要重载插件用 <a href="#s3-4-retry">3.4</a> 的 <code>plugin.reload</code>。
+        回复 200 只表示已开始准备，进度通过插件 inventory 的 <code>runtime.status</code> 观察。
+      </p>
+
+      <h4>界面表现</h4>
+      <ul>
+        <li>插件详情页有「运行环境」一项：正在准备 / 已就绪 / 准备失败。</li>
+        <li>失败时显示错误（复用插件失败的样式）与「重新准备」按钮。</li>
+        <li>安装成功且插件声明了 <code>runtime</code> 时，追加一条 toast「正在为 … 准备运行环境」，不阻塞安装对话框。</li>
+        <li>未声明 <code>runtime</code> 的插件不显示这一项。</li>
+      </ul>
+
+      <h4>安全边界</h4>
+      <div class="warn">
+        <code>pip install</code> 会执行依赖包里的构建步骤（包括 <code>setup.py</code>），等于在用户机器上运行代码。
+        这属于既有的<b>「插件完全信任」</b>模型：插件本来就能读写文件、启动进程、访问网络。
+        平台做的是「把依赖装进隔离目录」，<b>不是沙箱</b>——不要以为运行时准备提供了额外的安全隔离。
+      </div>
+
+      <h4>还没声明 runtime 的插件</h4>
+      <p>
+        dbro 这类现有插件目前自己解决解释器：用 <code>configuration.python</code>（默认 <code>python3</code>）指向可执行文件，
+        再用 <code>Bun.spawn</code> 调用脚本，找不到时提示「找不到 Python 解释器「…」。安装 python3，或在插件设置里把 python 指向可执行文件。」。
+        迁移到 <code>runtime</code> 后，这一步由平台负责。
+      </p>
+
+      <h3 id="s2-2">2.2 完整目录树</h3>
 
       <p>下面是一个同时带服务端工具、技能和界面挂件的完整工程，可直接照此创建：</p>
 
@@ -479,9 +748,10 @@
 ├── package.json               # 【必需】工程依赖与脚本
 ├── tsconfig.json              # 【可选】TypeScript 配置
 ├── vite.config.ts             # 【可选】只在有界面时需要
-├── src/
-│   ├── index.ts               # 【必需】服务端入口
-│   └── gui.tsx                # 【可选】界面入口
+├── server/
+│   └── main.ts                # 【必需】服务端入口
+├── gui/
+│   └── main.tsx               # 【可选】界面入口
 ├── skills/
 │   └── echo/
 │       └── SKILL.md           # 【可选】技能正文
@@ -490,12 +760,16 @@
 │   └── pack.ts                # 【必需】打包脚本
 └── dist/                      # 构建产物（不提交）
     ├── ocplugin.json          # 打包时重写为带校验和的版本
-    ├── package.json           # 解包后解析入口用
-    ├── server/index.js        # 服务端入口
-    ├── gui-experimental.cjs   # 界面入口（有界面时）
+    ├── package.json           # 解包后解析外部依赖用
+    ├── server/main.js         # 服务端入口（entry 仍写 server/main）
+    ├── gui/main.cjs           # 界面入口（有界面时）
     └── skills/echo/SKILL.md   # 技能正文</pre>
+      <p class="note">
+        产物的目录结构必须与源码一致，且 <code>ocplugin.json</code> 不改写：<code>entry.server</code> 始终是
+        <code>server/main</code>，扩展名由宿主按 <a href="#s2-0">2.0</a> 的顺序补。
+      </p>
 
-      <h3 id="s2-2">2.2 各文件的作用</h3>
+      <h3 id="s2-3">2.3 各文件的作用</h3>
 
       <table>
         <tr>
@@ -514,14 +788,14 @@
           <td>开发依赖与 <code>build</code>/<code>pack</code> 脚本。</td>
         </tr>
         <tr>
-          <td><code>src/index.ts</code></td>
+          <td><code>server/main.ts</code></td>
           <td>服务进程</td>
           <td>默认导出 <code>Plugin.define</code>，注册工具、技能、hooks。</td>
         </tr>
         <tr>
-          <td><code>src/gui.tsx</code></td>
+          <td><code>gui/main.tsx</code></td>
           <td>桌面窗口</td>
-          <td>默认导出 GUI 的 <code>Plugin.define</code>，注册界面。</td>
+          <td>默认导出 GUI 的 <code>Plugin.define</code>，注册界面。构建成 <code>gui/main.cjs</code>。</td>
         </tr>
         <tr>
           <td><code>script/build.ts</code></td>
@@ -540,7 +814,7 @@
         </tr>
       </table>
 
-      <h3 id="s2-3">2.3 ocplugin.json</h3>
+      <h3 id="s2-4">2.4 ocplugin.json</h3>
 
       <pre><span class="path">echo-plugin/ocplugin.json</span><code>{
   "apiVersion": 1,
@@ -548,8 +822,8 @@
   "version": "0.1.0",
   "requires": { "opencode": "^2.2.0" },
   "entry": {
-    "server": "server/index.js",
-    "gui": "gui-experimental.cjs"
+    "server": "server/main",
+    "gui": "gui/main"
   },
   "externals": [
     "effect",
@@ -577,7 +851,13 @@
       "path": "skills/echo/SKILL.md"
     }
   ],
-  "assets": []
+  "assets": [],
+  "configuration": {
+    "title": "Echo 设置",
+    "properties": {
+      "greeting": { "type": "string", "default": "你好" }
+    }
+  }
 }</code></pre>
 
       <h4>字段说明</h4>
@@ -610,31 +890,31 @@
           <td><code>requires</code></td>
           <td>object</td>
           <td>否</td>
-          <td>声明所需 OpenCode 版本。<b>当前安装器不校验</b>，仅作文档。</td>
+          <td>声明所需的最低 OpenCode 版本（如 <code>^2.2.0</code>）。安装时剥离 <code>^</code>/<code>~</code>/<code>&gt;=</code>/<code>v</code> 后与宿主版本比较，不满足则拒绝安装并提示当前版本。<br />这是<b>最低版本</b>判断，不是完整的 semver range：<code>^2.2.5</code> 等价于 <code>&gt;= 2.2.5</code>，<b>不设上界</b>。API 兼容性由 <code>apiVersion</code> 负责。</td>
         </tr>
         <tr>
           <td><code>entry.server</code></td>
           <td>string</td>
           <td>是</td>
-          <td>服务端入口相对路径。安装时校验文件存在。</td>
+          <td>服务端入口：相对路径、<b>不含扩展名</b>、以 <code>/main</code> 结尾，例如 <code>server/main</code>。见 <a href="#s2-0">2.0</a>。</td>
         </tr>
         <tr>
           <td><code>entry.tui</code></td>
           <td>string</td>
           <td>否</td>
-          <td>TUI 入口。实际加载仍由包内 package.json 决定。</td>
+          <td>TUI 入口，形状同 <code>server</code>，例如 <code>tui/main</code>。</td>
         </tr>
         <tr>
           <td><code>entry.rpc</code></td>
           <td>string</td>
           <td>否</td>
-          <td>RPC 契约入口。</td>
+          <td>RPC 契约入口，形状同 <code>server</code>，例如 <code>rpc/main</code>。</td>
         </tr>
         <tr>
           <td><code>entry.gui</code></td>
           <td>string</td>
           <td>否</td>
-          <td>声明用。<b>当前加载逻辑不读它</b>，见 2.4。</td>
+          <td>界面入口，例如 <code>gui/main</code>；宿主只接受 CommonJS 产物（<code>.js</code> / <code>.cjs</code>）。见 <a href="#s2-0">2.0</a>。</td>
         </tr>
         <tr>
           <td><code>externals</code></td>
@@ -646,7 +926,7 @@
           <td><code>display.name</code></td>
           <td>string</td>
           <td>否</td>
-          <td>插件目录显示的名称。</td>
+          <td>安装时校验 <code>name</code>、<code>description</code> 必填，<code>category</code> 为字符串，<code>tools</code> 为字符串数组。</td>
         </tr>
         <tr>
           <td><code>display.description</code></td>
@@ -676,13 +956,19 @@
           <td><code>skills</code></td>
           <td>array</td>
           <td>否</td>
-          <td>技能清单，额外带 <code>path</code>。仅供运行时读取，不自动注册。</td>
+          <td>技能清单，额外带 <code>path</code>。安装时校验 <code>id</code>/<code>name</code>/<code>description</code>/<code>path</code> 齐全，且 <code>path</code> 在包内存在；不自动注册。</td>
         </tr>
         <tr>
           <td><code>assets</code></td>
           <td>string[]</td>
           <td>否</td>
-          <td>随包数据目录，说明用。</td>
+          <td>随包数据目录。安装时校验为字符串数组。</td>
+        </tr>
+        <tr>
+          <td><code>configuration</code></td>
+          <td>object</td>
+          <td>否</td>
+          <td>声明用户级扁平配置项，见 <a href="#s4-1">4.1</a>「声明式配置」。只支持 <code>string</code>、<code>number</code>、<code>boolean</code>、<code>string[]</code>；<code>enum</code> 只能配 <code>string</code>，<code>array</code> 只支持 <code>items.type: "string"</code>。写错在安装时报可读错误。</td>
         </tr>
         <tr>
           <td><code>files</code></td>
@@ -690,38 +976,49 @@
           <td>打包生成</td>
           <td><code>{ path, sha256 }[]</code>，安装时逐项校验。</td>
         </tr>
+        <tr>
+          <td><code>runtime</code></td>
+          <td>object</td>
+          <td>否</td>
+          <td>
+            Python 运行时：<code>{ python?: string, dependencies?: string[] }</code>。<code>python</code> 是版本约束
+            （只校验下限），<code>dependencies</code> 是 pip requirements。见 <a href="#s2-1">2.1</a>。
+          </td>
+        </tr>
       </table>
 
-      <h3 id="s2-4">2.4 package.json（解包后的入口声明）</h3>
+      <h3 id="s2-5">2.5 package.json（解包后）</h3>
 
       <p>
-        解包后的目录是一个普通插件包，宿主按包内 <code>package.json</code> 的 <code>exports</code> 找入口。
-        这个文件由 <code>build.ts</code> 生成，不手写。
+        解包后的目录是一个普通插件包。<code>package.json</code> 要存在，但<b>理由不是入口解析</b>：
+        <code>packageID</code> 在清单没写 <code>id</code> 时读它的 <code>name</code>（再退到目录名）；
+        从 npm 安装的包靠它自己的 <code>exports</code> 解析入口，这是过渡回退，见 <a href="#s2-0-exit">2.0 的移除条件</a>。
+        注意 <code>externals</code> 的软链读的是<b>被链接模块</b>的 manifest，不是插件自己的。
+        本地目录的入口<b>不看</b> <code>main</code> / <code>exports</code>——入口只认
+        <code>ocplugin.json</code> 的 <code>entry</code>。这个文件由 <code>build.ts</code> 生成，不手写。
       </p>
 
       <pre><span class="path">dist/package.json</span><code>{
   "name": "opencode.echo",
   "version": "0.1.0",
   "type": "module",
-  "main": "./server/index.js",
+  "main": "./server/main.js",
   "exports": {
-    ".": "./server/index.js",
-    "./gui-experimental": "./gui-experimental.cjs"
+    ".": "./server/main.js"
   }
 }</code></pre>
 
-      <p>解析规则，按顺序：</p>
-      <ol>
-        <li>有 <code>package.json</code> 且声明 <code>exports</code>：按 <code>.</code>、<code>./server</code>、<code>./tui</code>、<code>./rpc</code>、<code>./gui-experimental</code> 解析。</li>
-        <li>没有 <code>exports</code>：按约定文件名找 <code>server/</code>、<code>tui/</code>、<code>rpc/</code>、<code>gui-experimental.cjs|js</code>。</li>
-      </ol>
+      <p>
+        保留 <code>main</code> 与 <code>exports</code> 是为了通过 npm 分发：从 npm 安装的包仍按 self-reference
+        解析，这是过渡回退，见 <a href="#s2-0-exit">2.0 的移除条件</a>。
+      </p>
 
       <div class="warn">
-        <b>重要：</b><code>ocplugin.json</code> 里的 <code>entry.gui</code> 不参与加载。界面必须写进这里的
-        <code>exports["./gui-experimental"]</code>，否则界面永远不会出现。
+        <b>入口以 <code>ocplugin.json</code> 为准。</b>只把界面写进包内 <code>package.json</code> 的 <code>exports</code>、
+        却不在 <code>entry.gui</code> 里声明 <code>gui/main</code>，走本地目录加载时界面不会出现。
       </div>
 
-      <h3 id="s2-5">2.5 package.json（工程本身）</h3>
+      <h3 id="s2-6">2.6 package.json（工程本身）</h3>
 
       <pre><span class="path">echo-plugin/package.json</span><code>{
   "name": "opencode-echo",
@@ -746,7 +1043,7 @@
       <p>安装依赖：</p>
       <pre><span class="path">终端</span><code>bun install</code></pre>
 
-      <h3 id="s2-6">2.6 tsconfig.json</h3>
+      <h3 id="s2-7">2.7 tsconfig.json</h3>
 
       <pre><span class="path">echo-plugin/tsconfig.json</span><code>{
   "compilerOptions": {
@@ -762,19 +1059,20 @@
   "include": ["src", "script"]
 }</code></pre>
 
-      <h3 id="s2-7">2.7 src/index.ts（服务端入口）</h3>
+      <h3 id="s2-8">2.8 server/main.ts（服务端入口）</h3>
 
       <p>
-        默认导出一个 <code>Plugin.define</code>。<code>id</code> 必须与清单一致；<code>setup</code> 在插件加载时执行。
+        默认导出一个 <code>Plugin.define</code>。<code>id</code> 必须与清单一致；<code>activate</code> 在插件加载时执行
+        （旧名 <code>setup</code> 仍可用，等价于 <code>activate</code>，下一个 minor 移除）。
       </p>
 
-      <pre><span class="path">echo-plugin/src/index.ts</span><code>import { Plugin } from "@opencode/plugin"
+      <pre><span class="path">echo-plugin/server/main.ts</span><code>import { Plugin } from "@opencode/plugin"
 import { Schema } from "effect"
 
 export default Plugin.define({
   id: "opencode.echo",
 
-  async setup(ctx) {
+  async activate(ctx) {
     // 注册工具
     await ctx.tool.transform((tools) =&gt; {
       tools.add({
@@ -788,9 +1086,9 @@ export default Plugin.define({
   },
 })</code></pre>
 
-      <h3 id="s2-8">2.8 src/gui.tsx（界面入口）</h3>
+      <h3 id="s2-9">2.9 gui/main.tsx（界面入口）</h3>
 
-      <pre><span class="path">echo-plugin/src/gui.tsx</span><code>import { Command, Plugin, Slot } from "@opencode/plugin/gui"
+      <pre><span class="path">echo-plugin/gui/main.tsx</span><code>import { Command, Plugin, Slot } from "@opencode/plugin/gui"
 import { createSignal } from "solid-js"
 
 export default Plugin.define({
@@ -830,7 +1128,7 @@ export default defineConfig({
   plugins: [gui()],
 })</code></pre>
 
-      <h3 id="s2-9">2.9 skills/</h3>
+      <h3 id="s2-10">2.10 skills/</h3>
 
       <pre><span class="path">echo-plugin/skills/echo/SKILL.md</span><code>---
 name: Echo
@@ -842,9 +1140,9 @@ description: 使用 echo 工具把文本原样返回。
 当用户要求验证插件链路时，调用 `echo` 工具，把用户给的文本作为 `text` 传入。
 返回结果应与输入完全一致。</code></pre>
 
-      <p>运行时注册技能（放在 <code>setup</code> 里，先读文件再注册）：</p>
+      <p>运行时注册技能（放在 <code>activate</code> 里，先读文件再注册）：</p>
 
-      <pre><span class="path">echo-plugin/src/index.ts（片段）</span><code>import { AbsolutePath } from "@opencode/schema/schema"
+      <pre><span class="path">echo-plugin/server/main.ts（片段）</span><code>import { AbsolutePath } from "@opencode/schema/schema"
 import { Skill } from "@opencode/schema/skill"
 
 const file = new URL("../skills/echo/SKILL.md", import.meta.url)
@@ -862,7 +1160,7 @@ await ctx.skill.transform((skills) =&gt;
   ),
 )</code></pre>
 
-      <h3 id="s2-10">2.10 script/build.ts</h3>
+      <h3 id="s2-11">2.11 script/build.ts</h3>
 
       <p>构建分三件事：编译服务端、可选编译界面、生成 <code>dist/package.json</code> 并拷贝静态文件。</p>
 
@@ -876,13 +1174,13 @@ const manifest = await Bun.file(join(root, "ocplugin.json")).json()
 await rm(dist, { recursive: true, force: true })
 await mkdir(join(dist, "server"), { recursive: true })
 
-// 1. 服务端入口
+// 1. 服务端入口：server/main.ts -&gt; dist/server/main.js
 const build = await Bun.build({
-  entrypoints: [join(root, "src/index.ts")],
+  entrypoints: [join(root, "server/main.ts")],
   target: "bun",
   format: "esm",
   outdir: join(dist, "server"),
-  naming: "index.js",
+  naming: "main.js",
   external: [...manifest.externals, "node:*"],
 })
 
@@ -895,13 +1193,7 @@ if (!build.success) {
 await cp(join(root, "skills"), join(dist, "skills"), { recursive: true }).catch(() =&gt; undefined)
 await cp(join(root, "ocplugin.json"), join(dist, "ocplugin.json"))
 
-// 3. 解包后的入口声明：只有真的产出了界面才声明
-const gui = await Bun.file(join(dist, "gui-experimental.cjs")).exists()
-const exports = {
-  ".": "./server/index.js",
-  ...(gui ? { "./gui-experimental": "./gui-experimental.cjs" } : {}),
-}
-
+// 3. 解包后的 package.json：entry 仍以 ocplugin.json 为准，这里只是给依赖解析用
 await writeFile(
   join(dist, "package.json"),
   JSON.stringify(
@@ -909,8 +1201,8 @@ await writeFile(
       name: manifest.id,
       version: manifest.version,
       type: "module",
-      main: "./server/index.js",
-      exports,
+      main: "./server/main.js",
+      exports: { ".": "./server/main.js" },
     },
     null,
     2,
@@ -920,9 +1212,58 @@ await writeFile(
 console.log(`built ${manifest.id} ${manifest.version} -&gt; ${dist}`)</code></pre>
 
       <div class="note">
-        <b>顺序：</b>有界面时先执行 <code>bunx vite build</code> 生成 <code>gui-experimental.cjs</code>，
-        再执行 <code>bun run script/build.ts</code>。否则 <code>dist/</code> 会被清空，界面文件也随之丢失。
+        <b>顺序：</b>先跑 <code>bun run script/build.ts</code>（它会清空 <code>dist/</code> 并编服务端），
+        再跑 <code>bunx vite build</code> 写 <code>dist/gui/main.cjs</code>。反过来会丢掉界面产物。
+        产物里的 <code>ocplugin.json</code> 不需要改：<code>entry.server</code> 仍是 <code>server/main</code>，扩展名由宿主补。
       </div>
+
+      <h3 id="s2-12">2.12 create-ocplugin 脚手架</h3>
+
+      <p>
+        不想手写目录与清单时，用仓库内的脚手架生成一个符合 <a href="#s2-0">2.0</a> 的工程骨架。
+      </p>
+
+      <pre><span class="path">shell</span><code>bun packages/create-ocplugin/src/cli.ts &lt;directory&gt; [-t server|gui|tui] [-n "显示名"]</code></pre>
+
+      <table>
+        <tr><th>选项</th><th>说明</th></tr>
+        <tr><td><code>-t, --template</code></td><td><code>server</code>（默认）、<code>gui</code>、<code>tui</code>，决定额外生成哪些部件。</td></tr>
+        <tr><td><code>-n, --name</code></td><td>显示名；省略时从目录名推导。</td></tr>
+      </table>
+
+      <h4>生成的文件</h4>
+      <table>
+        <tr><th>模板</th><th>文件</th></tr>
+        <tr>
+          <td>全部</td>
+          <td><code>ocplugin.json</code>、<code>package.json</code>、<code>tsconfig.json</code>、<code>server/main.ts</code>、<code>README.md</code>、<code>.gitignore</code></td>
+        </tr>
+        <tr><td><code>gui</code></td><td>额外 <code>gui/main.tsx</code> + <code>vite.config.ts</code></td></tr>
+        <tr><td><code>tui</code></td><td>额外 <code>tui/main.tsx</code></td></tr>
+      </table>
+
+      <p>
+        生成的 <code>ocplugin.json</code> 直接符合入口标准：<code>server/main</code>，gui / tui 各写
+        <code>gui/main</code>、<code>tui/main</code>，<code>externals</code> 含 <code>@opencode/plugin</code>。
+        它<b>不生成</b> <code>runtime</code> 字段——需要 Python 就自己加，见 <a href="#s2-1">2.1</a>。
+      </p>
+      <pre><span class="path">生成后</span><code>packages/plugins/my-plugin/
+├── ocplugin.json      # entry: { server: "server/main" }
+├── package.json       # workspace:* / catalog: 依赖
+├── tsconfig.json
+├── server/main.ts
+├── README.md
+└── .gitignore</code></pre>
+
+      <div class="warn">
+        脚手架只写 <code>workspace:*</code> 与 <code>catalog:</code> 依赖，所以<b>只能在 opencode 仓库内</b>
+        （<code>packages/</code> 下）生成。目录在仓库外会直接报错，而不是生成一个装不上依赖的工程。
+      </div>
+
+      <p>
+        GUI 模板的 <code>vite.config.ts</code> 用 <code>@opencode/plugin/gui/vite</code> 的 <code>gui()</code>，
+        构建输出 <code>dist/gui/main.cjs</code>——就是宿主用 <code>eval</code> 执行的那个 CommonJS bundle。
+      </p>
 
       <h2 id="s3">3. 打包与分发</h2>
 
@@ -936,8 +1277,8 @@ console.log(`built ${manifest.id} ${manifest.version} -&gt; ${dist}`)</code></pr
       <pre>opencode.echo-0.1.0.ocplugin  (gzip tar)
 ├── ocplugin.json     &lt;- 带 files[].sha256
 ├── package.json
-├── server/index.js
-├── gui-experimental.cjs
+├── server/main.js
+├── gui/main.cjs
 └── skills/echo/SKILL.md</pre>
 
       <h3 id="s3-2">3.2 script/pack.ts</h3>
@@ -1061,11 +1402,136 @@ console.log(`packed ${archive}`)</code></pre>
         <li>
           <h3>自动加载</h3>
           <p>
-            安装根目录被监听，文件变化触发重新加载：服务端重新执行 <code>setup</code>，广播
+            安装根目录被监听，文件变化触发重新加载：服务端重新执行 <code>activate</code>，广播
             <code>plugin.updated</code>，桌面主进程把界面推给窗口。全程不需要重启应用。
           </p>
         </li>
       </ol>
+
+      <h4 id="s3-4-retry">加载超时、退避与显式重试</h4>
+      <p>加载不再无限等待，失败后也不会被反复重试打死：</p>
+      <ul>
+        <li>
+          服务端单次加载超时 <b>15 秒</b>，超时按普通加载失败处理并进入退避。计时只覆盖 npm 安装/解析与模块导入，
+          读配置和 GUI bundle 不在其内。桌面端加载插件主代码同样是 <b>15 秒</b>，超时后不保留半启动的实例。
+        </li>
+        <li>
+          连续失败按 <code>min(2^count × 1000ms, 60s)</code> 递推退避；退避窗口内同一目标不再被解析或导入，
+          直接沿用上一次的失败结果。加载成功、配置项变化、显式重试都会把计数清零。退避只在进程内，重启应用后重新尝试。
+        </li>
+        <li>
+          带 <code>install</code> 的包安装不再阻塞激活：本地插件先服务，安装在后台完成后才并入注册表。
+        </li>
+      </ul>
+      <p>
+        插件连续失败进入退避窗口后，修好代码（或重新安装）不必等窗口过期，调下面这个端点即可立即重试：
+      </p>
+      <table>
+        <tr><th>方法 / 路径</th><th>请求</th><th>响应</th></tr>
+        <tr>
+          <td><code>POST /api/experimental/plugin/reload</code></td>
+          <td>query <code>LocationQuery</code>；body <code>{ "id": "&lt;plugin id&gt;" }</code></td>
+          <td>
+            200 <code>{ location, data: { id } }</code>；<br />
+            404 <code>PluginNotFoundError</code>（id 不在当前 location 的插件清单里）
+          </td>
+        </tr>
+      </table>
+      <pre><span class="path">HTTP</span><code>POST /api/experimental/plugin/reload
+Content-Type: application/json
+
+{ "id": "opencode.echo" }</code></pre>
+      <p>
+        语义是「清掉该目标的加载退避，再通过 supervisor 既有的触发队列请求一次重新激活」，不会另起一条激活链。
+        <b>返回 200 只表示已排入重试，不表示插件已经加载成功</b>：要看插件状态，读
+        <code>GET /api/plugin</code> 里的 <code>state.status</code>。
+      </p>
+      <p>
+        客户端对应 <code>client.experimental.plugin.reload({ id })</code>。桌面端的插件详情页在
+        <code>state.status === "failed"</code> 且来源不是 <code>builtin</code> 时显示「重试」按钮，
+        请求期间按钮禁用并显示「正在重试…」，失败信息显示在按钮下方。
+      </p>
+      <div class="note">
+        这是实验性端点，可能在没有兼容保证的情况下变化。同类实验性路由（<code>install</code>、<code>uninstall</code>、
+        <code>check</code>）在 OpenAPI 的 <code>plugin</code> 分组下。
+      </div>
+
+      <h4 id="s3-4-activation">activate 的超时保护（30 秒）</h4>
+
+      <p>
+        服务端执行 <code>activate</code> 时挂一个 <b>30 秒</b>的<b>可中断挂起的超时保护</b>。
+        它不是「修复插件挂死」的通用药：只对能被中断的等待有效，越界的情形要提前知道。
+      </p>
+
+      <table>
+        <tr><th>activate 里的写法</th><th>30 秒后</th></tr>
+        <tr>
+          <td><code>Effect.never</code>、<code>Effect.sleep</code> 等可中断挂起</td>
+          <td>被中断，插件标记为失败。</td>
+        </tr>
+        <tr>
+          <td><code>Effect.promise(() =&gt; new Promise(() =&gt; {}))</code> 这类不可中断的 promise</td>
+          <td><b>不会被中断</b>，超时对它不起作用。</td>
+        </tr>
+        <tr>
+          <td>同步死循环</td>
+          <td>
+            <b>不会被中断</b>：它阻塞事件循环，任何 timeout 都无法触发。
+            这类代码要放到 worker 或独立进程里，<b>该隔离尚未实现</b>。
+          </td>
+        </tr>
+      </table>
+
+      <p>
+        超时后插件进入 <code>failed</code>，带
+        <code>reason: { kind: "activation-timeout", seconds: 30 }</code> 与
+        <code>ref: err_xxxxxxxx</code>。它<b>不进入 supervisor 的退避队列</b>——退避是挡「反复失败」的，
+        而超时的插件本身没坏，只是慢。要再次激活，得改它的 revision（重新安装、改配置或显式重载）。
+        激活是顺序进行的，语义不变：一个插件超时，后面的插件照常激活。
+      </p>
+
+      <div class="note">
+        <b>为什么是 30 秒、且没有配置项：</b>在 <code>activate</code> 里探测端口、拉远端配置的插件，
+        合法地超过 10 秒很常见。10 秒一刀切会把「慢」误判成「坏」，停掉一个其实正常的插件。
+        30 秒是硬编码的折中；一旦开放配置，每个插件都会把它调大，保护也就失去意义。
+      </div>
+
+      <h4 id="s3-4-reason">失败状态的结构（state.failed）</h4>
+
+      <p>
+        <code>failed</code> 由三段组成：<code>error</code>（服务端原始详情，英文堆栈）、可选的
+        <code>ref</code>（<code>err_xxxxxxxx</code>，对应日志）、可选的 <code>reason</code>（结构化原因）。
+        面向用户的部分读 <code>reason</code>：界面按它做本地化，原始 <code>error</code> 只出现在折叠详情里。
+      </p>
+
+      <table>
+        <tr><th><code>Plugin.Reason</code></th><th>含义</th></tr>
+        <tr>
+          <td><code>{ kind: "transform-failed", state }</code></td>
+          <td>某个状态域（如 <code>server</code>）在重建时抛错，该组注册被回滚，插件被停用。</td>
+        </tr>
+        <tr>
+          <td><code>{ kind: "activation-timeout", seconds }</code></td>
+          <td><code>activate</code> 超过 30 秒，见上一小节。</td>
+        </tr>
+        <tr>
+          <td><code>{ kind: "load-timeout", seconds }</code></td>
+          <td>模块加载与解析超过 15 秒，见上文。</td>
+        </tr>
+        <tr>
+          <td><code>{ kind: "load-failed" }</code></td>
+          <td>其余加载失败。</td>
+        </tr>
+      </table>
+
+      <p>
+        界面文案键在 <code>packages/app/src/runtime/i18n/{en,zh,zht}.ts</code>：
+        <code>explore.plugins.error.reason.transformFailed</code>（<code>{{state}}</code>）、
+        <code>explore.plugins.error.reason.activationTimeout</code>（<code>{{seconds}}</code>）、
+        <code>explore.plugins.error.reason.loadTimeout</code>（<code>{{seconds}}</code>）、
+        <code>explore.plugins.error.reason.loadFailed</code>。
+        旧的 <code>.reason.transform</code> / <code>.timeout</code> / <code>.load</code> 已改名删除。
+      </p>
 
       <h3 id="s3-5">3.5 版本与升级</h3>
 
@@ -1130,17 +1596,21 @@ console.log(`packed ${archive}`)</code></pre>
         <tr><td><code>ctx.agent</code></td><td><code>transform</code>、<code>reload</code></td><td>增删改 agent。</td></tr>
         <tr><td><code>ctx.aisdk</code></td><td><code>hook("sdk" | "language")</code></td><td>替换 AI SDK 模块或语言模型。</td></tr>
         <tr><td><code>ctx.command</code></td><td><code>transform</code>、<code>reload</code></td><td>服务端命令。</td></tr>
+        <tr><td><code>ctx.config</code></td><td><code>get</code>、<code>update</code>、<code>onChange</code></td><td>清单声明的用户级配置，见下文「声明式配置」。</td></tr>
         <tr><td><code>ctx.credential</code></td><td><code>activate</code></td><td>激活凭据。</td></tr>
         <tr><td><code>ctx.event</code></td><td><code>subscribe</code></td><td>订阅服务端事件。只用 <code>types</code> 过滤后的事件，见 <a href="#s4-15">4.15</a>。</td></tr>
         <tr><td><code>ctx.experimental</code></td><td><code>terminal.read</code>、<code>generate.text</code>、<code>artifact</code></td><td>实验性能力。</td></tr>
+        <tr><td><code>ctx.inbox</code></td><td><code>publish</code>、<code>publishMany</code>、<code>list</code>、<code>update</code>、<code>remove</code>、<code>markSeen</code>、<code>onSeen</code></td><td>往应用收件箱投递给用户看的事项，只作用于本插件自己的消息，见 <a href="#s4-18">4.18</a>。</td></tr>
         <tr><td><code>ctx.integration</code></td><td><code>transform</code>、<code>reload</code>、<code>connection</code></td><td>外部集成。</td></tr>
         <tr><td><code>ctx.mcp</code></td><td><code>transform</code>、<code>reload</code></td><td>MCP 服务器。</td></tr>
         <tr><td><code>ctx.model</code></td><td><code>transform</code>、<code>reload</code></td><td>模型列表与限制。</td></tr>
         <tr><td><code>ctx.permission</code></td><td><code>list</code>、<code>get</code>、<code>reply</code>、<code>assert</code>、<code>hook</code></td><td>权限规则与询问。</td></tr>
+        <tr><td><code>ctx.paths</code></td><td><code>data</code>、<code>cache</code>、<code>log</code></td><td>插件专属目录，见下文「插件目录」。</td></tr>
         <tr><td><code>ctx.plugin</code></td><td><code>list</code></td><td>已加载插件列表。</td></tr>
         <tr><td><code>ctx.provider</code></td><td><code>transform</code>、<code>reload</code></td><td>模型提供商。</td></tr>
         <tr><td><code>ctx.reference</code></td><td><code>transform</code>、<code>reload</code></td><td>引用源。</td></tr>
         <tr><td><code>ctx.rpc</code></td><td>按契约调用、<code>register</code></td><td>跨进程、跨插件的 RPC 契约，见 <a href="#s4-16">4.16</a>。</td></tr>
+        <tr><td><code>ctx.secrets</code></td><td><code>get</code>、<code>set</code>、<code>delete</code></td><td>加密保存的凭据，见下文「加密凭据」。</td></tr>
         <tr><td><code>ctx.session</code></td><td>见 4.4</td><td>会话操作与 hooks。</td></tr>
         <tr><td><code>ctx.shell</code></td><td><code>hook</code></td><td>shell 执行钩子。</td></tr>
         <tr><td><code>ctx.skill</code></td><td><code>transform</code>、<code>reload</code></td><td>技能注册。</td></tr>
@@ -1150,6 +1620,69 @@ console.log(`packed ${archive}`)</code></pre>
         <tr><td><code>ctx.websearch</code></td><td><code>transform</code>、<code>reload</code></td><td>联网搜索提供商。</td></tr>
         <tr><td><code>ctx.worktree</code></td><td><code>transform</code>、<code>reload</code></td><td>工作树策略。</td></tr>
       </table>
+
+      <h4>插件目录（ctx.paths）</h4>
+      <p>
+        宿主在 <code>activate</code> 之前用 <code>mkdir -p</code> 建好这些目录，插件入口不会看到不存在的路径。
+      </p>
+      <table>
+        <tr><th>字段</th><th>路径</th><th>卸载后</th></tr>
+        <tr><td><code>data</code></td><td><code>~/.opencode/plugin-data/&lt;id&gt;</code></td><td>保留</td></tr>
+        <tr><td><code>cache</code></td><td><code>~/.opencode/plugin-cache/&lt;id&gt;</code></td><td>整个删除</td></tr>
+        <tr><td><code>log</code></td><td><code>~/.opencode/logs/plugin/&lt;id&gt;.log</code></td><td>保留</td></tr>
+      </table>
+      <p>
+        <code>cache</code> 里的东西必须可以随时重建。<code>data</code> 与 <code>log</code> 归插件所有，
+        需要清理就在 <code>onUninstall</code> 里自己做。桌面窗口的 <code>ctx</code> <b>不提供</b>
+        <code>paths</code>：窗口没有文件系统，需要读写文件的界面插件通过 <code>ctx.main</code> 的 Ipc 走主进程。
+        id 里的 <code>/</code> 与 <code>\</code> 都会替换成 <code>+</code>（<code>@scope/name</code> →
+        <code>@scope+name</code>），保证一个包名只占一层目录。
+      </p>
+
+      <h4>加密凭据（ctx.secrets）</h4>
+      <pre><span class="path">服务端</span><code>await ctx.secrets.set("token", apiKey)
+const token = await ctx.secrets.get("token")   // string | undefined
+await ctx.secrets.delete("token")</code></pre>
+      <p>
+        值用 AES-256-GCM 加密后写入 <code>~/.opencode/secrets/&lt;id&gt;.json</code>，文件权限 <code>0600</code>；
+        密钥在 <code>~/.opencode/secrets.key</code>，首次使用时生成，权限同样是 <code>0600</code>，
+        已存在时不会覆盖。明文从不落盘。
+      </p>
+      <ul>
+        <li>同一个 key 再次 <code>set</code> 是<b>覆盖写</b>，不保留旧值。</li>
+        <li><code>delete</code> 一个不存在的 key 是 no-op，不报错。</li>
+        <li><code>secrets.key</code> 已存在时不会覆盖；两个进程同时首次生成时以<b>先落盘者为准</b>，后写的进程沿用对方生成的密钥。</li>
+      </ul>
+      <div class="warn">
+        这套加密防的是误提交、误上传和明文备份泄漏，<b>防不了已经拿到本机读权限的人</b>：
+        密钥和密文在同一台机器上，能读文件就能解密。不要把它当成对抗本地攻击者的边界。
+      </div>
+
+      <h4>声明式配置（ctx.config）</h4>
+      <p>
+        清单的 <code>configuration</code> 声明一组扁平配置项，宿主据此校验和读写
+        <code>&lt;ctx.paths.data&gt;/config.json</code>。
+      </p>
+      <pre><span class="path">ocplugin.json</span><code>"configuration": {
+  "title": "ACME 设置",
+  "properties": {
+    "endpoint": { "type": "string", "default": "" },
+    "timeout": { "type": "number", "default": 30 },
+    "mode": { "type": "string", "enum": ["ro", "rw"], "default": "ro" },
+    "sources": { "type": "array", "items": { "type": "string" }, "default": [] }
+  }
+}</code></pre>
+      <pre><span class="path">服务端</span><code>const config = await ctx.config.get()          // 已合并 default，未声明的键被裁掉
+await ctx.config.update({ timeout: 60 })       // 校验类型后写文件，再通知监听者
+ctx.config.onChange((next) =&gt; { ... })         // 随插件 scope 关闭自动移除</code></pre>
+      <ul>
+        <li><code>type</code> 只能是 <code>string</code>、<code>number</code>、<code>boolean</code>、<code>array</code>；不支持嵌套对象和对象数组。</li>
+        <li><code>enum</code> 只能配在 <code>string</code> 上；<code>array</code> 只支持 <code>items.type</code> 为 <code>"string"</code>。</li>
+        <li>这里是<b>用户级、运行时可变</b>的配置，不会与 <code>opencode.json</code> 里给插件的 <code>options</code> 合并：<code>options</code> 是静态的、随项目提交的。</li>
+        <li>宿主不会按清单自动渲染设置页。插件仍自己 <code>ctx.add(SettingsPage)</code>，需要时通过自定义 RPC 调服务端的 <code>ctx.config.update</code>。</li>
+        <li>运行时错误文案固定为 <code>Unknown configuration key: &lt;name&gt;</code> 与 <code>Invalid configuration value for &lt;name&gt;</code>，插件可以按这两条判断失败原因。</li>
+        <li>多个 <code>onChange</code> 监听者的通知顺序<b>不保证</b>，不要依赖注册顺序。</li>
+      </ul>
 
       <h3 id="s4-2">4.2 工具（tool）</h3>
 
@@ -1387,6 +1920,7 @@ await ctx.session.hook("retry", (event) =&gt; {
         <tr><td><code>ctx.provide(token, impl)</code></td><td>提供契约或 IPC。</td></tr>
         <tr><td><code>ctx.use(token)</code></td><td>跟随别的插件提供的契约。</td></tr>
         <tr><td><code>ctx.main(token)</code></td><td>调用自己主进程入口提供的 IPC。</td></tr>
+        <tr><td><code>ctx.log</code></td><td>写桌面日志，形状与主进程 <code>MainContext.log</code> 一致：<code>write(level, message, data?)</code>。<br />只在<b>桌面窗口</b>经主进程落到同一条日志链路；纯 Web 窗口没有主进程，输出只留在浏览器 console。<code>data</code> 会被序列化进同一行：循环引用记为 <code>[circular]</code>，<code>BigInt</code> 转成字符串。</td></tr>
       </table>
 
       <h4>界面子系统</h4>
@@ -1399,10 +1933,10 @@ await ctx.session.hook("retry", (event) =&gt; {
         <tr><td><code>ctx.system</code></td><td><code>copy</code>、<code>save</code>、<code>openExternal</code></td></tr>
         <tr><td><code>ctx.desktop</code></td><td><code>os</code>、<code>zoom</code>、<code>launch</code>、<code>reveal</code>、<code>installed</code>、<code>pick</code>（仅桌面）</td></tr>
         <tr><td><code>ctx.dialogs</code></td><td><code>open</code>、<code>active</code>、<code>confirm</code>、<code>alert</code>、<code>prompt</code>、<code>select</code></td></tr>
-        <tr><td><code>ctx.toast</code></td><td><code>show</code></td></tr>
+        <tr><td><code>ctx.toast</code></td><td><code>show</code>、<code>progress</code></td></tr>
         <tr><td><code>ctx.tabs</code></td><td><code>list</code>、<code>open</code>、<code>focus</code>、<code>move</code>、<code>close</code></td></tr>
         <tr><td><code>ctx.attention</code></td><td><code>notify</code></td></tr>
-        <tr><td><code>ctx.commands</code></td><td><code>run</code></td></tr>
+        <tr><td><code>ctx.commands</code></td><td><code>run</code>、<code>list</code></td></tr>
         <tr><td><code>ctx.links</code></td><td><code>open</code>、<code>exists</code></td></tr>
         <tr><td><code>ctx.embeds</code></td><td><code>View</code>、<code>capture</code></td></tr>
         <tr><td><code>ctx.ui</code></td><td>见 4.11</td></tr>
@@ -1693,11 +2227,11 @@ await ctx.session.hook("retry", (event) =&gt; {
         <tr><td><code>ctx.layout</code></td><td><code>open(id, session, options?)</code>、<code>close</code>、<code>toggle</code>、<code>state</code></td><td>打开侧面板、设置页、项目对话框。</td></tr>
         <tr><td><code>ctx.tabs</code></td><td><code>open</code>、<code>focus</code>、<code>move</code>、<code>close</code></td><td>会话标签。</td></tr>
         <tr><td><code>ctx.dialogs</code></td><td><code>open(render)</code>、<code>confirm</code>、<code>alert</code>、<code>prompt</code>、<code>select</code></td><td>对话框。</td></tr>
-        <tr><td><code>ctx.toast</code></td><td><code>show({ title, variant, persistent })</code></td><td>角落提示，返回可关闭句柄。</td></tr>
+        <tr><td><code>ctx.toast</code></td><td><code>show({ title, variant, persistent })</code>、<code>progress({ title, current, total })</code></td><td>角落提示，返回可关闭句柄。确定性进度用 <code>progress</code>，返回 <code>update(current, total?)</code> 与 <code>done()</code>。<br />已知限制：<code>update</code> 内部是关掉旧 toast 再重建同位置的新 toast，会<b>重播入场动画</b>；它不显示百分比进度条，只显示 <code>current / total</code> 文本。插件卸载时自动关闭。</td></tr>
         <tr><td><code>ctx.storage</code></td><td><code>store(key, { schema, initial, scope, from })</code>、<code>memory</code>、<code>remove</code></td><td>响应式持久化存储；与声明式 <code>ctx.stores</code> 的取舍见 <a href="#s4-14">4.14</a>。</td></tr>
         <tr><td><code>ctx.system</code></td><td><code>copy</code>、<code>save</code>、<code>openExternal</code></td><td>剪贴板、保存文件、打开浏览器。</td></tr>
         <tr><td><code>ctx.sessions</code></td><td><code>current</code>、<code>list</code></td><td>打开中的会话。</td></tr>
-        <tr><td><code>ctx.commands</code></td><td><code>run(id)</code></td><td>执行命令。</td></tr>
+        <tr><td><code>ctx.commands</code></td><td><code>run(id)</code>、<code>list()</code></td><td>执行命令；<code>list()</code> 返回与 <code>run</code> 可见范围一致的 <code>{ id, title, enabled }[]</code>（有 <code>run</code> 且未 <code>hidden</code>，<code>enabled</code> 与能否执行一致）。<br />返回里<b>包含应用自身的命令</b>，其 id 不是稳定 API，可能随版本变化；界面挂载前返回空数组。</td></tr>
         <tr><td><code>ctx.links</code></td><td><code>open({ href, base, session })</code>、<code>exists</code></td><td>链接解析与打开。</td></tr>
         <tr><td><code>ctx.embeds</code></td><td><code>View</code>、<code>capture</code></td><td>嵌入网页视图。</td></tr>
         <tr><td><code>ctx.keybinds</code></td><td><code>matches</code>、<code>keys</code></td><td>快捷键匹配。</td></tr>
@@ -1738,7 +2272,7 @@ await ctx.session.hook("retry", (event) =&gt; {
         所以声明里不能引用运行时才知道的值。
       </p>
 
-      <pre><span class="path">src/gui.tsx</span><code>export default Plugin.define({
+      <pre><span class="path">gui/main.tsx</span><code>export default Plugin.define({
   os: ["macos", "windows"],
   i18n: { en: { title: "Acme" }, "zh-CN": { title: "Acme 工具" } },
   stores: {
@@ -1840,6 +2374,40 @@ await ctx.session.hook("retry", (event) =&gt; {
           <td>同步读写，跨窗口共享；主进程没有声明式 <code>stores</code>。</td>
         </tr>
       </table>
+
+      <h4>生命周期钩子</h4>
+      <p>
+        服务端插件用声明式方法描述生命周期，由宿主按确定规则调用。三个钩子都可选；都不写时行为与从前一致。
+      </p>
+      <pre><span class="path">服务端</span><code>export default Plugin.define({
+  id: "opencode.acme",
+
+  async activate(ctx) {},     // 每次加载都跑；旧名 setup
+  async onInstall(ctx) {},    // 本进程内首次加载
+  async onUninstall(ctx) {},  // 卸载，删目录之前，运行中的旧实例
+})</code></pre>
+      <table>
+        <tr><th>钩子</th><th>触发时机</th><th>接收者</th></tr>
+        <tr><td><code>activate</code>（旧名 <code>setup</code>）</td><td>每次加载</td><td>新实例</td></tr>
+        <tr><td><code>onInstall</code></td><td>本进程内首次加载</td><td>新实例</td></tr>
+        <tr><td><code>onUninstall</code></td><td>卸载，插件目录删除之前</td><td>运行中的旧实例</td></tr>
+      </table>
+      <p>判定规则：</p>
+      <ul>
+        <li>首次加载：<code>onInstall</code> → <code>activate</code>。</li>
+        <li>同 id、revision 不变：什么都不跑。</li>
+        <li>同 id、revision 变化：旧实例 <code>onCleanup</code> → 新实例 <code>activate</code>，不触发 <code>onInstall</code>，也不触发 <code>onUninstall</code>。</li>
+        <li>停用后重新启用：只跑 <code>activate</code>，<b>不触发</b> <code>onInstall</code>。</li>
+        <li>
+          <code>onInstall</code> / <code>onUninstall</code> 最多 <b>3 秒</b>，抛错只记 warning，不阻塞加载或卸载。
+          <code>activate</code> 是 <b>30 秒</b>，且只对可中断挂起有效，见
+          <a href="#s3-4-activation">3.4 的 activate 超时保护</a>。
+        </li>
+        <li>已停用的插件不跑 <code>onUninstall</code>，也不会为了跑它而临时加载。</li>
+        <li><code>onInstall</code> 是本进程内的判定：重启后会再触发一次，实现必须幂等。</li>
+        <li><b>没有 <code>onReload</code> 钩子</b>：重载就是「旧实例 cleanup + 新实例 <code>activate</code>」，与 VSCode 的语义一致。需要跨重载保留的状态放 <code>ctx.paths.data</code> 或 <code>ctx.storage</code>，不要指望一个重载专用回调。</li>
+        <li>桌面界面入口不提供这三个钩子；界面侧只有 <code>setup</code> / <code>main</code>。</li>
+      </ul>
 
       <h3 id="s4-15">4.15 事件订阅</h3>
 
@@ -2118,13 +2686,269 @@ const stop = pairing.on("paired", (data) =&gt; { ... })</code></pre>
         实例销毁时宿主自动撤销它提供的一切；窗口侧看到的是「等待」，不是错误。
       </p>
 
+      <h3 id="s4-18">4.18 收件箱（ctx.inbox）</h3>
+
+      <p>
+        <code>ctx.inbox</code> 让服务端插件往应用的收件箱里投递「给用户看的事项」：一条待审的评审请求、
+        一个待填的表单、一次后台任务的结果。它只存在于<b>服务端 Context</b>；GUI 窗口的 <code>ctx</code>
+        没有 <code>inbox</code>。
+      </p>
+
+      <pre><span class="path">服务端</span><code>const id = await ctx.inbox.publish({
+  externalID: "pull-42",                    // 插件自己的消息 id
+  title: "新的评审请求",
+  summary: "仓库 acme/api 的 #42 需要你审一次",
+  status: "pending",
+  payload: { repo: "acme/api", number: 42 },
+})
+
+await ctx.inbox.publishMany([{ externalID: "a", title: "A", summary: "…" }])
+
+const records = await ctx.inbox.list()      // 只有本插件投递的消息
+await ctx.inbox.update(id, { status: "done" })
+await ctx.inbox.markSeen(id)
+await ctx.inbox.remove(id)
+
+ctx.inbox.onSeen((ids) =&gt; {                // 用户把本插件的消息标记为已读
+  console.log(ids)
+})</code></pre>
+
+      <table>
+        <tr><th>成员</th><th>签名</th><th>说明</th></tr>
+        <tr><td><code>publish</code></td><td><code>(message: InboxMessage) =&gt; Promise&lt;InboxID&gt;</code></td><td>投递一条；同一 <code>externalID</code> 再投递是更新而不是新增。</td></tr>
+        <tr><td><code>publishMany</code></td><td><code>(messages: InboxMessage[]) =&gt; Promise&lt;InboxID[]&gt;</code></td><td>批量投递，返回与输入同序的 id。</td></tr>
+        <tr><td><code>list</code></td><td><code>() =&gt; Promise&lt;InboxRecord[]&gt;</code></td><td>只返回本插件投递的消息。每条的 <code>createdAt</code> 一定存在，但<b>不含</b> <code>plugin</code> 字段（平台端点与界面侧才有，见下文）。<b>不保证按时间排序</b>，顺序与存储扫描顺序一致。</td></tr>
+        <tr><td><code>update</code></td><td><code>(id: InboxID, patch: InboxPatch) =&gt; Promise&lt;void&gt;</code></td><td>只改 <code>title</code>、<code>summary</code>、<code>status</code>、<code>expiresAt</code>、<code>payload</code>。<code>expiresAt: null</code> 清除截止时间；<code>externalID</code> 与 <code>createdAt</code> 不会被改。</td></tr>
+        <tr><td><code>remove</code></td><td><code>(id: InboxID) =&gt; Promise&lt;void&gt;</code></td><td>硬删除记录与索引。删后用同一个 <code>externalID</code> 再 <code>publish</code>，会生成<b>新的 id</b>。插件只能删自己的；用户随时可以删任意插件的一条（见下文「消息不是永久的」）。</td></tr>
+        <tr><td><code>markSeen</code></td><td><code>(id: InboxID) =&gt; Promise&lt;void&gt;</code></td><td>把消息标记为已读。<b>不触发</b>自己的 <code>onSeen</code>：那是用户的动作才算数。已经是已读时是 no-op，不刷新 <code>updatedAt</code>。</td></tr>
+        <tr><td><code>onSeen</code></td><td><code>(callback: (ids: InboxID[]) =&gt; void) =&gt; void</code></td><td>用户把本插件的消息读掉（例如在收件箱里打开一条）时回调，参数是那次操作读到的 id。回调抛错只记日志，不影响标记请求。监听者随插件实例一起释放。</td></tr>
+      </table>
+
+      <h4>类型</h4>
+      <pre><span class="path">@opencode/plugin</span><code>type InboxStatus = "pending" | "done" | "failed"
+
+type InboxMessage = {
+  externalID: string        // 同插件内重复投递按更新处理
+  title: string
+  summary: string
+  status?: InboxStatus      // 默认 "pending"
+  createdAt?: number        // 默认投递时间
+  expiresAt?: number
+  payload?: unknown
+}
+
+type InboxRecord = InboxMessage & {
+  id: InboxID
+  seen: boolean
+  updatedAt: number
+}
+
+type InboxPatch = {
+  title?: string
+  summary?: string
+  status?: InboxStatus
+  expiresAt?: number | null
+  payload?: unknown
+}</code></pre>
+
+      <p>三种途径拿到的 record 略有差别：</p>
+      <table>
+        <tr><th>途径</th><th>是否含 <code>plugin</code></th></tr>
+        <tr><td><code>ctx.inbox.list()</code></td><td>否。只有本插件的消息，发布者不言自明；<code>createdAt</code> 一定存在。</td></tr>
+        <tr><td><code>GET /api/experimental/plugin/inbox</code></td><td>是。一次返回该 location 里所有插件投递的消息，需要 <code>plugin</code> 区分来源；按 <code>createdAt</code> <b>降序</b>（最新在前）。</td></tr>
+        <tr><td><code>InboxContent.render(record)</code></td><td>是。宿主用 <code>record.plugin</code> 把消息路由到发布者的渲染器。</td></tr>
+      </table>
+      <p>
+        <code>payload</code> 对平台是不透明的，但它会存进 JSON 存储，<b>必须能走一遍 <code>JSON.stringify</code></b>：
+        循环引用、<code>BigInt</code>、函数这类值在投递时就会出错。
+      </p>
+
+      <h4>行为</h4>
+      <table>
+        <tr><th>行为</th><th>说明</th></tr>
+        <tr>
+          <td>完全隔离</td>
+          <td><code>list()</code> 只返回本插件投递的消息；对不属于自己的 id 做 <code>update</code> / <code>remove</code> / <code>markSeen</code> 静默无效，不报错。</td>
+        </tr>
+        <tr>
+          <td>幂等</td>
+          <td>
+            同一 <code>externalID</code> 重复投递是更新，不新增记录。更新<b>不覆盖</b> <code>status</code>、<code>seen</code>
+            与 <code>createdAt</code>；<code>payload</code> / <code>expiresAt</code> 传了新值就覆盖，没传则保留旧值。
+          </td>
+        </tr>
+        <tr>
+          <td>两个独立维度</td>
+          <td><code>status</code> 由插件控制，<code>seen</code> 由用户控制。插件改不动 <code>seen</code>，用户也改不动 <code>status</code>。</td>
+        </tr>
+        <tr>
+          <td>持久化与多端共享</td>
+          <td>
+            记录存在服务端该 location 的数据库里，不是某个窗口的内存。<b>多个窗口与多个客户端读同一份记录和已读状态</b>，
+            在一个窗口标记已读，另一个窗口刷新后也是已读。
+          </td>
+        </tr>
+        <tr>
+          <td><code>remove</code> 是硬删除</td>
+          <td>
+            从存储中删掉记录与索引，删后不在列表、也不在历史；用同一个 <code>externalID</code> 再
+            <code>publish</code> 会生成<b>新的 id</b>。没有「已撤回」状态、软删标记或墓碑。
+          </td>
+        </tr>
+        <tr>
+          <td>历史不自动清理</td>
+          <td>宿主不设 TTL。插件不再投递、但用户处理过的消息会留在历史里，只有用户手动删除或插件显式 <code>remove</code> 才会消失。</td>
+        </tr>
+        <tr>
+          <td>没有全局 markAll</td>
+          <td>插件只能 <code>markSeen(id)</code>，没有「把本插件全部标记已读」的接口。</td>
+        </tr>
+      </table>
+
+      <h4>平台端点（给应用与客户端用）</h4>
+      <p>
+        插件自己不调这些端点：<code>ctx.inbox</code> 就是它们的插件侧封装。它们由桌面应用与客户端使用，
+        都属于实验性路由。
+      </p>
+      <table>
+        <tr><th>方法 / 路径</th><th>请求</th><th>响应</th></tr>
+        <tr>
+          <td><code>GET /api/experimental/plugin/inbox</code></td>
+          <td>query <code>LocationQuery</code></td>
+          <td>200，该 location 里<b>所有</b>插件投递的消息，每条含 <code>plugin</code>，按 <code>createdAt</code> 降序；应用据此展示跨插件的统一列表。</td>
+        </tr>
+        <tr>
+          <td><code>POST /api/experimental/plugin/inbox/mark</code></td>
+          <td>query <code>LocationQuery</code>；body <code>{ "id": "&lt;InboxID&gt;" }</code></td>
+          <td>204 无内容。未知 id 是 no-op。</td>
+        </tr>
+        <tr>
+          <td><code>POST /api/experimental/plugin/inbox/delete</code></td>
+          <td>query <code>LocationQuery</code>；body <code>{ "id": "&lt;InboxID&gt;" }</code></td>
+          <td>
+            204 无内容。一次删掉一条消息的三个 KV 键（见下），未知 id 是 no-op，重复删除安全。
+            这是<b>用户</b>的清理入口，不限于某个插件。
+          </td>
+        </tr>
+      </table>
+      <p>
+        OpenAPI identifier 分别是 <code>experimental.plugin.inbox.list</code>、
+        <code>experimental.plugin.inbox.mark</code> 与 <code>experimental.plugin.inbox.delete</code>。
+        <code>mark</code> 代表<b>用户</b>把一条消息标记为已读，
+        所以会触发发布者的 <code>ctx.inbox.onSeen</code>；已经读过的 id 不会重复通知。
+        <code>delete</code> 则<b>不产生任何回调</b>，插件只能靠 <code>list()</code> 感知。
+      </p>
+      <pre><span class="path">HTTP</span><code>GET /api/experimental/plugin/inbox
+
+POST /api/experimental/plugin/inbox/mark
+Content-Type: application/json
+
+{ "id": "7f3a…" }
+
+POST /api/experimental/plugin/inbox/delete
+Content-Type: application/json
+
+{ "id": "7f3a…" }</code></pre>
+      <div class="note">
+        三者都标注 Experimental，可能在没有兼容保证的情况下变化。
+      </div>
+
+      <h4 id="s4-18-delete">消息不是永久的：用户可随时删除</h4>
+      <p>
+        收件箱是<b>用户的</b>列表，不是插件的存储。用户能在详情页把任意一条插件消息直接删掉，不论它来自哪个插件。
+        插件必须按这个前提写：
+      </p>
+      <ul>
+        <li>
+          不得假设自己投递过的消息仍然存在；<code>ctx.inbox.list()</code> 是<b>唯一事实来源</b>，
+          需要时重新读，不要缓存一份旧的当作真相。
+        </li>
+        <li>
+          平台<b>不保证「删了别再来」</b>：用同一个 <code>externalID</code> 重新投递会生成一条<b>新消息</b>，
+          被删的记录不留墓碑。要「只提醒一次」的插件，得在自己的 <code>ctx.storage</code> 或
+          <code>ctx.paths.data</code> 里记录提醒过什么，而不是指望收件箱记住。
+        </li>
+        <li>
+          删除没有事件。没有 <code>onRemoved</code> 之类的回调，插件通过 <code>list()</code>
+          或用户下一次交互发现消息消失。
+        </li>
+      </ul>
+
+      <p>
+        <code>plugin.inbox.delete</code> 最终调用 <code>PluginInbox.remove</code>：一条消息在 KV 里是三个键
+        （<code>packages/core/src/plugin/inbox.ts</code>），硬删除时三个一起删。
+      </p>
+      <table>
+        <tr><th>键</th><th>作用</th></tr>
+        <tr><td><code>plugin-inbox:msg:&lt;plugin&gt;:&lt;id&gt;</code></td><td>消息本体（record）。</td></tr>
+        <tr><td><code>plugin-inbox:ext:&lt;plugin&gt;:&lt;externalID&gt;</code></td><td><code>externalID</code> 索引，让重投成为更新。</td></tr>
+        <tr><td><code>plugin-inbox:own:&lt;id&gt;</code></td><td>owner 索引，让应用在不知道发布者时也能标记已读、删除。</td></tr>
+      </table>
+      <p>
+        <code>&lt;plugin&gt;</code> 与 <code>&lt;externalID&gt;</code> 在键里按每个字符 4 位十六进制转义，
+        避免分隔符产生歧义。三个键不是一个事务：写入中途崩溃可能留下没有 record 的索引，读取时按缺失处理。
+        没有墓碑，所以同一个 <code>externalID</code> 之后重投得到的是一条全新消息，而不是「复活」旧记录。
+      </p>
+
+      <h4>内容页渲染</h4>
+      <p>
+        导航区（侧边栏列表、过滤、搜索、未读点与排序）由宿主渲染，插件不能改。插件能自定义的是<b>单条消息的内容页</b>，
+        而且只对自己的消息生效。
+      </p>
+      <pre><span class="path">gui</span><code>import { InboxContent } from "@opencode/plugin/gui"
+
+ctx.add(InboxContent, {
+  render: (record) =&gt; &lt;MailMessage id={record.id} payload={record.payload} /&gt;,
+})</code></pre>
+      <p>
+        <code>render</code> 收到的 <code>record</code> 比服务端的 <code>InboxRecord</code> 多一个
+        <code>plugin</code> 字段（发布者的插件 id），其余字段一致。返回 <code>undefined</code> 表示这一条继续用宿主默认页；
+        渲染抛错时该页渲染为空并记录错误。页面自身的响应式更新要自己负责。
+      </p>
+      <p>
+        内容页底部还有一条<b>宿主操作条</b>，其中的「删除消息」由宿主提供，位于插件自定义渲染<b>之外</b>：
+        插件有没有自带页面，用户都能删掉这条消息。文案键是
+        <code>inbox.detail.action.deleteMessage</code>；它与本地历史记录的
+        <code>inbox.detail.action.delete</code>（「Delete from history」）不是一回事，后者只删本地的历史条目。
+        删除后 <code>ctx.inbox.list()</code> 与应用的收件箱都不再包含该条。
+      </p>
+
+      <h4>默认内容页与已读</h4>
+      <p>
+        没注册渲染器（或 <code>render</code> 返回 <code>undefined</code>）时走宿主默认页：显示标题、摘要、来源插件、
+        状态与创建时间，<b>不显示 <code>payload</code></b>——要展示 payload 就自己注册 <code>InboxContent</code>。
+      </p>
+      <p>
+        列表每一行的图标由宿主按 <code>status</code> 选：<code>pending</code> → output、<code>done</code> → result、
+        <code>failed</code> → failure。图标只反映状态，不改变排序或过滤。
+      </p>
+      <p>
+        <b>打开一条插件消息即视为已读</b>：应用会调 <code>POST /api/experimental/plugin/inbox/mark</code>，
+        服务端写入 <code>seen</code> 并触发发布者的 <code>onSeen</code>；刷新后与多窗口看到的状态一致。
+      </p>
+      <p>
+        收件箱列表的顺序由宿主决定：<b>按 <code>createdAt</code> 降序</b>，最新的在前。
+        插件侧 <code>ctx.inbox.list()</code> 目前<b>不排序</b>，顺序与 KV 扫描一致；需要特定顺序就自己排。
+      </p>
+      <div class="note">
+        <b>已知差距（后续批次）：</b>插件侧 <code>ctx.inbox.list()</code> 尚未按时间排序，
+        计划在下个 minor 与宿主列表统一为此处的降序。在那之前不要把它的返回顺序当作时间顺序。
+      </div>
+
+      <h4>它不是会话消息队列</h4>
+      <div class="note">
+        <code>session_inbox</code> 是<b>会话的投递队列</b>：用户消息的排队、<code>steer</code> / <code>queue</code>
+        两种投递方式、附件与合成消息都在那里，归会话运行时所有，插件不该碰。收件箱（本节）是给<b>用户看的事项列表</b>，
+        与某个会话的执行顺序无关。两者名字相近，别混用。
+      </div>
+
       <h2 id="s5">5. 调试</h2>
 
       <h3>5.1 确认插件被加载</h3>
-      <p>在 <code>setup</code> 开头写一行日志：</p>
-      <pre><span class="path">src/index.ts</span><code>export default Plugin.define({
+      <p>在 <code>activate</code> 开头写一行日志：</p>
+      <pre><span class="path">server/main.ts</span><code>export default Plugin.define({
   id: "opencode.echo",
-  async setup(ctx) {
+  async activate(ctx) {
     console.log("[echo] loaded")
     ...
   },
@@ -2134,7 +2958,7 @@ const stop = pairing.on("paired", (data) =&gt; { ... })</code></pre>
       <h3>5.2 确认界面被加载</h3>
       <ol>
         <li>插件处于启用状态。</li>
-        <li><code>dist/package.json</code> 有 <code>"./gui-experimental"</code>。</li>
+        <li><code>ocplugin.json</code> 的 <code>entry.gui</code> 是 <code>gui/main</code>，产物是 <code>gui/main.cjs</code> 或 <code>gui/main.js</code>。</li>
         <li>bundle 是 CommonJS，不含 <code>import</code>/<code>export</code> 语句。</li>
         <li>在桌面端运行；Web 端不加载第三方界面。</li>
       </ol>
@@ -2152,22 +2976,43 @@ const stop = pairing.on("paired", (data) =&gt; { ... })</code></pre>
         <li>确认构建产物时间戳已更新。</li>
         <li>手动触碰目录：<code>touch ~/.opencode/ocplugins/&lt;id&gt;</code>。</li>
       </ol>
+      <p>
+        如果插件已经进入加载失败后的退避窗口，改文件不会立刻重试：见
+        <a href="#s3-4-retry">3.4「加载超时、退避与显式重试」</a>，用重试端点或插件详情页的「重试」按钮立即恢复。
+        若原因是 <code>activate</code> 超时（<code>reason.kind === "activation-timeout"</code>），它本来就不进退避，
+        改文件或点「重试」都会重新激活，见 <a href="#s3-4-activation">3.4 的 activate 超时保护</a>。
+      </p>
 
       <h2 id="s6">6. 错误信息对照</h2>
 
       <table>
         <tr><th>错误</th><th>原因与处理</th></tr>
         <tr><td>This bundle needs a newer OpenCode (format N)</td><td><code>apiVersion</code> 高于宿主支持。升级应用或改回 1。</td></tr>
+        <tr><td>This plugin needs OpenCode &gt;= x.y.z; this app is a.b.c.</td><td>清单 <code>requires.opencode</code> 高于当前应用版本。升级应用，或改低要求。</td></tr>
+        <tr><td>This plugin bundle has a display without a name and description.</td><td><code>display</code> 缺 <code>name</code> 或 <code>description</code>。</td></tr>
+        <tr><td>This plugin bundle is incomplete: &lt;path&gt; is missing.</td><td><code>skills[].path</code> 指向的文件不在包里。</td></tr>
+        <tr><td>This plugin bundle has an invalid configuration: ...</td><td><code>configuration</code> 用了不支持的类型（嵌套对象、非 string 数组等）。</td></tr>
         <tr><td>This is not a plugin bundle: ocplugin.json is missing.</td><td>压缩包根目录没有清单。</td></tr>
-        <tr><td>This plugin bundle has no server entry.</td><td><code>entry.server</code> 缺失，或文件不在包里。</td></tr>
+        <tr>
+          <td>This plugin bundle has no <i>kind</i> entry. Expected <i>kind</i>/main (...); tried ...</td>
+          <td>
+            该部件的入口文件不在包里。例子：<code>no server entry. Expected server/main (.ts, .tsx, .js, .mjs); tried server/main.ts, server/main.tsx, server/main.js, server/main.mjs, server/index.ts, ...</code>。
+            <code>Expected</code> 后的括号是该部件接受的扩展名（gui 只列 <code>.js</code>、<code>.cjs</code>），
+            <code>tried</code> 后是按顺序实际尝试过的候选文件。按 <a href="#s2-0">2.0</a> 补文件即可。
+          </td>
+        </tr>
+        <tr><td>Plugin activation did not finish within 30s</td><td><code>activate</code> 超过 30 秒被中断（仅对可中断挂起有效），插件标记为 <code>failed</code> 且不进退避，见 <a href="#s3-4-activation">3.4</a>。</td></tr>
+        <tr><td>Plugin load timed out after 15s</td><td>模块加载或解析超过 15 秒。属于普通加载失败，会进入退避，见 <a href="#s3-4-retry">3.4</a>。</td></tr>
         <tr><td>This bundle is damaged: &lt;path&gt; does not match its checksum.</td><td>打包后文件被改动，或校验和生成有误。重新打包。</td></tr>
         <tr><td>This bundle is &lt;id&gt;, not &lt;requested id&gt;.</td><td>清单 id 与安装请求不一致。</td></tr>
         <tr><td>This bundle is version X, not Y.</td><td>清单版本与请求版本不一致。</td></tr>
         <tr><td>No &lt;id&gt; bundle was found in ...</td><td>没有放到 <code>~/.ocplugins-local/&lt;id&gt;/&lt;version&gt;/</code>。</td></tr>
-        <tr><td>Plugin entrypoint not found: &lt;target&gt;</td><td>解包目录缺少可用入口，检查 <code>package.json</code> 或约定文件名。</td></tr>
+        <tr><td>This plugin bundle has an invalid runtime: python must be a version constraint and dependencies a list of package specs.</td><td><code>runtime</code> 结构不对：<code>python</code> 必须是版本约束字符串，<code>dependencies</code> 必须是字符串数组。见 <a href="#s2-1">2.1</a>。</td></tr>
+        <tr><td>Plugin entrypoint not found: &lt;target&gt;</td><td>解包目录缺少可用入口。先看 <code>ocplugin.json</code> 的 <code>entry</code>，再确认对应文件按 <a href="#s2-0">2.0</a> 的扩展名顺序确实存在。</td></tr>
         <tr><td>A plugin's ./gui-experimental bundle must default-export a Plugin.define</td><td>界面入口没有默认导出 <code>Plugin.define</code>。</td></tr>
         <tr><td>A plugin's GUI must have a window setup, a main setup, or both</td><td>界面定义里 <code>setup</code> 与 <code>main</code> 都没有。</td></tr>
         <tr><td>&lt;module&gt; is not a module the OpenCode app provides to plugin GUIs</td><td>界面 bundle 引用了白名单外的模块。</td></tr>
+        <tr><td>404 <code>PluginNotFoundError</code></td><td>端点里的插件 id 不在当前 location 的清单里：id 拼错、插件已删，或 <code>location</code> query 指向了没有该插件的目录。<code>plugin.runtimeRetry</code> 还会在插件<b>没有声明 <code>runtime</code></b> 时返回 404（见 <a href="#s2-1">2.1</a>）；重载端点见 <a href="#s3-4-retry">3.4</a>。</td></tr>
       </table>
 
       <h2 id="s7">7. 路径速查</h2>
@@ -2175,6 +3020,12 @@ const stop = pairing.on("paired", (data) =&gt; { ... })</code></pre>
       <table>
         <tr><th>路径</th><th>作用</th></tr>
         <tr><td><code>~/.opencode/ocplugins/&lt;id&gt;/</code></td><td>已安装插件；自动扫描、监听，放入即加载。</td></tr>
+        <tr><td><code>~/.opencode/plugin-data/&lt;id&gt;/</code></td><td>插件数据目录（<code>ctx.paths.data</code>），卸载后保留；<code>config.json</code> 也在这里。</td></tr>
+        <tr><td><code>~/.opencode/plugin-cache/&lt;id&gt;/</code></td><td>插件缓存目录（<code>ctx.paths.cache</code>），卸载时整个删除。</td></tr>
+        <tr><td><code>~/.opencode/plugin-runtime/&lt;id&gt;/</code></td><td>Python 运行时环境（<a href="#s2-1">2.1</a>），id 里的 <code>/</code> 换成 <code>+</code>；卸载时删除，可按清单重建。</td></tr>
+        <tr><td><code>~/.opencode/logs/plugin/&lt;id&gt;.log</code></td><td>插件日志（<code>ctx.paths.log</code>），卸载后保留。</td></tr>
+        <tr><td><code>~/.opencode/secrets.key</code></td><td>加密凭据的主密钥，首次使用生成，权限 <code>0600</code>。</td></tr>
+        <tr><td><code>~/.opencode/secrets/&lt;id&gt;.json</code></td><td>加密后的凭据密文，权限 <code>0600</code>。</td></tr>
         <tr><td><code>~/.ocplugins-local/&lt;id&gt;/&lt;version&gt;/</code></td><td>待安装包与侧车清单；插件目录从这里读取条目。</td></tr>
         <tr><td><code>&lt;project&gt;/.opencode/plugins/</code></td><td>项目级插件目录。</td></tr>
         <tr><td><code>opencode.json</code> 的 <code>plugins</code></td><td>显式声明插件包或本地目录。</td></tr>
@@ -2232,20 +3083,63 @@ const stop = pairing.on("paired", (data) =&gt; { ... })</code></pre>
         <li>清单字段 <code>entry.gui</code> / <code>entry.tui</code> / <code>entry.rpc</code> 的自动消费：当前安装器只读 <code>entry.server</code>，写这些字段不会产生任何效果。</li>
       </ul>
 
+      <h4>卸载回调的边界</h4>
+      <p><code>onUninstall</code> 钩子（见 4.14）有这些限制：</p>
+      <ul>
+        <li>只有<b>运行中</b>的插件会收到。已停用的插件没有活动实例，调用卸载时直接跳过，不会为了执行回调而临时加载插件代码。</li>
+        <li><b>重载</b>（插件 revision 变化）、<b>停用</b>（配置变化）与<b>进程退出</b>都不触发它，只走正常的 scope 关闭与 <code>ctx.onCleanup</code>。</li>
+        <li>只在被卸载时触发；<code>onInstall</code> 是本进程内的判定，重启后会再触发一次，实现必须幂等。</li>
+        <li>每个钩子最多 3 秒；超时记 warning 并继续删除，钩子抛错也不阻塞卸载。</li>
+        <li>卸载时宿主删 <code>ctx.paths.cache</code>，保留 <code>ctx.paths.data</code> 与 <code>ctx.paths.log</code>；需要清理就在这个钩子里自己做。</li>
+        <li>第一版只覆盖服务端入口。桌面端的插件重载逻辑只知道插件从列表消失，分不清「卸载」与「停用」，贸然触发会在用户停用插件时删掉数据，所以 GUI 侧继续只用 <code>ctx.onCleanup</code>。</li>
+      </ul>
+
       <h4>尚未实现</h4>
       <p>下面三项在文档里不写成已有能力，属于路线图：</p>
       <table>
         <tr><th>项</th><th>现状</th></tr>
         <tr><td>事件补发（<code>after</code> 游标）</td><td><code>SubscribeOptions</code> 只有 <code>types</code> / <code>signal</code> / <code>onActivity</code>，没有游标；durable 事件无法从指定位置续订，ephemeral 事件永远无法补发。</td></tr>
-        <tr><td><code>permissions</code> 声明</td><td><code>ocplugin.json</code> 没有权限字段，安装时也没有逐项授权提示；安装器只校验 <code>entry.server</code>。</td></tr>
-        <tr><td><code>requires</code>（最低宿主版本）</td><td>只有 <code>apiVersion</code> 且必须等于 1，没有表达「需要某个更高的宿主版本」的字段。</td></tr>
+        <tr><td><code>permissions</code> 声明</td><td><code>ocplugin.json</code> 没有权限字段，安装时也没有逐项授权提示。安装器只校验清单结构，不做权限告知。</td></tr>
+        <tr><td>声明式配置 → 设置页</td><td>不会根据 <code>configuration</code> 自动渲染设置页；插件仍自己 <code>ctx.add(SettingsPage)</code> 并通过自定义 RPC 调 <code>ctx.config.update</code>。</td></tr>
       </table>
 
-      <h3>Q: 清单里写了 entry.gui，界面为什么不出来？</h3>
-      <p>
-        加载逻辑只读 <code>entry.server</code>。界面入口必须写进包内 <code>package.json</code> 的
-        <code>exports["./gui-experimental"]</code>，或把 <code>gui-experimental.cjs</code> 放在包根。
-      </p>
+      <h4>容易误解的契约边界</h4>
+      <table>
+        <tr><th>说法</th><th>实际</th></tr>
+        <tr>
+          <td>「收件箱就是会话消息队列」</td>
+          <td>
+            不是。<code>session_inbox</code> 是会话的投递队列（用户消息排队、<code>steer</code> / <code>queue</code>、
+            附件与合成消息），归会话运行时所有，插件不该碰。<code>ctx.inbox</code> 是给<b>用户看的事项列表</b>，
+            与某个会话的执行顺序无关。详见 <a href="#s4-18">4.18</a>。
+          </td>
+        </tr>
+        <tr>
+          <td>「<code>requires.opencode</code> 是完整 semver range」</td>
+          <td>
+            不是。安装器只解析出<b>最低版本</b>再比较：<code>^2.2.5</code> 等价于 <code>&gt;= 2.2.5</code>，
+            <b>不限制上界</b>。真正的兼容性契约是 <code>apiVersion</code>，它不变就意味着插件 API 兼容。
+          </td>
+        </tr>
+        <tr>
+          <td>「<code>configuration</code> 的 <code>enum</code> 可以枚举数字或布尔」</td>
+          <td>
+            <code>enum</code> 只能配在 <code>string</code> 上；<code>array</code> 只支持
+            <code>items.type</code> 为 <code>"string"</code>。<code>default</code> 必须与声明的类型匹配
+            （含 <code>enum</code> 成员、数组元素必须是字符串），否则 manifest 校验直接拒绝安装，
+            错误为 <code>This plugin bundle has an invalid configuration: ...</code>。
+          </td>
+        </tr>
+      </table>
+
+      <h3>Q: 清单里声明了 entry.gui，界面为什么不出来？</h3>
+      <p>按顺序检查这四项：</p>
+      <ul>
+        <li><code>entry.gui</code> 是 <code>gui/main</code> 这类以 <code>/main</code> 结尾的路径，不是带扩展名的文件名。</li>
+        <li>产物是 <code>gui/main.cjs</code> 或 <code>gui/main.js</code> 的 CommonJS 文件，不含 <code>import</code>/<code>export</code> 语句。</li>
+        <li>在桌面端运行；Web 端不加载第三方界面。</li>
+        <li>插件处于启用状态。</li>
+      </ul>
 
       <h3>Q: 能做独立桌面窗口吗？</h3>
       <p>
@@ -2274,7 +3168,7 @@ const stop = pairing.on("paired", (data) =&gt; { ... })</code></pre>
 
       <h3>Q: 插件可以同时有服务端与界面吗？</h3>
       <p>
-        可以，同一个包内放 <code>server/index.js</code> 与 <code>gui-experimental.cjs</code>，
+        可以，同一个包内放 <code>server/main.ts</code> 与 <code>gui/main.tsx</code>，
         清单和 <code>package.json</code> 同时声明两个入口即可。界面通过 <code>ctx.client</code> 或
         <code>ctx.rpc</code> 调用服务端。
       </p>
