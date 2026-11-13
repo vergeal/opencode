@@ -1,7 +1,12 @@
 import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type Accessor } from "solid-js"
+import { Schema } from "effect"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { Key } from "@solid-primitives/keyed"
 import { useNavigate } from "@solidjs/router"
+import { DragDropProvider, PointerSensor } from "@dnd-kit/solid"
+import { isSortable, useSortable } from "@dnd-kit/solid/sortable"
+import { Accessibility, Feedback, PointerActivationConstraints } from "@dnd-kit/dom"
+import { RestrictToVerticalAxis } from "@dnd-kit/abstract/modifiers"
 import { ActivityRing } from "@opencode/ui/activity-ring"
 import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
@@ -13,6 +18,9 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
 import { usePlatform } from "@/runtime/platform/platform"
+import { Persistence } from "@/runtime/persistence/schema"
+import { Persist, persisted } from "@/runtime/persistence/storage"
+import { arrayMove } from "@/runtime/array-move"
 import { useSettingsSurface } from "@/settings/surface"
 import { useCommand } from "@/shell/commands/command"
 import { ProjectIcon } from "@/shell/layout/project-icon"
@@ -44,6 +52,16 @@ const STATUS_LABEL = {
   failed: "sidebar.inbox.status.failed",
   done: "sidebar.inbox.status.done",
 } as const
+
+/** Pinned and recent rows sort inside their own section, so each list owns one sortable group. */
+const PINNED_GROUP = "replica-sidebar-pinned"
+
+const RECENT_GROUP = "replica-sidebar-recent"
+
+/** The order a drag leaves the recent list in; pinned order lives in the pin list itself. */
+const SidebarSessionOrder = Persistence.struct({
+  recent: Persistence.array(Schema.String),
+})
 
 /** The run state at the end of a conversation row: a ring while working, one dot once the result lands. */
 function StatusMark(props: { status: InboxStatus }) {
@@ -114,6 +132,8 @@ export function ReplicaSidebar() {
 function SessionRow(props: {
   entry: Accessor<InboxEntry>
   active: Accessor<boolean>
+  group: string
+  index: number
   onOpen: (entry: InboxEntry) => void
   onDelete: (entry: InboxEntry) => void
 }) {
@@ -130,6 +150,24 @@ function SessionRow(props: {
   const dialog = useDialog()
 
   const tabs = useTabs()
+
+  // The row is the sortable element itself: dnd-kit refuses a drag that starts on a row's own pressed
+  // button when that button is only a descendant of a different element.
+  const sortable = useSortable({
+    get id() {
+      return props.entry().key
+    },
+    get index() {
+      return props.index
+    },
+    get group() {
+      return props.group
+    },
+    get data() {
+      return { group: props.group }
+    },
+    accept: (source) => source.data?.group === props.group,
+  })
 
   const nativeMenu = () => !!platform.showContextMenu
 
@@ -293,6 +331,7 @@ function SessionRow(props: {
     <Menu.Context modal={false}>
       <Menu.Context.Trigger
         as="div"
+        ref={sortable.ref}
         data-slot="replica-row"
         data-ui="sidebar-row"
         data-state={props.active() ? "pressed" : undefined}
@@ -408,6 +447,8 @@ function ConversationNav() {
       .entries()
       .filter((entry) => entry.status === "approval" || entry.status === "input" || entry.status === "failed").length
 
+  const [order, setOrder] = persisted(Persist.global("replica.sidebar.sessions"), SidebarSessionOrder, { recent: [] })
+
   const pinned = createMemo(() => {
     const byID = new Map(inbox.entries().map((entry) => [entry.session.id, entry]))
 
@@ -418,14 +459,18 @@ function ConversationNav() {
     })
   })
 
+  // A dragged order wins for the sessions it lists. A session that arrives afterwards still floats to the
+  // top by activity, so a conversation that just finished is never buried under the sorted ones.
   const recent = createMemo(() => {
     const pinnedIDs = new Set(pins.ids())
-
-    return inbox
-      .entries()
-      .filter((entry) => !pinnedIDs.has(entry.session.id))
+    const list = inbox.entries().filter((entry) => !pinnedIDs.has(entry.session.id))
+    const byID = new Map(list.map((entry) => [entry.session.id, entry]))
+    const ranked = new Set(order.recent)
+    const fresh = list
+      .filter((entry) => !ranked.has(entry.session.id))
       .toSorted((a, b) => b.session.time.updated - a.session.time.updated)
-      .slice(0, 12)
+
+    return [...fresh, ...order.recent.flatMap((id) => byID.get(id) ?? [])].slice(0, 12)
   })
 
   const currentTab = createMemo(() => {
@@ -532,31 +577,87 @@ function ConversationNav() {
       </button>
 
       <div data-slot="replica-sidebar-scroll" class="mt-2 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
-        {pinned().length > 0 && (
-          <section class="mb-2 flex flex-col">
-            <h2 class={SECTION}>{language.t("replica.section.pinned")}</h2>
-            <div class={LIST}>
-              <Key each={pinned()} by={(entry) => entry.key}>
-                {(entry) => (
-                  <SessionRow entry={entry} active={() => active(entry())} onOpen={open} onDelete={confirmDelete} />
-                )}
-              </Key>
-            </div>
-          </section>
-        )}
+        <DragDropProvider
+          sensors={[
+            PointerSensor.configure({
+              activationConstraints: [new PointerActivationConstraints.Distance({ value: 4 })],
+            }),
+          ]}
+          modifiers={[RestrictToVerticalAxis]}
+          plugins={(defaults) => [
+            ...defaults.filter((plugin) => plugin !== Accessibility),
+            Feedback.configure({ dropAnimation: null }),
+          ]}
+          onDragEnd={(event) => {
+            const source = event.operation.source
 
-        <Show when={recent().length > 0}>
-          <section class="flex flex-col">
-            <h2 class={SECTION}>{language.t("replica.section.recent")}</h2>
-            <div class={LIST}>
-              <Key each={recent()} by={(entry) => entry.key}>
-                {(entry) => (
-                  <SessionRow entry={entry} active={() => active(entry())} onOpen={open} onDelete={confirmDelete} />
-                )}
-              </Key>
-            </div>
-          </section>
-        </Show>
+            if (event.canceled || !isSortable(source) || source.initialIndex === source.index) return
+
+            const group = String(source.group ?? "")
+
+            if (group === PINNED_GROUP) {
+              pins.reorder(
+                arrayMove(
+                  pinned().map((entry) => entry.session.id),
+                  source.initialIndex,
+                  source.index,
+                ),
+              )
+
+              return
+            }
+
+            if (group !== RECENT_GROUP) return
+            setOrder(
+              "recent",
+              arrayMove(
+                recent().map((entry) => entry.session.id),
+                source.initialIndex,
+                source.index,
+              ),
+            )
+          }}
+        >
+          {pinned().length > 0 && (
+            <section class="mb-2 flex flex-col">
+              <h2 class={SECTION}>{language.t("replica.section.pinned")}</h2>
+              <div class={LIST}>
+                <Key each={pinned()} by={(entry) => entry.key}>
+                  {(entry) => (
+                    <SessionRow
+                      entry={entry}
+                      active={() => active(entry())}
+                      group={PINNED_GROUP}
+                      index={pinned().findIndex((item) => item.key === entry().key)}
+                      onOpen={open}
+                      onDelete={confirmDelete}
+                    />
+                  )}
+                </Key>
+              </div>
+            </section>
+          )}
+
+          <Show when={recent().length > 0}>
+            <section class="flex flex-col">
+              <h2 class={SECTION}>{language.t("replica.section.recent")}</h2>
+              <div class={LIST}>
+                <Key each={recent()} by={(entry) => entry.key}>
+                  {(entry) => (
+                    <SessionRow
+                      entry={entry}
+                      active={() => active(entry())}
+                      group={RECENT_GROUP}
+                      index={recent().findIndex((item) => item.key === entry().key)}
+                      onOpen={open}
+                      onDelete={confirmDelete}
+                    />
+                  )}
+                </Key>
+              </div>
+            </section>
+          </Show>
+        </DragDropProvider>
       </div>
     </>
   )

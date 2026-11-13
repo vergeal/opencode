@@ -8,11 +8,9 @@ const PinnedSessions = Persistence.struct({
 
 // Shared by the Home session list and the vertical tab strip, so a session pinned in either place is pinned in both.
 export function usePinnedSessions() {
-  const [state, setState] = persisted(
-    { ...Persist.global("home.pinned-sessions"), sync: true },
-    PinnedSessions,
-    { pinned: [] },
-  )
+  const [state, setState] = persisted({ ...Persist.global("home.pinned-sessions"), sync: true }, PinnedSessions, {
+    pinned: [],
+  })
 
   return {
     ids: () => state.pinned,
@@ -23,5 +21,11 @@ export function usePinnedSessions() {
       ),
     remove: (sessionIDs: readonly string[]) =>
       setState("pinned", (current) => current.filter((id) => !sessionIDs.includes(id))),
+    /** Keeps the ids the user dragged into order first and leaves anything else where it was. */
+    reorder: (sessionIDs: readonly string[]) =>
+      setState("pinned", (current) => [
+        ...sessionIDs.filter((id) => current.includes(id)),
+        ...current.filter((id) => !sessionIDs.includes(id)),
+      ]),
   }
 }
