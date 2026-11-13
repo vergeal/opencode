@@ -64,15 +64,6 @@ export const Output = Schema.Struct({
   ),
 })
 
-/**
- * `busy` is written when an execution starts and `idle` when one ends, so a live execution can have a
- * `busy` newer than its `idle` or no `idle` at all. Presence of `busy` alone decides; `idle` is read only
- * so a caller can pass the whole `time` record.
- */
-export function sessionStatus(time: { readonly busy?: unknown; readonly idle?: unknown }) {
-  return time.busy === undefined ? ("idle" as const) : ("running" as const)
-}
-
 export const Plugin = {
   id: "opencode.tool.sessions",
   effect: Effect.fn("SessionsTool.Plugin")(function* (ctx: Context) {
@@ -154,7 +145,7 @@ export const Plugin = {
                   title: session.title,
                   agent: session.agent,
                   parentID: session.parentID,
-                  status: sessionStatus(session.time),
+                  status: SessionSchema.sessionStatus(session.time),
                   created: DateTime.formatIso(session.time.created),
                   updated: DateTime.formatIso(session.time.updated),
                   directory: session.location.directory,

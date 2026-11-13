@@ -1,6 +1,6 @@
 export * as Session from "./session.js"
 
-import { Effect, Result, Schema, SchemaGetter, SchemaParser } from "effect"
+import { DateTime, Effect, Result, Schema, SchemaGetter, SchemaParser } from "effect"
 import { Base64Url } from "effect/encoding"
 import { Agent } from "./agent.js"
 import { Location } from "./location.js"
@@ -66,6 +66,20 @@ export const Info = Schema.Struct({
   prompt: SessionEvent.Prompt.pipe(optional),
   revert: Revert.pipe(optional),
 }).annotate({ identifier: "Session.Info" })
+
+/**
+ * A run starts at `busy` and ends at the `idle` that follows it, so `busy` outlives the run that wrote it. Presence
+ * alone therefore does not mean running: only a start newer than the last end is live.
+ *
+ * A crash that never writes `idle` leaves that `busy` behind and reads as running until the next run ends. That is the
+ * cost of inferring from persisted state; live execution state comes from the server's active-session list instead.
+ */
+export function sessionStatus(time: Info["time"]): "idle" | "running" {
+  if (time.busy === undefined) return "idle"
+  if (time.idle === undefined) return "running"
+
+  return DateTime.isGreaterThan(time.busy, time.idle) ? "running" : "idle"
+}
 
 export const ListAnchor = Schema.Struct({
   id: ID,
