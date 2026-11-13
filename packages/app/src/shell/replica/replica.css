@@ -160,16 +160,20 @@ html[data-replica-window="translucent"][data-color-scheme="dark"] [data-replica]
   background: transparent;
 }
 
+/* The title bar's 62% tint meets the navigation's 90% at a hard horizontal seam. The ramp lives in the bar's last
+   10px so the shell below stays one flat colour: the workbench's rounded cutout takes its colour from the shell's
+   top edge, and a gradient there would lighten the cutout into a wedge along the arc. */
 html[data-replica-window="translucent"][data-color-scheme="dark"] [data-slot="replica-titlebar"] {
-  background: var(--color-titlebar);
+  background: linear-gradient(
+    180deg,
+    var(--color-titlebar) 0,
+    var(--color-titlebar) calc(100% - 10px),
+    var(--color-navigation) 100%
+  );
 }
 
-/* The title bar's 62% tint meets the navigation's 90% at a hard horizontal seam. A short ramp on the shell turns
-   that seam into a gradient, so the darker column appears to deepen under the bar instead of starting beneath it. */
 html[data-replica-window="translucent"][data-color-scheme="dark"] [data-slot="replica-shell"] {
-  background:
-    linear-gradient(180deg, var(--color-titlebar) 0, var(--color-navigation) 10px)
-    var(--color-navigation);
+  background: var(--color-navigation);
 }
 
 /* A hairline of light along the top edge reads as the glass catching the room. Only the window bar carries it: the
