@@ -459,8 +459,8 @@ function ConversationNav() {
     })
   })
 
-  // A dragged order wins for the sessions it lists. A session that arrives afterwards still floats to the
-  // top by activity, so a conversation that just finished is never buried under the sorted ones.
+  // A dragged order wins for the sessions it lists. A session that arrives afterwards joins the top in creation
+  // order, so sending a message never reorders the list under the pointer.
   const recent = createMemo(() => {
     const pinnedIDs = new Set(pins.ids())
     const list = inbox.entries().filter((entry) => !pinnedIDs.has(entry.session.id))
@@ -468,7 +468,11 @@ function ConversationNav() {
     const ranked = new Set(order.recent)
     const fresh = list
       .filter((entry) => !ranked.has(entry.session.id))
-      .toSorted((a, b) => b.session.time.updated - a.session.time.updated)
+      .toSorted(
+        (a, b) =>
+          b.session.time.created - a.session.time.created ||
+          (a.session.id < b.session.id ? -1 : a.session.id > b.session.id ? 1 : 0),
+      )
 
     return [...fresh, ...order.recent.flatMap((id) => byID.get(id) ?? [])].slice(0, 12)
   })
