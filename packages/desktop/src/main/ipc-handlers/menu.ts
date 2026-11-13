@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, nativeImage, type MenuItemConstructorOptions } from "electron"
+import { BrowserWindow, Menu, nativeImage, nativeTheme, type MenuItemConstructorOptions } from "electron"
 import { Effect } from "effect"
 import { MenuRpcs } from "../../shared/ipc-rpc"
 import type { ContextMenuEntry } from "../../shared/ipc-rpc/menu"
@@ -14,7 +14,11 @@ const menuIcons = new Map<string, Electron.NativeImage>()
 function menuIcon(key: string | undefined) {
   if (!key) return undefined
 
-  const cached = menuIcons.get(key)
+  // AppKit tints template images for the current appearance, but Windows and Linux draw the PNG as-is. Key the cache
+  // by tone so a theme switch regenerates the dark-mode glyph instead of reusing the black one.
+  const dark = process.platform !== "darwin" && nativeTheme.shouldUseDarkColors
+  const cacheKey = `${dark ? "dark" : "light"}:${key}`
+  const cached = menuIcons.get(cacheKey)
 
   if (cached) return cached
 
@@ -23,11 +27,29 @@ function menuIcon(key: string | undefined) {
   if (!encoded) return undefined
 
   const image = nativeImage.createFromBuffer(Buffer.from(encoded, "base64"), { scaleFactor: 2 })
+  const result = process.platform === "darwin" ? image : dark ? whiteGlyph(image) : image
   // The glyph is a mask: AppKit tints it for the current appearance instead of drawing fixed black pixels.
-  image.setTemplateImage(true)
-  menuIcons.set(key, image)
+  if (process.platform === "darwin") result.setTemplateImage(true)
+  menuIcons.set(cacheKey, result)
 
-  return image
+  return result
+}
+
+/** Turn the black mask into white pixels while keeping the antialiased alpha, for dark system menus. */
+function whiteGlyph(image: Electron.NativeImage) {
+  const scaleFactor = image.getScaleFactors()[0] ?? 1
+  const bitmap = image.toBitmap()
+  for (let i = 0; i < bitmap.length; i += 4) {
+    bitmap[i] = 255
+    bitmap[i + 1] = 255
+    bitmap[i + 2] = 255
+  }
+  const { width, height } = image.getSize()
+  return nativeImage.createFromBitmap(bitmap, {
+    width: width * scaleFactor,
+    height: height * scaleFactor,
+    scaleFactor,
+  })
 }
 
 export const menuHandlers = MenuRpcs.toLayer(
