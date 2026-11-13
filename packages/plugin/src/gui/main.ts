@@ -313,9 +313,13 @@ export type TrayEntry =
       readonly enabled?: boolean
       /** A check mark; undefined draws no mark. */
       readonly checked?: boolean
+      /** Runs when the row is chosen. */
       run(): void
     }
-  | { readonly type: "separator" }
+  | {
+      /** Draws a divider between groups. */
+      readonly type: "separator"
+    }
 
 /** What a tray icon is created with. */
 export interface TrayOptions {
@@ -331,19 +335,54 @@ export interface TrayOptions {
 
 /** One tray icon. */
 export interface TrayHandle {
+  /** The tray's id, unique within the plugin. */
   readonly id: string
+  /**
+   * Replaces the rows its menu opens with.
+   *
+   * @param entries - The rows, in menu order.
+   */
   setMenu(entries: readonly TrayEntry[]): void
+  /**
+   * Replaces the icon.
+   *
+   * @param icon - A PNG file path, or PNG bytes.
+   */
   setIcon(icon: string | Uint8Array): void
+  /**
+   * Replaces the hover text.
+   *
+   * @param text - The hover text; an empty string shows none.
+   */
   setTooltip(text: string): void
+  /** Removes the icon. */
   close(): void
-  /** Runs on a left click on the icon. */
+  /**
+   * Runs on a left click on the icon.
+   *
+   * @param event - `click`: the icon was left-clicked.
+   * @param handler - Runs on the click.
+   * @returns Removes the listener early.
+   */
   on(event: "click", handler: () => void): Cleanup
 }
 
 /** The tray icons a plugin created. They are removed when the plugin stops. */
 export interface Tray {
+  /**
+   * Creates a tray icon, or returns the existing handle for the same id.
+   *
+   * @param options - The icon and its first menu.
+   * @returns The icon's handle.
+   */
   create(options: TrayOptions): Promise<TrayHandle>
+  /**
+   * The handle for an id, if this plugin created one.
+   *
+   * @param id - The tray's id.
+   */
   get(id: string): TrayHandle | undefined
+  /** Every tray icon this plugin created, in creation order. */
   list(): readonly TrayHandle[]
 }
 
@@ -352,8 +391,17 @@ export interface Shortcuts {
   /**
    * Registers an accelerator, e.g. `CommandOrControl+Shift+P`. Throws when the system or another plugin already owns
    * it, so two plugins cannot silently steal one binding.
+   *
+   * @param accelerator - The accelerator string.
+   * @param run - Runs when the accelerator is pressed.
+   * @returns Removes the binding early.
    */
   register(accelerator: string, run: () => void): Cleanup
+  /**
+   * Removes a binding this plugin registered.
+   *
+   * @param accelerator - The accelerator to release; a no-op when this plugin does not own it.
+   */
   unregister(accelerator: string): void
   /** The accelerators this plugin registered. */
   list(): readonly string[]
@@ -363,25 +411,63 @@ export interface Shortcuts {
 export interface DisplayInfo {
   /** The display's id, as Electron reports it. */
   readonly id: string
+  /** The display's full box. */
   readonly bounds: OverlayBounds
+  /** The box left for windows after the system's own UI. */
   readonly workArea: OverlayBounds
+  /** The display's scale factor; 1 is unzoomed. */
   readonly scaleFactor: number
+  /** The display the system treats as primary. */
   readonly primary: boolean
 }
 
 /** The displays and the pointer. */
 export interface Screens {
+  /** Every connected display. */
   displays(): readonly DisplayInfo[]
+  /** The display the system treats as primary. */
   primary(): DisplayInfo
   /** The pointer position, in DIP. */
-  cursor(): { readonly x: number; readonly y: number }
+  cursor(): {
+    /** Horizontal position across all displays, in DIP. */
+    readonly x: number
+    /** Vertical position across all displays, in DIP. */
+    readonly y: number
+  }
+  /**
+   * Listens to displays being added, removed or changed. The listener is removed when the plugin stops.
+   *
+   * @param event - Which change to listen to.
+   * @param handler - Receives the display that changed.
+   * @returns Removes the listener early.
+   */
   on(event: "added" | "removed" | "changed", handler: (display: DisplayInfo) => void): Cleanup
 }
 
 /** Whether the app starts at login. One setting for the app, shared by every plugin. */
 export interface LoginItem {
-  get(): { readonly openAtLogin: boolean; readonly openAsHidden: boolean }
-  set(options: { readonly openAtLogin?: boolean; readonly openAsHidden?: boolean }): void
+  /**
+   * Reads the app's current login settings.
+   *
+   * @returns The app's current login settings.
+   */
+  get(): {
+    /** The app starts at login. */
+    readonly openAtLogin: boolean
+    /** The app starts hidden when it starts at login. */
+    readonly openAsHidden: boolean
+  }
+  /**
+   * Writes the settings; omitted fields stay as they are.
+   *
+   * @param options - The fields to change.
+   */
+  set(options: {
+    /** The app starts at login. */
+    readonly openAtLogin?: boolean
+    /** The app starts hidden when it starts at login. */
+    readonly openAsHidden?: boolean
+  }): void
 }
 
 /** An item of the native app menu. */

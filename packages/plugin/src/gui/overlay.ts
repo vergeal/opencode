@@ -5,9 +5,13 @@ import type { Context } from "./context.js"
 
 /** A window box in DIP, the unit `screen` and `BrowserWindow.setBounds` use on every platform. */
 export interface OverlayBounds {
+  /** Horizontal position, in DIP. */
   readonly x: number
+  /** Vertical position, in DIP. */
   readonly y: number
+  /** Box width, in DIP. */
   readonly width: number
+  /** Box height, in DIP. */
   readonly height: number
 }
 
@@ -50,23 +54,62 @@ export interface OverlayOptions {
  * ```
  */
 export interface OverlayHandle {
+  /** The overlay's id, unique within the plugin. */
   readonly id: string
   /** The current box, in DIP. */
   bounds(): OverlayBounds
+  /**
+   * Moves and resizes the window.
+   *
+   * @param bounds - The new box, in DIP.
+   * @param display - The display id the box is measured on; omitted keeps the current one.
+   */
   setBounds(bounds: OverlayBounds, display?: string): void
-  /** Clicks pass through while enabled. Flip it as the pointer crosses the overlay's own hit area. */
+  /**
+   * Clicks pass through while enabled. Flip it as the pointer crosses the overlay's own hit area.
+   *
+   * @param enabled - Whether clicks pass through to the app underneath.
+   */
   setClickThrough(enabled: boolean): void
+  /**
+   * Stays above other windows while enabled.
+   *
+   * @param enabled - Whether it stays above other windows.
+   * @param level - How far it rises; omitted keeps the current level.
+   */
   setAlwaysOnTop(enabled: boolean, level?: OverlayLevel): void
+  /** Shows the window. */
   show(): void
+  /** Hides the window without closing it. */
   hide(): void
+  /** Closes the window. */
   close(): void
+  /**
+   * Listens to the window closing. The listener is removed with the handle.
+   *
+   * @param event - `closed`: the window closed.
+   * @param handler - Runs when the window closes.
+   * @returns Removes the listener early.
+   */
   on(event: "closed", handler: () => void): Cleanup
 }
 
 /** The overlay windows a plugin created. They close when the plugin stops. */
 export interface Overlay {
+  /**
+   * Creates an overlay, or returns the existing handle for the same id.
+   *
+   * @param options - The window's first box and behaviour.
+   * @returns The window's handle.
+   */
   create(options: OverlayOptions): Promise<OverlayHandle>
+  /**
+   * The handle for an id, if this plugin created one.
+   *
+   * @param id - The overlay's id.
+   */
   get(id: string): OverlayHandle | undefined
+  /** Every overlay this plugin created, in creation order. */
   list(): readonly OverlayHandle[]
 }
 
@@ -75,11 +118,23 @@ export interface Overlay {
  * box is the last one main reported.
  */
 export interface OverlaySelf {
+  /** The overlay's id, unique within the plugin. */
   readonly id: string
   /** The last box main reported for this window, in DIP. */
   bounds(): OverlayBounds | undefined
+  /**
+   * Asks main to move and resize the window.
+   *
+   * @param bounds - The new box, in DIP.
+   */
   setBounds(bounds: OverlayBounds): void
+  /**
+   * Asks main to change whether clicks pass through.
+   *
+   * @param enabled - Whether clicks pass through to the app underneath.
+   */
   setClickThrough(enabled: boolean): void
+  /** Asks main to close the window. */
   close(): void
 }
 
