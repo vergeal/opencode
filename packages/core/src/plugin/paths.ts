@@ -14,24 +14,23 @@ export type Paths = {
 }
 
 /**
- * Whether `D:\` exists and accepts writes. Probing costs a syscall, and every list, uninstall, and configuration pass
- * asks for paths, so the answer is kept for the life of the process.
+ * Whether `D:\` exists and accepts writes. A yes is asked again on every call, so a drive that is lost is noticed by
+ * the next `make` and the environment falls back to the home directory without a restart.
  *
- * Keeping it also fixes the drive for the whole process: a drive that disappears after the first probe is not
- * re-probed, so the next preparation targets the same `D:` and fails until a restart probes again, and a drive that
- * returns is picked up only on the next start. Re-probing on every call would quietly move a real storage problem
- * back to the home directory; a lock or a health check here would hide it entirely.
+ * A no is remembered for the life of the process. Re-asking a missing drive would repeat the same syscall on every
+ * list, uninstall, and activation, and a drive plugged in later is picked up on the next start. One consequence is
+ * worth stating: once a call sees the drive missing, the rest of this process treats it as missing.
  */
-let probed: boolean | undefined
+let absent: boolean | undefined
 function driveAvailable() {
-  if (probed !== undefined) return probed
+  if (absent) return false
   try {
     accessSync("D:\\", constants.W_OK)
-    probed = true
+    return true
   } catch {
-    probed = false
+    absent = true
+    return false
   }
-  return probed
 }
 
 /**
@@ -39,7 +38,7 @@ function driveAvailable() {
  * A scoped package id (`@scope/name`) must stay one directory name, so path separators become `+`.
  *
  * Only the environment and the cache follow the drive. `data` and `log` stay under the home directory, so a drive
- * that is absent at startup costs a re-download, never the plugin's configuration or its log history.
+ * that is missing at the moment costs a re-download, never the plugin's configuration or its log history.
  */
 export function make(input: {
   readonly home: string
