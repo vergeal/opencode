@@ -279,8 +279,8 @@ const icons = {
     body: `<path d="M2.5 10s3.33-5.42 7.5-5.42S17.5 10 17.5 10s-3.33 5.42-7.5 5.42S2.5 10 2.5 10Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.5" stroke="currentColor"/><path d="M3 3 17 17" stroke="currentColor" stroke-linecap="round"/>`,
   },
   refresh: {
-    viewBox: "0 0 20 20",
-    body: `<path d="M16.25 7.5A6.5 6.5 0 1 0 16.5 11M16.25 3.5v4h-4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>`,
+    viewBox: "0 0 16 16",
+    body: `<path d="M13 6A5.2 5.2 0 1 0 13.2 8.8M13 2.8v3.2h-3.2" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
   reset: {
     viewBox: "0 0 16 16",
