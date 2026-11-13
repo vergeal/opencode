@@ -40,7 +40,7 @@
   [data-slot="elicitation-url"] {
     flex: 1;
     min-inline-size: 0;
-    font-family: var(--v2-font-family-mono);
+    font-family: var(--v2-font-family-code);
     font-size: 13px;
     overflow-wrap: anywhere;
     user-select: text;

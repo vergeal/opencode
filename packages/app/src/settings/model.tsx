@@ -47,14 +47,15 @@ const sansFallback = '"Inter", ui-sans-serif, system-ui, -apple-system, BlinkMac
 
 const terminalFallback = monoFallback
 
-// macOS reads text best in its own face, so every font role there defaults to the system stack.
-const systemFirst = (base: string) => `system-ui, ${base}`
+// macOS reads text best in its own face, so the UI role defaults to the system UI face. The code and terminal roles
+// use the system's monospace face instead: `system-ui` is proportional, so putting it first would break alignment.
+// Chromium does not resolve `ui-monospace`, and SF Mono only exists with developer tools installed, so Menlo is the
+// system face that is always present.
+const monoMacFallback = `Menlo, "SF Mono", ${monoFallback}`
 
-const monoMacFallback = systemFirst(monoFallback)
+const sansMacFallback = `system-ui, ${sansFallback}`
 
-const sansMacFallback = systemFirst(sansFallback)
-
-const terminalMacFallback = systemFirst(terminalFallback)
+const terminalMacFallback = `Menlo, "SF Mono", ${terminalFallback}`
 
 const monoBase = monoFallback
 
@@ -84,12 +85,19 @@ export function monoInput(font: string | undefined) {
   return input(font)
 }
 
+/** The picker's System row stores the `system-ui` keyword; for a monospace role that means the system's mono face. */
+function monoStack(font: string | undefined, base: string) {
+  if (font?.trim() === "system-ui") return base
+
+  return stack(font, base)
+}
+
 export function sansInput(font: string | undefined) {
   return input(font)
 }
 
 export function monoFontFamily(font: string | undefined, macos = isMacOS()) {
-  return stack(font, macos ? monoMacFallback : monoBase)
+  return monoStack(font, macos ? monoMacFallback : monoBase)
 }
 
 export function sansFontFamily(font: string | undefined, macos = isMacOS()) {
@@ -97,7 +105,7 @@ export function sansFontFamily(font: string | undefined, macos = isMacOS()) {
 }
 
 export function terminalFontFamily(font: string | undefined, macos = isMacOS()) {
-  return stack(font, macos ? terminalMacFallback : terminalBase)
+  return monoStack(font, macos ? terminalMacFallback : terminalBase)
 }
 
 /** The family each Appearance row shows when the user has not chosen one; macOS defaults all three to System. */

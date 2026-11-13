@@ -454,11 +454,11 @@
     }
   }
 
-  /* Answers read as prose: short code, link labels and URL chips use the UI font. Fenced blocks keep the code font. */
+  /* Inline code is code: chips, link labels and URL chips keep the code font so they read as literals, not prose. */
   :not(pre) > code {
     direction: ltr;
     unicode-bidi: isolate;
-    font-family: var(--font-family-sans);
+    font-family: var(--font-family-mono);
     color: var(--markdown-inline-code-ink);
     font-weight: 350;
     /* A 4px side pad keeps the tint off the glyphs. It is not paid back by a negative margin: paying

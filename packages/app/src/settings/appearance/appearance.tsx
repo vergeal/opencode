@@ -58,6 +58,7 @@ const FontSetting: Component<{
           family={props.fonts[config().font]().family}
           placeholder={props.fonts[config().font]().placeholder}
           monospaceFirst={props.kind === "code"}
+          systemMonospace={props.kind !== "ui"}
           onSelect={(family) => props.fonts[config().input](family)}
         />
       </div>

@@ -24,6 +24,8 @@ export const FontPicker: Component<{
   placeholder: string
   /** Code rows list monospace faces before the rest. */
   monospaceFirst?: boolean
+  /** Code and terminal rows use the system's monospace face for their System row, not the UI face. */
+  systemMonospace?: boolean
   onSelect: (family: string) => void
 }> = (props) => {
   const language = useLanguage()
@@ -54,7 +56,7 @@ export const FontPicker: Component<{
       : [{ family, monospace: isMonospace(family) }, ...bundledFonts]
     const system: PickerOption = {
       family: SYSTEM_FAMILY,
-      monospace: false,
+      monospace: props.systemMonospace ?? false,
       label: language.t("settings.appearance.font.system"),
     }
     const options: PickerOption[] = [system, ...known.filter((option) => option.family !== SYSTEM_FAMILY)]

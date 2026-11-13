@@ -221,11 +221,13 @@ test("font defaults are Inter and IBM Plex Mono, and System on macOS", () => {
   expect(terminalDefaultFor(false)).toBe("IBM Plex Mono")
 })
 
-test("every font role starts from the system stack on macOS", () => {
+test("every font role starts from the system face on macOS", () => {
   expect(sansFontFamily(undefined, true)).toStartWith("system-ui, ")
-  expect(monoFontFamily(undefined, true)).toStartWith("system-ui, ")
-  expect(terminalFontFamily(undefined, true)).toStartWith("system-ui, ")
-  expect(monoFontFamily("Custom Mono", true)).toStartWith('"Custom Mono", system-ui, ')
+  // Code and terminal use the system's monospace face; `system-ui` is proportional and would break alignment.
+  expect(monoFontFamily(undefined, true)).toStartWith("Menlo, ")
+  expect(terminalFontFamily(undefined, true)).toStartWith("Menlo, ")
+  expect(monoFontFamily("system-ui", true)).toStartWith("Menlo, ")
+  expect(monoFontFamily("Custom Mono", true)).toStartWith('"Custom Mono", Menlo, ')
   expect(sansFontFamily(undefined, false)).toStartWith('"Inter", ')
   expect(monoFontFamily(undefined, false)).toStartWith('"IBM Plex Mono", ')
 })
