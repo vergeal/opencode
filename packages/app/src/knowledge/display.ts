@@ -28,6 +28,11 @@ export function sourceExtension(file: KnowledgeFile) {
   return dot === -1 ? "" : file.source.slice(dot + 1).toUpperCase()
 }
 
+/** Documents are stored as Markdown, so the preview can render them as a formatted page instead of plain text. */
+export function isMarkdown(path: string | undefined) {
+  return !!path && path.toLowerCase().endsWith(".md")
+}
+
 /** Converted documents are stored as Markdown, so their library name differs from the original. */
 export function isConverted(file: KnowledgeFile) {
   const name = file.name.toLowerCase()

@@ -1,3 +1,5 @@
+@import "@opencode/ui/document-surface.css";
+
 [data-slot="knowledge-panel"] {
   /* Tones are picked per card so a flat grid still reads as a set of distinct collections. */
   --knowledge-tone: var(--v2-blue-500);
@@ -5,6 +7,40 @@
 
 .knowledge-scroll {
   scrollbar-width: none;
+}
+
+/* The document pane fills the panel; the page has no sheet, frame or shadow of its own. */
+.knowledge-preview {
+  container-type: inline-size;
+}
+
+[data-slot="knowledge-document"] {
+  min-height: 100%;
+}
+
+[data-slot="knowledge-document"] [data-slot="artifact-markdown-page"] {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 32px 40px 48px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* `document-surface` paints its hairline border in a pseudo-element, so the page switches it off. */
+[data-slot="knowledge-document"] [data-slot="artifact-markdown-page"]::after {
+  display: none;
+}
+
+[data-slot="knowledge-document"] [data-slot="artifact-markdown-content"] {
+  width: 100%;
+  max-width: none;
+}
+
+@container (max-width: 800px) {
+  [data-slot="knowledge-document"] [data-slot="artifact-markdown-page"] {
+    padding: 20px 16px 32px;
+  }
 }
 
 .knowledge-grid {

@@ -2,12 +2,14 @@ import { Button } from "@opencode/ui/button"
 import { ContextMenu } from "@opencode/ui/context-menu"
 import { Icon } from "@opencode/ui/icon"
 import { Loader } from "@opencode/ui/loader"
+import { Markdown } from "@opencode/session-ui/markdown"
+import { MarkdownProvider } from "@opencode/session-ui/context/markdown"
 import { For, Show, createMemo } from "solid-js"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { useKnowledge } from "./context"
 import { DiscardChip, ImportPanel } from "./model"
-import { isConverted } from "./display"
+import { isMarkdown } from "./display"
 import type { KnowledgeLibrary } from "./store"
 import "./knowledge.css"
 
@@ -23,10 +25,7 @@ export function KnowledgeScreen() {
   const knowledge = useKnowledge()
 
   return (
-    <div
-      data-slot="knowledge-panel"
-      class="flex min-h-0 flex-1 flex-col overflow-hidden bg-v2-background-bg-base"
-    >
+    <div data-slot="knowledge-panel" class="flex min-h-0 flex-1 flex-col overflow-hidden bg-v2-background-bg-base">
       <Show when={knowledge.library()} fallback={<LibraryGrid />}>
         {(library) => <Surface library={library()} />}
       </Show>
@@ -164,65 +163,62 @@ export function KnowledgeScreen() {
           )}
         </Show>
 
-        <Show when={knowledge.job()} fallback={
-          <section
-            class="knowledge-scroll min-h-0 flex-1 overflow-y-auto px-6 py-4"
-            data-scrollable
-            aria-label={language.t("knowledge.preview.empty")}
-          >
-          <Show
-            when={knowledge.previewPath()}
-            fallback={
-              <div class="flex h-full flex-col items-center justify-center gap-2 text-center">
-                <span class="flex size-9 items-center justify-center rounded-[9px] bg-[var(--color-hover)] text-v2-text-text-faint">
-                  <Icon name="file-document" />
-                </span>
-                <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
-                  {language.t("knowledge.preview.empty")}
-                </p>
-              </div>
-            }
-          >
-            <div class="mb-3 flex items-center gap-2 text-[12px] text-v2-text-text-faint">
-              <span dir="auto" class="min-w-0 truncate">
-                {knowledge.previewPath()}
-              </span>
-              <Show when={knowledge.previewFile()}>
-                {(file) => (
-                  <Show when={isConverted(file())}>
-                    <span class="knowledge-ext-badge">{language.t("knowledge.preview.converted")}</span>
-                  </Show>
-                )}
-              </Show>
-            </div>
-            <Show
-              when={knowledge.preview().status !== "loading"}
-              fallback={
-                <div class="flex justify-center py-8">
-                  <Loader />
-                </div>
-              }
+        <Show
+          when={knowledge.job()}
+          fallback={
+            <section
+              class="knowledge-scroll knowledge-preview min-h-0 flex-1 overflow-y-auto"
+              data-scrollable
+              aria-label={language.t("knowledge.preview.empty")}
             >
               <Show
-                when={knowledge.preview().status === "failed"}
+                when={knowledge.previewPath()}
                 fallback={
-                  <pre class="knowledge-file-preview font-mono text-[13px] leading-[var(--line-height-base)]">
-                    {knowledge.previewText() || language.t("knowledge.preview.unreadable")}
-                  </pre>
+                  <div class="flex h-full flex-col items-center justify-center gap-2 text-center">
+                    <span class="flex size-9 items-center justify-center rounded-[9px] bg-[var(--color-hover)] text-v2-text-text-faint">
+                      <Icon name="file-document" />
+                    </span>
+                    <p class="text-[13px] leading-[var(--line-height-compact)] text-v2-text-text-muted">
+                      {language.t("knowledge.preview.empty")}
+                    </p>
+                  </div>
                 }
               >
-                <div class="knowledge-preview-error" role="alert">
-                  <span class="knowledge-preview-error-message">
-                    {language.t("knowledge.preview.failed", { message: knowledge.previewMessage() })}
-                  </span>
-                  <Button size="small" variant="neutral" onClick={knowledge.retryPreview}>
-                    {language.t("knowledge.preview.retry")}
-                  </Button>
-                </div>
+                <Show
+                  when={knowledge.preview().status !== "loading"}
+                  fallback={
+                    <div class="flex justify-center py-8">
+                      <Loader />
+                    </div>
+                  }
+                >
+                  <Show
+                    when={knowledge.preview().status === "failed"}
+                    fallback={
+                      <Show
+                        when={isMarkdown(knowledge.previewPath())}
+                        fallback={
+                          <pre class="knowledge-file-preview font-mono text-[13px] leading-[var(--line-height-base)]">
+                            {knowledge.previewText() || language.t("knowledge.preview.unreadable")}
+                          </pre>
+                        }
+                      >
+                        <KnowledgeDocument text={knowledge.previewText()} cacheKey={knowledge.previewPath()} />
+                      </Show>
+                    }
+                  >
+                    <div class="knowledge-preview-error" role="alert">
+                      <span class="knowledge-preview-error-message">
+                        {language.t("knowledge.preview.failed", { message: knowledge.previewMessage() })}
+                      </span>
+                      <Button size="small" variant="neutral" onClick={knowledge.retryPreview}>
+                        {language.t("knowledge.preview.retry")}
+                      </Button>
+                    </div>
+                  </Show>
+                </Show>
               </Show>
-            </Show>
-          </Show>
-          </section>
+            </section>
           }
         >
           {(job) => <ImportPanel job={job()} />}
@@ -341,6 +337,21 @@ export function KnowledgeScreen() {
       </div>
     )
   }
+}
+
+/** A stored Markdown document reads as a page: the artifact view's surface, sized to an A4 sheet. */
+function KnowledgeDocument(props: { text: string; cacheKey?: string }) {
+  return (
+    <div data-slot="knowledge-document">
+      <div data-slot="artifact-markdown-page" data-component="document-surface">
+        <div data-slot="artifact-markdown-content">
+          <MarkdownProvider>
+            <Markdown text={props.text} cacheKey={props.cacheKey} />
+          </MarkdownProvider>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 /**
