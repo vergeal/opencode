@@ -91,6 +91,7 @@ type Attached = {
   draft: Layout["draft"]
   command: (id: string) => void
   run: (id: string) => boolean
+  commands: () => readonly { readonly id: string; readonly title: string; readonly enabled: boolean }[]
   notify: (plugin: string, options: NotifyOptions) => Promise<NotifyResult>
   font: Accessor<string>
   mode: Accessor<"light" | "dark">
@@ -380,6 +381,43 @@ export function createHostApis() {
         // Under the plugin's root owner, so the toast closes with the plugin, not with the component that showed it.
         return { dismiss: runWithOwner(owner, () => register(dismiss)) ?? dismiss }
       },
+      progress(options) {
+        let total = options.total
+        const show = (current: number) =>
+          showToast({
+            title: options.title,
+            description: `${current} / ${total}`,
+            variant: "loading",
+            persistent: true,
+          })
+        let id = show(options.current)
+        // Under the plugin's root owner, so the toast closes with the plugin.
+        runWithOwner(owner, () => register(() => void toaster.dismiss(id)))
+        return {
+          update(current, next) {
+            total = next ?? total
+            void toaster.dismiss(id)
+            id = show(current)
+          },
+          done: () => void toaster.dismiss(id),
+        }
+      },
+    }),
+    log: () => ({
+      write: (level, message, data) => {
+        if (data === undefined) return console[level](`[plugin] ${message}`)
+        // One line, so Electron's console-message bridge can persist it: circular fields and BigInt must not throw.
+        const seen = new WeakSet<object>()
+        const detail = JSON.stringify(data, (_key, value: unknown) => {
+          if (typeof value === "bigint") return String(value)
+          if (typeof value === "object" && value !== null) {
+            if (seen.has(value)) return "[circular]"
+            seen.add(value)
+          }
+          return value
+        })
+        console[level](`[plugin] ${message} ${detail}`)
+      },
     }),
     // The user's notification settings live in the app interface, so a notification waits for it to mount.
     attention: (plugin, _owner, context) => ({
@@ -392,7 +430,7 @@ export function createHostApis() {
         ),
     }),
     // No command is registered before the interface mounts.
-    commands: () => ({ run: (id) => untrack(attached)?.run(id) ?? false }),
+    commands: () => ({ run: (id) => untrack(attached)?.run(id) ?? false, list: () => untrack(attached)?.commands() ?? [] }),
     screen: () => ({
       current: () => {
         const attached = current()
@@ -1064,6 +1102,10 @@ export function createPluginAttachment(apis: HostApis) {
       if (server) void tabs.newDraft({ server: ServerConnection.key(server), directory: input.directory }, input.prompt)
     },
     command: (id) => void run(id),
+  commands: () =>
+    untrack(() => command.options)
+      .filter((option) => option.onSelect !== undefined && !option.hidden)
+      .map((option) => ({ id: option.id, title: option.title, enabled: !option.disabled })),
     font: () => terminalFontFamily(settings.appearance.terminalFont()),
     routing: useIsRouting(),
     path: () => `${location.pathname}${location.search}`,

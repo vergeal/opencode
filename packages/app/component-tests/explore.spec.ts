@@ -170,3 +170,58 @@ story("shows a catalog bundle and reports it once installed", async ({ page }) =
   expect(result.installed.detail.type).toBe("Type")
   expectInstalled(result.installed.detail.hasInstall, result.installed.detail.installed)
 })
+
+story("keeps a failed plugin's error folded, with its reference and without stretching the page", async ({ page }) => {
+  const result = await page.evaluate(async (fixture) => {
+    const { failedInstalled, mountExplorePlugins } = await import(fixture)
+    const mounted = mountExplorePlugins({ installed: failedInstalled, selected: failedInstalled[0] })
+
+    const frame = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+
+    await frame()
+
+    // SAFETY: mountExplorePlugins builds its host with document.createElement("div").
+    const host = mounted.host as HTMLDivElement
+    const block = host.querySelector<HTMLElement>(".explore-plugin-error")!
+    const details = host.querySelector<HTMLDetailsElement>(".explore-plugin-error-details")
+    const buttons = () => Array.from(host.querySelectorAll("button")).map((button) => button.textContent ?? "")
+
+    const folded = {
+      summary: host.querySelector(".explore-plugin-error-summary")?.textContent?.trim(),
+      hasDetails: !!details,
+      open: details?.open ?? false,
+      reference: host.querySelector(".explore-plugin-error-ref")?.textContent?.trim(),
+      hasCopy: buttons().some((label) => label.includes("Copy reference")),
+      hasExport: buttons().some((label) => label.includes("Export logs")),
+      noOverflow: block.scrollWidth <= block.clientWidth,
+    }
+
+    details?.querySelector("summary")?.click()
+    await frame()
+
+    const expanded = {
+      open: details?.open ?? false,
+      full: host.querySelector(".explore-plugin-error-pre")?.textContent ?? "",
+      noOverflow: block.scrollWidth <= block.clientWidth,
+      pageNoOverflow: host.scrollWidth <= host.clientWidth,
+    }
+
+    mounted.unmount()
+
+    return { folded, expanded }
+  }, fixture)
+
+  expect(result.folded.summary).toBe("Tool transform failed: acme.search has no input schema")
+  expect(result.folded.hasDetails).toBe(true)
+  expect(result.folded.open).toBe(false)
+  expect(result.folded.reference).toBe("err_1a2b3c4d")
+  expect(result.folded.hasCopy).toBe(true)
+  // A web window offers no debug-log export, so the button must stay away.
+  expect(result.folded.hasExport).toBe(false)
+  expect(result.folded.noOverflow).toBe(true)
+  expect(result.expanded.open).toBe(true)
+  expect(result.expanded.full).toContain("at Tool.transform")
+  expect(result.expanded.noOverflow).toBe(true)
+  expect(result.expanded.pageNoOverflow).toBe(true)
+})

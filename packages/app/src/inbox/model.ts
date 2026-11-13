@@ -1,5 +1,5 @@
-import type { FormAnswer, FormInfo, KnowledgeInfo, PermissionRequest, ScheduleInfo } from "@opencode/client/promise"
-import { useQueries } from "@tanstack/solid-query"
+import type { FormAnswer, FormInfo, KnowledgeInfo, PermissionRequest, PluginInboxRecord, ScheduleInfo } from "@opencode/client/promise"
+import { useQueries, useQueryClient } from "@tanstack/solid-query"
 import { Schema } from "effect"
 import { createMemo } from "solid-js"
 import { produce } from "solid-js/store"
@@ -21,6 +21,7 @@ export type InboxAction =
   | { type: "open-session"; sessionID: string }
   | { type: "open-schedule"; scheduleID: string }
   | { type: "open-knowledge"; libraryID: string }
+  | { type: "plugin"; server: string; pluginID: string; inboxID: string }
 
 /**
  * How a person closed an item. History keeps the decision itself, so a Done row says what was decided instead of
@@ -40,7 +41,7 @@ export type InboxItem = {
   status: InboxStatus
   title: string
   summary: string
-  source: { type: "session" | "schedule" | "knowledge"; id: string; name?: string }
+  source: { type: "session" | "schedule" | "knowledge" | "plugin"; id: string; name?: string }
   projectID?: string
   createdAt: number
   expiresAt?: number
@@ -224,6 +225,31 @@ function preview(output: string) {
   return text.length > OUTPUT_PREVIEW ? `${text.slice(0, OUTPUT_PREVIEW - 1)}…` : text
 }
 
+/**
+ * Maps one message a plugin published. The host owns the row, so `kind` only picks its icon; the plugin owns the
+ * content page. `source.id` is the publishing plugin, which is what routes the message to that plugin's renderer.
+ */
+export function pluginItem(input: { server: string; record: PluginInboxRecord }): InboxItem {
+  const record = input.record
+
+  return {
+    key: pluginItemKey(input.server, record.plugin, record.id),
+    kind: record.status === "failed" ? "failure" : record.status === "done" ? "result" : "output",
+    status: record.status,
+    title: record.title,
+    summary: record.summary,
+    source: { type: "plugin", id: record.plugin, name: record.plugin },
+    createdAt: record.createdAt,
+    ...(record.expiresAt === undefined ? {} : { expiresAt: record.expiresAt }),
+    action: { type: "plugin", server: input.server, pluginID: record.plugin, inboxID: record.id },
+  }
+}
+
+/** Stable across polls, so an updated message keeps the row's selection and read state. */
+export function pluginItemKey(server: string, plugin: string, id: string) {
+  return `${server}\0plugin\0${plugin}\0${id}`
+}
+
 const Seen = Persistence.struct({ seen: Persistence.record(Schema.Finite) })
 
 const StoredAnswer = Persistence.struct({ label: Schema.String, value: Schema.String })
@@ -240,6 +266,12 @@ const StoredAction = Schema.Union([
   Persistence.struct({ type: Schema.Literal("open-session"), sessionID: Schema.String }),
   Persistence.struct({ type: Schema.Literal("open-schedule"), scheduleID: Schema.String }),
   Persistence.struct({ type: Schema.Literal("open-knowledge"), libraryID: Schema.String }),
+  Persistence.struct({
+    type: Schema.Literal("plugin"),
+    server: Schema.String,
+    pluginID: Schema.String,
+    inboxID: Schema.String,
+  }),
 ])
 
 const StoredItem = Persistence.struct({
@@ -249,7 +281,7 @@ const StoredItem = Persistence.struct({
   title: Schema.String,
   summary: Schema.String,
   source: Persistence.struct({
-    type: Schema.Literals(["session", "schedule", "knowledge"]),
+    type: Schema.Literals(["session", "schedule", "knowledge", "plugin"]),
     id: Schema.String,
     name: Persistence.optional(Schema.String),
   }),
@@ -272,6 +304,7 @@ export function createInbox() {
   const global = useGlobal()
   const language = useLanguage()
   const sessionInbox = createSessionInbox()
+  const queryClient = useQueryClient()
 
   const connections = createMemo(() =>
     servers.visible.flatMap((conn) => {
@@ -315,6 +348,26 @@ export function createInbox() {
       staleTime: 30_000,
       refetchInterval: (query: { state: { data?: KnowledgeInfo[] } }) =>
         query.state.data?.some((library) => library.status === "indexing") ? 3_000 : 30_000,
+      refetchOnMount: true,
+    })),
+  }))
+
+  // Plugin-published messages. The server owns the records, so every window and client reads the same list; a plugin
+  // only sees its own through `ctx.inbox`. Read state is the record's `seen`, not this client's local store.
+  const plugins = useQueries(() => ({
+    queries: connections().map((item) => ({
+      queryKey: ["inbox-plugins", item.conn],
+      enabled: item.ctx.sdk.connection.status() === "connected",
+      queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        try {
+          return (await item.ctx.sdk.api.experimental.plugin.inbox.list({}, { signal })) ?? undefined
+        } catch {
+          return undefined
+        }
+      },
+      retry: false,
+      staleTime: 15_000,
+      refetchInterval: 15_000,
       refetchOnMount: true,
     })),
   }))
@@ -388,8 +441,29 @@ export function createInbox() {
     ),
   )
 
+  const pluginItems = createMemo(() =>
+    connections().flatMap((item, index) =>
+      (plugins[index]?.data?.data ?? []).map((record: PluginInboxRecord) =>
+        pluginItem({ server: ServerConnection.key(item.conn), record }),
+      ),
+    ),
+  )
+
+  /** The server's read state for each plugin message, keyed like the row so `unread` reads the same record. */
+  const pluginRecords = createMemo(() => {
+    const records = new Map<string, PluginInboxRecord>()
+
+    connections().forEach((item, index) => {
+      for (const record of plugins[index]?.data?.data ?? []) {
+        records.set(pluginItemKey(ServerConnection.key(item.conn), record.plugin, record.id), record)
+      }
+    })
+
+    return records
+  })
+
   const items = createMemo<InboxItem[]>(() => {
-    const live = [...sessionItems(), ...scheduleItems(), ...knowledgeItems()]
+    const live = [...sessionItems(), ...scheduleItems(), ...knowledgeItems(), ...pluginItems()]
     const liveKeys = new Set(live.map((item) => item.key))
     const answered = Object.values(resolved).filter((item) => !liveKeys.has(item.key))
 
@@ -410,8 +484,21 @@ export function createInbox() {
       resolution: { decision, at: Date.now(), answers },
     })
 
-  /** Drops one history row. Nothing prunes Done on its own; only a person removes a record. */
+  /**
+   * Drops one row. Nothing prunes Done on its own; only a person removes a record. A plugin message lives on the
+   * server, so removing it asks the host to delete the record for every window.
+   */
   const remove = (item: InboxItem) => {
+    const action = item.action
+    if (action.type === "plugin") {
+      const target = connections().find((candidate) => ServerConnection.key(candidate.conn) === action.server)
+      if (!target) return
+      void target.ctx.sdk.api.experimental.plugin.inbox
+        .delete({ id: action.inboxID })
+        .catch(() => undefined)
+        .finally(() => void queryClient.invalidateQueries({ queryKey: ["inbox-plugins"] }))
+      return
+    }
     setResolved(
       produce((records) => {
         delete records[item.key]
@@ -426,18 +513,32 @@ export function createInbox() {
   }
 
   /** Whether this item is a retained record, so only history can offer to forget it. */
-  const history = (item: InboxItem) => !!resolved[item.key]
+  const history = (item: InboxItem) => item.source.type !== "plugin" && !!resolved[item.key]
 
-  const unread = (item: InboxItem) => !state.seen[item.key]
+  const unread = (item: InboxItem) =>
+    item.source.type === "plugin" ? !pluginRecords().get(item.key)?.seen : !state.seen[item.key]
 
   const markSeen = (item: InboxItem) => {
+    const action = item.action
+    if (action.type === "plugin") {
+      if (!unread(item)) return
+      const target = connections().find((candidate) => ServerConnection.key(candidate.conn) === action.server)
+      if (!target) return
+      // The record lives on the server, so the next list read reflects it for every window.
+      void target.ctx.sdk.api.experimental.plugin.inbox
+        .mark({ id: action.inboxID })
+        .catch(() => undefined)
+        .finally(() => void queryClient.invalidateQueries({ queryKey: ["inbox-plugins"] }))
+      return
+    }
     if (state.seen[item.key]) return
     setState("seen", item.key, Date.now())
   }
 
   /** Marks a whole filtered list read at once; the sidebar's "mark all read" action uses it. */
   const markAllSeen = (target: InboxItem[]) => {
-    const unreadItems = target.filter((item) => !state.seen[item.key])
+    target.filter((item) => item.source.type === "plugin").forEach((item) => markSeen(item))
+    const unreadItems = target.filter((item) => item.source.type !== "plugin" && !state.seen[item.key])
 
     if (unreadItems.length === 0) return
     setState("seen", (seen) => {
@@ -502,6 +603,10 @@ export function createInbox() {
     return accepted
   }
 
+  /** A plugin message's full record, once the server list has loaded it. */
+  const pluginRecord = (item: InboxItem) =>
+    item.action.type === "plugin" ? pluginRecords().get(item.key) : undefined
+
   /** Opens the record behind an item: its session, or the page that owns a schedule or library. */
   const openSession = (item: InboxItem) => {
     if (item.source.type !== "session") return
@@ -513,7 +618,8 @@ export function createInbox() {
   const loading = () =>
     sessionInbox.loading() ||
     schedules.some((query) => query?.isLoading === true) ||
-    knowledge.some((query) => query?.isLoading === true)
+    knowledge.some((query) => query?.isLoading === true) ||
+    plugins.some((query) => query?.isLoading === true)
 
   return {
     items,
@@ -526,6 +632,7 @@ export function createInbox() {
     remove,
     history,
     entry,
+    pluginRecord,
     openSession,
     permission,
     form,

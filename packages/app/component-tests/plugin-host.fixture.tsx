@@ -133,10 +133,11 @@ function fakeApis(storage: (plugin: string) => Storage): HostApiFactories {
     storage,
     system: () => ({ copy: async () => {}, save: async () => false, openExternal() {} }),
     embeds: () => ({ View: () => null, capture: async () => undefined }),
-    toast: () => ({ show: () => ({ dismiss() {} }) }),
+    toast: () => ({ show: () => ({ dismiss() {} }), progress: () => ({ update() {}, done() {} }) }),
     tabs: () => ({ list: () => [], open() {}, focus() {}, move() {}, close() {} }),
     attention: () => ({ notify: async () => ({ notification: false, sound: false }) }),
-    commands: () => ({ run: () => false }),
+    commands: () => ({ run: () => false, list: () => [] }),
+    log: () => ({ write: () => {} }),
     ui: () => ui,
   }
 }
@@ -397,6 +398,7 @@ function standIn(overrides: Partial<Interface>): Interface {
     draft() {},
     command() {},
     run: () => false,
+    commands: () => [],
     notify: async () => ({ notification: false, sound: false }),
     font: () => "fixture mono",
     mode: () => "dark",

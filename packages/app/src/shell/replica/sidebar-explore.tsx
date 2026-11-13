@@ -15,7 +15,7 @@ const SECTIONS: Record<ExploreSection, { icon: Component<{ class?: string }>; la
   skills: { icon: (props) => <SkillIcon class={props.class} monochrome />, labelKey: "explore.nav.skills" },
 }
 
-type NavItem = { id: string; label: string; description?: string }
+type NavItem = { id: string; label: string; description?: string; failed?: boolean }
 
 /** The explore navigation column: the two shelves, then what this project already has installed. */
 export function ExploreNav() {
@@ -31,6 +31,7 @@ export function ExploreNav() {
       id: plugin.id ?? pluginLabel(plugin),
       label: pluginLabel(plugin),
       description: plugin.display?.description,
+      failed: plugin.state.status === "failed",
     }))
 
   // Wait for the server's answer so an empty shelf never flashes before the rows arrive.
@@ -106,7 +107,18 @@ export function ExploreNav() {
                         <PluginIcon />
                       </span>
                       <span data-slot="replica-installed-copy">
-                        <span data-slot="replica-installed-name">{item.label}</span>
+                        <span data-slot="replica-installed-name" class="inline-flex min-w-0 items-center gap-1.5">
+                          <Show when={item.failed}>
+                            <span
+                              data-slot="replica-installed-failed"
+                              role="img"
+                              aria-label={language.t("explore.plugins.state.failedHint")}
+                              title={language.t("explore.plugins.state.failedHint")}
+                              class="size-1.5 shrink-0 rounded-full bg-[var(--v2-state-fg-danger)]"
+                            />
+                          </Show>
+                          {item.label}
+                        </span>
                         <Show when={item.description}>
                           {(description) => (
                             <span data-slot="replica-installed-description">{description()}</span>

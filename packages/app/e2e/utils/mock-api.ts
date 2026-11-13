@@ -180,6 +180,13 @@ const Group = HttpApiGroup.make("mock")
       success: Json,
     }),
   )
+  .add(HttpApiEndpoint.get("pluginInbox", "/api/experimental/plugin/inbox", { success: Json }))
+  .add(
+    HttpApiEndpoint.post("pluginInboxMark", "/api/experimental/plugin/inbox/mark", {
+      payload: Schema.Struct({ id: Schema.String }),
+      success: NoContent,
+    }),
+  )
   .add(
     HttpApiEndpoint.post("mcpConnect", "/api/experimental/mcp/:server/connect", {
       params: { server: Schema.String },

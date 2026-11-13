@@ -105,6 +105,9 @@ export interface MockServerConfig {
   schedules?: unknown[] | (() => unknown[])
   // Knowledge libraries the inbox polls, with their index status.
   knowledge?: unknown[] | (() => unknown[])
+  // Messages plugins published into the inbox. Marking one read records that on the mock server, so every window
+  // reads the same state, like the real server's records.
+  pluginInbox?: unknown[] | (() => unknown[])
   permissions?: unknown[] | (() => unknown[])
   // Requests only listed by `/api/session/:id/permission`, keyed by session ID.
   sessionPermissions?: Record<string, unknown[]>
@@ -503,6 +506,7 @@ function createMockServerHandler(config: MockServerConfig, emit: (events: MockSe
           emit,
           mcp: new Map<string, MockMcpStatus>(),
           attempts: new Map<string, number>(),
+          pluginInboxSeen: new Set<string>(),
         }),
       ),
       Layer.provide(HttpServer.layerServices),
@@ -602,6 +606,8 @@ function mockHandlers(
     // MCP status overrides by `<directory>\n<server>`, and OAuth attempt creation times by attempt ID.
     mcp: Map<string, MockMcpStatus>
     attempts: Map<string, number>
+    // Plugin inbox message ids the user opened; the records live in the config, so this is the server's read state.
+    pluginInboxSeen: Set<string>
   },
 ) {
   const noContent = Effect.succeed(HttpApiSchema.NoContent.make())
@@ -853,6 +859,18 @@ function mockHandlers(
             location: location(config, requestDirectory(config, ctx.request)),
             data: resolve(config.commands ?? []),
           })),
+        // Every plugin's messages, with the server's read state; an id the user opened keeps that in every window.
+        pluginInbox: (ctx) =>
+          Effect.sync(() => ({
+            location: location(config, requestDirectory(config, ctx.request)),
+            data: resolve(config.pluginInbox ?? []).map((record) =>
+              Predicate.isObject(record) && state.pluginInboxSeen.has(String(record.id))
+                ? { ...record, seen: true }
+                : record,
+            ),
+          })),
+        pluginInboxMark: (ctx) =>
+          Effect.sync(() => state.pluginInboxSeen.add(ctx.payload.id)).pipe(Effect.andThen(noContent)),
         skill: () => Effect.sync(() => ({ location: location(config), data: resolve(config.skills ?? []) })),
         plugin: () => Effect.sync(() => ({ location: location(config), data: resolve(config.plugins ?? []) })),
         mcp: (ctx) =>

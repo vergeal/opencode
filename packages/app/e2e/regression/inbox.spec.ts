@@ -35,7 +35,7 @@ const library = {
   time: { created: T0, updated: T0 + 5_000 },
 }
 
-async function openInbox(page: Page) {
+async function openInbox(page: Page, options: { pluginInbox?: unknown[] } = {}) {
   await mockWorkspace(page, {
     name: "Inbox",
     sessions: [
@@ -67,8 +67,21 @@ async function openInbox(page: Page) {
     ],
     schedules: [schedule],
     knowledge: [library],
+    pluginInbox: options.pluginInbox,
   })
   await page.goto("/inbox")
+}
+
+const pluginMessage = {
+  id: "pib_inbox",
+  plugin: "demo.reports",
+  externalID: "report-1",
+  title: "Nightly report is ready",
+  summary: "The parser deploy finished at 03:00",
+  status: "pending",
+  createdAt: T0 + 6_000,
+  updatedAt: T0 + 6_000,
+  seen: false,
 }
 
 const rows = (page: Page) => page.locator('[data-ui="inbox-row"]')
@@ -133,4 +146,37 @@ test("reaches all four destinations from the keyboard", async ({ page }) => {
   await expect(page).toHaveURL(/\/inbox$/)
   await page.keyboard.press("ControlOrMeta+1")
   await expect(page).toHaveURL(/\/$/)
+})
+
+test("lists a plugin message beside the built-in sources and filters it by status", async ({ page }) => {
+  await openInbox(page, { pluginInbox: [pluginMessage] })
+  await expect(rows(page)).toHaveCount(6)
+
+  const row = page.locator('[data-ui="inbox-row"]', { hasText: "Nightly report is ready" })
+  await expect(row).toHaveAttribute("data-status", "pending")
+  // The built-in sources keep their rows while a plugin message joins the same list.
+  await expect(page.locator('[data-ui="inbox-row"][data-kind="approval"]')).toContainText("Approval needed: bash")
+  await expect(page.locator('[data-ui="inbox-row"][data-kind="result"]')).toContainText("Knowledge base reindexed")
+
+  await page.getByRole("button", { name: /Pending/ }).click()
+  await expect(row).toHaveCount(1)
+
+  await page.getByRole("button", { name: /Done/ }).click()
+  await expect(row).toHaveCount(0)
+})
+
+test("shows the default message page when the publisher has no content renderer", async ({ page }) => {
+  await openInbox(page, { pluginInbox: [pluginMessage] })
+
+  const row = page.locator('[data-ui="inbox-row"]', { hasText: "Nightly report is ready" })
+  await expect(row.locator('[data-slot="inbox-unread"]')).toHaveCount(1)
+  await row.click()
+
+  const detail = page.locator("[data-slot='inbox-detail']")
+  await expect(detail).toContainText("Nightly report is ready")
+  await expect(detail).toContainText("The parser deploy finished at 03:00")
+  await expect(detail).toContainText("demo.reports")
+
+  // Opening the message marks it read on the server, so the unread dot goes away.
+  await expect(row.locator('[data-slot="inbox-unread"]')).toHaveCount(0)
 })

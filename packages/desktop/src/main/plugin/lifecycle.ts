@@ -8,6 +8,9 @@ const CLEANUP_TIMEOUT_MS = 3_000
 /** A setup still running after this long is logged once. */
 const SETUP_STALL_MS = 10_000
 
+/** How long a plugin's main code may take to load before the attempt fails and a later activation retries. */
+const LOAD_TIMEOUT_MS = 15_000
+
 /** One running copy of a plugin's main code, from setup until it is stopped. */
 export interface Instance {
   readonly id: string
@@ -75,12 +78,17 @@ export function createLifecycle(input: {
   // The revision whose setup last succeeded since the plugin was last stopped; a failed reload returns to it.
   const last = new Map<string, Revision>()
   const errors = new Map<string, string>()
+  // A failed plugin is not retried for a growing window, so a broken bundle cannot reload on every window focus.
+  // The record is process-local; a successful run or an explicit reload clears it.
+  const attempts = new Map<string, { count: number; nextAt: number }>()
 
   const current = (id: string, signal: AbortSignal) =>
     !signal.aborted && input.enabled(id) && !isQuitting(input.state())
 
   const fail = (id: string, cause: unknown) => {
     errors.set(id, cause instanceof Error ? cause.message : String(cause))
+    const count = (attempts.get(id)?.count ?? 0) + 1
+    attempts.set(id, { count, nextAt: Date.now() + Math.min(2 ** count * 1_000, 60_000) })
     input.log("plugin failed", { id, error: cause })
     input.changed()
   }
@@ -201,14 +209,33 @@ export function createLifecycle(input: {
     generations.delete(id)
   }
 
-  /** The loaded revision, or undefined when loading failed (recorded) or the plugin stopped meanwhile. */
+  /**
+   * The loaded revision, or undefined when loading failed (recorded), timed out, or the plugin stopped meanwhile. A
+   * load that outlives its deadline is reported and dropped: no instance was created, so nothing half-started remains.
+   */
   const load = (id: string, signal: AbortSignal, loader: () => Promise<Revision>) =>
     until(
       signal,
-      loader().catch((cause: unknown) => {
-        if (current(id, signal)) fail(id, cause)
+      new Promise<Revision | undefined>((resolve) => {
+        const timer = setTimeout(() => {
+          if (current(id, signal)) fail(id, new Error("Plugin load timed out after 15s"))
 
-        return undefined
+          resolve(undefined)
+        }, LOAD_TIMEOUT_MS)
+
+        signal.addEventListener("abort", () => clearTimeout(timer), { once: true })
+        loader().then(
+          (revision) => {
+            clearTimeout(timer)
+            resolve(revision)
+          },
+          (cause: unknown) => {
+            clearTimeout(timer)
+            if (current(id, signal)) fail(id, cause)
+
+            resolve(undefined)
+          },
+        )
       }),
     )
 
@@ -239,6 +266,7 @@ export function createLifecycle(input: {
 
     if (outcome.ok) {
       running.good = true
+      attempts.delete(id)
       last.set(id, revision)
 
       return outcome
@@ -255,6 +283,11 @@ export function createLifecycle(input: {
     const signal = generation(id)
 
     return enqueue(id, async () => {
+      // Inside its backoff window the plugin is not loaded again; the recorded failure stays visible to Settings.
+      const backoff = attempts.get(id)
+
+      if (backoff && backoff.nextAt > Date.now()) return
+
       const loader = input.loader(id)
 
       if (!loader || active.has(id) || !current(id, signal)) return
@@ -275,6 +308,8 @@ export function createLifecycle(input: {
   const deactivate = (id: string, after?: () => void) => {
     stop(id)
     last.delete(id)
+    // An explicit stop is a fresh start: the next enable must not wait out the previous failure's backoff.
+    attempts.delete(id)
     const running = active.get(id)
     active.delete(id)
     void running?.dispose()
@@ -290,6 +325,8 @@ export function createLifecycle(input: {
    * fails to load or set up leaves the last good revision running, with the failure recorded.
    */
   const reload = (id: string) => {
+    // An explicit retry (and the host's revision change) ignores the backoff; it is the recovery path for it.
+    attempts.delete(id)
     clear(id)
     stop(id)
     const previous = active.get(id)
@@ -340,6 +377,7 @@ export function createLifecycle(input: {
     failure: (id: string) => errors.get(id),
     forget(id: string) {
       errors.delete(id)
+      attempts.delete(id)
     },
     /**
      * Restarts the app keeping `keep`, an instance's scope: stopping skips that instance while the handoff runs, so a

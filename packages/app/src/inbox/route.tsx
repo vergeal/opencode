@@ -1,5 +1,6 @@
 import { Button } from "@opencode/ui/button"
 import { Icon } from "@opencode/ui/icon"
+import { Loader } from "@opencode/ui/loader"
 import { useNavigate } from "@solidjs/router"
 import { createMediaQuery } from "@solid-primitives/media"
 import { createMemo, Show } from "solid-js"
@@ -9,6 +10,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { PagePanel } from "@/shell/page"
 import { useLayout } from "@/shell/state/layout"
 import { InboxDetail } from "./detail"
+import { PluginInboxDetail } from "./plugin-detail"
 
 /**
  * The inbox workspace: the navigation column lists the messages, so this surface is only the open decision.
@@ -72,12 +74,30 @@ export function InboxScreen() {
               data-ui="workspace-content"
               class="flex min-w-0 flex-1 flex-col overflow-hidden"
             >
-              <InboxDetail
-                item={item()}
-                inbox={inbox}
-                onOpen={() => follow(item())}
-                onBack={mobile() ? () => layout.destination.inbox.setSelected(undefined) : undefined}
-              />
+              <Show
+                when={item().source.type === "plugin"}
+                fallback={
+                  <InboxDetail
+                    item={item()}
+                    inbox={inbox}
+                    onOpen={() => follow(item())}
+                    onBack={mobile() ? () => layout.destination.inbox.setSelected(undefined) : undefined}
+                  />
+                }
+              >
+                <Show
+                  when={inbox.pluginRecord(item())}
+                  fallback={
+                    <div class="flex min-h-0 flex-1 items-center justify-center">
+                      <Loader class="text-[var(--color-icon-secondary)]" />
+                    </div>
+                  }
+                >
+                  {(record) => (
+                    <PluginInboxDetail record={record()} onDelete={() => inbox.remove(item())} />
+                  )}
+                </Show>
+              </Show>
             </section>
           )}
         </Show>

@@ -7,6 +7,9 @@ const CLEANUP_MS = 3_000
 
 const STALL_MS = 10_000
 
+// The load deadline, as `lifecycle.ts` sets it.
+const LOAD_MS = 15_000
+
 type Wait = number | "hang"
 
 type Plan = {
@@ -70,6 +73,8 @@ function world() {
   const stats = { late: 0, overlapping: 0 }
   // How often the lifecycle told the host its failures changed.
   const notices = { changed: 0 }
+  // How often the lifecycle asked for a plugin's code.
+  const loads = { count: 0 }
   /** The instances neither stopped nor stopping. */
   const live = (id?: string) => made.filter((item) => !item.instance.scope.signal.aborted && (!id || item.id === id))
 
@@ -146,6 +151,7 @@ function world() {
 
       return () =>
         wait(current.plan.load).then(() => {
+          loads.count++
           if (current.plan.loadFails) throw new Error(`${current.name} load failed`)
 
           return revision(id, current.name, current.plan)
@@ -179,6 +185,7 @@ function world() {
     logs,
     stats,
     notices,
+    loads,
     events,
     made,
     contributions,
@@ -479,6 +486,50 @@ describe("plugin lifecycle contracts", () => {
     await w.lifecycle.reload("a")
     expect(w.lifecycle.failure("a")).toBeUndefined()
     expect(w.notices.changed).toBeGreaterThan(before)
+  })
+
+  test("a load past the deadline fails and leaves no instance behind", async () => {
+    const w = world()
+    w.revise("a", { load: "hang" })
+    void w.lifecycle.activate("a")
+    await advance(LOAD_MS - 100, 100)
+    expect(w.lifecycle.failure("a")).toBeUndefined()
+    expect(w.loads.count).toBe(0)
+
+    await advance(200, 100)
+    expect(w.lifecycle.failure("a")).toBe("Plugin load timed out after 15s")
+    expect(w.made).toEqual([])
+    expect(w.live("a")).toEqual([])
+  })
+
+  test("a failed plugin is not loaded again until its backoff passes", async () => {
+    const w = world()
+    w.revise("a", { loadFails: true })
+    await w.lifecycle.activate("a")
+    expect(w.loads.count).toBe(1)
+    expect(w.lifecycle.failure("a")).toBe("a1 load failed")
+
+    // The first failure opened a 2s window: a second activation does not ask for the code again.
+    w.revise("a", { loadFails: true })
+    await w.lifecycle.activate("a")
+    expect(w.loads.count).toBe(1)
+
+    await advance(2_000, 100)
+    await w.lifecycle.activate("a")
+    expect(w.loads.count).toBe(2)
+  })
+
+  test("an explicit reload retries inside the backoff window", async () => {
+    const w = world()
+    w.revise("a", { loadFails: true })
+    await w.lifecycle.activate("a")
+    expect(w.loads.count).toBe(1)
+
+    w.revise("a")
+    await w.lifecycle.reload("a")
+    expect(w.loads.count).toBe(2)
+    expect(w.live("a")).toHaveLength(1)
+    expect(w.lifecycle.failure("a")).toBeUndefined()
   })
 
   test.each([

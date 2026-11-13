@@ -46,6 +46,8 @@ export type CatalogPlugin = {
   mcpServers?: readonly { name: string }[]
   /** Skills the plugin ships, when the catalog knows them. */
   skills?: readonly { name: string; description: string }[]
+  /** The interpreter environment installing this plugin prepares, when its manifest declares one. */
+  runtime?: NonNullable<PluginLocalEntry["runtime"]>
 }
 
 export type CatalogSkill = {
@@ -91,6 +93,7 @@ export function loadLocalCatalog(server: {
         ...(newest ? { version: newest.version } : {}),
         versions: entry.versions,
         ...(entry.display?.tools ? { tools: entry.display.tools } : {}),
+        ...(entry.runtime ? { runtime: entry.runtime } : {}),
         ...(entry.display?.skills
           ? {
               skills: entry.display.skills.map((skill) => ({

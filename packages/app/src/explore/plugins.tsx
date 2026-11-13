@@ -13,6 +13,7 @@ import { useServerSDK } from "@/runtime/server/client"
 import { useLanguage } from "@/runtime/i18n/language"
 import { showToast } from "@/shell/notifications/toast"
 import { ExternalLink } from "@/runtime/platform/external-link"
+import { usePlatform } from "@/runtime/platform/platform"
 import { PluginSource } from "@/runtime/plugin/extension-plugins"
 import { PageHeader } from "@/shell/page"
 import { useLayout } from "@/shell/state/layout"
@@ -39,6 +40,13 @@ const featureLabels = {
 const featureKeys: Array<keyof typeof featureLabels> = ["server", "tui", "rpc", "gui"]
 
 const featuresOf = (plugin: PluginInfo) => featureKeys.filter((key) => plugin.features[key])
+
+/** The interpreter environment a plugin's manifest declares, as the host reports it. */
+const runtimeLabels = {
+  ready: "explore.plugins.runtime.ready",
+  preparing: "explore.plugins.runtime.preparing",
+  failed: "explore.plugins.runtime.failed",
+} as const
 
 const sourceDetail = (plugin: PluginInfo) => {
   if (plugin.source.type === "package") return plugin.source.target
@@ -275,7 +283,14 @@ export function ExplorePluginsView(props: {
           </Show>
         }
       >
-        {(plugin) => <PluginDetail plugin={plugin()} onBack={props.onBack} onUninstall={props.onUninstall} />}
+        {(plugin) => (
+          <PluginDetail
+            plugin={plugin()}
+            onBack={props.onBack}
+            onUninstall={props.onUninstall}
+            onRetried={props.onRefresh}
+          />
+        )}
       </Show>
     </Show>
   )
@@ -479,7 +494,12 @@ function CatalogPluginDetail(props: {
 }
 
 /** An installed plugin's page: how it loads, whether it is healthy, and where its module lives. */
-function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onUninstall?: (plugin: PluginInfo) => void }) {
+function PluginDetail(props: {
+  plugin: PluginInfo
+  onBack: () => void
+  onUninstall?: (plugin: PluginInfo) => void
+  onRetried?: () => void
+}) {
   const language = useLanguage()
 
   const failed = () => (props.plugin.state.status === "failed" ? props.plugin.state : undefined)
@@ -537,6 +557,15 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onUninsta
                   ))}
                 </dd>
               </div>
+            </Show>
+
+            <Show when={props.plugin.runtime}>
+              {(runtime) => (
+                <div>
+                  <dt>{language.t("explore.plugins.detail.runtime")}</dt>
+                  <dd>{language.t(runtimeLabels[runtime().status])}</dd>
+                </div>
+              )}
             </Show>
           </dl>
 
@@ -596,11 +625,27 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onUninsta
           </Show>
 
           <Show when={failed()}>
-            {(state) => (
-              <p class="explore-form-error" role="alert">
-                {state().error}
-              </p>
+            {(state) => <PluginFailure error={state().error} reference={state().ref} reason={state().reason} />}
+          </Show>
+
+          <Show when={props.plugin.runtime?.status === "failed" ? props.plugin.runtime : undefined}>
+            {(runtime) => (
+              <>
+                <p class="explore-catalog-about">{language.t("explore.plugins.runtime.failedHint")}</p>
+                <PluginFailure
+                  error={runtime().error ?? language.t("explore.plugins.runtime.retryFailed")}
+                  reference={runtime().ref}
+                />
+              </>
             )}
+          </Show>
+
+          <Show when={props.plugin.runtime?.status === "failed" ? props.plugin.id : undefined}>
+            {(id) => <PluginRuntimeRetry id={id()} onRetried={props.onRetried} />}
+          </Show>
+
+          <Show when={failed() && props.plugin.source.type !== "builtin" && props.plugin.id}>
+            {(id) => <PluginRetry id={id()} onRetried={props.onRetried} />}
           </Show>
 
           <Show when={props.plugin.source.type !== "builtin"}>
@@ -621,8 +666,194 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onUninsta
   )
 }
 
-/** Confirms before removing an installed plugin, because its tools and skills disappear with it. */
-function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () => void }) {
+/**
+ * Why a plugin failed to load. The summary comes from the structured `reason` when the server sends one, so the app
+ * never shows English written by the server; the full error stays folded and scrolls inside a bounded box. The
+ * reference and the log export are what a bug report needs.
+ */
+function PluginFailure(props: {
+  error: string
+  reference?: string
+  reason?: Extract<PluginInfo["state"], { status: "failed" }>["reason"]
+}) {
+  const language = useLanguage()
+  const platform = usePlatform()
+  const [state, setState] = createStore<{ exportError: string }>({ exportError: "" })
+
+  const summary = () => {
+    const reason = props.reason
+    if (reason?.kind === "transform-failed")
+      return language.t("explore.plugins.error.reason.transformFailed", { state: reason.state })
+    if (reason?.kind === "activation-timeout")
+      return language.t("explore.plugins.error.reason.activationTimeout", { seconds: reason.seconds })
+    if (reason?.kind === "load-timeout")
+      return language.t("explore.plugins.error.reason.loadTimeout", { seconds: reason.seconds })
+    if (reason?.kind === "load-failed") return language.t("explore.plugins.error.reason.loadFailed")
+    // A stack starts with the message; an untranslated server error is a single fixed sentence.
+    return props.error.split("\n").find((line) => line.trim().length > 0)?.trim() || props.error
+  }
+
+  const copyReference = async () => {
+    if (!props.reference) return
+
+    try {
+      await (platform.writeClipboardText?.(props.reference) ?? navigator.clipboard.writeText(props.reference))
+      showToast({ variant: "success", title: language.t("explore.plugins.error.copied") })
+    } catch {
+      showToast({ variant: "error", title: language.t("settings.skills.copyFailed") })
+    }
+  }
+
+  const exportLogs = async () => {
+    if (!platform.exportDebugLogs) return
+
+    setState("exportError", "")
+    try {
+      const exported = await platform.exportDebugLogs()
+      showToast({ variant: "success", title: language.t("explore.plugins.error.exportLogs.success") })
+      await platform.revealPath?.(exported)
+    } catch (error) {
+      console.error("plugin log export failed", error)
+      const message = error instanceof Error ? error.message : String(error)
+      setState("exportError", message || language.t("explore.plugins.error.exportLogs.failed"))
+    }
+  }
+
+  return (
+    <div class="explore-plugin-error">
+      <p class="explore-plugin-error-summary" role="alert">
+        {summary()}
+      </p>
+
+      <Show when={props.error.trim() !== summary()}>
+        <details class="explore-plugin-error-details">
+          <summary>{language.t("explore.plugins.error.details")}</summary>
+          <pre class="explore-plugin-error-pre" dir="ltr">{props.error}</pre>
+        </details>
+      </Show>
+
+      <Show when={props.reference}>
+        {(reference) => (
+          <div class="explore-plugin-error-row">
+            <code class="explore-plugin-error-ref" dir="ltr">
+              {reference()}
+            </code>
+            <Button size="small" variant="ghost-muted" onClick={() => void copyReference()}>
+              {language.t("explore.plugins.error.copyRef")}
+            </Button>
+          </div>
+        )}
+      </Show>
+
+      <Show when={platform.exportDebugLogs}>
+        <div>
+          <Button size="small" variant="ghost-muted" onClick={() => void exportLogs()}>
+            {language.t("explore.plugins.error.exportLogs")}
+          </Button>
+        </div>
+        <Show when={state.exportError}>
+          {(message) => (
+            <p class="explore-plugin-error-export" role="alert">
+              {message()}
+            </p>
+          )}
+        </Show>
+      </Show>
+    </div>
+  )
+}
+
+/**
+ * Retries a failed plugin through the server's reload endpoint. The endpoint clears the target's load backoff and
+ * asks the supervisor to activate again, so this button is the manual recovery path when the backoff is still open.
+ */
+function PluginRetry(props: { id: string; onRetried?: () => void }) {
+  const language = useLanguage()
+  const server = useServerSDK()
+  const [state, setState] = createStore<{ busy: boolean; error: string }>({ busy: false, error: "" })
+
+  const retry = async () => {
+    if (state.busy) return
+
+    setState({ busy: true, error: "" })
+    try {
+      await server.api.experimental.plugin.reload({ id: props.id })
+      setState({ busy: false, error: "" })
+      props.onRetried?.()
+    } catch (error) {
+      console.error("plugin reload failed", error)
+      const message = error instanceof Error ? error.message : String(error)
+      setState({ busy: false, error: message || language.t("explore.plugins.error.retryFailed") })
+    }
+  }
+
+  return (
+    <div class="explore-plugin-retry">
+      <Button
+        size="small"
+        variant={state.busy ? "loading" : "neutral"}
+        disabled={state.busy}
+        onClick={() => void retry()}
+      >
+        {language.t(state.busy ? "explore.plugins.error.retrying" : "explore.plugins.error.retry")}
+      </Button>
+      <Show when={state.error}>
+        {(message) => (
+          <p class="explore-plugin-error-export" role="alert">
+            {message()}
+          </p>
+        )}
+      </Show>
+    </div>
+  )
+}
+
+/**
+ * Prepares a plugin's interpreter environment again after it failed, without reloading the plugin itself. The server
+ * replies as soon as preparation starts; the status change arrives through the plugin inventory like any other.
+ */
+function PluginRuntimeRetry(props: { id: string; onRetried?: () => void }) {
+  const language = useLanguage()
+  const server = useServerSDK()
+  const [state, setState] = createStore<{ busy: boolean; error: string }>({ busy: false, error: "" })
+
+  const retry = async () => {
+    if (state.busy) return
+
+    setState({ busy: true, error: "" })
+    try {
+      await server.api.experimental.plugin.runtime.retry({ id: props.id })
+      setState({ busy: false, error: "" })
+      props.onRetried?.()
+    } catch (error) {
+      console.error("plugin runtime retry failed", error)
+      const message = error instanceof Error ? error.message : String(error)
+      setState({ busy: false, error: message || language.t("explore.plugins.runtime.retryFailed") })
+    }
+  }
+
+  return (
+    <div class="explore-plugin-retry">
+      <Button
+        size="small"
+        variant={state.busy ? "loading" : "neutral"}
+        disabled={state.busy}
+        onClick={() => void retry()}
+      >
+        {language.t(state.busy ? "explore.plugins.runtime.retrying" : "explore.plugins.runtime.retry")}
+      </Button>
+      <Show when={state.error}>
+        {(message) => (
+          <p class="explore-plugin-error-export" role="alert">
+            {message()}
+          </p>
+        )}
+      </Show>
+    </div>
+  )
+}
+
+/** Confirms before removing an installed plugin, because its tools and skills disappear with it. */function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () => void }) {
   const language = useLanguage()
   const dialog = useDialog()
   const server = useServerSDK()
@@ -639,9 +870,13 @@ function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () =
       showToast({ variant: "success", title: language.t("explore.plugins.uninstall.success", { name: name() }) })
     } catch (error) {
       console.error("plugin uninstall failed", error)
+      // The server's message names the real cause, so show it instead of a generic retry hint.
+      const message = error instanceof Error ? error.message : String(error)
       setState({
         busy: false,
-        error: language.t(unsupportedRoute(error) ? "explore.plugins.unsupported" : "explore.plugins.uninstall.failed"),
+        error: unsupportedRoute(error)
+          ? language.t("explore.plugins.unsupported")
+          : message || language.t("explore.plugins.uninstall.failed"),
       })
     }
   }

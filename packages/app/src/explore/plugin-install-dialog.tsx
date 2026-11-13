@@ -167,12 +167,22 @@ function BundleInstallDialog(props: {
         variant: "success",
         title: language.t("explore.plugins.bundle.success", { name: props.entry.name }),
       })
+      // The interpreter environment lives in the server, so installing is done before it is ready; say that instead of
+      // holding the dialog open for a download.
+      if (props.entry.runtime)
+        showToast({
+          variant: "default",
+          title: language.t("explore.plugins.runtime.preparingToast", { name: props.entry.name }),
+        })
     } catch (error) {
-      // Keep the user-facing copy short; the detail belongs in the console for a bug report.
+      // The server's message names the real cause; keep the console line for a bug report.
       console.error("plugin install failed", error)
+      const message = error instanceof Error ? error.message : String(error)
       setState({
         busy: false,
-        error: language.t(unsupported(error) ? "explore.plugins.unsupported" : "explore.plugins.bundle.failed"),
+        error: unsupported(error)
+          ? language.t("explore.plugins.unsupported")
+          : message || language.t("explore.plugins.bundle.failed"),
       })
     }
   }

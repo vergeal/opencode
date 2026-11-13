@@ -4,6 +4,7 @@ import { render } from "solid-js/web"
 import type { CatalogPlugin } from "../src/explore/catalog"
 import { ExplorePluginsView } from "../src/explore/plugins"
 import { LanguageProvider } from "../src/runtime/i18n/language"
+import { PlatformProvider, type Platform } from "../src/runtime/platform/platform"
 
 const sample: CatalogPlugin[] = [
   {
@@ -70,13 +71,36 @@ export const webwrightInstalled: PluginInfo[] = [
   },
 ]
 
+/** A plugin that failed to load, with the long error and the reference core records. */
+export const failedInstalled: PluginInfo[] = [
+  {
+    id: "opencode.broken",
+    source: { type: "local", path: "plugins/opencode.broken" },
+    features: { server: true },
+    state: {
+      status: "failed",
+      error: "Tool transform failed: acme.search has no input schema\n    at Tool.transform (tool.ts:120:9)\n    at Plugin.start (plugin.ts:88:5)",
+      ref: "err_1a2b3c4d",
+    },
+  },
+]
+
+/** A web window: it offers no debug-log export, so the failure block shows the summary, stack and reference only. */
+const webPlatform: Platform = {
+  platform: "web",
+  openExternal: () => undefined,
+  restart: async () => undefined,
+  notify: async () => undefined,
+}
+
 /**
  * Mounts the plugins page's real view over fixture data. The page's story provides the app runtime; this only
- * supplies the language context and the selection the real navigation column would own.
+ * supplies the language and platform contexts and the selection the real navigation column would own.
  */
 export function mountExplorePlugins(input?: {
   catalog?: readonly CatalogPlugin[]
   installed?: readonly PluginInfo[]
+  selected?: PluginInfo
 }) {
   const catalog = input?.catalog ?? sample
   const [openID, setOpenID] = createSignal<string>()
@@ -89,15 +113,18 @@ export function mountExplorePlugins(input?: {
   const dispose = render(
     () => (
       <LanguageProvider locale="en">
-        <ExplorePluginsView
-          catalog={catalog}
-          installed={input?.installed}
-          catalogEntry={catalog.find((entry) => entry.id === openID())}
-          onSelectCatalog={setOpenID}
-          onBack={() => setOpenID(undefined)}
-          onInstall={() => undefined}
-          onInstallCatalog={() => undefined}
-        />
+        <PlatformProvider value={webPlatform}>
+          <ExplorePluginsView
+            catalog={catalog}
+            installed={input?.installed}
+            selected={input?.selected}
+            catalogEntry={catalog.find((entry) => entry.id === openID())}
+            onSelectCatalog={setOpenID}
+            onBack={() => setOpenID(undefined)}
+            onInstall={() => undefined}
+            onInstallCatalog={() => undefined}
+          />
+        </PlatformProvider>
       </LanguageProvider>
     ),
     host,

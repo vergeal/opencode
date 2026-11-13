@@ -131,6 +131,88 @@
   overflow-wrap: anywhere;
 }
 
+/* A failed plugin's error: the summary names the failure, while the whole stack stays folded in a bounded, scrollable
+   box so a long `Cause.pretty` cannot stretch the page. */
+.explore-plugin-error {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  min-width: 0;
+  border-radius: 10px;
+  background: var(--v2-background-bg-layer-01);
+  box-shadow: inset 0 0 0 0.5px var(--v2-border-border-muted);
+}
+
+.explore-plugin-error-summary {
+  margin: 0;
+  font-size: 13px;
+  line-height: var(--line-height-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--v2-state-fg-danger);
+  overflow-wrap: anywhere;
+}
+
+.explore-plugin-error-details {
+  min-width: 0;
+}
+
+.explore-plugin-error-details > summary {
+  cursor: pointer;
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-muted);
+}
+
+.explore-plugin-error-pre {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  max-height: 240px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--v2-background-bg-layer-02);
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  line-height: var(--line-height-base);
+  color: var(--v2-text-text-base);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.explore-plugin-error-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.explore-plugin-error-ref {
+  min-width: 0;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  color: var(--v2-text-text-base);
+  overflow-wrap: anywhere;
+}
+
+.explore-plugin-error-export {
+  margin: 0;
+  font-size: 12px;
+  line-height: var(--line-height-base);
+  color: var(--v2-state-fg-danger);
+  overflow-wrap: anywhere;
+}
+
+/* The manual recovery for a failed plugin: a retry button, with its own error kept under it. */
+.explore-plugin-retry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 /* Plugins: a full-width catalog grouped by category; opening one replaces it with that plugin's page. */
 
 /* Rows the settings extension list reuses, kept here because both surfaces share the same quiet row treatment. */
