@@ -31,6 +31,8 @@ export function localLinkPath(href: string) {
   const value = href.trim()
 
   if (!value || value.startsWith("#") || value.startsWith("?")) return
+  // In-app references such as `@session:` and `@project:` name a session or a project, not a file on disk.
+  if (/^@[a-z-]+:/i.test(value)) return
 
   const hashIndex = value.indexOf("#")
   const hash = hashIndex === -1 ? "" : value.slice(hashIndex)

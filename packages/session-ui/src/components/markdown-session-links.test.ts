@@ -12,6 +12,19 @@ beforeAll(() => GlobalRegistrator.register())
 
 afterAll(() => GlobalRegistrator.unregister())
 
+test("keeps the label and tooltip of a link written as [label](@session:…)", () => {
+  const root = document.createElement("div")
+  root.innerHTML = `<p>from: <a href="@session:${first}" title="@Auth middleware (${first}) · build">@Auth middleware · build</a></p>`
+  markSessionLinks(root, title)
+
+  const button = root.querySelector<HTMLButtonElement>("button[data-session-id]")
+  expect(button?.dataset.sessionId).toBe(first)
+  expect(button?.textContent).toBe("@Auth middleware · build")
+  expect(button?.title).toBe(`@Auth middleware (${first}) · build`)
+  expect(button?.getAttribute("type")).toBe("button")
+  expect(root.querySelector("a")).toBeNull()
+})
+
 test("links complete IDs in prose and inline code without changing fenced code or existing links", () => {
   const root = document.createElement("div")
   root.innerHTML = `<p>Open ${first}, then <code>${second}</code>. See <a href="/docs">${first}</a>.</p><pre><code>${first}</code></pre>`

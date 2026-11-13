@@ -60,6 +60,7 @@ import { createMarkdownImages } from "./markdown-image"
 import { createImagePreview } from "./image-preview"
 import { setupFragmentLinks } from "./markdown-fragment-links"
 import { markSessionLinks, setupSessionLinks } from "./markdown-session-links"
+import { markProjectLinks, setupProjectLinks } from "./markdown-project-links"
 import { markdownClipboardHtml } from "./markdown-clipboard"
 
 type RenderedBlock =
@@ -972,6 +973,7 @@ export function Markdown(
   let linkCleanup: (() => void) | undefined
   let faviconCleanup: (() => void) | undefined
   let sessionLinkCleanup: (() => void) | undefined
+  let projectLinkCleanup: (() => void) | undefined
   let fragmentLinkCleanup: (() => void) | undefined
   let readImage: ReadMarkdownImage | undefined
   let images: ReturnType<typeof createMarkdownImages> | undefined
@@ -1028,6 +1030,7 @@ export function Markdown(
     activeCodeKeys.clear()
     nextCodeKeys.forEach((key) => activeCodeKeys.add(key))
     const sessionLinks = markdown?.sessionTitle
+    const projectExists = markdown?.projectExists
     const localFileExists = markdown?.localFileExists
 
     const pending = content.flatMap((block, index) => {
@@ -1036,7 +1039,7 @@ export function Markdown(
       const check =
         renderedBlocks[index] === block && current instanceof HTMLDivElement
           ? inlineCodeChecks.get(current)?.pending
-          : updateBlock(container, index, block, labels, plugins, sessionLinks, lifetime.signal, localFileExists)
+          : updateBlock(container, index, block, labels, plugins, sessionLinks, lifetime.signal, localFileExists, projectExists)
 
       return check ? [check] : []
     })
@@ -1052,6 +1055,7 @@ export function Markdown(
       })
 
     if (sessionLinks) markSessionLinks(container, sessionLinks)
+    markProjectLinks(container, markdown?.projectExists)
 
     while (container.children.length > content.length) {
       const child = container.lastElementChild
@@ -1087,6 +1091,8 @@ export function Markdown(
 
     if (!sessionLinkCleanup) sessionLinkCleanup = setupSessionLinks(container, () => markdown?.openSession)
 
+    if (!projectLinkCleanup) projectLinkCleanup = setupProjectLinks(container, () => markdown?.openProject)
+
     if (!fragmentLinkCleanup) fragmentLinkCleanup = setupFragmentLinks(container)
 
     if (!faviconCleanup) faviconCleanup = setupExternalLinkFavicons(container)
@@ -1117,6 +1123,8 @@ export function Markdown(
     if (linkCleanup) linkCleanup()
 
     if (sessionLinkCleanup) sessionLinkCleanup()
+
+    if (projectLinkCleanup) projectLinkCleanup()
 
     if (fragmentLinkCleanup) fragmentLinkCleanup()
 
@@ -1200,6 +1208,7 @@ function updateBlock(
   sessionLinks: ((id: string) => string | undefined) | undefined,
   signal: AbortSignal,
   localFileExists?: MarkdownLocalFileExists,
+  projectExists?: (directory: string) => boolean,
 ) {
   const current = container.children[index]
 
@@ -1242,6 +1251,7 @@ function updateBlock(
   wrapTables(source)
 
   if (sessionLinks) markSessionLinks(source, sessionLinks)
+  markProjectLinks(source, projectExists)
   markExternalLinkFavicons(source)
 
   if (rendered) {

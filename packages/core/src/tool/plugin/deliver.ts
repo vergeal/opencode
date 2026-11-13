@@ -4,6 +4,7 @@ import { ToolFailure } from "@opencode/ai/effect"
 import type { Context } from "@opencode/plugin/effect/plugin"
 import { SessionMessage } from "@opencode/schema/session-message"
 import { SessionInbox } from "@opencode/schema/session-inbox"
+import { getFilename } from "@opencode/util/path"
 import { parseSessionMention } from "@opencode/util/session-mention"
 import { Effect, Schema } from "effect"
 import { Permission } from "../../permission.js"
@@ -169,13 +170,40 @@ export const Plugin = {
                 "⟦message⟧",
                 input.text,
               ].join("\n")
+              // What a person reads in place of the header above: a mail header. A session link shows the
+              // title and agent while its tooltip carries the full address, and the project path renders as
+              // its folder name through the Markdown local-path decoration.
+              const sessionLink = (session: { id: string; title?: string; agent?: string }) => {
+                const title = session.title ?? session.id
+                // A fresh session has no agent yet, so naming one would invent a choice the user never made.
+                const suffix = session.agent ? ` · ${session.agent}` : ""
+                // A title is arbitrary text, so it must not close the link or its quoted tooltip early.
+                const text = `${title}`.replace(/([\\[\]])/g, "\\$1")
+                const tooltip = `@${title} (${session.id})${suffix}`.replace(/([\\"])/g, "\\$1")
+
+                return `[@${text}${suffix}](@session:${session.id} "${tooltip}")`
+              }
+              const displayText = [
+                // Each mail-header line ends with a backslash so Markdown keeps its own line instead of
+                // folding the block into one paragraph.
+                `from: ${sessionLink(from)}\\`,
+                `to: ${sessionLink(target)}\\`,
+                `project: [${getFilename(from.location.directory)}](@project:${from.location.directory})\\`,
+                `intent: ${intent}\\`,
+                `expects_reply: ${expectsReply ? "yes" : "no"}${input.deadline ? `, by ${input.deadline}` : ""}`,
+                "",
+                "---",
+                "",
+                input.text,
+              ].join("\n")
 
               const admitted = yield* ctx.session
                 .prompt({
                   id: messageID,
                   sessionID: target.id,
                   text,
-                  metadata: { delivery: envelope },
+                  // Presentation needs all three fields; a missing one drops the whole record and shows `text`.
+                  metadata: { delivery: envelope, displayText, comments: [], attachments: [] },
                   delivery: input.delivery ?? "queue",
                   resume: input.resume ?? true,
                 })

@@ -65,6 +65,8 @@ const context = createContext<{
   readonly localFileExists?: MarkdownLocalFileExists
   readonly openSession?: (sessionID: string) => void
   readonly sessionTitle?: (sessionID: string) => string | undefined
+  readonly openProject?: (directory: string) => void
+  readonly projectExists?: (directory: string) => boolean
   readonly codeBlocks?: MarkdownCodeBlocks
 }>()
 
@@ -75,6 +77,8 @@ export function MarkdownProvider(
     localFileExists?: MarkdownLocalFileExists
     openSession?: (id: string) => void
     sessionTitle?: (id: string) => string | undefined
+    openProject?: (directory: string) => void
+    projectExists?: (directory: string) => boolean
     /** Content for code blocks; inherited when omitted. `false` turns it off below, e.g. inside such content. */
     codeBlocks?: MarkdownCodeBlocks | false
   }>,
@@ -98,6 +102,12 @@ export function MarkdownProvider(
         },
         get sessionTitle() {
           return props.sessionTitle ?? parent?.sessionTitle
+        },
+        get openProject() {
+          return props.openProject ?? parent?.openProject
+        },
+        get projectExists() {
+          return props.projectExists ?? parent?.projectExists
         },
         get codeBlocks() {
           if (props.codeBlocks === false) return undefined

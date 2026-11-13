@@ -3,6 +3,20 @@ import { parseSessionMention, sessionMentions, type SessionMention } from "@open
 export type SessionTitle = (id: string) => string | undefined
 
 export function markSessionLinks(root: HTMLElement, title: SessionTitle) {
+  // `[label](@session:ses_…)` lets a message keep its own label and tooltip while still navigating to the session.
+  root.querySelectorAll<HTMLAnchorElement>('a[href^="@session:"]').forEach((anchor) => {
+    const mention = parseSessionMention(anchor.getAttribute("href") ?? "")
+
+    if (!mention) return
+    const button = document.createElement("button")
+    button.type = "button"
+    button.className = "markdown-session-link"
+    button.dataset.sessionId = mention.id
+    button.title = anchor.title
+    button.textContent = anchor.textContent ?? `@session:${mention.id}`
+    anchor.replaceWith(button)
+  })
+
   // Already-rendered references retain their source so renames, discovery and deletion are reactive.
   root.querySelectorAll<HTMLElement>("[data-session-reference]").forEach((element) => {
     const source = element.dataset.sessionReference!

@@ -8,6 +8,8 @@ import { LocalProvider } from "@/providers/models/selection"
 import type { ServerConnection } from "@/runtime/server/registry"
 import { sessionHref } from "@/shell/routes/session"
 import { useData } from "@/runtime/server/current"
+import { useGlobal } from "@/runtime/server/runtime"
+import { pathKey } from "@/workspaces/path-key"
 import { useServerSDK } from "@/runtime/server/client"
 import { findSessionTab, useTabs } from "@/shell/tabs/tabs"
 import { readLocalImage } from "@/runtime/server/image"
@@ -15,6 +17,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { showToast } from "@/shell/notifications/toast"
 import { createTurnDiffCache } from "@/session/timeline/turn-diffs"
 import { useSettings } from "@/settings/model"
+import { useSettingsSurface } from "@/settings/surface"
 
 export function SessionUIProvider(
   props: ParentProps<{
@@ -25,10 +28,12 @@ export function SessionUIProvider(
   const navigate = useNavigate()
   const params = useParams()
   const data = useData()
+  const global = useGlobal()
   const serverSDK = useServerSDK()
   const tabs = useTabs()
   const language = useLanguage()
   const settings = useSettings()
+  const settingsSurface = useSettingsSurface()
   const directory = () => props.directory
 
   const readImage = createMemo<ReadMarkdownImage>(() => {
@@ -147,7 +152,18 @@ export function SessionUIProvider(
         onSessionHref={href}
         backgroundCompaction={backgroundCompaction()}
       >
-        <MarkdownProvider readImage={readImage()} openSession={openReferencedSession} sessionTitle={sessionTitle}>
+        <MarkdownProvider
+          readImage={readImage()}
+          openSession={openReferencedSession}
+          sessionTitle={sessionTitle}
+          openProject={(directory) => settingsSurface.openProject({ server: props.server, project: directory })}
+          projectExists={(directory) =>
+            !!global
+              .serverCtx(props.server)
+              ?.projects.list()
+              .some((item) => pathKey(item.worktree) === pathKey(directory))
+          }
+        >
           {props.children}
         </MarkdownProvider>
       </DataProvider>

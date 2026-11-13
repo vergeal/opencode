@@ -27,6 +27,30 @@
   font-family: var(--font-family-mono);
 }
 
+/* A project link reads as an ordinary hyperlink: the label is the folder name, and the pointer opens its settings. */
+.markdown-project-link {
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--v2-text-text-accent);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--v2-text-text-accent) 30%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.markdown-project-link:hover {
+  color: var(--v2-text-text-accent-hover);
+  text-decoration-color: currentColor;
+}
+
+.markdown-project-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 [data-component="markdown"] {
   --markdown-inline-code-path-color: var(--v2-text-text-code-path);
   --markdown-inline-code-color: var(--v2-text-text-code-accent);
