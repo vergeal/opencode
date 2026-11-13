@@ -646,10 +646,13 @@ html[data-replica-window="translucent"] [data-slot="replica-sidebar-slot"] {
 @media (prefers-contrast: more) {
   [data-replica] {
     --color-divider: #c9c9c9;
+    /* The panel edge reads from its own glass token, so contrast has to deepen that one too. */
+    --color-divider-glass: rgb(0 0 0 / 30%);
   }
 
   [data-color-scheme="dark"] [data-replica] {
     --color-divider: rgb(255 255 255 / 30%);
+    --color-divider-glass: rgb(255 255 255 / 40%);
   }
 }
 
