@@ -1,5 +1,6 @@
 export * as PluginPaths from "./paths.js"
 
+import { accessSync, constants } from "node:fs"
 import path from "node:path"
 
 export type Paths = {
@@ -13,16 +14,69 @@ export type Paths = {
 }
 
 /**
- * Each plugin gets directories named after its id under the same `~/.opencode` root as installed bundles. A scoped
- * package id (`@scope/name`) must stay one directory name, so path separators become `+`.
+ * Whether `D:\` exists and accepts writes. Probing costs a syscall, and every list, uninstall, and configuration pass
+ * asks for paths, so the answer is kept for the life of the process.
  */
-export function make(input: { readonly home: string; readonly id: string }): Paths {
-  const root = path.join(input.home, ".opencode")
+let probed: boolean | undefined
+function driveAvailable() {
+  if (probed !== undefined) return probed
+  try {
+    accessSync("D:\\", constants.W_OK)
+    probed = true
+  } catch {
+    probed = false
+  }
+  return probed
+}
+
+/**
+ * Each plugin gets directories named after its id, with Windows placing the rebuildable ones on `D:` when it can.
+ * A scoped package id (`@scope/name`) must stay one directory name, so path separators become `+`.
+ *
+ * Only the environment and the cache follow the drive. `data` and `log` stay under the home directory, so an
+ * unplugged drive costs a re-download, never the plugin's configuration or its log history.
+ */
+export function make(input: {
+  readonly home: string
+  readonly id: string
+  /** Test seam. Defaults to `process.platform`. */
+  readonly platform?: NodeJS.Platform
+  /** Test seam. `true` uses `D:\.opencode`; defaults to probing `D:\`. */
+  readonly drive?: boolean
+}): Paths {
+  const platform = input.platform ?? process.platform
+  const join = platform === "win32" ? path.win32.join : path.join
+  const root = join(input.home, ".opencode")
+  const buildable = platform === "win32" && (input.drive ?? driveAvailable()) ? "D:\\.opencode" : root
   const id = input.id.replaceAll(/[\\/]/g, "+")
   return {
-    data: path.join(root, "plugin-data", id),
-    cache: path.join(root, "plugin-cache", id),
-    runtime: path.join(root, "plugin-runtime", id),
-    log: path.join(root, "logs", "plugin", `${id}.log`),
+    data: join(root, "plugin-data", id),
+    cache: join(buildable, "plugin-cache", id),
+    runtime: join(buildable, "plugin-runtime", id),
+    log: join(root, "logs", "plugin", `${id}.log`),
+  }
+}
+
+/**
+ * The cache and runtime paths the previous drive used. `data` and `log` never move, so they are not included.
+ * Answers undefined when nothing moved: another platform, or a machine whose environment already sits on the home
+ * drive because `D:\` was missing or read-only.
+ */
+export function legacy(input: {
+  readonly home: string
+  readonly id: string
+  /** Test seam. Defaults to `process.platform`. */
+  readonly platform?: NodeJS.Platform
+  /** Test seam. `true` treats the environment as living on `D:`; defaults to probing `D:\`. */
+  readonly drive?: boolean
+}): { readonly cache: string; readonly runtime: string } | undefined {
+  const platform = input.platform ?? process.platform
+  if (platform !== "win32") return undefined
+  if (!(input.drive ?? driveAvailable())) return undefined
+  const root = path.win32.join(input.home, ".opencode")
+  const id = input.id.replaceAll(/[\\/]/g, "+")
+  return {
+    cache: path.win32.join(root, "plugin-cache", id),
+    runtime: path.win32.join(root, "plugin-runtime", id),
   }
 }
