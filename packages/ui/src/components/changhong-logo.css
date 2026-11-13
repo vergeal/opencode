@@ -19,66 +19,42 @@
   filter: saturate(0.62) brightness(0.86);
 }
 
-/* The sweep is the same artwork in white, so the light band only lands on the letterforms. A narrow window travels
-   across the mark while the artwork inside it moves back by the same distance: the letterforms stay aligned with the
-   base mark and the effect runs on compositor transforms instead of an animated mask position. */
+/* The sweep matches the splash the dev server serves while it bundles (`electron.vite.config.ts`), so the first
+   paint and every later loading surface share one motion: a narrow gradient band with `mask-size` wider than the
+   mark travels across the artwork, and the white copy underneath is only visible where the letters are, so the
+   letterforms light up one after another. */
 [data-component="changhong-logo"] .changhong-logo-sweep {
-  --changhong-logo-sweep-width: 30%;
-  --changhong-logo-sweep-duration: 2400ms;
+  --changhong-logo-sweep-duration: 1800ms;
   position: absolute;
   inset: 0;
   pointer-events: none;
+  mix-blend-mode: screen;
+  mask-image: linear-gradient(to right, transparent 38%, #000 50%, transparent 62%);
+  mask-size: 300% 100%;
+  mask-repeat: no-repeat;
+  animation: changhong-logo-sweep var(--changhong-logo-sweep-duration) ease-in-out infinite;
 }
 
 [data-component="changhong-logo"] .changhong-logo-sweep-window {
   position: absolute;
   inset: 0;
   fill: #fff;
-  mix-blend-mode: screen;
-  mask-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgb(0 0 0 / 0.35) 24%,
-    #000 50%,
-    rgb(0 0 0 / 0.35) 76%,
-    transparent 100%
-  );
-  mask-size: var(--changhong-logo-sweep-width) 100%;
-  mask-position: 50% 0;
-  mask-repeat: no-repeat;
-  animation: changhong-logo-sweep-window var(--changhong-logo-sweep-duration) linear infinite;
 }
 
-[data-component="changhong-logo"] .changhong-logo-sweep-art {
-  animation: changhong-logo-sweep-art var(--changhong-logo-sweep-duration) linear infinite;
-}
-
-/* The window's centre runs from one band before the mark to one band past it, so the light enters and leaves the
-   letterforms instead of popping in at the edges. */
-@keyframes changhong-logo-sweep-window {
+@keyframes changhong-logo-sweep {
   0% {
-    translate: -100% 0;
+    mask-position: 100% 0;
     opacity: 0;
   }
 
-  10%,
-  90% {
-    opacity: 1;
+  18%,
+  82% {
+    opacity: 0.9;
   }
 
   100% {
-    translate: 100% 0;
+    mask-position: 0% 0;
     opacity: 0;
-  }
-}
-
-@keyframes changhong-logo-sweep-art {
-  from {
-    translate: 100% 0;
-  }
-
-  to {
-    translate: -100% 0;
   }
 }
 
