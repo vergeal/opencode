@@ -17,7 +17,7 @@
     "dist"
   ],
   "exports": {
-    ".": "./src/index.ts",
+    ".": "./server/main.ts",
     "./rpc": "./src/rpc.ts"
   },
   "scripts": {

@@ -6,7 +6,7 @@
     "opencode": "^2.2.5"
   },
   "entry": {
-    "server": "server/index.js"
+    "server": "server/main"
   },
   "externals": ["effect", "@opencode/plugin", "@opencode/schema", "@opencode/util"],
   "display": {

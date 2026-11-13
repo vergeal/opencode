@@ -10,11 +10,11 @@ await rm(dist, { recursive: true, force: true })
 await mkdir(join(dist, "server"), { recursive: true })
 
 const build = await Bun.build({
-  entrypoints: [join(root, "src", "index.ts")],
+  entrypoints: [join(root, "server", "main.ts")],
   target: "bun",
   format: "esm",
   outdir: join(dist, "server"),
-  naming: "index.js",
+  naming: "main.js",
   // Host modules stay external so the plugin shares the host's module instances. Playwright is not bundled either:
   // its driver resolves files relative to its own package, so the package ships under assets/ instead.
   external: [...manifest.externals, "node:*"],
@@ -43,8 +43,8 @@ await writeFile(
       version: manifest.version,
       type: "module",
       license: "MIT",
-      main: "./server/index.js",
-      exports: { ".": "./server/index.js" },
+      main: "./server/main.js",
+      exports: { ".": "./server/main.js" },
     },
     null,
     2,

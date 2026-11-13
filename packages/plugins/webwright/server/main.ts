@@ -1,8 +1,8 @@
 import { Plugin } from "@opencode/plugin/effect"
 import { Effect } from "effect"
 import manifest from "../ocplugin.json" with { type: "json" }
-import { BrowserRuntime } from "./browser.js"
-import { BrowserTools } from "./tools.js"
+import { BrowserRuntime } from "../src/browser.js"
+import { BrowserTools } from "../src/tools.js"
 
 export default Plugin.define({
   id: manifest.id,

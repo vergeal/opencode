@@ -52,7 +52,7 @@ The source of truth for inputs, descriptions and outputs is `Browser.Operations`
 ## Build and pack
 
 ```sh
-bun run build   # dist/server/index.js + assets/playwright-core + skills/
+bun run build   # dist/server/main.js + assets/playwright-core + skills/
 bun run pack    # ~/.ocplugins-local/opencode.webwright/<version>/
 ```
 
