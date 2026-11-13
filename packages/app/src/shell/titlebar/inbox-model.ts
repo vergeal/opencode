@@ -21,10 +21,15 @@ import { workingSince } from "./inbox-working"
 // Keep the immutable result opaque so Solid Query does not recursively unwrap every session.
 const selectSessions = (sessions: SessionInfo[]) => () => sessions
 
+// Paging appends to what is already shown, so a session that came back in two pages keeps one row.
+const mergeSessions = (current: SessionInfo[], next: SessionInfo[]) => [
+  ...new Map([...current, ...next].map((session) => [session.id, session] as const)).values(),
+]
+
 // Branch lookups each run git on the server, so load them a few at a time.
 const BRANCH_BATCH = 4
 
-// Root sessions fetched per server.
+// Root sessions fetched per page.
 const INDEX_LIMIT = 50
 
 // The index excludes archived sessions, so a view that lists them loads the newest archived ones separately.
@@ -71,11 +76,19 @@ export function createSessionInbox(options: { archived?: boolean } = {}) {
     }),
   )
 
+  // Sessions loaded past the first page, and where the next page starts, per server.
+  const [pages, setPages] = createStore<Record<string, SessionInfo[] | undefined>>({})
+  const [paging, setPaging] = createStore<{
+    cursor: Record<string, string | undefined>
+    loading: Record<string, boolean>
+  }>({ cursor: {}, loading: {} })
+
   // The inbox stays mounted and rarely refetches the index, so drop sessions the server no longer has.
   const forget = (conn: ServerConnection.Any, sessionID: string) => {
     queryClient.setQueryData<SessionInfo[]>(["inbox-sessions", conn], (current) =>
       current?.filter((session) => session.id !== sessionID),
     )
+    setPages(ServerConnection.key(conn), (current) => current?.filter((session) => session.id !== sessionID))
     queryClient.setQueryData<SessionInfo[]>(["inbox-archived-sessions", conn], (current) =>
       current?.filter((session) => session.id !== sessionID),
     )
@@ -107,15 +120,22 @@ export function createSessionInbox(options: { archived?: boolean } = {}) {
 
   // Keep this cache separate from Home's paginated index so changing interface modes cannot reuse a partial index.
   // One page of the newest root sessions: what needs a person is recent, and paging the whole history first made the
-  // first paint wait on every session the server has.
+  // first paint wait on every session the server has. `cursor.next` is kept so scrolling can ask for the next page.
   const queries = useQueries(() => ({
     queries: connections().map((item) => ({
       queryKey: ["inbox-sessions", item.conn] as const,
       enabled: item.ctx.sdk.connection.status() === "connected",
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        item.ctx.sdk.api.session
-          .list({ limit: INDEX_LIMIT, order: "desc", parentID: null }, { signal })
-          .then((response) => parseHomeSessionIndex(response.data)),
+      queryFn: async ({ signal }: { signal: AbortSignal }) => {
+        const response = await item.ctx.sdk.api.session.list(
+          { limit: INDEX_LIMIT, order: "desc", parentID: null },
+          { signal },
+        )
+        setPaging("cursor", ServerConnection.key(item.conn), response.cursor?.next ?? undefined)
+        // A refetch starts the index over, so the pages loaded past the first one no longer apply.
+        setPages(ServerConnection.key(item.conn), () => undefined)
+
+        return parseHomeSessionIndex(response.data)
+      },
       retry: false,
       staleTime: 30_000,
       refetchOnMount: true,
@@ -181,6 +201,7 @@ export function createSessionInbox(options: { archived?: boolean } = {}) {
         const sessions = new Map(
           [
             ...(queries[index]?.data?.() ?? []),
+            ...(pages[server] ?? []),
             ...(options.archived ? (archivedQueries[index]?.data?.() ?? []) : []),
             ...data.session.list(),
           ].map((session) => [session.id, session] as const),
@@ -338,11 +359,43 @@ export function createSessionInbox(options: { archived?: boolean } = {}) {
       return info ? [info] : []
     })
 
+  // The index loads one page at a time; a list that scrolls past what is loaded asks for the next one.
+  const loadMore = (server?: ServerConnection.Key) => {
+    const targets = connections().filter((item) => !server || ServerConnection.key(item.conn) === server)
+
+    return Promise.allSettled(
+      targets.map(async (item) => {
+        const key = ServerConnection.key(item.conn)
+        const cursor = paging.cursor[key]
+
+        // A failed page keeps its cursor, so the next scroll retries it instead of skipping the rest.
+        if (!cursor || paging.loading[key]) return
+
+        setPaging("loading", key, true)
+
+        const response = await item.ctx.sdk.api.session
+          .list({ limit: INDEX_LIMIT, order: "desc", parentID: null, cursor })
+          .catch(() => undefined)
+
+        setPaging("loading", key, false)
+
+        if (!response) return
+
+        setPages(key, (current) => mergeSessions(current ?? [], parseHomeSessionIndex(response.data)))
+        setPaging("cursor", key, response.cursor?.next ?? undefined)
+      }),
+    )
+  }
+
   return {
     now: (status: InboxStatus) => (status === "working" ? clock.second : clock.minute),
     entries,
     /** The first load has not settled: lists would still move or claim nothing needs you. */
     loading: () => !settled(),
+    /** Appends the next page for every visible server, or only the one asked for. */
+    loadMore,
+    /** Whether any server still has a page after the ones already loaded. */
+    hasMore: (server: ServerConnection.Key) => !!paging.cursor[server],
     byKey,
     selected,
     open,

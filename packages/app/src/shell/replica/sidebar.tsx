@@ -487,8 +487,7 @@ function ConversationNav() {
   })
 
   // A dragged order wins for the sessions it lists. A session that arrives afterwards joins the top in creation
-  // order, so sending a message never reorders the list under the pointer. The open session keeps its place even
-  // past the cut: otherwise switching to an older conversation hides the row the user is looking at.
+  // order, so sending a message never reorders the list under the pointer.
   const recent = createMemo(() => {
     const pinnedIDs = new Set(pins.ids())
     const list = inbox.entries().filter((entry) => !pinnedIDs.has(entry.session.id))
@@ -501,21 +500,19 @@ function ConversationNav() {
           b.session.time.created - a.session.time.created ||
           (a.session.id < b.session.id ? -1 : a.session.id > b.session.id ? 1 : 0),
       )
+    // Every loaded entry is listed; the sidebar scrolls instead of hiding the tail behind a fixed count.
     const ordered = [...fresh, ...order.recent.flatMap((id) => byID.get(id) ?? [])]
-    const head = ordered.slice(0, 12)
     const route = layout.route()
     const currentID = route.type === "session" ? route.sessionId : undefined
 
-    if (currentID && !head.some((entry) => entry.session.id === currentID)) {
+    // The open session stays reachable even when it is older than the fetched index.
+    if (currentID && !ordered.some((entry) => entry.session.id === currentID)) {
       const current = byID.get(currentID)
 
-      if (current) {
-        if (head.length < 12) head.push(current)
-        else head[head.length - 1] = current
-      }
+      if (current) ordered.push(current)
     }
 
-    return head
+    return ordered
   })
 
   const currentTab = createMemo(() => {
@@ -621,7 +618,17 @@ function ConversationNav() {
         <span class="min-w-0 truncate">{language.t("replica.newChat")}</span>
       </button>
 
-      <div data-slot="replica-sidebar-scroll" class="mt-2 min-h-0 flex-1 overflow-y-auto px-2 pb-3">
+      <div
+        data-slot="replica-sidebar-scroll"
+        class="mt-2 min-h-0 flex-1 overflow-y-auto px-2 pb-3"
+        onScroll={(event) => {
+          const element = event.currentTarget
+          // Start the next page before the list runs out, so scrolling never stops at an empty edge.
+          if (element.scrollHeight - element.scrollTop - element.clientHeight > 320) return
+
+          void inbox.loadMore()
+        }}
+      >
         <DragDropProvider
           sensors={[
             PointerSensor.configure({
