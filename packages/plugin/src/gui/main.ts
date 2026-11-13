@@ -11,8 +11,10 @@ import {
   type IpcSpec,
   type Persisted,
 } from "./core.js"
+import type { Overlay, OverlayBounds } from "./overlay.js"
 
 export * from "./core.js"
+export * from "./overlay.js"
 
 export * as Plugin from "./plugin.js"
 
@@ -264,6 +266,122 @@ export interface MainContext extends BaseContext {
    * ```
    */
   provide<S extends IpcSpec>(token: Ipc<S>, impl: IpcImpl<S>): IpcProvider<S>
+  /**
+   * Reserved and not implemented: overlay windows, tray icons, global shortcuts, display information and the login
+   * item. They are optional because the desktop host does not provide them yet, so reading one gives `undefined`.
+   * The types below document the planned shape; do not rely on them until the host ships them.
+   */
+  readonly overlay?: Overlay
+  /**
+   * Tray icons the plugin owns, with their menus. They are removed when the plugin stops.
+   *
+   * @example
+   * ```ts
+   * const tray = await ctx.tray.create({ id: "pet", icon: png, menu: [{ id: "quit", label: "Quit", run: quit }] })
+   * ```
+   */
+  readonly tray?: Tray
+  /**
+   * Global keyboard shortcuts, released when the plugin stops. They stay registered while the app runs, whichever
+   * window has focus.
+   *
+   * @example
+   * ```ts
+   * ctx.shortcut.register("CommandOrControl+Shift+P", () => pet.show())
+   * ```
+   */
+  readonly shortcut?: Shortcuts
+  /**
+   * Whether the app starts at login. The setting belongs to the app, so plugins share one value.
+   *
+   * @example
+   * ```ts
+   * ctx.loginItem.set({ openAtLogin: true })
+   * ```
+   */
+  readonly loginItem?: LoginItem
+}
+
+/** A row of a tray menu. `type: "separator"` draws a divider between groups. */
+export type TrayEntry =
+  | {
+      /** Local id, unique within the tray's rows. */
+      readonly id: string
+      /** The row's label. Read it from a getter with `ctx.t` so it follows the locale. */
+      readonly label: string
+      /** Shown greyed while it returns false; read each time the menu opens. Defaults to enabled. */
+      readonly enabled?: boolean
+      /** A check mark; undefined draws no mark. */
+      readonly checked?: boolean
+      run(): void
+    }
+  | { readonly type: "separator" }
+
+/** What a tray icon is created with. */
+export interface TrayOptions {
+  /** The tray's id, unique within the plugin. */
+  readonly id: string
+  /** A PNG file path, or PNG bytes. A template image is drawn for the menu bar when the path ends in `Template`. */
+  readonly icon: string | Uint8Array
+  /** The hover text. Omit for none. */
+  readonly tooltip?: string
+  /** The rows its menu opens with. */
+  readonly menu?: readonly TrayEntry[]
+}
+
+/** One tray icon. */
+export interface TrayHandle {
+  readonly id: string
+  setMenu(entries: readonly TrayEntry[]): void
+  setIcon(icon: string | Uint8Array): void
+  setTooltip(text: string): void
+  close(): void
+  /** Runs on a left click on the icon. */
+  on(event: "click", handler: () => void): Cleanup
+}
+
+/** The tray icons a plugin created. They are removed when the plugin stops. */
+export interface Tray {
+  create(options: TrayOptions): Promise<TrayHandle>
+  get(id: string): TrayHandle | undefined
+  list(): readonly TrayHandle[]
+}
+
+/** Global shortcuts, registered while the app runs and released when the plugin stops. */
+export interface Shortcuts {
+  /**
+   * Registers an accelerator, e.g. `CommandOrControl+Shift+P`. Throws when the system or another plugin already owns
+   * it, so two plugins cannot silently steal one binding.
+   */
+  register(accelerator: string, run: () => void): Cleanup
+  unregister(accelerator: string): void
+  /** The accelerators this plugin registered. */
+  list(): readonly string[]
+}
+
+/** One display, with boxes in DIP. */
+export interface DisplayInfo {
+  /** The display's id, as Electron reports it. */
+  readonly id: string
+  readonly bounds: OverlayBounds
+  readonly workArea: OverlayBounds
+  readonly scaleFactor: number
+  readonly primary: boolean
+}
+
+/** The displays and the pointer. */
+export interface Screens {
+  displays(): readonly DisplayInfo[]
+  primary(): DisplayInfo
+  /** The pointer position, in DIP. */
+  cursor(): { readonly x: number; readonly y: number }
+  on(event: "added" | "removed" | "changed", handler: (display: DisplayInfo) => void): Cleanup
+}
+
+/** Whether the app starts at login. One setting for the app, shared by every plugin. */
+export interface LoginItem {
+  get(): { readonly openAtLogin: boolean; readonly openAsHidden: boolean }
+  set(options: { readonly openAtLogin?: boolean; readonly openAsHidden?: boolean }): void
 }
 
 /** An item of the native app menu. */
