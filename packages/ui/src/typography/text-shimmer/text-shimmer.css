@@ -111,24 +111,31 @@
   animation-name: text-shimmer-text;
 }
 
-/* The window is one spread wider than the text on each side, so its percentages carry the spread back out. */
+/* The window and the text inside it travel equal distances in opposite directions, so the text stays put while the
+   window crosses it. Their percentages resolve against different widths (the window is one spread wider on each side),
+   so each keyframe carries the difference as a literal `ch` offset instead of a `calc()` over custom properties: an
+   animated value that depends on a custom property cannot be handed to the compositor, and the shimmer then restyled
+   on every frame. The literals mirror the defaults above (`--text-shimmer-spread: 5.2ch`, so the gutter is 6.2ch);
+   keep them in step if those defaults change.
+   Window travel: 100% of its own width plus 2ch = text + 12.4ch.
+   Text travel: -(100% of the text plus 2 x 6.2ch) = -(text + 12.4ch). */
 @keyframes text-shimmer-window {
-  0% {
-    translate: calc(-50% + var(--text-shimmer-spread) - var(--text-shimmer-gutter)) 0;
+  from {
+    translate: calc(-50% - 1ch) 0;
   }
 
-  100% {
-    translate: calc(50% - var(--text-shimmer-spread) + var(--text-shimmer-gutter)) 0;
+  to {
+    translate: calc(50% + 1ch) 0;
   }
 }
 
 @keyframes text-shimmer-text {
-  0% {
-    translate: calc(50% + var(--text-shimmer-gutter)) 0;
+  from {
+    translate: calc(50% + 6.2ch) 0;
   }
 
-  100% {
-    translate: calc(-50% - var(--text-shimmer-gutter)) 0;
+  to {
+    translate: calc(-50% - 6.2ch) 0;
   }
 }
 
