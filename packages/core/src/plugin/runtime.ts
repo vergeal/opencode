@@ -4,17 +4,21 @@ import { createHash } from "node:crypto"
 import { existsSync } from "node:fs"
 import { chmod, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { inflateRawSync } from "node:zlib"
 import type { Plugin } from "@opencode/schema/plugin"
 import type { PluginManifest } from "@opencode/schema/plugin-manifest"
 import { Effect } from "effect"
 import { compareVersions } from "./local.js"
 import { PluginPaths } from "./paths.js"
 
-/** The uv release the host downloads when the machine has none. Pinned so one code revision prepares one environment. */
+/**
+ * The uv release the host downloads when the machine has none. Pinned so one code revision prepares one environment;
+ * `OPENCODE_UV_VERSION` picks another.
+ */
 const UV_VERSION = "0.13.8"
 
 /**
- * The release asset for a platform and architecture. uv publishes no build for the rest, and guessing a target would
+ * The release target for a platform and architecture. uv publishes no build for the rest, and guessing one would
  * download a binary that cannot run there, so those combinations use the system interpreter instead.
  */
 const UV_TARGETS: Readonly<Record<string, string>> = {
@@ -24,6 +28,15 @@ const UV_TARGETS: Readonly<Record<string, string>> = {
   "linux-x64": "x86_64-unknown-linux-gnu",
   "win32-x64": "x86_64-pc-windows-msvc",
 }
+
+/** Mirrors the GitHub release assets, tried first so a machine in China never needs the official host. */
+const UV_MIRROR = "https://mirrors.ustc.edu.cn"
+
+/** Stands in for the official download host, so uv fetches CPython from China too. */
+const PYTHON_MIRROR = "https://mirrors.ustc.edu.cn/github-release/astral-sh/python-build-standalone"
+
+/** The package index, which is also what the fallback `pip` installs from. */
+const PYPI_INDEX = "https://mirrors.ustc.edu.cn/pypi/simple"
 
 /**
  * Each plugin's interpreter environment lives under the same `~/.opencode` root as installed bundles, one directory
@@ -80,12 +93,7 @@ export const prepare = (input: {
    * Test seam: what this machine appears to have and where a release asset comes from, so a test can exercise every
    * branch without touching `PATH` or the network. Production callers omit it.
    */
-  readonly uv?: {
-    /** Same question as looking up a command: can this executable name or path run? */
-    readonly which?: (command: string) => Promise<boolean>
-    /** Serves a release asset by name instead of downloading it. */
-    readonly download?: (asset: string) => Promise<Uint8Array>
-  }
+  readonly uv?: UvSeam
 }): Effect.Effect<Plugin.Runtime> =>
   Effect.promise(async () => {
     const target = input.runtime.python
@@ -105,7 +113,7 @@ export const prepare = (input: {
 
     // `uv --python` takes a version request, not a comparison, so it gets the constraint's minimum.
     const created = uv
-      ? await exec(uv, ["venv", "--python", minimum(target) ?? "python3", venv])
+      ? await exec(uv, ["venv", "--python", minimum(target) ?? "python3", venv], uvEnvironment())
       : await exec(fallback!.file, ["-m", "venv", venv])
     if (!created.ok) {
       const system = fallback ?? (await python3())
@@ -126,8 +134,8 @@ export const prepare = (input: {
     const dependencies = (input.runtime.dependencies ?? []).map((item) => item.trim()).filter(Boolean)
     if (dependencies.length > 0) {
       const installed = uv
-        ? await exec(uv, ["pip", "install", "--python", python, ...dependencies])
-        : await exec(python, ["-m", "pip", "install", ...dependencies])
+        ? await exec(uv, ["pip", "install", "--python", python, ...dependencies], uvEnvironment())
+        : await exec(python, ["-m", "pip", "install", ...dependencies], { PIP_INDEX_URL: pypiIndex() })
       if (!installed.ok)
         return failure(input, `Could not install dependencies for ${input.id}: ${installed.message}`)
     }
@@ -174,6 +182,17 @@ export function python(input: { readonly home: string; readonly id: string }): s
   return existsSync(file) ? file : undefined
 }
 
+/** Test seam: what the machine appears to have, and where a release asset comes from. Production callers omit it. */
+type UvSeam = {
+  /** Same question as looking up a command: can this executable name or path run? */
+  readonly which?: (command: string) => Promise<boolean>
+  /** Serves a URL instead of downloading it. */
+  readonly download?: (url: string) => Promise<Uint8Array>
+  /** The machine to fetch a release for, so a test can exercise another platform's asset. */
+  readonly platform?: NodeJS.Platform
+  readonly arch?: string
+}
+
 /**
  * The `uv` to prepare with. A copy the user already has always wins: an explicit path, then `PATH`, then a release the
  * host downloads once. The last step is what lets a machine with neither `uv` nor a matching `python3` still prepare a
@@ -181,10 +200,7 @@ export function python(input: { readonly home: string; readonly id: string }): s
  */
 async function findUv(input: {
   readonly home: string
-  readonly uv?: {
-    readonly which?: (command: string) => Promise<boolean>
-    readonly download?: (asset: string) => Promise<Uint8Array>
-  }
+  readonly uv?: UvSeam
 }): Promise<{ readonly command: string } | { readonly error: string }> {
   const which = input.uv?.which ?? available
   const explicit = process.env.OPENCODE_UV_PATH?.trim()
@@ -195,57 +211,161 @@ async function findUv(input: {
 
 async function download(input: {
   readonly home: string
-  readonly uv?: {
-    readonly which?: (command: string) => Promise<boolean>
-    readonly download?: (asset: string) => Promise<Uint8Array>
-  }
+  readonly uv?: UvSeam
 }): Promise<{ readonly command: string } | { readonly error: string }> {
-  const asset = uvAsset()
-  if (!asset) return { error: `uv publishes no release for ${process.platform}/${process.arch}` }
+  const platform = input.uv?.platform ?? process.platform
+  const arch = input.uv?.arch ?? process.arch
+  const asset = uvAsset(platform, arch)
+  if (!asset) return { error: `uv publishes no release for ${platform}/${arch}` }
   const directory = path.join(input.home, ".opencode", "bin")
   const target = path.join(directory, asset.executable)
   // A finished binary is the only answer needed, so two plugins preparing at once download once.
   if (await available(target)) return { command: target }
 
+  const version = process.env.OPENCODE_UV_VERSION?.trim() || UV_VERSION
+  const get = input.uv?.download ?? release
+  const staging = path.join(directory, `.uv-${crypto.randomUUID()}`)
+  const failures: string[] = []
+
   // Executing what the host downloads carries the same trust as installing a plugin's declared dependencies: that is
   // what installing a plugin with a `runtime` means. The archive is unpacked and the binary is checked by running it,
   // so a truncated or wrong-architecture download answers a failure instead of leaving a path that cannot spawn.
-  const staging = path.join(directory, `.uv-${crypto.randomUUID()}`)
   try {
-    const bytes = input.uv?.download
-      ? await input.uv.download(asset.name)
-      : await release(process.env.OPENCODE_UV_VERSION?.trim() || UV_VERSION, asset.name)
-    if (bytes.byteLength === 0) return { error: `${asset.name} was empty` }
-    await mkdir(staging, { recursive: true })
-    await new Bun.Archive(bytes).extract(staging)
-    // The archive keeps its own top-level directory, like `uv-x86_64-apple-darwin/uv`.
-    const nested = path.join(staging, asset.name.replace(/\.(tar\.gz|zip)$/, ""), asset.executable)
-    const file = (await Bun.file(nested).exists()) ? nested : path.join(staging, asset.executable)
-    if (!(await Bun.file(file).exists())) return { error: `${asset.name} had no ${asset.executable}` }
-    await mkdir(directory, { recursive: true })
-    if (process.platform !== "win32") await chmod(file, 0o755)
-    // A rename is atomic, so a concurrent prepare that finishes first leaves the same binary behind.
-    await rename(file, target).catch(() => undefined)
-    if (!(await available(target))) return { error: `${target} did not run` }
-    return { command: target }
-  } catch (cause) {
-    return { error: cause instanceof Error ? cause.message : String(cause) }
+    for (const url of uvUrls(version, asset.name)) {
+      try {
+        const bytes = await get(url)
+        if (bytes.byteLength === 0) throw new Error("the download was empty")
+        // A mirror that publishes a checksum must match it; one that does not is trusted by transport alone.
+        const expected = await checksum(url, get)
+        if (expected && createHash("sha256").update(bytes).digest("hex") !== expected)
+          throw new Error(`sha256 mismatch, expected ${expected}`)
+        await mkdir(staging, { recursive: true })
+        // `Bun.Archive` reads tar only, so a Windows zip goes through the central directory instead.
+        if (asset.name.endsWith(".zip")) {
+          const data = unzipEntry(bytes, `scripts/${asset.executable}`) ?? unzipEntry(bytes, asset.executable)
+          if (!data) throw new Error(`the archive has no ${asset.executable}`)
+          await writeFile(path.join(staging, asset.executable), data)
+        } else await new Bun.Archive(bytes).extract(staging)
+        // The archive keeps its own top-level directory, like `uv-x86_64-apple-darwin/uv`.
+        const nested = path.join(staging, `uv-${asset.target}`, asset.executable)
+        const file = (await Bun.file(nested).exists()) ? nested : path.join(staging, asset.executable)
+        if (!(await Bun.file(file).exists())) throw new Error(`the archive has no ${asset.executable}`)
+        await mkdir(directory, { recursive: true })
+        // Runnable on the machine that asked for it, whichever platform this process happens to run on.
+        await chmod(file, 0o755)
+        // A rename is atomic, so a concurrent prepare that finishes first leaves the same binary behind.
+        await rename(file, target).catch(() => undefined)
+        if (!(await available(target))) throw new Error(`${target} did not run`)
+        return { command: target }
+      } catch (cause) {
+        failures.push(`${new URL(url).host}: ${cause instanceof Error ? cause.message : String(cause)}`)
+      }
+    }
+
+    return { error: `no mirror or official release delivered uv (${failures.join("; ")})` }
   } finally {
     await rm(staging, { recursive: true, force: true })
   }
 }
 
-/** The release asset that matches this machine, or undefined when uv publishes none it can run. */
-function uvAsset() {
-  const target = UV_TARGETS[`${process.platform}-${process.arch}`]
-  if (!target) return undefined
-  const windows = process.platform === "win32"
-  return { name: `uv-${target}.${windows ? "zip" : "tar.gz"}`, executable: windows ? "uv.exe" : "uv" }
+/** Where a release asset comes from, in order: the mirror, a proxy, then GitHub itself. */
+function uvUrls(version: string, asset: string) {
+  const mirror = uvMirror()
+  return [
+    ...(mirror ? [`${mirror}/github-release/astral-sh/uv/${version}/${asset}`] : []),
+    `https://gh-proxy.com/https://github.com/astral-sh/uv/releases/download/${version}/${asset}`,
+    `https://github.com/astral-sh/uv/releases/download/${version}/${asset}`,
+  ]
 }
 
-async function release(version: string, asset: string) {
-  const response = await fetch(`https://github.com/astral-sh/uv/releases/download/${version}/${asset}`)
-  if (!response.ok) throw new Error(`downloading ${asset} answered ${response.status} ${response.statusText}`)
+/** The mirror to download from. An empty override asks for the proxy and the official host only. */
+function uvMirror() {
+  const override = process.env.OPENCODE_UV_MIRROR
+  if (override === undefined) return UV_MIRROR
+  return override.trim() || undefined
+}
+
+/** The checksum the source advertises for an asset, or undefined when it advertises none. */
+async function checksum(url: string, get: (url: string) => Promise<Uint8Array>) {
+  try {
+    const text = new TextDecoder().decode(await get(`${url}.sha256`)).trim()
+    return /^[0-9a-f]{64}/i.exec(text)?.[0].toLowerCase()
+  } catch {
+    return undefined
+  }
+}
+
+/** The release asset for a machine, or undefined when uv publishes none it can run. */
+function uvAsset(platform: NodeJS.Platform, arch: string) {
+  const target = UV_TARGETS[`${platform}-${arch}`]
+  if (!target) return undefined
+  const windows = platform === "win32"
+  return { target, name: `uv-${target}.${windows ? "zip" : "tar.gz"}`, executable: windows ? "uv.exe" : "uv" }
+}
+
+/**
+ * Reads one entry out of a zip. A Windows uv release is a zip and `Bun.Archive` reads only tar, so the central
+ * directory is walked by hand. The entry stores a deflated byte range rather than a path `Bun.Archive` could open.
+ */
+function unzipEntry(bytes: Uint8Array, endsWith: string): Uint8Array | undefined {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const decoder = new TextDecoder()
+  let end = -1
+  for (let offset = bytes.byteLength - 22; offset >= Math.max(0, bytes.byteLength - 65557); offset--) {
+    if (view.getUint32(offset, true) === 0x06054b50) {
+      end = offset
+      break
+    }
+  }
+  if (end < 0) return undefined
+  const count = view.getUint16(end + 10, true)
+  let entry = view.getUint32(end + 16, true)
+  for (let index = 0; index < count; index++) {
+    if (view.getUint32(entry, true) !== 0x02014b50) return undefined
+    const method = view.getUint16(entry + 10, true)
+    const compressed = view.getUint32(entry + 20, true)
+    const nameLength = view.getUint16(entry + 28, true)
+    const extraLength = view.getUint16(entry + 30, true)
+    const commentLength = view.getUint16(entry + 32, true)
+    const local = view.getUint32(entry + 42, true)
+    const name = decoder.decode(bytes.subarray(entry + 46, entry + 46 + nameLength))
+    entry += 46 + nameLength + extraLength + commentLength
+    if (!name.endsWith(endsWith)) continue
+    const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true)
+    const raw = bytes.subarray(start, start + compressed)
+    if (method === 0) return raw
+    if (method === 8) return new Uint8Array(inflateRawSync(raw))
+    return undefined
+  }
+  return undefined
+}
+
+/** The package index handed to uv and `pip`. An empty override asks for the official services instead. */
+function pypiIndex() {
+  const override = process.env.OPENCODE_PYPI_INDEX
+  if (override === undefined) return PYPI_INDEX
+  return override.trim() || undefined
+}
+
+function pythonMirror() {
+  const override = process.env.OPENCODE_PYTHON_INSTALL_MIRROR
+  if (override === undefined) return PYTHON_MIRROR
+  return override.trim() || undefined
+}
+
+/** What uv needs to fetch CPython and packages from China. An old uv on `PATH` reads the older index name. */
+function uvEnvironment() {
+  const index = pypiIndex()
+  return {
+    UV_PYTHON_INSTALL_MIRROR: pythonMirror(),
+    UV_DEFAULT_INDEX: index,
+    UV_INDEX_URL: index,
+  }
+}
+
+async function release(url: string) {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`downloading ${new URL(url).pathname} answered ${response.status} ${response.statusText}`)
   return new Uint8Array(await response.arrayBuffer())
 }
 
@@ -294,9 +414,21 @@ type Executed = { ok: boolean; stdout: string; stderr: string; message: string }
  * Runs one command and captures both streams. A missing executable is a normal answer here: the caller is choosing
  * between an optional tool and a fallback, so it must not fail the whole preparation.
  */
-async function exec(command: string, args: string[]): Promise<Executed> {
+async function exec(
+  command: string,
+  args: string[],
+  environment?: Readonly<Record<string, string | undefined>>,
+): Promise<Executed> {
   try {
-    const proc = Bun.spawn([command, ...args], { stdout: "pipe", stderr: "pipe" })
+    // A spawned process gets either the inherited environment or exactly what is passed, never a merge, so the added
+    // values are layered on top; an undefined one means "use the default of the tool", as an empty override does.
+    const env = environment && {
+      ...process.env,
+      ...Object.fromEntries(
+        Object.entries(environment).filter((entry): entry is [string, string] => entry[1] !== undefined),
+      ),
+    }
+    const proc = Bun.spawn([command, ...args], { stdout: "pipe", stderr: "pipe", ...(env ? { env } : {}) })
     const [stdout, stderr, code] = await Promise.all([
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),

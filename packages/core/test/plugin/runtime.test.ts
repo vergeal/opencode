@@ -3,6 +3,7 @@ import { existsSync } from "node:fs"
 import { chmod, mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import path from "node:path"
+import { deflateRawSync } from "node:zlib"
 import { Effect } from "effect"
 import { PluginRuntime } from "@opencode/core/plugin/runtime"
 
@@ -50,11 +51,15 @@ async function wheel(directory: string) {
   return file
 }
 
-/** A shell stand-in for uv: it answers `--version`, and every other invocation fails with a marker a test can find. */
+/** A shell stand-in for uv: it answers `--version`, reports its environment, and fails with a marker otherwise. */
 function stubUv() {
-  return ['#!/bin/sh', 'if [ "$1" = "--version" ]; then echo "uv 0.0.0"; exit 0; fi', 'echo "stub uv: $*" >&2', "exit 1", ""].join(
-    "\n",
-  )
+  return [
+    '#!/bin/sh',
+    'if [ "$1" = "--version" ]; then echo "uv 0.0.0"; exit 0; fi',
+    'echo "stub uv: $* | $UV_PYTHON_INSTALL_MIRROR | $UV_DEFAULT_INDEX | $UV_INDEX_URL" >&2',
+    "exit 1",
+    "",
+  ].join("\n")
 }
 
 /** Writes the stub where a test needs it and makes it runnable. */
@@ -64,20 +69,66 @@ async function stubAt(file: string) {
   return file
 }
 
+const UV_TEST_VERSION = "0.13.8"
+
 /**
  * A release archive shaped like uv's own: one top-level directory holding the executable. The stub inside stands in for
  * the binary, so the download path is exercised without fetching anything.
  */
 async function releaseArchive(directory: string, name: string) {
   const top = name.replace(/\.(tar\.gz|zip)$/, "")
-  const staging = path.join(directory, "release", top)
-  await mkdir(staging, { recursive: true })
-  const executable = process.platform === "win32" ? "uv.exe" : "uv"
-  await stubAt(path.join(staging, executable))
+  const staging = path.join(directory, "release")
+  await mkdir(path.join(staging, top), { recursive: true })
+  await stubAt(path.join(staging, top, name.endsWith(".zip") ? "uv.exe" : "uv"))
   const file = path.join(directory, name)
-  const archived = Bun.spawnSync(["tar", "-czf", file, "-C", path.join(directory, "release"), top])
+  const archived = name.endsWith(".zip")
+    ? Bun.spawnSync(["zip", "-q", "-r", "-X", file, top], { cwd: staging })
+    : Bun.spawnSync(["tar", "-czf", file, "-C", staging, top])
   if (archived.exitCode !== 0) throw new Error(archived.stderr.toString())
   return new Uint8Array(await Bun.file(file).arrayBuffer())
+}
+
+/** A one-entry zip, enough to exercise the central directory path a Windows release goes through. */
+function zipWith(name: string, content: Uint8Array) {
+  const nameBytes = new TextEncoder().encode(name)
+  const deflated = new Uint8Array(deflateRawSync(content))
+  const local = new Uint8Array(30 + nameBytes.length)
+  const localView = new DataView(local.buffer)
+  localView.setUint32(0, 0x04034b50, true)
+  localView.setUint16(4, 20, true)
+  localView.setUint16(8, 8, true)
+  localView.setUint32(14, 0, true)
+  localView.setUint32(18, deflated.length, true)
+  localView.setUint32(22, content.length, true)
+  localView.setUint16(26, nameBytes.length, true)
+  local.set(nameBytes, 30)
+
+  const central = new Uint8Array(46 + nameBytes.length)
+  const centralView = new DataView(central.buffer)
+  centralView.setUint32(0, 0x02014b50, true)
+  centralView.setUint16(4, 20, true)
+  centralView.setUint16(6, 20, true)
+  centralView.setUint16(10, 8, true)
+  centralView.setUint32(20, deflated.length, true)
+  centralView.setUint32(24, content.length, true)
+  centralView.setUint16(28, nameBytes.length, true)
+  centralView.setUint32(42, 0, true)
+  central.set(nameBytes, 46)
+
+  const end = new Uint8Array(22)
+  const endView = new DataView(end.buffer)
+  endView.setUint32(0, 0x06054b50, true)
+  endView.setUint16(8, 1, true)
+  endView.setUint16(10, 1, true)
+  endView.setUint32(12, central.length, true)
+  endView.setUint32(16, local.length + deflated.length, true)
+
+  const total = new Uint8Array(local.length + deflated.length + central.length + end.length)
+  total.set(local, 0)
+  total.set(deflated, local.length)
+  total.set(central, local.length + deflated.length)
+  total.set(end, local.length + deflated.length + central.length)
+  return total
 }
 
 describe("PluginRuntime.requirementHash", () => {
@@ -221,29 +272,36 @@ describe("PluginRuntime.prepare uv resolution", () => {
     if (runtime.status === "failed") expect(runtime.error).not.toContain("uv could not be used")
   }, 120_000)
 
-  it("downloads uv into ~/.opencode/bin when the machine has neither", async () => {
+  it("downloads uv from the mirror when the machine has neither", async () => {
     await using root = await home()
     await using build = await home()
-    const assets: string[] = []
+    const requests: string[] = []
+    let archive: Uint8Array | undefined
     const runtime = await prepare({
       home: root.path,
       id: "acme.data",
       runtime: { python: ">=3.9" },
       uv: {
         which: async () => false,
-        download: async (asset) => {
-          assets.push(asset)
-          return releaseArchive(build.path, asset)
+        download: async (url) => {
+          requests.push(url)
+          if (url.endsWith(".sha256")) throw new Error("this source has no checksum")
+          archive ??= await releaseArchive(build.path, url.split("/").pop()!)
+          return archive
         },
       },
     })
 
-    expect(assets).toHaveLength(1)
-    expect(assets[0]).toMatch(/^uv-(aarch64|x86_64)-/)
-    expect(assets[0]).toMatch(process.platform === "win32" ? /\.zip$/ : /\.tar\.gz$/)
+    expect(requests[0]).toMatch(
+      new RegExp(
+        `^https://mirrors\\.ustc\\.edu\\.cn/github-release/astral-sh/uv/${UV_TEST_VERSION}/uv-[a-z0-9_-]+\\.${process.platform === "win32" ? "zip" : "tar\\.gz"}$`,
+      ),
+    )
+    // The asset and its checksum, and no request to the proxy or GitHub.
+    expect(requests).toHaveLength(2)
     const target = path.join(root.path, ".opencode", "bin", process.platform === "win32" ? "uv.exe" : "uv")
     expect(existsSync(target)).toBe(true)
-    // The downloaded stub answers `--version` but cannot create a venv, so this proves it was executed.
+    // The stub answers `--version` but cannot create a venv, so this proves the extracted binary was executed.
     expect(runtime.status).toBe("failed")
     expect(runtime.status === "failed" && runtime.error).toContain("stub uv: venv")
   }, 120_000)
@@ -271,23 +329,29 @@ describe("PluginRuntime.prepare uv resolution", () => {
     expect(runtime.status === "failed" && runtime.error).toContain("stub uv: venv")
   }, 120_000)
 
-  it("falls back to the system python3 when the download fails", async () => {
+  it("falls back to the system python3 when the mirror, the proxy and GitHub all fail", async () => {
     await using root = await home()
+    const requests: string[] = []
     const runtime = await prepare({
       home: root.path,
       id: "acme.data",
       runtime: { python: ">=3.9" },
       uv: {
         which: async () => false,
-        download: async () => {
+        download: async (url) => {
+          requests.push(url)
           throw new Error("offline")
         },
       },
     })
     expect(runtime).toEqual({ status: "ready" })
+    expect(requests).toHaveLength(3)
+    expect(requests[0]).toStartWith("https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/")
+    expect(requests[1]).toStartWith("https://gh-proxy.com/https://github.com/astral-sh/uv/releases/download/")
+    expect(requests[2]).toStartWith("https://github.com/astral-sh/uv/releases/download/")
   }, 120_000)
 
-  it("names both failures when neither uv nor a matching python3 is available", async () => {
+  it("names every failed source and the system python when nothing works", async () => {
     await using root = await home()
     const runtime = await prepare({
       home: root.path,
@@ -295,14 +359,205 @@ describe("PluginRuntime.prepare uv resolution", () => {
       runtime: { python: ">=99.0" },
       uv: {
         which: async () => false,
-        download: async () => {
-          throw new Error("offline")
+        download: async (url) => {
+          throw new Error(`offline ${new URL(url).host}`)
         },
       },
     })
     expect(runtime.status).toBe("failed")
-    expect(runtime.status === "failed" && runtime.error).toContain(">=99.0")
-    expect(runtime.status === "failed" && runtime.error).toContain("this machine has")
-    expect(runtime.status === "failed" && runtime.error).toContain("offline")
+    const error = runtime.status === "failed" ? runtime.error : ""
+    expect(error).toContain(">=99.0")
+    expect(error).toContain("this machine has")
+    expect(error).toContain("no mirror or official release delivered uv")
+    expect(error).toContain("mirrors.ustc.edu.cn")
+    expect(error).toContain("gh-proxy.com")
+    expect(error).toContain("github.com")
+  }, 120_000)
+
+  it("downloads from OPENCODE_UV_MIRROR when it is set", async () => {
+    await using root = await home()
+    const requests: string[] = []
+    const previous = process.env.OPENCODE_UV_MIRROR
+    process.env.OPENCODE_UV_MIRROR = "https://mirror.example"
+    try {
+      await prepare({
+        home: root.path,
+        id: "acme.data",
+        runtime: { python: ">=99.0" },
+        uv: {
+          which: async () => false,
+          download: async (url) => {
+            requests.push(url)
+            throw new Error("offline")
+          },
+        },
+      })
+      expect(requests[0]).toStartWith(
+        `https://mirror.example/github-release/astral-sh/uv/${UV_TEST_VERSION}/uv-`,
+      )
+    } finally {
+      if (previous === undefined) delete process.env.OPENCODE_UV_MIRROR
+      else process.env.OPENCODE_UV_MIRROR = previous
+    }
+  }, 120_000)
+
+  it("treats a mismatched checksum as a failed source", async () => {
+    await using root = await home()
+    await using build = await home()
+    const requests: string[] = []
+    let archive: Uint8Array | undefined
+    const runtime = await prepare({
+      home: root.path,
+      id: "acme.data",
+      runtime: { python: ">=3.9" },
+      uv: {
+        which: async () => false,
+        download: async (url) => {
+          requests.push(url)
+          if (url.endsWith(".sha256")) {
+            // The mirror publishes a checksum that cannot match, so the proxy has to serve the asset instead.
+            if (url.startsWith("https://mirrors.ustc.edu.cn")) return new TextEncoder().encode(`${"0".repeat(64)}  x\n`)
+            throw new Error("this source has no checksum")
+          }
+          archive ??= await releaseArchive(build.path, url.split("/").pop()!)
+          return archive
+        },
+      },
+    })
+
+    expect(requests[0]).toStartWith("https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/")
+    expect(requests).toContain(
+      `https://gh-proxy.com/https://github.com/astral-sh/uv/releases/download/${UV_TEST_VERSION}/${requests[0].split("/").pop()}`,
+    )
+    expect(runtime.status).toBe("failed")
+    expect(runtime.status === "failed" && runtime.error).toContain("stub uv: venv")
+  }, 120_000)
+
+  it("hands the mirrors to uv", async () => {
+    await using root = await home()
+    const explicit = await stubAt(path.join(root.path, "uv"))
+    const previous = process.env.OPENCODE_UV_PATH
+    process.env.OPENCODE_UV_PATH = explicit
+    try {
+      // The stub prints its environment, which is the only place the child process can prove what it received.
+      const runtime = await prepare({
+        home: root.path,
+        id: "acme.data",
+        runtime: { python: ">=3.9" },
+        uv: { which: async (command) => command === explicit },
+      })
+      const error = runtime.status === "failed" ? (runtime.error ?? "") : ""
+      expect(error).toContain("https://mirrors.ustc.edu.cn/github-release/astral-sh/python-build-standalone")
+      // Both index names, because an older uv on PATH reads the one 0.13 renamed.
+      expect(error.split("https://mirrors.ustc.edu.cn/pypi/simple")).toHaveLength(3)
+    } finally {
+      if (previous === undefined) delete process.env.OPENCODE_UV_PATH
+      else process.env.OPENCODE_UV_PATH = previous
+    }
+  }, 120_000)
+
+  it("hands the index to the fallback pip", async () => {
+    await using root = await home()
+    const previous = process.env.OPENCODE_PYPI_INDEX
+    // A `file:` index keeps pip off the network while still printing the index it was told to use.
+    process.env.OPENCODE_PYPI_INDEX = "file:///nonexistent-opencode-index"
+    try {
+      const runtime = await prepare({
+        home: root.path,
+        id: "acme.data",
+        runtime: { python: ">=3.9", dependencies: ["demo"] },
+        uv: {
+          which: async () => false,
+          download: async () => {
+            throw new Error("offline")
+          },
+        },
+      })
+      expect(runtime.status).toBe("failed")
+      expect(runtime.status === "failed" && runtime.error).toContain("file:///nonexistent-opencode-index")
+    } finally {
+      if (previous === undefined) delete process.env.OPENCODE_PYPI_INDEX
+      else process.env.OPENCODE_PYPI_INDEX = previous
+    }
+  }, 180_000)
+
+  it("unpacks a Windows zip release without Bun.Archive", async () => {
+    await using root = await home()
+    const content = new TextEncoder().encode(stubUv())
+    const runtime = await prepare({
+      home: root.path,
+      id: "acme.data",
+      runtime: { python: ">=3.9" },
+      uv: {
+        which: async () => false,
+        platform: "win32",
+        arch: "x64",
+        download: async (url) => {
+          if (url.endsWith(".sha256")) throw new Error("this source has no checksum")
+          return zipWith("uv-x86_64-pc-windows-msvc/uv.exe", content)
+        },
+      },
+    })
+    const target = path.join(root.path, ".opencode", "bin", "uv.exe")
+    expect(existsSync(target)).toBe(true)
+    // Byte for byte, because the entry stores a deflated range rather than a path.
+    expect(new Uint8Array(await Bun.file(target).arrayBuffer())).toEqual(content)
+    expect(runtime.status).toBe("failed")
+    expect(runtime.status === "failed" && runtime.error).toContain("stub uv: venv")
+  }, 120_000)
+
+  it("treats a truncated zip as a failed source instead of throwing", async () => {
+    await using root = await home()
+    const content = new TextEncoder().encode(stubUv())
+    const full = zipWith("uv-x86_64-pc-windows-msvc/uv.exe", content)
+    const requests: string[] = []
+    const runtime = await prepare({
+      home: root.path,
+      id: "acme.data",
+      runtime: { python: ">=3.9" },
+      uv: {
+        which: async () => false,
+        platform: "win32",
+        arch: "x64",
+        download: async (url) => {
+          requests.push(url)
+          if (url.endsWith(".sha256")) throw new Error("this source has no checksum")
+          return full.subarray(0, full.length - 10)
+        },
+      },
+    })
+    // The central directory is gone, so each source fails and the system interpreter takes over. Each source answers
+    // its asset request, then its checksum request, which the stub refuses.
+    expect(runtime).toEqual({ status: "ready" })
+    expect(requests).toHaveLength(6)
+  }, 120_000)
+
+  it("maps each platform to the release uv publishes for it", async () => {
+    const cases = [
+      ["darwin", "arm64", "uv-aarch64-apple-darwin.tar.gz"],
+      ["darwin", "x64", "uv-x86_64-apple-darwin.tar.gz"],
+      ["linux", "arm64", "uv-aarch64-unknown-linux-gnu.tar.gz"],
+      ["linux", "x64", "uv-x86_64-unknown-linux-gnu.tar.gz"],
+      ["win32", "x64", "uv-x86_64-pc-windows-msvc.zip"],
+    ] as const
+    for (const [platform, arch, name] of cases) {
+      await using root = await home()
+      const requests: string[] = []
+      await prepare({
+        home: root.path,
+        id: "acme.data",
+        runtime: { python: ">=99.0" },
+        uv: {
+          which: async () => false,
+          platform,
+          arch,
+          download: async (url) => {
+            requests.push(url)
+            throw new Error("offline")
+          },
+        },
+      })
+      expect(requests[0]).toBe(`https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${UV_TEST_VERSION}/${name}`)
+    }
   }, 120_000)
 })
