@@ -32,12 +32,14 @@ export function render(input: Input): string {
     "## 允许修改的路径",
     ...input.allowPaths.map((path) => `- ${path}`),
     "",
-    "## 验收命令（你必须自己跑，全绿才算完成）",
     ...(input.verify.length > 0
-      ? input.verify.map((command) => `- \`${command}\``)
-      : ["（本任务没有验收命令，插件只核对改动路径）"]),
-    "",
-    "如果验收命令失败，先修到全绿。确实修不动，就不要写一个自称通过的结果文件——按下面第 2 或第 3 种情况投递，说明卡在哪条命令、输出是什么。",
+      ? [
+          "## 验收命令（你必须自己跑，全绿才算完成）",
+          ...input.verify.map((command) => `- \`${command}\``),
+          "",
+          "如果验收命令失败，先修到全绿。确实修不动，就不要写一个自称通过的结果文件——按下面第 2 或第 3 种情况投递，说明卡在哪条命令、输出是什么。",
+        ]
+      : ["## 验收命令", "（本任务没有验收命令，插件只核对改动路径）"]),
     "",
     "## 完成时",
     "",
@@ -57,7 +59,7 @@ export function render(input: Input): string {
     `     "branch": "${input.branch}",`,
     '     "commit": "<git rev-parse HEAD 输出的 40 位小写 sha>",',
     '     "changed": ["plugins/x/a.ts", "plugins/x/b.ts"],',
-    '     "verify": "<每条验收命令的实际结果，如 613 pass / 16 fail 与基线一致>"',
+    '     "verify": "<每条验收命令的实际结果，如 612 pass / 0 fail>"',
     "   }",
     "   ```",
     "",

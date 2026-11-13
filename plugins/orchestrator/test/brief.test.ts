@@ -59,8 +59,18 @@ describe("任务书", () => {
 
   test("没有验收命令时明确说只核对范围", () => {
     const text = Brief.render({ ...input, verify: [] })
+    expect(text).toContain("## 验收命令")
     expect(text).toContain("本任务没有验收命令")
+    expect(text).not.toContain("全绿才算完成")
+    expect(text).not.toContain("如果验收命令失败")
     expect(text).not.toContain("- `bun test`")
+  })
+
+  test("有验收命令时才给失败处置与全绿示例", () => {
+    const text = Brief.render(input)
+    expect(text).toContain("## 验收命令（你必须自己跑，全绿才算完成）")
+    expect(text).toContain("如果验收命令失败，先修到全绿")
+    expect(text).toContain('"verify": "<每条验收命令的实际结果，如 612 pass / 0 fail>"')
   })
 
   test("三种回报情况都列出，且不允许写进度汇报", () => {
