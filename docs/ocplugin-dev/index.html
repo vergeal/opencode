@@ -599,11 +599,21 @@ expected: "server/main"                             # 应该改成的路径</cod
         <li>至少经过一个 minor 的 deprecation 周期，并在 <code>CHANGELOG.md</code> 记录。</li>
         <li>真实加载路径上不再出现回退警告。</li>
       </ol>
-      <p>
-        移除回退本身是一次独立的行为变更，必须在同一次改动里完成：删回退代码与旧路径列表、
-        删「旧入口仍可加载并警告」的回归测试、新增「旧入口被拒绝」的测试、
-        删掉 <code>module.ts</code> 里那处 <code>plugin uses a legacy entry</code> 警告。
-      </p>
+      <p>移除回退本身是一次独立的行为变更，必须在同一次改动里完成：</p>
+      <ul>
+        <li>删回退代码与 <code>LegacyEntrypoints</code> 列表。</li>
+        <li>删「旧入口仍可加载并警告」的回归测试，新增「旧入口被拒绝」的测试。</li>
+        <li>删掉 <code>module.ts</code> 里那处 <code>plugin uses a legacy entry</code> 警告。</li>
+        <li>
+          <b>删本文档 2.0 的「旧路径的回退」整节</b>：回退顺序表、npm self-reference 回退段、
+          「旧布局已废弃」的 note，以及第 6 章错误表里 <code>tried</code> 列出的旧候选。
+          <b>条件 2 就是这一步的验收</b>——只改代码、不改文档，条件 2 永远不满足。
+        </li>
+        <li>
+          第 6 章的 <code>A plugin's ./gui-experimental bundle must default-export a Plugin.define</code>
+          是宿主真实抛出的文案，<b>撤回退前保留</b>；撤回退时它随代码一起同步更新。
+        </li>
+      </ul>
 
       <h4 id="s2-0-built">构建型插件：源码与产物同名</h4>
       <p>
