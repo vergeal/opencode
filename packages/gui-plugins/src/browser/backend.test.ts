@@ -4,9 +4,16 @@ import type { Cdp } from "./cdp"
 import type { ProbeResult } from "./discovery"
 
 const version = { browser: "Chrome/131.0.6778.86", webSocketDebuggerUrl: "ws://127.0.0.1:9222/devtools/browser/abc" }
-const input = { endpoint: "http://127.0.0.1:9222/json/version", port: 9222, userDataDir: "/tmp/chrome-profile" }
 
-function cdp(send: () => Promise<unknown> = async () => ({ product: "Chrome" })): Cdp {
+const input = {
+  endpoint: "http://127.0.0.1:9222/json/version",
+  port: 9222,
+  userDataDir: "/tmp/chrome-profile",
+  prefer: "external" as const,
+}
+
+function cdp(send: () => Promise<object> = async () => ({ product: "Chrome" })): Cdp {
+  // SAFETY: the stub answers every CDP method with one fixed payload; tests never read a method-specific type from it.
   return { send: send as Cdp["send"], on: () => () => {}, dispose: () => {} }
 }
 
@@ -35,11 +42,36 @@ function deps(overrides: BackendDependencies = {}): BackendDependencies {
   }
 }
 
+test("the pane's embedded view is the default, neither probing nor launching a Chrome", async () => {
+  const calls: string[] = []
+
+  const backend = await resolveBackend(
+    { ...input, prefer: undefined },
+    deps({
+      probe: async () => {
+        calls.push("probe")
+
+        return { status: "ready", version }
+      },
+      launch: async () => void calls.push("launch"),
+    }),
+  )
+
+  expect(backend).toEqual({
+    mode: "embedded",
+    reason: "preferred",
+    detail: "The pane drives its own embedded view, so no local Chrome is launched or connected.",
+  })
+  expect(calls).toEqual([])
+})
+
 test("a Chrome already on the port is used", async () => {
   const backend = await resolveBackend(input, deps())
 
   expect(backend.mode).toBe("external")
+
   if (backend.mode !== "external") return
+
   expect(backend.version).toEqual(version)
   expect(backend.endpoint).toBe(input.endpoint)
 })
@@ -47,11 +79,13 @@ test("a Chrome already on the port is used", async () => {
 test("a refused port launches the configured Chrome and waits for it", async () => {
   const launched: { path: string; args: readonly string[] }[] = []
   let probes = 0
+
   const backend = await resolveBackend(
     input,
     deps({
       probe: async () => {
         probes++
+
         return probes === 1 ? { status: "refused", detail: "connect failed" } : { status: "ready", version }
       },
       launch: async (path, args) => {
@@ -71,6 +105,7 @@ test("a refused port launches the configured Chrome and waits for it", async () 
 
 test("no Chrome installation falls back to the embedded browser without launching", async () => {
   const launched: string[] = []
+
   const backend = await resolveBackend(
     input,
     deps({
@@ -92,6 +127,7 @@ test("no Chrome installation falls back to the embedded browser without launchin
 
 test("a probe timeout keeps the embedded browser instead of launching a second Chrome", async () => {
   let launched = false
+
   const backend = await resolveBackend(
     input,
     deps({
@@ -131,11 +167,13 @@ test("a launch that fails falls back", async () => {
 
 test("a launched Chrome that never answers falls back", async () => {
   let probes = 0
+
   const backend = await resolveBackend(
     input,
     deps({
       probe: async (): Promise<ProbeResult> => {
         probes++
+
         return probes === 1
           ? { status: "refused", detail: "connect failed" }
           : { status: "refused", detail: "still down" }
@@ -144,12 +182,15 @@ test("a launched Chrome that never answers falls back", async () => {
   )
 
   expect(backend.mode).toBe("embedded")
+
   if (backend.mode !== "embedded") return
+
   expect(backend.reason).toBe("launch-failed")
 })
 
 test("a socket that cannot complete the handshake falls back and is disposed", async () => {
   let disposed = false
+
   const backend = await resolveBackend(
     input,
     deps({

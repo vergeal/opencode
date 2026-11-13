@@ -6,17 +6,26 @@ import { createWebSocketCdp } from "./cdp"
 import { chromeCandidates, launchArgs, probeEndpoint, type ProbeResult, type Version } from "./discovery"
 
 /** Why a browser pane kept its embedded page instead of using a local Chrome. */
-export type EmbeddedReason = "probe-timeout" | "probe-invalid" | "chrome-missing" | "launch-failed" | "connect-failed"
+export type EmbeddedReason =
+  | "preferred"
+  | "probe-timeout"
+  | "probe-invalid"
+  | "chrome-missing"
+  | "launch-failed"
+  | "connect-failed"
 
 /**
  * Which browser a pane drives.
  *
  * - `external`: a local Chrome answered on the debugging port, so page tools run against it.
- * - `embedded`: the fallback the app already had, an Electron `WebContentsView` in the pane.
+ * - `embedded`: the pane's own Electron `WebContentsView`; the default, so the pane never needs another process.
  */
 export type Backend =
   | { readonly mode: "external"; readonly endpoint: string; readonly version: Version; readonly cdp: Cdp }
   | { readonly mode: "embedded"; readonly reason: EmbeddedReason; readonly detail: string }
+
+/** Which backend to resolve: the pane's embedded view, or a local Chrome this app launches or connects to. */
+export type BackendPreference = "embedded" | "external"
 
 /** What resolving a backend may call; every entry is injectable so a test states each outcome. */
 export type BackendDependencies = {
@@ -32,24 +41,38 @@ export type BackendDependencies = {
 }
 
 /**
- * Picks the browser backend: a Chrome already answering on the endpoint, else a Chrome this app launches, else the
- * embedded browser.
+ * Picks the browser backend. The pane's embedded view is the default; only an explicit `external` preference probes
+ * the debugging endpoint and, when nothing answers there yet, launches a Chrome of its own.
  *
  * Every failure is a fallback, never an error: a missing Chrome, a refused connection, a port serving something else,
  * a launch that dies, or a WebSocket that cannot complete the handshake all return `embedded`.
  *
- * @param input - The endpoint to probe, the debugging port to launch with, and the profile directory to launch into.
+ * @param input - The endpoint to probe, the debugging port to launch with, the profile directory to launch into, and
+ *   which backend to resolve; omitted, it resolves `embedded`.
  * @param dependencies - The I/O to use; defaults are the real process, clock, and network.
  * @returns The backend to drive.
  */
 export async function resolveBackend(
-  input: { readonly endpoint: string; readonly port: number; readonly userDataDir: string },
+  input: {
+    readonly endpoint: string
+    readonly port: number
+    readonly userDataDir: string
+    readonly prefer?: BackendPreference
+  },
   dependencies: BackendDependencies = {},
 ): Promise<Backend> {
+  if ((input.prefer ?? "embedded") === "embedded")
+    return {
+      mode: "embedded",
+      reason: "preferred",
+      detail: "The pane drives its own embedded view, so no local Chrome is launched or connected.",
+    }
+
   const probe = dependencies.probe ?? probeEndpoint
   const first = await probe(input.endpoint)
 
   if (first.status === "ready") return connectExternal(input, first.version, dependencies)
+
   if (first.status !== "refused") return embedded(first)
 
   const chrome = await findChrome(dependencies)
@@ -62,7 +85,7 @@ export async function resolveBackend(
       launchArgs({ port: input.port, userDataDir: input.userDataDir }),
     )
   } catch (error) {
-    return { mode: "embedded", reason: "launch-failed", detail: errorDetail(error) }
+    return { mode: "embedded", reason: "launch-failed", detail: error instanceof Error ? error.message : String(error) }
   }
 
   const started = await waitForEndpoint(probe, input.endpoint, dependencies)
@@ -91,7 +114,11 @@ async function connectExternal(
   } catch (error) {
     cdp.dispose()
 
-    return { mode: "embedded", reason: "connect-failed", detail: errorDetail(error) }
+    return {
+      mode: "embedded",
+      reason: "connect-failed",
+      detail: error instanceof Error ? error.message : String(error),
+    }
   }
 
   return { mode: "external", endpoint: input.endpoint, version, cdp }
@@ -145,6 +172,7 @@ export function launchChrome(path: string, args: readonly string[]): Promise<voi
 
 async function pathExists(path: string) {
   await access(path)
+
   return true
 }
 
@@ -154,8 +182,4 @@ function embedded(result: Exclude<ProbeResult, { status: "ready" }>): Backend {
     reason: result.status === "timeout" ? "probe-timeout" : "probe-invalid",
     detail: result.detail,
   }
-}
-
-function errorDetail(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
 }
