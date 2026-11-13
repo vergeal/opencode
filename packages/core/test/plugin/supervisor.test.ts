@@ -1,4 +1,5 @@
 import { describe, expect } from "bun:test"
+import path from "node:path"
 import { Deferred, Duration, Effect, Layer, LayerMap, Stream } from "effect"
 import { TestClock } from "effect/testing"
 import type { LanguageModelV3 } from "@ai-sdk/provider"
@@ -50,6 +51,19 @@ const sourceLayer = Layer.succeed(
   }),
 )
 
+// Package resolution and installs are driven by the test: `resolveDirectory` is what a package target reports as
+// installed (empty keeps it pending), and `installDirectory` is where `add` lands (empty makes it fail).
+// Package resolution and installs are driven by the test: `resolveDirectory` is what a package target reports as
+// already installed (empty keeps it pending for the background install), `installDirectory` is where `add` lands
+// (empty makes it fail), and a `gate` holds an install open.
+const npm = {
+  resolves: 0,
+  installs: 0,
+  resolveDirectory: "",
+  installDirectory: "",
+  gate: undefined as Deferred.Deferred<void> | undefined,
+}
+
 const instances = Layer.effect(
   LocationServiceMap.Service,
   Effect.gen(function* () {
@@ -67,14 +81,24 @@ const instances = Layer.effect(
           Npm.Service,
           Npm.Service.of({
             add: (pkg) =>
-              Effect.fail(
-                new Npm.InstallFailedError({
-                  add: [pkg],
-                  dir: "",
-                  cause: new Error(`Unexpected Npm.add(${pkg})`),
-                }),
-              ),
-            resolve: (name) => Effect.succeed({ directory: "", name }),
+              Effect.gen(function* () {
+npm.installs++
+                if (!npm.installDirectory)
+                  return yield* Effect.fail(
+                    new Npm.InstallFailedError({
+                      add: [pkg],
+                      dir: "",
+                      cause: new Error(`Cannot install ${pkg}`),
+                    }),
+                  )
+                if (npm.gate) yield* Deferred.await(npm.gate)
+                return { directory: npm.installDirectory, name: pkg }
+              }),
+            resolve: (name) =>
+              Effect.sync(() => {
+npm.resolves++
+                return { directory: npm.resolveDirectory, name }
+              }),
             check: () => Effect.succeed(false),
             update: (pkg) =>
               Effect.fail(
@@ -379,4 +403,192 @@ describe("PluginSupervisor", () => {
       expect(language).toBe(fakeLanguageModel)
     }),
   )
+
+  it.live("activates local plugins before a package install finishes", () =>
+    Effect.gen(function* () {
+      const directory = yield* tmpdirScoped()
+      // Real installs land under node_modules, so entry resolution by package name works from the returned directory.
+      const packageDir = path.join(directory.path, "installed", "node_modules", "acme-pkg-plugin")
+      yield* Effect.promise(() =>
+        Promise.all([
+          Bun.write(
+            path.join(packageDir, "package.json"),
+            JSON.stringify({ name: "acme-pkg-plugin", type: "module", main: "index.js" }),
+          ),
+          Bun.write(
+            path.join(packageDir, "index.js"),
+            `export default {
+  id: "pkg-plugin",
+  effect: (ctx) => ctx.command.transform((editor) => editor.add({ name: "pkg-greet", execute: () => {} })),
+}`,
+          ),
+        ]),
+      )
+
+      const gate = yield* Deferred.make<void>()
+      // A directory without an entrypoint: the first pass reports the package as pending, and the install supplies the
+      // real directory with the plugin's code.
+      const resolvedDir = path.join(directory.path, "resolved")
+      yield* Effect.promise(() => Bun.write(path.join(resolvedDir, "package.json"), "{}"))
+      npm.resolveDirectory = resolvedDir
+      npm.installDirectory = packageDir
+      npm.gate = gate
+      source.operations = [{ type: "add", target: "acme-pkg-plugin", options: {} }]
+      yield* Effect.addFinalizer(() =>
+        Effect.sync(() => {
+          npm.installDirectory = ""
+          npm.gate = undefined
+          source.operations = []
+        }),
+      )
+
+      const locations = yield* LocationServiceMap.Service
+      yield* Effect.gen(function* () {
+        const commands = yield* Command.Service
+
+        // Activation returned although the install is still waiting: local plugins already serve, and the package
+        // plugin is not listed yet.
+        expect(yield* waitFor(commands.get("instance-greet"))).toBeDefined()
+        expect(yield* commands.get("pkg-greet")).toBeUndefined()
+        yield* waitUntil(() => npm.installs === 1)
+
+        yield* Deferred.succeed(gate, undefined)
+        expect(yield* waitFor(commands.get("pkg-greet"))).toBeDefined()
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(locations.get(Location.Ref.make({ directory: AbsolutePath.make(directory.path) }))),
+      )
+    }),
+    { timeout: 20_000 },
+  )
+
+  it.effect("backs off a failing package and forgets the backoff after a successful load", () =>
+    Effect.gen(function* () {
+      const directory = yield* tmpdirScoped()
+      const packageDir = path.join(directory.path, "installed", "node_modules", "acme-broken-pkg")
+      yield* Effect.promise(() =>
+        Promise.all([
+          Bun.write(
+            path.join(packageDir, "package.json"),
+            JSON.stringify({ name: "acme-broken-pkg", type: "module", main: "index.js" }),
+          ),
+          Bun.write(path.join(packageDir, "index.js"), 'export default { id: "broken-pkg", setup() {} }'),
+        ]),
+      )
+
+      source.activations = 0
+      npm.resolves = 0
+      npm.installs = 0
+      // A directory without an entrypoint keeps every pass on the install path, where `add` is what fails.
+      const resolvedDir = path.join(directory.path, "resolved")
+      yield* Effect.promise(() => Bun.write(path.join(resolvedDir, "package.json"), "{}"))
+      npm.resolveDirectory = resolvedDir
+      npm.installDirectory = ""
+      source.operations = [{ type: "add", target: "acme-broken-pkg", options: {} }]
+      yield* Effect.addFinalizer(() =>
+        Effect.sync(() => {
+          npm.resolveDirectory = ""
+          npm.installDirectory = ""
+          source.operations = []
+        }),
+      )
+
+      const locations = yield* LocationServiceMap.Service
+      yield* Effect.gen(function* () {
+        const plugins = yield* Plugin.Service
+        const sdk = yield* SdkPlugins.Service
+        const failures = () =>
+          plugins.list().pipe(
+            Effect.map((inventory) => inventory.filter((plugin) => plugin.state.status === "failed").length),
+          )
+        // The backoff windows are seconds wide, so advance virtual time only far enough for the debounced trigger
+        // (100ms) or a background install to land, and step past a window explicitly below.
+        const tick = (condition: () => boolean) =>
+          Effect.gen(function* () {
+            for (let attempt = 0; attempt < 100 && !condition(); attempt++) {
+              yield* Effect.promise(() => new Promise((resolve) => setTimeout(resolve, 1)))
+              yield* TestClock.adjust("100 millis")
+            }
+          })
+
+        yield* tick(() => source.activations > 0)
+        yield* tick(() => npm.installs === 1)
+        const waitFailed = (count: number) =>
+          Effect.gen(function* () {
+            for (let attempt = 0; attempt < 100; attempt++) {
+              if ((yield* failures()) === count) return
+              yield* Effect.promise(() => new Promise((resolve) => setTimeout(resolve, 1)))
+              yield* TestClock.adjust("100 millis")
+            }
+            return yield* Effect.die(new Error(`failure count ${count} was never recorded`))
+          })
+        yield* waitFailed(1)
+
+        // A fresh activation whose install is still due; the package id is a new SDK plugin each time.
+        const reload = (name: string) =>
+          Effect.gen(function* () {
+            const before = source.activations
+            yield* sdk.register(greeter(`backoff-${name}`, name))
+            yield* tick(() => source.activations > before)
+          })
+
+        // The first failure opened a 2s window: the next activation does not install or import the package again.
+        yield* reload("a")
+        expect(npm.installs).toBe(1)
+        expect(yield* failures()).toBe(1)
+
+        yield* TestClock.adjust("2 seconds")
+        yield* reload("b")
+        yield* tick(() => npm.installs === 2)
+        expect(npm.installs).toBe(2)
+
+        yield* TestClock.adjust("4 seconds")
+        yield* reload("c")
+        yield* tick(() => npm.installs === 3)
+        expect(npm.installs).toBe(3)
+
+        // The third failure opened an 8s window: a retry inside it still skips the load.
+        yield* reload("d")
+        expect(npm.installs).toBe(3)
+
+        // Installing a working package and waiting out the window clears the record.
+        yield* TestClock.adjust("8 seconds")
+        npm.installDirectory = packageDir
+        yield* reload("e")
+        yield* tick(() => npm.installs === 4)
+        expect(npm.installs).toBe(4)
+        yield* waitFailed(0)
+        expect(yield* failures()).toBe(0)
+
+        // A successful load left no backoff: the next activation installs again right away.
+        yield* reload("f")
+        yield* tick(() => npm.installs === 5)
+        expect(npm.installs).toBe(5)
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(locations.get(Location.Ref.make({ directory: AbsolutePath.make(directory.path) }))),
+      )
+    }),
+  )
 })
+
+/** Polls until the effect reports a value; loading an installed package finishes after its activation returned. */
+const waitFor = <A>(effect: Effect.Effect<A | undefined>) =>
+  Effect.gen(function* () {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      const value = yield* effect
+      if (value !== undefined) return value
+      yield* Effect.sleep("10 millis")
+    }
+    return yield* Effect.die(new Error("plugin did not become available"))
+  })
+
+/** Polls a synchronous condition on the real clock, for state a background fiber updates. */
+const waitUntil = (condition: () => boolean) =>
+  Effect.gen(function* () {
+    for (let attempt = 0; attempt < 300; attempt++) {
+      if (condition()) return
+      yield* Effect.sleep("10 millis")
+    }
+    return yield* Effect.die(new Error("condition never held"))
+  })

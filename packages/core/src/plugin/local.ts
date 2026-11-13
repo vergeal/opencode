@@ -1,6 +1,8 @@
 export * as PluginLocal from "./local.js"
 
 import type { Plugin } from "@opencode/schema/plugin"
+import { PluginManifest } from "@opencode/schema/plugin-manifest"
+import { Option, Schema } from "effect"
 import { readdir, readFile } from "node:fs/promises"
 import path from "node:path"
 
@@ -19,6 +21,7 @@ type Manifest = {
   version?: unknown
   display?: unknown
   skills?: unknown
+  runtime?: unknown
 }
 
 type Found = { version: string; file: string; manifest?: Manifest }
@@ -57,9 +60,11 @@ async function read(directory: string, id: string): Promise<Plugin.LocalEntry | 
 
   // The newest bundle describes the plugin; older versions keep their own bundle but share the entry's copy.
   const display = found.map((entry) => displayOf(entry.manifest)).find((entry) => entry !== undefined)
+  const runtime = found.map((entry) => runtimeOf(entry.manifest)).find((entry) => entry !== undefined)
   return {
     id,
     ...(display ? { display } : {}),
+    ...(runtime ? { runtime } : {}),
     versions: found.map((entry) => ({ version: entry.version, file: entry.file })),
   }
 }
@@ -92,8 +97,12 @@ function isManifest(input: unknown): input is Manifest {
   return typeof input === "object" && input !== null
 }
 
-function displayOf(manifest: Manifest | undefined): Plugin.Display | undefined {
-  if (typeof manifest?.display !== "object" || manifest.display === null) return undefined
+/** The runtime the newest bundle declares, read with the same schema the host prepares it from. */
+function runtimeOf(manifest: Manifest | undefined): Plugin.LocalEntry["runtime"] {
+  return Option.getOrUndefined(Schema.decodeUnknownOption(PluginManifest.Runtime)(manifest?.runtime))
+}
+
+function displayOf(manifest: Manifest | undefined): Plugin.Display | undefined {  if (typeof manifest?.display !== "object" || manifest.display === null) return undefined
   const display = manifest.display as Partial<Plugin.Display>
   if (typeof display.name !== "string" || typeof display.description !== "string") return undefined
   const skills = skillsOf(display.skills) ?? skillsOf(manifest.skills)

@@ -14,6 +14,7 @@ import type {
   Token,
   TokenValue,
 } from "./core.js"
+import type { Log } from "./main.js"
 import type {
   Appearance,
   Attention,
@@ -186,6 +187,15 @@ export interface Context extends BaseContext {
    * ```
    */
   readonly attention: Attention
+  /**
+   * The desktop log file, written through the main process.
+   *
+   * @example
+   * ```ts
+   * ctx.log.write("warn", "pane failed to load", { url })
+   * ```
+   */
+  readonly log: Log
   /**
    * Runs published plugin commands and the app's own, as the command palette does.
    *

@@ -1,15 +1,19 @@
 export * as Plugin from "./plugin.js"
 export { Event, GuiBundle, ID, Info, Source, State } from "@opencode/schema/plugin"
 
-import { readFile } from "node:fs/promises"
+import { mkdir, readFile, rm } from "node:fs/promises"
+import path from "node:path"
+import { Global } from "@opencode/util/global"
+import { PluginPaths } from "./plugin/paths.js"
 import { fileURLToPath } from "node:url"
 import { Plugin } from "@opencode/schema/plugin"
 import { Node } from "@opencode/util/effect/app-node"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 import type { PersistentPty } from "./persistent-pty.js"
-import { Cause, Context, Effect, Exit, Latch, Layer, Logger, Queue, References, Scope, Semaphore } from "effect"
+import { Cause, Context, Duration, Effect, Exit, Latch, Layer, Logger, Queue, References, Scope, Semaphore } from "effect"
 import { Bus } from "./bus.js"
 import { PluginHost } from "./plugin/host.js"
+import { PluginRuntime } from "./plugin/runtime.js"
 import { type Failure, type Generation, Service } from "./plugin/service.js"
 import { State } from "./state.js"
 
@@ -19,10 +23,13 @@ const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const bus = yield* Bus.Service
+    const global = yield* Global.Service
     const scope = yield* Scope.make()
     // One slot per requested definition in activation order, including ones whose setup failed, so
     // the prefix diff below stays index-aligned and a failed revision is not retried until it changes.
     const active = new Map<Plugin.ID, Slot>()
+    // Ids loaded in this process, so re-enabling after a disable is a load, not a first install.
+    const known = new Set<Plugin.ID>()
     const lock = Semaphore.makeUnsafe(1)
     const ready = yield* Latch.make(true)
     const pending = new Set<object>()
@@ -40,7 +47,12 @@ const layer = Layer.effect(
     const pendingFailures = yield* Queue.unbounded<PendingFailure>()
     let discovered: readonly Failure[] = []
     let inventory: Plugin.Info[] = []
-    const snapshot = () => [...Array.from(active.values()).map(slotInfo), ...discovered]
+    // Interpreter environments are per plugin id, not per activation: a reload keeps a ready environment, and an
+    // `activate` that only sees unchanged revisions still re-checks it, so a manifest edited or a directory removed
+    // outside the host is noticed on the next load.
+    const runtimes = new Map<Plugin.ID, Plugin.Runtime>()
+    const snapshot = () =>
+      [...Array.from(active.values()).map((slot) => slotInfo(slot, runtimes.get(slot.plugin.id))), ...discovered]
     // A changed `./gui-experimental` bundle alone restarts nothing; its revision is part of what changes, so the event
     // tells the app to reload it.
     const publish = State.changes(
@@ -49,6 +61,64 @@ const layer = Layer.effect(
     )
     const list = Effect.fn("Plugin.list")(function* () {
       return inventory
+    })
+    // One preparation per plugin id at a time: a reload that lands while pip is running must not start a second one.
+    const preparingRuntime = new Set<Plugin.ID>()
+    const prepareRuntime = Effect.fn("Plugin.prepareRuntime")(function* (plugin: Generation & { readonly id: Plugin.ID }) {
+      if (!plugin.runtime || preparingRuntime.has(plugin.id)) return
+      const id = plugin.id
+      preparingRuntime.add(id)
+      const status = yield* PluginRuntime.prepare({ home: global.home, id, runtime: plugin.runtime }).pipe(
+        Effect.catchCause((cause) =>
+          Effect.succeed({ status: "failed" as const, error: Cause.pretty(cause), ref: `err_${id}` }),
+        ),
+      )
+      preparingRuntime.delete(id)
+      // Uninstall during preparation removes the environment, so finishing must not recreate it for a plugin that is
+      // no longer loaded.
+      if (!active.has(id)) {
+        yield* Effect.promise(() =>
+          rm(PluginRuntime.directory({ home: global.home, id }), { recursive: true, force: true }),
+        )
+        return
+      }
+      runtimes.set(id, status)
+      // A prepared environment changes what the browser shows without restarting the plugin, so announce it like any
+      // other inventory change.
+      yield* lock.withPermit(
+        Effect.gen(function* () {
+          if (closed) return
+          inventory = snapshot()
+          yield* publish(inventory)
+        }),
+      )
+    })
+    // Detect cheaply and synchronously; only the slow work (creating the venv, installing) runs in the background.
+    const ensureRuntime = Effect.fn("Plugin.ensureRuntime")(function* (plugin: Generation & { readonly id: Plugin.ID }) {
+      if (!plugin.runtime) {
+        runtimes.delete(plugin.id)
+        return
+      }
+      const status = yield* PluginRuntime.detect({ home: global.home, id: plugin.id, runtime: plugin.runtime })
+      if (status === "ready") {
+        runtimes.set(plugin.id, { status: "ready" })
+        return
+      }
+      runtimes.set(plugin.id, { status: "preparing" })
+      yield* prepareRuntime(plugin).pipe(Effect.forkIn(scope))
+    })
+    const runtimeRetry = Effect.fn("Plugin.runtimeRetry")(function* (id: Plugin.ID) {
+      const plugin = active.get(id)?.plugin
+      if (!plugin?.runtime || preparingRuntime.has(id)) return
+      runtimes.set(id, { status: "preparing" })
+      yield* lock.withPermit(
+        Effect.gen(function* () {
+          if (closed) return
+          inventory = snapshot()
+          yield* publish(inventory)
+        }),
+      )
+      yield* prepareRuntime(plugin).pipe(Effect.forkIn(scope))
     })
     const gui = Effect.fn("Plugin.gui")(function* (id: Plugin.ID) {
       const gui = active.get(id)?.plugin.gui
@@ -59,24 +129,58 @@ const layer = Layer.effect(
       return { code, revision: gui.revision, options: gui.options } satisfies Plugin.GuiBundle
     })
     const hostContext = yield* Effect.context<Effect.Services<ReturnType<typeof PluginHost.make>>>()
-    const load = Effect.fnUntraced(function* (plugin: Generation) {
+    const load = Effect.fnUntraced(function* (plugin: Generation, reason: "install" | "load") {
       const activation: Activation = { plugin, scope: yield* Scope.fork(scope) }
       const inherit = yield* State.inherit()
       const grouped = State.group((failure, refresh) => {
+        const ref = `err_${crypto.randomUUID().slice(0, 8)}`
         activation.failure = {
-          error: `Plugin disabled after ${failure.state}.transform failed. Check server logs for details.`,
-          ref: `err_${crypto.randomUUID().slice(0, 8)}`,
+          // The client renders `reason`; `error` stays as the log detail, which is what a bug report needs.
+          error: Cause.pretty(Cause.die(failure.cause)),
+          ref,
+          reason: { kind: "transform-failed", state: failure.state },
         }
         Queue.offerUnsafe(pendingFailures, {
           plugin,
           scope: activation.scope,
           failure,
           refresh,
-          ref: activation.failure.ref,
+          ref,
           release: holdUnsafe(),
         })
       })
-      const host = yield* PluginHost.make({ list }, plugin.id).pipe(Effect.provideContext(hostContext))
+      // The host creates the plugin's directories before `activate`, so the entry never sees a missing path.
+      const paths = PluginPaths.make({ home: global.home, id: plugin.id })
+      yield* Effect.promise(async () => {
+        await mkdir(paths.data, { recursive: true })
+        await mkdir(paths.cache, { recursive: true })
+        await mkdir(path.dirname(paths.log), { recursive: true })
+      })
+      const host = yield* PluginHost.make({ list }, plugin.id, {
+        scope: activation.scope,
+        configuration: plugin.configuration,
+      }).pipe(Effect.provideContext(hostContext))
+      const hook = reason === "install" ? plugin.onInstall : undefined
+      // A hook shares the activation scope, so anything it registers is released with this instance.
+      if (hook)
+        yield* Effect.suspend(() => hook(host)).pipe(
+          Effect.updateContext((context: Context.Context<never>) =>
+            Context.make(Scope.Scope, activation.scope).pipe(
+              Context.add(Logger.CurrentLoggers, Context.get(context, Logger.CurrentLoggers)),
+              Context.add(References.MinimumLogLevel, Context.get(context, References.MinimumLogLevel)),
+            ),
+          ),
+          Effect.timeout("3 seconds"),
+          Effect.catchCause((cause) =>
+            Effect.logWarning("plugin lifecycle hook failed", { "plugin.id": plugin.id, reason, cause }),
+          ),
+        )
+      // The deadline is a timeout guard for an activation that *suspends in an interruptible way*: `Effect.timeout`
+      // races the activation against a sleep and interrupts the loser, so `Effect.never` and `Effect.sleep` unwind.
+      // It cannot stop a synchronous loop (it blocks the thread) or a promise created outside Effect
+      // (`Effect.promise(() => new Promise(() => {}))` is not interruptible); those need worker isolation, which is
+      // out of scope here. Thirty seconds because probing a port or fetching remote configuration at activation is
+      // legitimate and slower than a few seconds; disabling a merely slow plugin would be a false failure.
       const exit = yield* Effect.suspend(() => plugin.effect(host)).pipe(
         grouped,
         inherit,
@@ -87,6 +191,7 @@ const layer = Layer.effect(
           ),
         ),
         Effect.withSpan("Plugin.load", { attributes: { "plugin.id": plugin.id } }),
+        Effect.timeout(ACTIVATION_TIMEOUT),
         Effect.onExit((exit) =>
           Exit.isFailure(exit) && !activation.failure ? Scope.close(activation.scope, exit) : Effect.void,
         ),
@@ -97,7 +202,21 @@ const layer = Layer.effect(
         "plugin.id": plugin.id,
         cause: exit.cause,
       })
-      return { error: Cause.pretty(exit.cause) } as const
+      // A timed-out activation is a plugin fault, not a broken package: disable it with a reason the client can
+      // translate, instead of failing the target and waiting out its backoff.
+      if (Cause.squash(exit.cause) instanceof Cause.TimeoutError) {
+        activation.failure = {
+          error: `Plugin activation did not finish within ${ACTIVATION_TIMEOUT_SECONDS}s`,
+          ref: `err_${crypto.randomUUID().slice(0, 8)}`,
+          reason: { kind: "activation-timeout", seconds: ACTIVATION_TIMEOUT_SECONDS },
+        }
+        return { activation } as const
+      }
+      return {
+        error: Cause.pretty(exit.cause),
+        ref: `err_${crypto.randomUUID().slice(0, 8)}`,
+        reason: { kind: "load-failed" as const },
+      } as const
     })
 
     const activate = Effect.fn("Plugin.activate")(function* (
@@ -129,6 +248,7 @@ const layer = Layer.effect(
                 if (entry) active.set(definition.id, { ...entry, plugin: definition })
               }
               if (prefix === definitions.length && active.size === definitions.length) {
+                yield* Effect.forEach(definitions, ensureRuntime, { discard: true })
                 inventory = snapshot()
                 yield* publish(inventory)
                 return
@@ -155,24 +275,26 @@ const layer = Layer.effect(
                       active.set(definition.id, { ...slot, plugin: definition })
                       continue
                     }
-                    const result = yield* load(definition)
-                    if (result.activation !== undefined) {
+                    const reason = known.has(definition.id) ? "load" : "install"
+                    known.add(definition.id)
+                    const result = yield* load(definition, reason)
+                    if ("activation" in result) {
                       active.set(definition.id, {
                         plugin: definition,
                         activation: result.activation,
                       })
                       continue
                     }
-                    active.set(definition.id, { plugin: definition, error: result.error })
+                    active.set(definition.id, { plugin: definition, error: result })
 
                     const fallback = slot?.activation
                     if (!fallback || fallback.failure) continue
-                    const restored = yield* load(fallback.plugin)
-                    if (restored.activation !== undefined) {
+                    const restored = yield* load(fallback.plugin, "load")
+                    if ("activation" in restored) {
                       active.set(definition.id, {
                         plugin: definition,
                         activation: restored.activation,
-                        error: result.error,
+                        error: result,
                       })
                       continue
                     }
@@ -181,6 +303,7 @@ const layer = Layer.effect(
                     })
                   }
 
+                  yield* Effect.forEach(definitions, ensureRuntime, { discard: true })
                   inventory = snapshot()
                 }),
               )
@@ -188,6 +311,49 @@ const layer = Layer.effect(
             }),
           ),
         (release) => release,
+      )
+    })
+
+    const uninstall = Effect.fn("Plugin.uninstall")(function* (id: Plugin.ID) {
+      yield* lock.withPermit(
+        Effect.gen(function* () {
+          if (closed) return
+          const slot = active.get(id)
+          if (!slot) return
+          const activation = slot.activation
+          if (!activation || activation.failure) return
+          const hook = slot.plugin.onUninstall
+          if (hook) {
+            // The host is rebuilt for the hook: it is a plain value, and the running instance is still active.
+            const host = yield* PluginHost.make({ list }, id, {
+              scope: activation.scope,
+              configuration: slot.plugin.configuration,
+            }).pipe(Effect.provideContext(hostContext))
+            yield* Effect.suspend(() => hook(host)).pipe(
+              Effect.updateContext((context: Context.Context<never>) =>
+                Context.make(Scope.Scope, activation.scope).pipe(
+                  Context.add(Logger.CurrentLoggers, Context.get(context, Logger.CurrentLoggers)),
+                  Context.add(References.MinimumLogLevel, Context.get(context, References.MinimumLogLevel)),
+                ),
+              ),
+              Effect.timeout("3 seconds"),
+              Effect.catchCause((cause) => Effect.logWarning("plugin onUninstall failed", { "plugin.id": id, cause })),
+            )
+          }
+          active.delete(id)
+          runtimes.delete(id)
+          preparingRuntime.delete(id)
+          yield* Scope.close(activation.scope, Exit.void)
+          // `data` and `log` outlive the plugin; the rebuildable cache and interpreter environment do not.
+          const paths = PluginPaths.make({ home: global.home, id })
+          yield* Effect.promise(() =>
+            Promise.all(
+              [paths.cache, paths.runtime].map((directory) => rm(directory, { recursive: true, force: true })),
+            ),
+          )
+          inventory = snapshot()
+          yield* publish(inventory)
+        }),
       )
     })
 
@@ -266,6 +432,8 @@ const layer = Layer.effect(
       hold,
       list,
       gui,
+      uninstall,
+      runtimeRetry,
     })
   }),
 )
@@ -275,15 +443,29 @@ const layer = Layer.effect(
 type Slot = {
   readonly plugin: Generation & { readonly id: Plugin.ID }
   readonly activation?: Activation
-  readonly error?: string
+  readonly error?: FailureInfo
 }
+
+/** The failed half of `Plugin.State`, shared by an activation and a target that never loaded. */
+type FailureInfo = {
+  readonly error: string
+  readonly ref?: string
+  readonly reason?: Plugin.Reason
+}
+
+/**
+ * How long an activation may suspend before its load is reported as a timeout. The module import already has a
+ * deadline; this one covers the user code, which otherwise holds the activation lock and stops every plugin after it.
+ */
+const ACTIVATION_TIMEOUT_SECONDS = 30
+const ACTIVATION_TIMEOUT = Duration.seconds(ACTIVATION_TIMEOUT_SECONDS)
 
 // Share the activation across slot snapshots so teardown sees failures synchronously,
 // including failures discovered after activate() has captured its previous slots.
 type Activation = {
   readonly plugin: Generation
   readonly scope: Scope.Closeable
-  failure?: { readonly error: string; readonly ref: string }
+  failure?: FailureInfo
 }
 
 type PendingFailure = {
@@ -295,8 +477,8 @@ type PendingFailure = {
   readonly release: Effect.Effect<void>
 }
 
-function slotInfo(slot: Slot): Plugin.Info {
-  const failure = slot.activation?.failure ?? (slot.error === undefined ? undefined : { error: slot.error })
+function slotInfo(slot: Slot, runtime?: Plugin.Runtime): Plugin.Info {
+  const failure = slot.activation?.failure ?? slot.error
   return {
     id: slot.plugin.id,
     source: slot.plugin.source ?? { type: "builtin" },
@@ -305,6 +487,8 @@ function slotInfo(slot: Slot): Plugin.Info {
     features: slot.plugin.features ?? { server: true },
     // Only a plugin that declares display metadata appears in the app's plugin browser.
     ...(slot.plugin.display === undefined ? {} : { display: slot.plugin.display }),
+    // Only a plugin whose manifest declares `runtime` has an environment, so the field stays absent for the rest.
+    ...(runtime === undefined ? {} : { runtime }),
   }
 }
 

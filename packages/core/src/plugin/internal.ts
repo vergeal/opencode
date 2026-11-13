@@ -324,6 +324,12 @@ export const list = Effect.fn("PluginInternal.list")(function* () {
           ...(plugin.display === undefined ? {} : { display: plugin.display }),
           ...(plugin.defaultEnabled === undefined ? {} : { defaultEnabled: plugin.defaultEnabled }),
           effect: (host) => plugin.effect(host).pipe(Effect.provide(context)),
+          ...(plugin.onInstall === undefined
+            ? {}
+            : { onInstall: (host) => plugin.onInstall!(host).pipe(Effect.provide(context)) }),
+          ...(plugin.onUninstall === undefined
+            ? {}
+            : { onUninstall: (host) => plugin.onUninstall!(host).pipe(Effect.provide(context)) }),
           revision: "internal",
           source: { type: "builtin" },
         }) satisfies Generation,

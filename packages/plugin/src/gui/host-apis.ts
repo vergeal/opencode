@@ -1502,6 +1502,26 @@ export interface Toasts {
    * @returns The toast's handle.
    */
   show(options: ToastOptions): ToastHandle
+  /**
+   * Shows a loading toast that reports progress, and updates it in place.
+   *
+   * @param options - The toast's title and the first step it reports.
+   * @returns The handle that moves and closes it.
+   */
+  progress(options: { readonly title: string; readonly current: number; readonly total: number }): ToastProgress
+}
+
+/** A loading toast that reports deterministic progress. */
+export interface ToastProgress {
+  /**
+   * Moves the reported step.
+   *
+   * @param current - The step reached.
+   * @param total - The step count; omitted keeps the previous one.
+   */
+  update(current: number, total?: number): void
+  /** Closes the toast. */
+  done(): void
 }
 
 /** What `Attention.notify` sends. */
@@ -1571,6 +1591,12 @@ export interface Commands {
    *   registered no commands yet.
    */
   run(id: string): boolean
+  /**
+   * Lists the commands `run` accepts, in palette order.
+   *
+   * @returns The commands; empty before the app interface mounts.
+   */
+  list(): readonly { readonly id: string; readonly title: string; readonly enabled: boolean }[]
 }
 
 /** One tab of the shell's tab strip. */

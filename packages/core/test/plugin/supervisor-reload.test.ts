@@ -289,6 +289,44 @@ describe("PluginSupervisor reload", () => {
     }),
   )
 
+  it.live("keeps a legacy setup plugin's RPC domains callable after activation", () =>
+    Effect.gen(function* () {
+      const directory = yield* tmpdirScoped()
+      const root = path.join(directory.path, "legacy-rpc")
+      yield* Effect.promise(async () => {
+        await fs.mkdir(root, { recursive: true })
+        await Bun.write(
+          path.join(root, "index.ts"),
+          `import { Schema } from ${JSON.stringify(import.meta.resolve("effect"))}
+           export default {
+             id: "legacy-rpc",
+             async setup(ctx) {
+               await ctx.rpc.register({ id: "legacy-rpc", methods: { ping: { input: Schema.Unknown, output: Schema.Boolean } }, events: {} }, {
+                 ping: async () => true,
+               })
+             },
+           }`,
+        )
+        await Bun.write(path.join(directory.path, ".opencode/opencode.json"), JSON.stringify({ plugins: [root] }))
+      })
+      const locations = yield* LocationServiceMap.Service
+      yield* Effect.gen(function* () {
+        const plugins = yield* Plugin.Service
+        const rpc = yield* Rpc.Service
+        yield* plugins.awaitActivation
+        expect(yield* plugins.list()).toContainEqual(
+          expect.objectContaining({ id: "legacy-rpc", state: { status: "active" } }),
+        )
+        // A load deadline that interrupted the module after it started evaluating would leave the plugin active
+        // without this RPC domain.
+        expect(yield* rpc.call("legacy-rpc", "ping", {})).toBe(true)
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(locations.get(Location.Ref.make({ directory: AbsolutePath.make(directory.path) }))),
+      )
+    }),
+  )
+
   it.effect("serializes the periodic refresh behind an in-flight reload", () =>
     Effect.gen(function* () {
       const directory = yield* tmpdirScoped()

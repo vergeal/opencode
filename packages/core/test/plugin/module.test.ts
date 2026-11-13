@@ -1,7 +1,8 @@
 import { expect } from "bun:test"
 import { cp } from "node:fs/promises"
 import path from "node:path"
-import { Brand, Cause, Deferred, Effect, Exit, Fiber, Layer, Option, Schedule, Schema, Scope, Stream } from "effect"
+import { Brand, Cause, Deferred, Effect, Exit, Fiber, Layer, Logger, Option, Schedule, Schema, Scope, Stream } from "effect"
+import { TestClock } from "effect/testing"
 import { Agent } from "@opencode/schema/agent"
 import { Session } from "@opencode/schema/session"
 import { SessionMessage } from "@opencode/schema/session-message"
@@ -32,6 +33,32 @@ const it = testEffect(
   ),
 )
 
+it.live("logs a legacy entry as a warning instead of surfacing it anywhere else", () =>
+  Effect.gen(function* () {
+    const directory = yield* tmpdirScoped()
+    yield* Effect.promise(() =>
+      Bun.write(path.join(directory.path, "index.ts"), 'export default { id: "legacy-entry", async setup() {} }'),
+    )
+    const modules = yield* PluginModule.make()
+    const warnings: unknown[] = []
+    const loaded = yield* modules.load({ type: "add", target: directory.path, options: {} }).pipe(
+      Effect.provide(
+        Logger.layer([
+          Logger.make((entry) => {
+            if (entry.logLevel !== "Warn") return
+            if (JSON.stringify(entry.message).includes("plugin uses a legacy entry")) warnings.push(entry.message)
+          }),
+        ]),
+      ),
+    )
+    expect(loaded).toMatchObject({ id: "legacy-entry" })
+    // The fallback is visible to the developer in the server log, with the path to replace.
+    expect(warnings).toHaveLength(1)
+    expect(JSON.stringify(warnings[0])).toContain("index")
+    expect(JSON.stringify(warnings[0])).toContain("server/main")
+  }),
+)
+
 it.live("watches creation of an external helper with missing parent directories", () =>
   Effect.gen(function* () {
     const directory = yield* tmpdirScoped()
@@ -52,6 +79,26 @@ it.live("watches creation of an external helper with missing parent directories"
     yield* Fiber.join(changed)
     const loaded = yield* modules.load(operation)
     expect(loaded).toMatchObject({ id: "appeared" })
+  }),
+)
+
+it.live("runs a plugin's deprecated setup entry as its activate", () =>
+  Effect.gen(function* () {
+    const directory = yield* tmpdirScoped()
+    const mark = path.join(directory.path, "activated")
+    yield* Effect.promise(() =>
+      Bun.write(
+        path.join(directory.path, "index.ts"),
+        `export default { id: "legacy-setup", async setup() { await Bun.write(${JSON.stringify(mark)}, "ok") } }`,
+      ),
+    )
+    const modules = yield* PluginModule.make()
+    const loaded = yield* modules.load({ type: "add" as const, target: directory.path, options: {} })
+    expect(loaded).toMatchObject({ id: "legacy-setup" })
+    if (!("id" in loaded)) return yield* Effect.die("expected a loaded plugin")
+    const plugins = yield* Plugin.Service
+    yield* plugins.activate([loaded])
+    expect(yield* Effect.promise(() => Bun.file(mark).exists())).toBe(true)
   }),
 )
 
@@ -434,11 +481,13 @@ it.live("loads a GUI-only package under its package name without running it, and
     const evaluated = 'throw new Error("A client part must not run on the server")'
     yield* Effect.promise(() =>
       writeFiles(directory.path, {
-        "gui/package.json": JSON.stringify({
-          name: "opencode-acme-gui",
-          exports: { "./gui-experimental": "./dist/gui-experimental.cjs" },
+        "gui/ocplugin.json": JSON.stringify({
+          apiVersion: 1,
+          id: "opencode-acme-gui",
+          version: "1.0.0",
+          entry: { gui: "dist/gui/main" },
         }),
-        "gui/dist/gui-experimental.cjs": evaluated,
+        "gui/dist/gui/main.cjs": evaluated,
         "acme-tui/tui.tsx": evaluated,
       }),
     )
@@ -483,3 +532,58 @@ for (const target of ["policy-fixture@1.2.3", "@scope/policy-fixture@1.2.3"]) {
     }),
   )
 }
+
+it.live("times out a load that never returns and still loads a later plugin", () =>
+  Effect.gen(function* () {
+    const directory = yield* tmpdirScoped()
+    yield* Effect.promise(() =>
+      Bun.write(path.join(directory.path, "index.ts"), 'export default { id: "after-timeout", async setup() {} }'),
+    )
+    const hung = Layer.succeed(
+      Npm.Service,
+      Npm.Service.of({
+        add: () => Effect.never,
+        resolve: () => Effect.never,
+        check: () => Effect.succeed(false),
+        update: () => Effect.never,
+        which: () => Effect.undefined,
+      }),
+    )
+    const modules = yield* PluginModule.make({ loadTimeout: "20 millis" }).pipe(Effect.provide(hung))
+    const exit = yield* modules.load({ type: "add", target: "hung-package", options: {} }).pipe(Effect.exit)
+    expect(Exit.isFailure(exit)).toBe(true)
+    if (Exit.isFailure(exit)) {
+      const error = Cause.squash(exit.cause)
+      // The message carries the deadline it actually used, so a short test deadline reads as short.
+      expect(String(error)).toContain("Plugin load timed out after")
+      expect(error).toMatchObject({ reason: { kind: "load-timeout" } })
+    }
+
+    // The deadline fails only that target: the next load runs normally.
+    expect(yield* modules.load({ type: "add", target: directory.path, options: {} })).toMatchObject({
+      id: "after-timeout",
+    })
+  }),
+)
+
+it.effect("does not treat a test-clock jump as the load deadline", () =>
+  Effect.gen(function* () {
+    const directory = yield* tmpdirScoped()
+    yield* Effect.promise(() =>
+      Bun.write(
+        path.join(directory.path, "index.ts"),
+        // The module outlives the instant the controlled clock jumps to, so only a wall-clock deadline may fail it.
+        'await new Promise((resolve) => setTimeout(resolve, 50)); export default { id: "clock-jump", async setup() {} };',
+      ),
+    )
+    const modules = yield* PluginModule.make()
+    const load = yield* modules.load({ type: "add", target: directory.path, options: {} }).pipe(
+      Effect.forkScoped({ startImmediately: true }),
+    )
+    // Let the forked load start evaluating before the clock moves.
+    yield* Effect.promise(() => Bun.sleep(10))
+    // The deadline is a wall-clock guard: advancing a controlled clock past it must not fail the load in flight.
+    yield* TestClock.adjust("24 hours")
+    expect(yield* Fiber.join(load)).toMatchObject({ id: "clock-jump" })
+  }),
+)

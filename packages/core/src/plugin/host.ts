@@ -6,7 +6,8 @@ import { EventManifest } from "@opencode/schema/event-manifest"
 import type { Event } from "@opencode/schema/event"
 import { ServerConfig } from "@opencode/schema/mcp"
 import { App } from "../app.js"
-import { Effect, Schema, Stream } from "effect"
+import { Effect, Schema, Scope, Stream } from "effect"
+import { Global } from "@opencode/util/global"
 import { Agent } from "../agent.js"
 import { Artifact } from "../artifact.js"
 import { AISDK } from "../aisdk.js"
@@ -37,6 +38,10 @@ import { WorktreeStrategies } from "../worktree/strategies.js"
 import { Generate } from "../generate.js"
 import { Permission } from "../permission.js"
 import { PluginHooks } from "./hooks.js"
+import { PluginConfiguration, type Configuration } from "./configuration.js"
+import { PluginInbox } from "./inbox.js"
+import { PluginPaths } from "./paths.js"
+import { PluginSecrets } from "./secrets.js"
 import type { Interface } from "../plugin.js"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 
@@ -50,8 +55,13 @@ const isRpcType = (type: string): type is RpcEvent["type"] => type.startsWith("r
 const isRpcEvent = (event: Event.Payload): event is RpcEvent => isRpcType(event.type)
 const isPublicEvent = (event: Event.Payload): event is EventManifest.ServerEvent | RpcEvent =>
   EventManifest.isServer(event) || isRpcEvent(event)
-export const make = Effect.fn("PluginHost.make")(function* (plugin: Pick<Interface, "list">, pluginID: string) {
+export const make = Effect.fn("PluginHost.make")(function* (
+  plugin: Pick<Interface, "list">,
+  pluginID: string,
+  options?: { readonly scope?: Scope.Scope; readonly configuration?: Configuration },
+) {
   const app = yield* App.Metadata
+  const global = yield* Global.Service
   const agents = yield* Agent.Service
   const artifacts = yield* Artifact.Service
   const aisdk = yield* AISDK.Service
@@ -124,12 +134,31 @@ export const make = Effect.fn("PluginHost.make")(function* (plugin: Pick<Interfa
     ).pipe(Effect.orDie),
   )
 
+  const paths = PluginPaths.make({ home: global.home, id: pluginID })
+  const secrets = PluginSecrets.make({ home: global.home, id: pluginID })
+  const configuration = PluginConfiguration.make({
+    home: global.home,
+    id: pluginID,
+    configuration: options?.configuration,
+  })
+
   // Keep the instance graph's inferred types independent of Session handles.
   const context: Plugin.Context = {
     app,
     location: locationInfo(),
     options: {},
     rpc: Object.assign(rpc.client, { register: rpc.register }),
+    paths,
+    secrets,
+    config: {
+      get: configuration.get,
+      update: configuration.update,
+      // A listener lives with the instance that registered it: closing the plugin scope drops it.
+      onChange: (callback) => {
+        const unsubscribe = configuration.onChange(callback)
+        if (options?.scope) Effect.runSync(Scope.addFinalizer(options.scope, Effect.sync(unsubscribe)))
+      },
+    },
     agent: {
       get: (input) => {
         const ref = locationRef(input)
@@ -496,6 +525,7 @@ export const make = Effect.fn("PluginHost.make")(function* (plugin: Pick<Interfa
         }),
     },
     storage: storage(kv, pluginID),
+    inbox: PluginInbox.make(kv, pluginID, { scope: options?.scope }),
     shell: {
       hook: (name, callback) => hooks.register("shell", name, callback),
     },
@@ -658,6 +688,7 @@ export const requirements = LayerNode.group([
   InstructionEntry.node,
   PersistentPty.node,
   LocationServiceMap.node,
+  Global.node,
 ])
 
 export function storage(kv: KV.Interface, pluginID: string): Plugin.Context["storage"] {

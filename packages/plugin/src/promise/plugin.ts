@@ -9,6 +9,7 @@ import type { ExperimentalArtifactDomain } from "./artifact.js"
 import type { AISDKDomain } from "./aisdk.js"
 import type { CommandDomain } from "./command.js"
 import type { EventDomain } from "./event.js"
+import type { InboxDomain } from "./inbox.js"
 import type { IntegrationDomain } from "./integration.js"
 import type { MCPDomain } from "./mcp.js"
 import type { ModelDomain } from "./model.js"
@@ -40,6 +41,8 @@ export interface Context {
     readonly generate: ExperimentalGenerateApi
     readonly artifact: ExperimentalArtifactDomain
   }
+  /** Messages this plugin published into the app's inbox. */
+  readonly inbox: InboxDomain
   readonly integration: IntegrationDomain
   readonly mcp: MCPDomain
   readonly model: ModelDomain
@@ -54,6 +57,24 @@ export interface Context {
   readonly shell: ShellDomain
   readonly skill: SkillDomain
   readonly storage: StorageDomain
+  /** Directories owned by this plugin: `data` and `log` survive uninstall, `cache` does not. */
+  readonly paths: {
+    readonly data: string
+    readonly cache: string
+    readonly log: string
+  }
+  /** Values encrypted with a machine-local key. Plain text is never written. */
+  readonly secrets: {
+    get(key: string): Promise<string | undefined>
+    set(key: string, value: string): Promise<void>
+    delete(key: string): Promise<void>
+  }
+  /** The flat, user-level configuration declared by the plugin's manifest. */
+  readonly config: {
+    get(): Promise<Record<string, unknown>>
+    update(patch: Record<string, unknown>): Promise<void>
+    onChange(callback: (next: Record<string, unknown>) => void): void
+  }
   readonly tool: ToolDomain
   readonly vcs: VcsDomain
   readonly websearch: WebSearchDomain
@@ -61,6 +82,8 @@ export interface Context {
 }
 
 export type Cleanup = () => Promise<void> | void
+
+export type Entry = (context: Context) => Promise<Cleanup | void> | Cleanup | void
 
 export interface Plugin {
   readonly id: string
@@ -71,9 +94,16 @@ export interface Plugin {
    * with the app but stays dormant until the user installs it from the plugin browser.
    */
   readonly defaultEnabled?: boolean
-  readonly setup: (context: Context) => Promise<Cleanup | void> | Cleanup | void
+  /** The plugin's entry, equivalent to VSCode's `activate`. Runs once per load. */
+  readonly activate?: Entry
+  /** @deprecated Use `activate`. Removed in the next minor. */
+  readonly setup?: Entry
+  /** Runs once, on the first load of this plugin in the current process. Must be idempotent. */
+  readonly onInstall?: (context: Context) => Promise<void> | void
+  /** Runs on the running instance right before the plugin's files are removed. */
+  readonly onUninstall?: (context: Context) => Promise<void> | void
 }
 
-export function define(plugin: Plugin) {
+export function define<P extends Plugin>(plugin: P & ({ activate: Entry } | { setup: Entry })) {
   return plugin
 }

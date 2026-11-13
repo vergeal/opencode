@@ -5,7 +5,7 @@ import type { RpcCallOptions, RpcEventPayload, SelectedEvent, SubscribeOptions }
 import { Effect, Schema, SchemaAST, Stream } from "effect"
 import type { Scope } from "effect"
 import { HttpApiEndpoint, HttpApiSchema } from "effect/http-api"
-import { define } from "../effect/plugin.js"
+import { define, type Context } from "../effect/plugin.js"
 import type { ToolFailures, ToolHooks } from "../effect/tool.js"
 import { AssertInput } from "../permission.js"
 import type { Plugin } from "./plugin.js"
@@ -14,7 +14,7 @@ import type { RpcDomain, RpcHandlers } from "./rpc.js"
 
 type HostRegistration = { readonly dispose: Effect.Effect<void> }
 type Registration = { readonly dispose: () => Promise<void> }
-type PromiseContext = Parameters<Plugin["setup"]>[0]
+type PromiseContext = Parameters<NonNullable<Plugin["activate"]>>[0]
 type HostRpc = Parameters<Parameters<typeof define>[0]["effect"]>[0]["rpc"]
 type StreamAdapter = <A, E>(
   stream: Stream.Stream<A, E>,
@@ -210,17 +210,14 @@ function compileEndpoint(endpoint: HttpApiEndpoint.Top) {
  * Adapts a Promise plugin into an Effect plugin so the existing Effect-only
  * Core plugin runtime can run it unchanged.
  *
- * Hook registrations created during the async `setup` attach to the plugin's
+ * Hook registrations created during the async `activate` attach to the plugin's
  * scope, so unloading the plugin disposes them. The captured fiber context
  * preserves boot-time batching, so Promise-plugin transforms still coalesce
  * into one reload per domain.
  */
 export function fromPromise(plugin: Plugin) {
-  return define({
-    id: plugin.id,
-    ...(plugin.display === undefined ? {} : { display: plugin.display }),
-    effect: (host) =>
-      Effect.gen(function* () {
+  // Every lifecycle hook receives the same Promise context, so build it once per run.
+  const makeContext = Effect.fn("Plugin.Promise.context")(function* (host: Context) {
         const [{ ClientApi }, { OpenCodeEvent }] = yield* Effect.promise(() =>
           Promise.all([import("@opencode/protocol/client"), import("@opencode/protocol/groups/event")]),
         )
@@ -297,6 +294,17 @@ export function fromPromise(plugin: Plugin) {
           app: host.app,
           location: host.location,
           options: host.options,
+          paths: host.paths,
+          secrets: {
+            get: (key) => Effect.runPromise(host.secrets.get(key)),
+            set: (key, value) => Effect.runPromise(host.secrets.set(key, value)),
+            delete: (key) => Effect.runPromise(host.secrets.delete(key)),
+          },
+          config: {
+            get: () => Effect.runPromise(host.config.get()),
+            update: (patch) => Effect.runPromise(host.config.update(patch)),
+            onChange: host.config.onChange,
+          },
           agent: {
             get: adaptApiMethod(AgentEndpoints["agent.get"], host.agent.get),
             list: adaptApiMethod(AgentEndpoints["agent.list"], host.agent.list),
@@ -506,6 +514,15 @@ export function fromPromise(plugin: Plugin) {
             remove: (key) => run(host.storage.remove(key)),
             scan: (options) => run(host.storage.scan(options)),
           },
+          inbox: {
+            publish: (message) => run(host.inbox.publish(message)),
+            publishMany: (messages) => run(host.inbox.publishMany(messages)),
+            list: () => run(host.inbox.list()),
+            update: (id, patch) => run(host.inbox.update(id, patch)),
+            remove: (id) => run(host.inbox.remove(id)),
+            markSeen: (id) => run(host.inbox.markSeen(id)),
+            onSeen: (callback) => host.inbox.onSeen(callback),
+          },
           tool: {
             reload: () => run(host.tool.reload()),
             list: () =>
@@ -664,8 +681,30 @@ export function fromPromise(plugin: Plugin) {
           },
         }
 
+        return context2
+  })
+
+  // A hook gets the same adapted context as `activate`, minus its cleanup.
+  const runLifecycle =
+    (hook: (context: PromiseContext) => Promise<void> | void) => (host: Context) =>
+      Effect.gen(function* () {
+        const context2 = yield* makeContext(host)
+        yield* Effect.promise(() => Promise.resolve(hook(context2)))
+      })
+
+  const onInstall = plugin.onInstall
+  const onUninstall = plugin.onUninstall
+
+  return define({
+    id: plugin.id,
+    ...(plugin.display === undefined ? {} : { display: plugin.display }),
+    ...(onInstall === undefined ? {} : { onInstall: runLifecycle(onInstall) }),
+    ...(onUninstall === undefined ? {} : { onUninstall: runLifecycle(onUninstall) }),
+    effect: (host) =>
+      Effect.gen(function* () {
+        const context2 = yield* makeContext(host)
         yield* Effect.acquireRelease(
-          Effect.promise(() => Promise.resolve(plugin.setup(context2))),
+          Effect.promise(() => Promise.resolve((plugin.activate ?? plugin.setup)!(context2))),
           (cleanup) => (cleanup ? Effect.promise(() => Promise.resolve(cleanup())) : Effect.void),
         )
       }),

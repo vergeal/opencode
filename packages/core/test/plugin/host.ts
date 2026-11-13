@@ -30,6 +30,21 @@ export function host(overrides: Overrides = {}): Plugin.Context {
         },
       }),
     options: {},
+    paths: overrides.paths ?? { data: "/tmp/plugin/data", cache: "/tmp/plugin/cache", log: "/tmp/plugin/log" },
+    secrets:
+      overrides.secrets ??
+      ({
+        get: () => Effect.succeed(undefined),
+        set: () => Effect.void,
+        delete: () => Effect.void,
+      } as Plugin.Context["secrets"]),
+    config:
+      overrides.config ??
+      ({
+        get: () => Effect.succeed({}),
+        update: () => Effect.void,
+        onChange: () => {},
+      } as Plugin.Context["config"]),
     rpc:
       overrides.rpc ??
       Object.assign(
@@ -141,6 +156,15 @@ export function host(overrides: Overrides = {}): Plugin.Context {
       set: () => Effect.die("unused storage.set"),
       remove: () => Effect.die("unused storage.remove"),
       scan: () => Effect.die("unused storage.scan"),
+    },
+    inbox: overrides.inbox ?? {
+      publish: () => Effect.die("unused inbox.publish"),
+      publishMany: () => Effect.die("unused inbox.publishMany"),
+      list: () => Effect.die("unused inbox.list"),
+      update: () => Effect.die("unused inbox.update"),
+      remove: () => Effect.die("unused inbox.remove"),
+      markSeen: () => Effect.die("unused inbox.markSeen"),
+      onSeen: () => {},
     },
     shell: overrides.shell ?? {
       hook: () => Effect.die("unused shell.hook"),

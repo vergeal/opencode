@@ -1022,6 +1022,55 @@ export const TitlebarItem = Registry.define<TitlebarItem>("titlebar-item")
 export const ComposerPill = Registry.define<ComposerPill>("composer-pill")
 
 /**
+ * The content page of one inbox message this plugin published. The host routes a message to its publisher's renderer;
+ * a plugin that contributes none gets the host's default page, which shows the title and summary only.
+ */
+export interface InboxContent {
+  /**
+   * Renders the message once under your plugin's context; its own reactivity updates it. Return `undefined` to keep the
+   * host's default page for this message. A render that throws renders nothing and records the error.
+   *
+   * @param record - The message, including the read state the user controls.
+   */
+  render(record: InboxRecord): JSX.Element | undefined
+}
+
+/**
+ * One message a plugin published, as the app hands it to that plugin's `InboxContent` renderer.
+ *
+ * Declared here rather than reused from the schema because the generated client types are structural and drop the
+ * schema's brands (`Plugin.ID`); the plugin-side SDK must not depend on the branded schema types for a value it only
+ * reads.
+ */
+export interface InboxRecord {
+  readonly id: string
+  /** The publishing plugin. */
+  readonly plugin: string
+  /** The publisher's own id for the message; unique within the plugin. */
+  readonly externalID: string
+  readonly title: string
+  readonly summary: string
+  /** The publisher's judgement; the user never changes it. */
+  readonly status: "pending" | "done" | "failed"
+  readonly createdAt: number
+  readonly expiresAt?: number
+  readonly payload?: unknown
+  /** The user opened the message. */
+  readonly seen: boolean
+  readonly updatedAt: number
+}
+
+/**
+ * The registry of content pages for plugin inbox messages.
+ *
+ * @example
+ * ```tsx
+ * ctx.add(InboxContent, { render: (record) => <MailMessage id={record.id} payload={record.payload} /> })
+ * ```
+ */
+export const InboxContent = Registry.define<InboxContent>("inbox-content")
+
+/**
  * The registry of renderers for fenced code blocks, by language.
  *
  * @example

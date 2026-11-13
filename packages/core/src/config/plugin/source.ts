@@ -187,6 +187,8 @@ const scan = Effect.fn("ConfigPluginSource.scan")(function* (
       const entrypoints: Host.Entrypoints = directory
         ? yield* Effect.sync(() => Host.resolve({ directory: operation.target }))
         : { server: pathToFileURL(operation.target).href }
+      // Discovery only lists targets: a legacy entry is reported there as data, never logged. Configuration scans run
+      // on every config change and list refresh, so warning here would flood the log before the plugin ever loads.
       // A directory without a server part still lists for its GUI part. A TUI-only directory stays the TUI's own.
       const entrypoint = entrypoints.server ?? entrypoints.gui
       if (!entrypoint) return []
@@ -197,7 +199,7 @@ const scan = Effect.fn("ConfigPluginSource.scan")(function* (
       }
       const times = yield* Effect.forEach(
         [
-          ...Object.values(entrypoints)
+          ...[entrypoints.server, entrypoints.tui, entrypoints.rpc, entrypoints.gui]
             .filter((entry) => entry !== undefined)
             .map((entry) => fileURLToPath(entry)),
           path.join(directory ? operation.target : path.dirname(operation.target), "package.json"),

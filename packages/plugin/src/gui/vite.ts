@@ -4,11 +4,11 @@ import type { Plugin } from "vite"
 import solid from "vite-plugin-solid"
 import { pluginSharedModules, pluginWindowModules } from "./modules.js"
 
-/** Where `gui()` reads a plugin's GUI and writes its `./gui-experimental` bundle. */
+/** Where `gui()` reads a plugin's GUI and writes its CommonJS bundle. */
 export interface GuiOptions {
-  /** The module whose default export is the plugin's `Plugin.define`. Defaults to `src/gui.tsx`. */
+  /** The module whose default export is the plugin's `Plugin.define`. Defaults to `gui/main.tsx`. */
   readonly entry?: string
-  /** The CommonJS bundle to write, the file `./gui-experimental` exports. Defaults to `dist/gui-experimental.cjs`. */
+  /** The CommonJS bundle to write, the file `entry.gui = "gui/main"` resolves. Defaults to `dist/gui/main.cjs`. */
   readonly outFile?: string
 }
 
@@ -16,10 +16,10 @@ export interface GuiOptions {
 const provided = new Set<string>([...pluginSharedModules, ...pluginWindowModules])
 
 /**
- * Builds a plugin's `./gui-experimental` bundle with Vite: compiles Solid JSX, writes one CommonJS file with every
- * dynamic `import()` inlined, since the app loads no second chunk, and keeps the modules the app provides external,
- * with Electron and Node built-ins. Another module of Effect, Solid or OpenCode fails the build: the app does not
- * provide it, and a bundled copy would not share the app's instance.
+ * Builds a plugin's GUI bundle with Vite: compiles Solid JSX, writes one CommonJS file with every dynamic `import()`
+ * inlined, since the app loads no second chunk, and keeps the modules the app provides external, with Electron and
+ * Node built-ins. Another module of Effect, Solid or OpenCode fails the build: the app does not provide it, and a
+ * bundled copy would not share the app's instance.
  *
  * @param options - The entry and the bundle to write.
  * @returns The Vite plugins.
@@ -31,7 +31,7 @@ const provided = new Set<string>([...pluginSharedModules, ...pluginWindowModules
  * ```
  */
 export function gui(options: GuiOptions = {}): Plugin[] {
-  const outFile = options.outFile ?? "dist/gui-experimental.cjs"
+  const outFile = options.outFile ?? "dist/gui/main.cjs"
 
   return [
     solid(),
@@ -43,7 +43,7 @@ export function gui(options: GuiOptions = {}): Plugin[] {
           outDir: path.dirname(outFile),
           emptyOutDir: false,
           lib: {
-            entry: options.entry ?? "src/gui.tsx",
+            entry: options.entry ?? "gui/main.tsx",
             formats: ["cjs"],
             fileName: () => path.basename(outFile),
           },
