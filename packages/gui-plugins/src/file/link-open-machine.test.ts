@@ -11,12 +11,13 @@ import {
 
 const here: LinkRoute = { sessionKey: "s1", root: "/repo/main", sameScreen: true }
 
-const click: LinkOpenEvent = {
+const click: Extract<LinkOpenEvent, { type: "link.clicked" }> = {
   type: "link.clicked",
   sessionKey: "s1",
   root: "/repo/main",
   href: "shopping.txt",
   background: false,
+  alternate: false,
 }
 
 const resolvedFile = (attempt: number, route = here): LinkOpenEvent => ({
@@ -108,6 +109,7 @@ describe("transitionLinkOpen", () => {
           href: "shopping.txt",
           base: "docs",
           background: false,
+          alternate: false,
           timeoutMs: LINK_OPEN_TIMEOUT_MS,
         },
       ],
@@ -171,7 +173,7 @@ describe("transitionLinkOpen", () => {
     ])
   })
 
-  test("several matches open the picker and loadable HTML opens in the browser pane", () => {
+  test("several matches open the picker, loadable HTML opens in the browser pane, and a shortcut click opens it outside", () => {
     expect(
       replay([click, { type: "link.resolved", attempt: 1, route: here, resolution: { kind: "picker", query: "a.ts" } }])
         .effects,
@@ -187,6 +189,15 @@ describe("transitionLinkOpen", () => {
     ).toEqual([
       { type: "abort", attempt: 1 },
       { type: "open-browser", url: "file:///a.html" },
+    ])
+    expect(
+      replay([
+        click,
+        { type: "link.resolved", attempt: 1, route: here, resolution: { kind: "external", path: "/repo/main/a.html" } },
+      ]).effects,
+    ).toEqual([
+      { type: "abort", attempt: 1 },
+      { type: "open-external", path: "/repo/main/a.html" },
     ])
   })
 

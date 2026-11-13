@@ -11,6 +11,8 @@ export type LinkResolution =
   | { readonly kind: "picker"; readonly query: string }
   /** An HTML file the browser pane can load. */
   | { readonly kind: "browser"; readonly url: string }
+  /** An HTML file the system's own Chrome opens in its own window. `path` is absolute. */
+  | { readonly kind: "external"; readonly path: string }
   | { readonly kind: "file"; readonly path: string; readonly selection?: LineRange }
 
 /**
@@ -60,6 +62,7 @@ export type LinkOpenEvent =
       readonly href: string
       readonly base?: string
       readonly background: boolean
+      readonly alternate: boolean
     }
   | {
       readonly type: "link.resolved"
@@ -92,6 +95,7 @@ export type LinkOpenEffect =
       readonly href: string
       readonly base?: string
       readonly background: boolean
+      readonly alternate: boolean
       readonly timeoutMs: number
     }
   /** Rereads the file, without the file model's own toast: this machine reports the outcome. */
@@ -107,6 +111,7 @@ export type LinkOpenEffect =
     }
   | { readonly type: "open-picker"; readonly query: string; readonly background: boolean }
   | { readonly type: "open-browser"; readonly url: string }
+  | { readonly type: "open-external"; readonly path: string }
   | { readonly type: "toast-failed"; readonly path: string; readonly error?: string }
   | { readonly type: "toast-timeout"; readonly path: string }
 
@@ -158,6 +163,7 @@ export function transitionLinkOpen(state: LinkOpenState, event: LinkOpenEvent): 
           href: event.href,
           base: event.base,
           background: event.background,
+          alternate: event.alternate,
           timeoutMs: LINK_OPEN_TIMEOUT_MS,
         },
       ],
@@ -208,6 +214,8 @@ function resolved(state: Extract<LinkOpenState, { status: "resolving" }>, resolu
     return finish(state, [{ type: "open-picker", query: resolution.query, background: state.background }])
 
   if (resolution.kind === "browser") return finish(state, [{ type: "open-browser", url: resolution.url }])
+
+  if (resolution.kind === "external") return finish(state, [{ type: "open-external", path: resolution.path }])
 
   return {
     state: {

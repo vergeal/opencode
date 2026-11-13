@@ -61,7 +61,7 @@ import {
   type LinkResolution,
   type LinkRoute,
 } from "./link-open-machine"
-import { fileTabId, fileTabPath, isFileTab, workspaceFileUrl } from "./path"
+import { fileTabId, fileTabPath, isFileTab, resolveOpenInAppPath, workspaceFileUrl } from "./path"
 import {
   createPickerState,
   pickerBrowsing,
@@ -687,6 +687,9 @@ const setup: Plugin.Setup<typeof File> = (ctx) => {
     sameScreen: ctx.screen.current() === screen,
   })
 
+  // The name each platform's launcher takes for Google Chrome; `Desktop.launch` resolves it to a program.
+  const browserApp = { macos: "Google Chrome", windows: "chrome", linux: "google-chrome" } as const
+
   const dispatchLink = (event: LinkOpenEvent) => {
     const previous = untrack(() => unwrap(machines.linkOpen))
     const next = transitionLinkOpen(previous, event)
@@ -808,6 +811,20 @@ const setup: Plugin.Setup<typeof File> = (ctx) => {
       return
     }
 
+    if (effect.type === "open-external") {
+      const launch = ctx.desktop?.launch(effect.path, browserApp[ctx.desktop?.os ?? "linux"])
+
+      void launch?.catch(() => {
+        ctx.toast.show({
+          variant: "error",
+          title: ctx.t("load.failed"),
+          description: getFilename(effect.path) || effect.path,
+        })
+      })
+
+      return
+    }
+
     batch(() => {
       applySelection(routed, screen.file, effect.path, effect.selection)
       layout.open(key(screen.file, effect.path), routed, { background: effect.background })
@@ -821,7 +838,7 @@ const setup: Plugin.Setup<typeof File> = (ctx) => {
 
   const resolveLink = async (
     screen: SessionScreen,
-    link: { href: string; base?: string; background: boolean },
+    link: { href: string; base?: string; background: boolean; alternate: boolean },
     signal: AbortSignal,
   ): Promise<LinkResolution> => {
     const { findFileLink, isAbsoluteLink, parseFileLink } = await import("./resolve-link")
@@ -832,22 +849,32 @@ const setup: Plugin.Setup<typeof File> = (ctx) => {
 
     // Absolute paths, links written relative to a document, and agent previews name one exact file.
     if (isAbsoluteLink(parsed.path) || link.base !== undefined || link.background)
-      return fileOrPage(screen, direct, parsed.selection)
+      return fileOrPage(screen, direct, parsed.selection, link.alternate)
 
     const target = await findFileLink({ files: screen.file, path: parsed.path, signal })
 
     if (target?.kind === "picker") return { kind: "picker", query: target.query }
 
     // With no match, the literal path still covers files the search index skips, such as an ignored `.env`.
-    return fileOrPage(screen, target?.path ?? direct, parsed.selection)
+    return fileOrPage(screen, target?.path ?? direct, parsed.selection, link.alternate)
   }
 
   // The browser pane shows HTML it can load. While it is pending or off, the file opens as a tab instead.
-  const fileOrPage = (screen: SessionScreen, path: string, selection: LineRange | undefined): LinkResolution => {
+  // A shortcut-clicked HTML file skips the pane and opens in the system's Chrome, whatever the pane's state.
+  const fileOrPage = (
+    screen: SessionScreen,
+    path: string,
+    selection: LineRange | undefined,
+    alternate: boolean,
+  ): LinkResolution => {
+    if (artifactKind(path) !== "html") return { kind: "file", path, selection }
+
+    if (alternate) return { kind: "external", path: resolveOpenInAppPath(screen.file.root, path) }
+
     const pane = shared.browser()
     const routed = sessions.current()
 
-    if (routed && artifactKind(path) === "html" && pane.status === "active" && pane.value.canOpen(routed, path))
+    if (routed && pane.status === "active" && pane.value.canOpen(routed, path))
       return { kind: "browser", url: workspaceFileUrl(screen.file.root, path) }
 
     return { kind: "file", path, selection }
@@ -886,6 +913,7 @@ const setup: Plugin.Setup<typeof File> = (ctx) => {
         href: link.href,
         base: link.base,
         background: Boolean(link.background),
+        alternate: Boolean(link.alternate),
       })
     },
   })
