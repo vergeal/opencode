@@ -35,7 +35,7 @@ const newIcons = {
   folder: `<path d="M1.5 13.5V2.5H5.5L8.5 5.5H14.5V13.5H1.5Z" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>`,
   "folder-plus": `<path d="M7.5 13.5H1.5V2.5H5.5L8.5 5.5H14.5V6.5" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/><path d="M9.5 11.5H12.5M12.5 11.5H15.5M12.5 11.5V8.5M12.5 11.5V14.5" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>`,
   edit: `<path d="M8.5 2.5H2.5V13.5H13.5V7.5M7.5 8.5V6.5L12.5 1.5L14.5 3.5L9.5 8.5H7.5Z" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>`,
-  "chat-bubble": `<path d="M1.5 2.5V10.5H5.5L8 13.5L10.5 10.5H14.5V2.5H1.5Z" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>`,
+  "chat-bubble": `<path d="M5.27 13.33A6 6 0 1 0 2.67 10.73L1.33 14.67Z" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>`,
   calendar: `<path d="M14.5 6.5V3.5H11.5M14.5 6.5V14.5H1.5V6.5M14.5 6.5H1.5M1.5 6.5V3.5H4.5M4.5 3.5V1.5M4.5 3.5H11.5M4.5 3.5V4.5M11.5 3.5V1.5M11.5 3.5V4.5" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/>`,
   extensions: `<path d="M1.5 2.5V13.5H14.5V2.5H1.5Z" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/><path d="M4.5 6.5V9.5M8 6.5V9.5M11.5 6.5V9.5" stroke-linecap="round" stroke="currentColor"/>`,
   settings: `<path d="M1.5 11V5L8 1.5L14.5 5V11L8 14.5L1.5 11Z" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"/><path d="M10.5 8C10.5 9.38071 9.38071 10.5 8 10.5C6.61929 10.5 5.5 9.38071 5.5 8C5.5 6.61929 6.61929 5.5 8 5.5C9.38071 5.5 10.5 6.61929 10.5 8Z" stroke="currentColor"/>`,
