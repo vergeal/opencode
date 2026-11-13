@@ -131,9 +131,17 @@ export async function markMissing(ports: Ports, taskID: string): Promise<Outcome
   return fail(ports, taskID, "结果缺失", `结果文件仍未出现：${ports.store.resultPath(task.planID, taskID)}`)
 }
 
-/** `session.execution.failed`, or an interruption the user did not ask for. */
-export async function markExecutionFailed(ports: Ports, taskID: string, detail: string): Promise<Outcome> {
-  return fail(ports, taskID, "执行失败", detail)
+/**
+ * `session.execution.failed`, or an interruption the user did not ask for. A session that vanished between sweeps is
+ * reported as 会话失联 instead, because that is the kind the PM is told about.
+ */
+export async function markExecutionFailed(
+  ports: Ports,
+  taskID: string,
+  detail: string,
+  kind: "执行失败" | "会话失联" = "执行失败",
+): Promise<Outcome> {
+  return fail(ports, taskID, kind, detail)
 }
 
 export interface ResolveInput {
