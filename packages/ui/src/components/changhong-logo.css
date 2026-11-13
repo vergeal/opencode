@@ -1,4 +1,5 @@
 [data-component="changhong-logo"] {
+  --changhong-logo-sweep-duration: 3000ms;
   position: relative;
   display: inline-block;
   line-height: 0;
@@ -20,19 +21,21 @@
 }
 
 /* The sweep matches the splash the dev server serves while it bundles (`electron.vite.config.ts`), so the first
-   paint and every later loading surface share one motion: a narrow gradient band with `mask-size` wider than the
-   mark travels across the artwork, and the white copy underneath is only visible where the letters are, so the
-   letterforms light up one after another. */
+   paint and every later loading surface share one motion. The band is about one letterform wide, and the white copy
+   underneath is only visible where the letters are, so the mark lights up one glyph at a time instead of washing
+   over as one block. */
 [data-component="changhong-logo"] .changhong-logo-sweep {
-  --changhong-logo-sweep-duration: 1800ms;
   position: absolute;
   inset: 0;
   pointer-events: none;
   mix-blend-mode: screen;
-  mask-image: linear-gradient(to right, transparent 38%, #000 50%, transparent 62%);
-  mask-size: 300% 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent 48.5%, #000 50%, transparent 51.5%);
+  mask-image: linear-gradient(to right, transparent 48.5%, #000 50%, transparent 51.5%);
+  -webkit-mask-size: 500% 100%;
+  mask-size: 500% 100%;
+  -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  animation: changhong-logo-sweep var(--changhong-logo-sweep-duration) ease-in-out infinite;
+  animation: changhong-logo-sweep var(--changhong-logo-sweep-duration) linear infinite;
 }
 
 [data-component="changhong-logo"] .changhong-logo-sweep-window {
@@ -41,8 +44,35 @@
   fill: #fff;
 }
 
+/* The band lights one glyph at a time, and the glyph swells while the band crosses it. The swell runs on the same
+   3000ms cycle as the sweep and each glyph delays by its own offset, so the lift travels along the wordmark
+   instead of every letter pulsing together. The band crosses the mark between 37.5% and 62.5% of the cycle with
+   `linear` easing, which places glyph `i` of nine at `(i + 0.5) / 9` of that span. */
+[data-component="changhong-logo"] .changhong-logo-glyph {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: changhong-logo-glyph var(--changhong-logo-sweep-duration) linear infinite;
+  animation-delay: calc(
+    (var(--i) + 0.5) * var(--changhong-logo-sweep-duration) / 36 - var(--changhong-logo-sweep-duration) * 1.125
+  );
+}
+
+@keyframes changhong-logo-glyph {
+  0%,
+  47%,
+  53%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+}
+
 @keyframes changhong-logo-sweep {
   0% {
+    -webkit-mask-position: 100% 0;
     mask-position: 100% 0;
     opacity: 0;
   }
@@ -53,6 +83,7 @@
   }
 
   100% {
+    -webkit-mask-position: 0% 0;
     mask-position: 0% 0;
     opacity: 0;
   }
@@ -60,4 +91,8 @@
 
 :root[data-motion="reduce"] [data-component="changhong-logo"] .changhong-logo-sweep {
   display: none;
+}
+
+:root[data-motion="reduce"] [data-component="changhong-logo"] .changhong-logo-glyph {
+  animation: none;
 }

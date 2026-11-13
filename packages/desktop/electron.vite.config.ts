@@ -71,13 +71,13 @@ const splashPage = `<!doctype html>
         position: absolute;
         inset: 0;
         mix-blend-mode: screen;
-        -webkit-mask-image: linear-gradient(to right, transparent 38%, #000 50%, transparent 62%);
-        mask-image: linear-gradient(to right, transparent 38%, #000 50%, transparent 62%);
-        -webkit-mask-size: 300% 100%;
-        mask-size: 300% 100%;
+        -webkit-mask-image: linear-gradient(to right, transparent 48.5%, #000 50%, transparent 51.5%);
+        mask-image: linear-gradient(to right, transparent 48.5%, #000 50%, transparent 51.5%);
+        -webkit-mask-size: 500% 100%;
+        mask-size: 500% 100%;
         -webkit-mask-repeat: no-repeat;
         mask-repeat: no-repeat;
-        animation: sweep 1800ms ease-in-out infinite;
+        animation: sweep 3000ms linear infinite;
       }
 
       .sweep::after {
