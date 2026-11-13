@@ -155,6 +155,13 @@ html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   background: transparent;
 }
 
+/* The navigation column reads a step above the rail: both ride the window's single tint, so the sidebar adds a thin
+   white wash instead of a second opaque sheet. The wash stays inside the workbench's rounded cutout, so the corner
+   arcs still resolve to the window tint instead of to a lighter square. */
+html[data-replica-window="translucent"]:not([data-color-scheme="dark"]) [data-slot="replica-sidebar"] {
+  background: rgb(255 255 255 / 10%);
+}
+
 /* Dark mode needs a deeper navigation surface. The shell carries it, the title bar keeps its own lighter tint, and
    the frame stays clear: splitting the tint across those two layers keeps the workbench's rounded cutout on the
    navigation surface instead of on a darker frame. */
@@ -166,18 +173,22 @@ html[data-replica-window="translucent"][data-color-scheme="dark"] [data-slot="re
   background: var(--color-titlebar);
 }
 
+/* The title bar's 62% tint meets the navigation's 90% at a hard horizontal seam. A short ramp on the shell turns
+   that seam into a gradient, so the darker column appears to deepen under the bar instead of starting beneath it. */
 html[data-replica-window="translucent"][data-color-scheme="dark"] [data-slot="replica-shell"] {
-  background: var(--color-navigation);
+  background:
+    linear-gradient(180deg, var(--color-titlebar) 0, var(--color-navigation) 10px)
+    var(--color-navigation);
 }
 
-/* A hairline of light along the top edge reads as the glass catching the room. */
-[data-slot="replica-titlebar"],
-[data-slot="replica-sidebar"] {
+/* A hairline of light along the top edge reads as the glass catching the room. Only the window bar carries it: the
+   navigation column starts 39px lower, and repeating the line there read as two parallel highlights across the
+   chrome. The window's own rounded corners clip this line, so it follows the arc instead of ending square. */
+[data-slot="replica-titlebar"] {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
 }
 
-[data-color-scheme="dark"] [data-slot="replica-titlebar"],
-[data-color-scheme="dark"] [data-slot="replica-sidebar"] {
+[data-color-scheme="dark"] [data-slot="replica-titlebar"] {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%);
 }
 
