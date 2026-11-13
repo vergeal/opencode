@@ -6,6 +6,12 @@
   width: var(--spinner-width, 18px);
   height: var(--spinner-height, auto);
   aspect-ratio: 1;
+  /* The ring turns on this box, not on the SVG inside it. An animated transform on an SVG child keeps the ring on the
+     main thread every frame; rotating the HTML box leaves the ring itself static and only moves the box. The rotation
+     uses the independent `rotate` property so `transform` stays free for the 3D hint that asks for a layer, and
+     `--spinner-time` still scales the loop for the story's speed control. */
+  transform: translateZ(0);
+  animation: spinner-ring calc(0.9s * var(--spinner-time, 1)) linear infinite;
 }
 
 [data-component="spinner"] {
@@ -13,33 +19,27 @@
   flex-shrink: 0;
 }
 
-/* One ring, rotated by the compositor. `--spinner-time` scales the loop, as the story's speed control expects.
-   `will-change` is what actually hands the rotation to the compositor: an SVG child with an animated transform
-   otherwise stays on the main thread, and every frame of the ring then recosts the whole stylesheet (measured at
-   55 style recalcs per second per spinner here, 0.26s of main-thread time). */
 [data-slot="spinner-dots"] > svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   overflow: visible;
-  will-change: transform;
-  animation: spinner-ring calc(0.9s * var(--spinner-time, 1)) linear infinite;
 }
 
 @keyframes spinner-ring {
   to {
-    transform: rotate(360deg);
+    rotate: 360deg;
   }
 }
 
 /* syncSpinPhase marks spinners out of view; `!important` beats the animation the ring carries. */
-[data-slot="spinner-dots"][data-offscreen] > svg {
+[data-slot="spinner-dots"][data-offscreen] {
   animation-play-state: paused !important;
 }
 
-:root[data-motion="reduce"] [data-slot="spinner-dots"] > svg {
+:root[data-motion="reduce"] [data-slot="spinner-dots"] {
   /* Beats the animation the ring carries; the ring stays as a still arc. */
   animation: none !important;
-  will-change: auto;
+  transform: none;
 }
