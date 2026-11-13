@@ -27,9 +27,14 @@ function menuIcon(key: string | undefined) {
   if (!encoded) return undefined
 
   const image = nativeImage.createFromBuffer(Buffer.from(encoded, "base64"), { scaleFactor: 2 })
-  const result = process.platform === "darwin" ? image : dark ? whiteGlyph(image) : image
-  // The glyph is a mask: AppKit tints it for the current appearance instead of drawing fixed black pixels.
-  if (process.platform === "darwin") result.setTemplateImage(true)
+  let result = image
+  if (process.platform === "darwin") {
+    // The glyph is a mask: AppKit tints it for the current appearance instead of drawing fixed black pixels.
+    image.setTemplateImage(true)
+  } else if (dark) {
+    // A failing tint must not take the whole menu down with it.
+    result = whiteGlyph(image) ?? image
+  }
   menuIcons.set(cacheKey, result)
 
   return result
@@ -37,16 +42,25 @@ function menuIcon(key: string | undefined) {
 
 /** Turn the black mask into white pixels while keeping the antialiased alpha, for dark system menus. */
 function whiteGlyph(image: Electron.NativeImage) {
-  const scaleFactor = image.getScaleFactors()[0] ?? 1
-  const bitmap = image.toBitmap()
-  for (let i = 0; i < bitmap.length; i += 4) {
-    bitmap[i] = 255
-    bitmap[i + 1] = 255
-    bitmap[i + 2] = 255
+  try {
+    const scaleFactor = image.getScaleFactors()[0] ?? 1
+    const { width, height } = image.getSize()
+    const bitmap = image.toBitmap()
+    for (let i = 0; i < bitmap.length; i += 4) {
+      bitmap[i] = 255
+      bitmap[i + 1] = 255
+      bitmap[i + 2] = 255
+    }
+    const tinted = nativeImage.createFromBitmap(bitmap, {
+      width: width * scaleFactor,
+      height: height * scaleFactor,
+      scaleFactor,
+    })
+    // Re-decode through PNG: a bitmap-backed image loses its alpha in Windows menus and draws as a white square.
+    return nativeImage.createFromBuffer(tinted.toPNG(), { scaleFactor })
+  } catch {
+    return undefined
   }
-  // `width`/`height` are the logical size; the buffer already carries the scale factor's pixels.
-  const { width, height } = image.getSize()
-  return nativeImage.createFromBitmap(bitmap, { width, height, scaleFactor })
 }
 
 export const menuHandlers = MenuRpcs.toLayer(
