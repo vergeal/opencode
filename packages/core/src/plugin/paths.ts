@@ -17,9 +17,10 @@ export type Paths = {
  * Whether `D:\` exists and accepts writes. Probing costs a syscall, and every list, uninstall, and configuration pass
  * asks for paths, so the answer is kept for the life of the process.
  *
- * A removable or network drive that disappears and returns prepares the environment twice: the missing drive falls
- * back to the home directory, and the returning one may already hold a stale environment. That cost is accepted; a
- * lock or a health check here would hide a real storage problem instead of reporting it.
+ * Keeping it also fixes the drive for the whole process: a drive that disappears after the first probe is not
+ * re-probed, so the next preparation targets the same `D:` and fails until a restart probes again, and a drive that
+ * returns is picked up only on the next start. Re-probing on every call would quietly move a real storage problem
+ * back to the home directory; a lock or a health check here would hide it entirely.
  */
 let probed: boolean | undefined
 function driveAvailable() {
@@ -37,8 +38,8 @@ function driveAvailable() {
  * Each plugin gets directories named after its id, with Windows placing the rebuildable ones on `D:` when it can.
  * A scoped package id (`@scope/name`) must stay one directory name, so path separators become `+`.
  *
- * Only the environment and the cache follow the drive. `data` and `log` stay under the home directory, so an
- * unplugged drive costs a re-download, never the plugin's configuration or its log history.
+ * Only the environment and the cache follow the drive. `data` and `log` stay under the home directory, so a drive
+ * that is absent at startup costs a re-download, never the plugin's configuration or its log history.
  */
 export function make(input: {
   readonly home: string
