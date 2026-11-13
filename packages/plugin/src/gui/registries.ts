@@ -551,6 +551,11 @@ export interface Link {
   readonly base?: string
   /** The session the link belongs to. */
   readonly session?: SessionRef
+  /**
+   * The click held the platform shortcut modifier (Command on macOS, Control elsewhere), so the handler opens the
+   * link's alternative destination. Handlers without one ignore it and open the default destination.
+   */
+  readonly alternate?: boolean
 }
 
 /** Opens local links that `match` accepts. `Links.open` picks the matching handler with the highest priority. */

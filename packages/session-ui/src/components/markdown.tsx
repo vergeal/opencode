@@ -618,7 +618,7 @@ function setupLocalLinks(root: HTMLDivElement, open: () => OpenMarkdownLocalFile
 
     if (!handler) return
     event.preventDefault()
-    handler(path)
+    handler(path, event.metaKey || event.ctrlKey)
   }
 
   const handleKeyDown = (event: KeyboardEvent) => {
