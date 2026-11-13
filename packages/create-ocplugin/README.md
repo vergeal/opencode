@@ -4,8 +4,8 @@ Scaffolds an OpenCode plugin inside this repository. The generated directory is 
 type-checks with `workspace:*` and `catalog:` versions without installing anything.
 
 ```sh
-bun packages/create-ocplugin/src/cli.ts packages/plugins/notes
-bun packages/create-ocplugin/src/cli.ts packages/plugins/notes-panel --template gui --name "Notes Panel"
+bun packages/create-ocplugin/src/cli.ts plugins/notes
+bun packages/create-ocplugin/src/cli.ts plugins/notes-panel --template gui --name "Notes Panel"
 ```
 
 ## Templates

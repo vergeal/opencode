@@ -48,7 +48,7 @@ export interface Deprecation {
  * - drop the `plugin uses a legacy entry` warning at both `Host.resolve` call sites.
  *
  * The fallback may be removed only when all four hold:
- * 1. every built-in plugin under `packages/plugins/*` declares `main` entries in `ocplugin.json` and its source layout
+ * 1. every built-in plugin under `plugins/*` declares `main` entries in `ocplugin.json` and its source layout
  *    matches the standard (directory name = entry name);
  * 2. `docs/ocplugin-dev/index.html` no longer shows a legacy path (`entry.server: "server/index.js"`, `"src/index"`,
  *    ...) and the 2.0 "current behavior" and migration tables are gone;

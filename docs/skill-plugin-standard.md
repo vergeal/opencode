@@ -291,7 +291,7 @@ export default Plugin.define({
 #### 现有案例
 
 - `packages/plugin-browser`：桌面浏览器插件，通过 CDP/proxy 控制浏览器，作为内置插件编译进 Core，注册 `browser.*` 工具与 `browser` 技能。
-- `packages/plugins/webwright`（`opencode.webwright`）：独立的 `.ocplugin` 组合包，用 Playwright 驱动专用浏览器（默认系统 Chrome + 专属 profile），注册 `webwright.*` 工具与 `webwright` 技能；Playwright 驱动作为包内资源放在 `assets/playwright-core`，不随 Core 编译。
+- `plugins/webwright`（`opencode.webwright`）：独立的 `.ocplugin` 组合包，用 Playwright 驱动专用浏览器（默认系统 Chrome + 专属 profile），注册 `webwright.*` 工具与 `webwright` 技能；Playwright 驱动作为包内资源放在 `assets/playwright-core`，不随 Core 编译。
 
 ---
 
@@ -322,7 +322,7 @@ export default Plugin.define({
 
 打包必须**可重复**：文件按路径排序，归档内 mtime 固定（例如 `0`），保证同样的输入产出逐字节相同的文件与 sha256。
 
-- 读取/解包用 `Bun.Archive`。写入不要用 `Bun.Archive.write`：它会用写入时刻作为条目 mtime，破坏可重复性。`packages/plugins/webwright/script/pack.ts` 直接写 ustar 头（mtime 固定为 0）并 `Bun.gzipSync` 压缩，同样的 `dist/` 连续打包两次得到相同 sha256。
+- 读取/解包用 `Bun.Archive`。写入不要用 `Bun.Archive.write`：它会用写入时刻作为条目 mtime，破坏可重复性。`plugins/webwright/script/pack.ts` 直接写 ustar 头（mtime 固定为 0）并 `Bun.gzipSync` 压缩，同样的 `dist/` 连续打包两次得到相同 sha256。
 
 ### 3.3 包内布局
 
@@ -505,6 +505,6 @@ README.md                # 可选
 - `packages/core/src/plugin.ts`：`Plugin.Info` 快照与激活 scope。
 - `packages/plugin/src/host.ts`：插件入口解析与 id 规则。
 - `packages/plugin/src/effect/plugin.ts`：Effect 插件 Context 与 `display` 声明。
-- `packages/plugins/webwright/ocplugin.json`：组合包声明与内联图标，`packages/plugins/webwright/src/skill.ts` 演示从 manifest 与 `SKILL.md` 加载技能，`script/pack.ts` 演示可重复打包。
+- `plugins/webwright/ocplugin.json`：组合包声明与内联图标，`plugins/webwright/src/skill.ts` 演示从 manifest 与 `SKILL.md` 加载技能，`script/pack.ts` 演示可重复打包。
 - `packages/schema/src/config.ts`：`skills`、`plugins` 字段定义。
 - `packages/schema/src/plugin.ts`：`Plugin.Info` 与 `Plugin.Display` 契约。

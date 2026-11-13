@@ -7,7 +7,7 @@ An opt-in OpenCode plugin that registers Figma's remote MCP server and official 
 Install directly from Git:
 
 ```sh
-opencode plugin add 'git+https://github.com/anomalyco/opencode.git#path:packages/plugins/figma'
+opencode plugin add 'git+https://github.com/anomalyco/opencode.git#path:plugins/figma'
 ```
 
 The URL selects the Figma directory and uses the repository's default branch, so no explicit branch name is needed. Installation is Git-only.
@@ -19,7 +19,7 @@ For local development, add the directory to `plugins` in the project's `opencode
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["./packages/plugins/figma"],
+  "plugins": ["./plugins/figma"],
 }
 ```
 
@@ -45,7 +45,7 @@ The vendored Figma materials remain Figma's materials, not OpenCode-authored MIT
 
 ## Manually sync skills
 
-From `packages/plugins/figma`, explicitly run:
+From `plugins/figma`, explicitly run:
 
 ```sh
 bun run sync:skills
@@ -60,7 +60,7 @@ Sync never runs automatically during installation, plugin startup, typechecking,
 ## Remove
 
 ```sh
-opencode plugin remove 'git+https://github.com/anomalyco/opencode.git#path:packages/plugins/figma'
+opencode plugin remove 'git+https://github.com/anomalyco/opencode.git#path:plugins/figma'
 ```
 
 If you installed with a different Git specification, pass that same specification to remove it. An independently configured `mcp.servers.figma` entry remains unaffected.

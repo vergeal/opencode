@@ -6,6 +6,6 @@ These packages are not bundled with OpenCode or loaded automatically. Do not add
 
 | Plugin                       | Directory                 | Form         |
 | ---------------------------- | ------------------------- | ------------ |
-| [Webwright](webwright/README.md) | `packages/plugins/webwright` | `.ocplugin` |
-| [DBRO](dbro/README.md)       | `packages/plugins/dbro`   | `.ocplugin` |
-| [Figma](figma/README.md)     | `packages/plugins/figma`  | Git package  |
+| [Webwright](webwright/README.md) | `plugins/webwright` | `.ocplugin` |
+| [DBRO](dbro/README.md)       | `plugins/dbro`   | `.ocplugin` |
+| [Figma](figma/README.md)     | `plugins/figma`  | Git package  |

@@ -48,7 +48,7 @@ export const webwrightCatalog: CatalogPlugin[] = [
     author: "OpenCode",
     description: "让 AI 直接操作浏览器：打开网页、点击、填表、抓取内容。",
     package: "opencode.webwright",
-    repository: "https://github.com/anomalyco/opencode/tree/dev/packages/plugins/webwright",
+    repository: "https://github.com/anomalyco/opencode/tree/dev/plugins/webwright",
     bundle: { file: "opencode.webwright-2.2.5.ocplugin", format: "ocplugin" },
     skills: [{ name: "Webwright", description: "用 webwright.* 工具操作专用浏览器。" }],
   },
