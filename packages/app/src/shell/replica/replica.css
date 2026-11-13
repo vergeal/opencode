@@ -49,6 +49,10 @@
   --color-muted-surface: #f7f7f7;
   --color-border: #e8e8e8;
   --color-divider: #eeeeee;
+  /* The panel edge sits on the vibrancy material rather than on an opaque sheet, where #eeeeee disappears into the
+     62% white tint. Six percent still vanished over a white wallpaper, so the glass variant carries ten percent,
+     enough to read at 1x without turning into a drawn outline. */
+  --color-divider-glass: rgb(0 0 0 / 10%);
   --color-text-primary: #3a3e3f;
   --color-text-main: #242424;
   --color-text-secondary: #858585;
@@ -65,15 +69,18 @@
   --radius-control: 10px;
   --radius-card: 12px;
   --radius-popover: 12px;
-  --radius-panel: 16px;
+  /* The panel's outer arc sits one 1px gutter inside the window edge, so 12px reads as the macOS window radius
+     (about 12px on current macOS) instead of a floating card. */
+  --radius-panel: 12px;
   --radius-message: 17px;
   --radius-composer: 19px;
   --radius-dialog: 18px;
 
   /* The dock leaves 14px under the card; a taller blur would be clipped by the work area's bottom edge. */
   --shadow-composer: 0 2px 12px rgba(0, 0, 0, 0.05);
-  /* The panel sheds this shadow onto the title bar and rail, so it needs a soft falloff rather than a 1px ring. */
-  --shadow-panel: 0 1px 2px rgb(0 0 0 / 8%), 0 4px 12px -2px rgb(0 0 0 / 12%);
+  /* The panel sheds this shadow onto the title bar and rail, so it needs a soft falloff rather than a 1px ring.
+     A tighter spread than the old 12px keeps the smaller radius from reading as a lifted card. */
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 7%), 0 3px 8px -2px rgb(0 0 0 / 10%);
   --shadow-popover: 0 6px 24px rgba(0, 0, 0, 0.1);
   --shadow-dialog: 0 16px 44px rgba(0, 0, 0, 0.15);
 
@@ -119,7 +126,9 @@
   --color-send-bg: var(--v2-background-bg-layer-04);
   --color-send-fg: var(--v2-text-text-contrast);
   /* The work area is darker than its backdrop here, so the lift needs more weight to read in dark mode. */
-  --shadow-panel: 0 1px 2px rgb(0 0 0 / 45%), 0 4px 12px -2px rgb(0 0 0 / 50%);
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 40%), 0 3px 8px -2px rgb(0 0 0 / 45%);
+  /* A dark glass surface swallows a dark divider the same way the light one swallows #eeeeee. */
+  --color-divider-glass: rgb(255 255 255 / 10%);
 }
 
 /* One titlebar split at the sidebar boundary: window controls on the left, conversation title on the right. */
@@ -246,8 +255,18 @@ html[data-replica-window="translucent"][data-color-scheme="dark"] [data-slot="re
   overflow: visible;
 }
 
+/* Only the glass shell needs the darker divider: an opaque sheet still shows #eeeeee against #ffffff. The variable
+   is set on the two elements that draw the lines rather than on the frame, so nothing else inside the workbench
+   picks up the glass ink. */
+html[data-replica-window="translucent"] [data-slot="replica-workbench"],
+html[data-replica-window="translucent"] [data-slot="replica-sidebar-slot"] {
+  --color-divider: var(--color-divider-glass);
+}
+
 /* The sidebar and the conversation are one main panel, rounded as a whole. A 1px gutter on every side matches the
-   rail icons and the title bar's controls, so the panel reads as the same surface level as the chrome around it. */
+   rail icons and the title bar's controls, so the panel reads as the same surface level as the chrome around it.
+   The edge stays a border rather than an inset shadow: the workbench's children paint over an inset ring, and at a
+   fractional device pixel ratio Chromium snaps the 1px border to one physical pixel anyway. */
 [data-slot="replica-workbench"] {
   display: flex;
   min-width: 0;
