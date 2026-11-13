@@ -104,6 +104,11 @@ export function scopeConflict(a: readonly string[], b: readonly string[]): strin
   return undefined
 }
 
+/** Whether one changed repository-relative path belongs to a task's allowed scope. */
+export function covers(path: string, allowPaths: readonly string[]): boolean {
+  return allowPaths.some((scope) => path === scope || path.startsWith(`${scope}/`))
+}
+
 /**
  * A task is ready only after every dependency is merged, so two tasks can run at the same time exactly when neither
  * can reach the other through `deps`. Tasks on the same chain are therefore never a conflict.

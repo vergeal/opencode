@@ -149,9 +149,6 @@ export async function dispatchOne(ports: Ports, plan: Ledger.Plan, task: Ledger.
       if (!current) throw new Error(`任务 ${task.id} 不在台账里`)
       file.tasks[task.id] = {
         ...Ledger.move(current, "进行中", at),
-        deps: [...current.deps],
-        allowPaths: [...current.allowPaths],
-        verify: [...current.verify],
         approvedAt: current.approvedAt ?? at,
         dispatchedAt: at,
         sessionID,

@@ -103,13 +103,13 @@ export class TransitionError extends Error {
   }
 }
 
-export function move(task: Task, to: Status, at: string): Task {
+export function move<T extends Task>(task: T, to: Status, at: string): T {
   if (!TRANSITIONS[task.status].includes(to)) throw new TransitionError(task.status, to)
   return { ...task, status: to, updatedAt: at }
 }
 
 /** `resolve abandon` marks every downstream task blocked. `已合入` is terminal and is never downgraded. */
-export function block(task: Task, at: string): Task {
+export function block<T extends Task>(task: T, at: string): T {
   if (task.status === "已合入" || task.status === "阻塞") return task
   return { ...task, status: "阻塞", updatedAt: at }
 }
