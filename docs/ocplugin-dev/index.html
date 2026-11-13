@@ -731,7 +731,8 @@ expected: "server/main"                             # 应该改成的路径</cod
       <div class="note">
         <b>已知代价：</b>外接盘或网络盘掉线时，本次进程仍按启动时的判定继续用 <code>D:\</code>，准备可能因此失败；
         重启后判定为不可用，回落到 C 盘重新准备一次。盘接回来再启动，又会在 <code>D:\</code> 上准备一次，每次几十秒。
-        这是有意的取舍——这里不加锁、不做健康检查，否则真实的存储问题会被掩盖而不是报出来，所以不要把它当成 bug。
+        这是有意的取舍——这里不加锁、不做健康检查，也故意不在每次调用时重探（那样会把真实的存储问题
+        悄悄搬回主目录），否则问题会被掩盖而不是报出来，所以不要把它当成 bug。
       </div>
 
       <h4>检测与准备</h4>
@@ -815,7 +816,13 @@ expected: "server/main"                             # 应该改成的路径</cod
       <h4>状态与通知</h4>
       <table>
         <tr><th><code>Plugin.Info.runtime</code></th><th>含义</th></tr>
-        <tr><td><code>{ status: "preparing" }</code></td><td>正在准备。<b>第一次阶段上报前可能还没有 <code>phase</code></b>。</td></tr>
+        <tr>
+          <td><code>{ status: "preparing" }</code></td>
+          <td>
+            正在准备，但还没上报阶段。这个形态只存在于「进入准备」到「首次上报」之间：<code>phase</code>
+            在 <code>prepare</code> 的第一行就发，早于 uv 探测与下载。
+          </td>
+        </tr>
         <tr><td><code>{ status: "preparing", phase: "runtime" }</code></td><td>正在准备运行时：取 <code>uv</code>、建虚拟环境、下载 Python。</td></tr>
         <tr><td><code>{ status: "preparing", phase: "dependencies" }</code></td><td>正在安装依赖：<code>uv pip install</code> 或 <code>pip install</code>。</td></tr>
         <tr><td><code>{ status: "ready" }</code></td><td>可用。</td></tr>
@@ -859,6 +866,11 @@ expected: "server/main"                             # 应该改成的路径</cod
           插件详情页有「运行环境」一项：正在准备 / 已就绪 / 准备失败。
           正在准备时还会显示<b>当前阶段</b>——「正在准备运行时」（<i>Preparing runtime</i>）或
           「正在安装依赖」（<i>Installing dependencies</i>）。<code>ready</code> 与 <code>failed</code> 不显示阶段。
+        </li>
+        <li>
+          阶段在最开头就上报，<b>早于 uv 探测与下载</b>。所以第一次安装、机器上还没有 <code>uv</code> 时，
+          下载期间界面已经显示「正在准备运行时」，不会长时间停在无阶段的「正在准备」上。
+          uv 探测失败而回退系统 <code>python3</code> 时，报的也是当时正在做的阶段。
         </li>
         <li>失败时显示错误（复用插件失败的样式）与「重新准备」按钮。</li>
         <li>安装成功且插件声明了 <code>runtime</code> 时，追加一条 toast「正在为 … 准备运行环境」，不阻塞安装对话框。</li>
