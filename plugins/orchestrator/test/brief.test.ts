@@ -24,7 +24,7 @@ describe("任务书", () => {
     expect(text).toContain("- plugins/dbro/src")
     expect(text).toContain("- `bun test`")
     expect(text).toContain("/data/results/p1/t1.json")
-    expect(text).toContain('"commit": "<HEAD 的完整 sha>"')
+    expect(text).toContain('"commit": "<git rev-parse HEAD 输出的 40 位小写 sha>"')
     expect(text).toContain("`ses_pm`")
   })
 
@@ -32,15 +32,24 @@ describe("任务书", () => {
     const text = Brief.render(input)
     expect(text).toContain("1. 把所有改动提交到 task/t1，**不要 push**")
     expect(text).toContain('git add -A && git commit -m "task t1: 给 dbro 加超时"')
-    expect(text).toContain("2. 写文件 `/data/results/p1/t1.json`")
+    expect(text).toContain("提交之后跑 `git rev-parse HEAD`，把完整 40 位填进 `commit`")
+    expect(text).toContain("短 sha 会被判结果缺失")
+    expect(text).toContain("2. 写文件 `/data/results/p1/t1.json`（目录不存在就先 mkdir -p 它的父目录）")
     expect(text).toContain("不要 push")
     expect(text).not.toContain("推主干")
   })
 
-  test("changed 的示例命令带真实 base，不留占位符", () => {
+  test("changed 用真实数组形状，并说明空改动填 []", () => {
     const text = Brief.render(input)
-    expect(text).toContain('"changed": ["<git diff --name-only lts/ocdev...HEAD 的结果，逐行>"]')
-    expect(text).not.toContain("<base>")
+    expect(text).toContain('"changed": ["plugins/x/a.ts", "plugins/x/b.ts"]')
+    expect(text).toContain("一条路径一个元素；没有改动就填 `[]`")
+  })
+
+  test("验收失败时不许写自称通过的结果，改为投递", () => {
+    const text = Brief.render(input)
+    expect(text).toContain("如果验收命令失败，先修到全绿")
+    expect(text).toContain("不要写一个自称通过的结果文件")
+    expect(text).toContain("说明卡在哪条命令、输出是什么")
   })
 
   test("提交信息里的引号与展开字符被转义", () => {
