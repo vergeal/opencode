@@ -462,8 +462,12 @@
     color: var(--markdown-inline-code-ink);
     font-weight: 350;
     /* A 4px side pad keeps the tint off the glyphs. It is not paid back by a negative margin: paying
-       it back pulled neighbouring text into the chip, which reads as letters touching. */
-    padding: 0 4px;
+       it back pulled neighbouring text into the chip, which reads as letters touching.
+       The bottom pad is a font-metric correction, not rhythm: an inline box is as tall as the font's
+       ascent plus descent, while digits and capitals only reach the cap height and mostly do not
+       descend. At 15px that leaves 4.2px of tint above the glyphs and 2.4px below, so the label sits
+       low in its chip. Two more pixels below the baseline centre it again for the common case. */
+    padding: 0 4px 2px;
     border-radius: var(--radius-md);
     background: var(--markdown-inline-code-background);
   }
