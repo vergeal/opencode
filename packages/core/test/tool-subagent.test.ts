@@ -114,11 +114,14 @@ const executionNode = makeGlobalNode({
 })
 
 const subagentPluginSupervisor = makeLocationNode({
-  name: "test/subagent-plugins",
-  layer: Layer.effectDiscard(
+  service: PluginSupervisor.Service,
+  layer: Layer.effect(
+    PluginSupervisor.Service,
     Effect.gen(function* () {
       const hooks = yield* PluginHooks.Service
       yield* registerToolPlugin(SubagentTool.Plugin, {}, (name, callback) => hooks.register("tool", name, callback))
+
+      return PluginSupervisor.Service.of({ retry: () => Effect.void })
     }),
   ),
   deps: [

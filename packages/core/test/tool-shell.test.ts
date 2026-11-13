@@ -127,8 +127,13 @@ const executionNode = makeGlobalNode({
 })
 
 const shellPluginSupervisor = makeLocationNode({
-  name: "test/shell-plugins",
-  layer: Layer.effectDiscard(registerToolPlugin(ShellTool.Plugin)),
+  service: PluginSupervisor.Service,
+  layer: Layer.effect(
+    PluginSupervisor.Service,
+    registerToolPlugin(ShellTool.Plugin).pipe(
+      Effect.as(PluginSupervisor.Service.of({ retry: () => Effect.void })),
+    ),
+  ),
   deps: [
     Config.node,
     Environment.node,
@@ -1159,11 +1164,12 @@ describe("ShellTool", () => {
       if (isWindows) return
       for (const channel of ["local", "dev", "latest"] as const) {
         const channelSupervisor = makeLocationNode({
-          name: `test/shell-plugins-${channel}`,
-          layer: Layer.effectDiscard(
+          service: PluginSupervisor.Service,
+          layer: Layer.effect(
+            PluginSupervisor.Service,
             registerToolPlugin(ShellTool.Plugin, {
               app: { name: "opencode", version: "test", channel },
-            }),
+            }).pipe(Effect.as(PluginSupervisor.Service.of({ retry: () => Effect.void }))),
           ),
           deps: [
             Environment.node,

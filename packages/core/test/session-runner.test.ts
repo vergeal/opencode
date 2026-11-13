@@ -433,7 +433,7 @@ const layer = Layer.unwrap(
       ReferenceInstructions.node.replace(referenceInstructions),
       Permission.node.replace(permission),
       Config.node.replace(config),
-      PluginSupervisor.node.replace(Layer.empty),
+      PluginSupervisor.node.replace(PluginSupervisor.empty),
       Plugin.node.replace(Layer.mock(Plugin.Service, { awaitActivation: Effect.suspend(() => state.activationHook) })),
       SessionModelTransport.node.replace(modelTransport),
     ]

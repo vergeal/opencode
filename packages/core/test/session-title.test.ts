@@ -125,7 +125,7 @@ const it = testEffect(
       Model.node.replace(smallModels),
       SessionRunnerModel.node.replace(models),
       Location.node.replace(Location.boundNode({ directory: AbsolutePath.make("/project") })),
-      PluginSupervisor.node.replace(Layer.empty),
+      PluginSupervisor.node.replace(PluginSupervisor.empty),
     ],
   ),
 )

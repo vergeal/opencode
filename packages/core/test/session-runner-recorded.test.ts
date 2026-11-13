@@ -107,7 +107,7 @@ const runnerLayer = (llmClient: Layer.Layer<LLMClientService>) =>
     McpInstructions.node.replace(mcpInstructions),
     Config.node.replace(config),
     Permission.node.replace(permission),
-    PluginSupervisor.node.replace(Layer.empty),
+    PluginSupervisor.node.replace(PluginSupervisor.empty),
     Plugin.node.replace(Layer.mock(Plugin.Service, { awaitActivation: Effect.void })),
   ])
 const execution = (llmClient: Layer.Layer<LLMClientService>) =>
@@ -163,7 +163,7 @@ const testLayer = (llmClient: Layer.Layer<LLMClientService>) =>
       ReferenceInstructions.node.replace(referenceInstructions),
       Config.node.replace(config),
       Snapshot.node.replace(Snapshot.noopLayer),
-      PluginSupervisor.node.replace(Layer.empty),
+      PluginSupervisor.node.replace(PluginSupervisor.empty),
       Plugin.node.replace(Layer.mock(Plugin.Service, { awaitActivation: Effect.void })),
       SessionExecution.node.replace(execution(llmClient)),
     ],

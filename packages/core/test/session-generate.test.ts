@@ -160,7 +160,7 @@ const it = testEffect(
       SkillInstructions.node.replace(skills),
       ReferenceInstructions.node.replace(references),
       McpInstructions.node.replace(mcp),
-      PluginSupervisor.node.replace(Layer.empty),
+      PluginSupervisor.node.replace(PluginSupervisor.empty),
       Tool.node.replace(tools),
       Location.node.replace(Location.boundNode({ directory: AbsolutePath.make("/project") })),
     ],

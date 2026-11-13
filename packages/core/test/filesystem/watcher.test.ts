@@ -274,7 +274,7 @@ function provide(
     [
       Config.node.replace(config),
       Location.node.replace(locationLayer),
-      plugins ?? PluginSupervisor.node.replace(Layer.empty),
+      plugins ?? PluginSupervisor.node.replace(PluginSupervisor.empty),
       ...(watcher ? ([Watcher.node.replace(watcher)] as const) : []),
       ...replacements,
     ],
@@ -506,11 +506,14 @@ describe("LocationWatcher subscriptions", () => {
       }),
     )
     const plugins = makeLocationNode({
-      name: "test/watcher-plugins",
-      layer: Layer.effectDiscard(
+      service: PluginSupervisor.Service,
+      layer: Layer.effect(
+        PluginSupervisor.Service,
         Effect.gen(function* () {
           const policy = yield* LocationWatcherPolicy.Service
           yield* policy.transform((editor) => editor.add([".git"]))
+
+          return PluginSupervisor.Service.of({ retry: () => Effect.void })
         }),
       ),
       deps: [LocationWatcherPolicy.node],
