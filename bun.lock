@@ -1,4 +1,4 @@
-﻿{
+{
   "lockfileVersion": 1,
   "configVersion": 1,
   "workspaces": {
@@ -317,6 +317,18 @@
         "@anthropic-ai/claude-agent-sdk",
       ],
     },
+    "packages/create-ocplugin": {
+      "name": "@opencode/create-ocplugin",
+      "version": "0.0.0",
+      "bin": {
+        "create-ocplugin": "./src/cli.ts",
+      },
+      "devDependencies": {
+        "@tsconfig/bun": "catalog:",
+        "@types/bun": "catalog:",
+        "@typescript/native": "catalog:",
+      },
+    },
     "packages/desktop": {
       "name": "@opencode/desktop",
       "version": "2.2.5",
@@ -560,6 +572,21 @@
         "typescript": "catalog:",
       },
     },
+    "packages/plugins/figma": {
+      "name": "@opencode/plugin-figma",
+      "version": "2.2.5",
+      "dependencies": {
+        "gray-matter": "4.0.3",
+      },
+      "devDependencies": {
+        "@tsconfig/bun": "1.0.9",
+        "@types/bun": "1.4.3",
+        "@typescript/native": "npm:typescript@7.1.0-beta",
+      },
+      "peerDependencies": {
+        "@opencode/plugin": "^2.0.27 || ^0.0.0-dev",
+      },
+    },
     "packages/plugins/webwright": {
       "name": "@opencode/plugin-webwright",
       "version": "2.2.5",
@@ -574,21 +601,6 @@
         "@typescript/native": "catalog:",
         "playwright-core": "1.60.0",
         "typescript": "catalog:",
-      },
-    },
-    "packages/plugins/figma": {
-      "name": "@opencode/plugin-figma",
-      "version": "2.2.5",
-      "dependencies": {
-        "gray-matter": "4.0.3",
-      },
-      "devDependencies": {
-        "@tsconfig/bun": "1.0.9",
-        "@types/bun": "1.4.3",
-        "@typescript/native": "npm:typescript@7.1.0-beta",
-      },
-      "peerDependencies": {
-        "@opencode/plugin": "^2.0.27 || ^0.0.0-dev",
       },
     },
     "packages/posts": {
@@ -1945,6 +1957,8 @@
 
     "@opencode/core": ["@opencode/core@workspace:packages/core"],
 
+    "@opencode/create-ocplugin": ["@opencode/create-ocplugin@workspace:packages/create-ocplugin"],
+
     "@opencode/desktop": ["@opencode/desktop@workspace:packages/desktop"],
 
     "@opencode/files": ["@opencode/files@workspace:services/files"],
@@ -1967,9 +1981,9 @@
 
     "@opencode/plugin-browser": ["@opencode/plugin-browser@workspace:packages/plugin-browser"],
 
-    "@opencode/plugin-webwright": ["@opencode/plugin-webwright@workspace:packages/plugins/webwright"],
-
     "@opencode/plugin-figma": ["@opencode/plugin-figma@workspace:packages/plugins/figma"],
+
+    "@opencode/plugin-webwright": ["@opencode/plugin-webwright@workspace:packages/plugins/webwright"],
 
     "@opencode/posts": ["@opencode/posts@workspace:packages/posts"],
 
