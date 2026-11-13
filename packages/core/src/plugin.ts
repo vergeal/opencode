@@ -159,6 +159,7 @@ const layer = Layer.effect(
       const host = yield* PluginHost.make({ list }, plugin.id, {
         scope: activation.scope,
         configuration: plugin.configuration,
+        runtime: plugin.runtime,
       }).pipe(Effect.provideContext(hostContext))
       const hook = reason === "install" ? plugin.onInstall : undefined
       // A hook shares the activation scope, so anything it registers is released with this instance.
@@ -328,6 +329,7 @@ const layer = Layer.effect(
             const host = yield* PluginHost.make({ list }, id, {
               scope: activation.scope,
               configuration: slot.plugin.configuration,
+              runtime: slot.plugin.runtime,
             }).pipe(Effect.provideContext(hostContext))
             yield* Effect.suspend(() => hook(host)).pipe(
               Effect.updateContext((context: Context.Context<never>) =>

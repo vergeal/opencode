@@ -5,6 +5,7 @@ import type { IntegrationMethodRegistration } from "@opencode/plugin/effect/inte
 import { EventManifest } from "@opencode/schema/event-manifest"
 import type { Event } from "@opencode/schema/event"
 import { ServerConfig } from "@opencode/schema/mcp"
+import type { PluginManifest } from "@opencode/schema/plugin-manifest"
 import { App } from "../app.js"
 import { Effect, Schema, Scope, Stream } from "effect"
 import { Global } from "@opencode/util/global"
@@ -41,6 +42,7 @@ import { PluginHooks } from "./hooks.js"
 import { PluginConfiguration, type Configuration } from "./configuration.js"
 import { PluginInbox } from "./inbox.js"
 import { PluginPaths } from "./paths.js"
+import { PluginRuntime } from "./runtime.js"
 import { PluginSecrets } from "./secrets.js"
 import type { Interface } from "../plugin.js"
 import { LayerNode } from "@opencode/util/effect/layer-node"
@@ -58,7 +60,12 @@ const isPublicEvent = (event: Event.Payload): event is EventManifest.ServerEvent
 export const make = Effect.fn("PluginHost.make")(function* (
   plugin: Pick<Interface, "list">,
   pluginID: string,
-  options?: { readonly scope?: Scope.Scope; readonly configuration?: Configuration },
+  options?: {
+    readonly scope?: Scope.Scope
+    readonly configuration?: Configuration
+    /** The runtime the plugin's manifest declared, so the host hands out its prepared interpreter. */
+    readonly runtime?: PluginManifest.Runtime
+  },
 ) {
   const app = yield* App.Metadata
   const global = yield* Global.Service
@@ -135,6 +142,9 @@ export const make = Effect.fn("PluginHost.make")(function* (
   )
 
   const paths = PluginPaths.make({ home: global.home, id: pluginID })
+  // Only a manifest that declared a runtime gets a path, and only once the environment exists: a plugin that declared
+  // none keeps its own way of finding an interpreter.
+  const runtime = options?.runtime === undefined ? undefined : PluginRuntime.python({ home: global.home, id: pluginID })
   const secrets = PluginSecrets.make({ home: global.home, id: pluginID })
   const configuration = PluginConfiguration.make({
     home: global.home,
@@ -149,6 +159,7 @@ export const make = Effect.fn("PluginHost.make")(function* (
     options: {},
     rpc: Object.assign(rpc.client, { register: rpc.register }),
     paths,
+    runtime: { python: runtime },
     secrets,
     config: {
       get: configuration.get,

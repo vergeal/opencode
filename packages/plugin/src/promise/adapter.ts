@@ -295,6 +295,7 @@ export function fromPromise(plugin: Plugin) {
           location: host.location,
           options: host.options,
           paths: host.paths,
+          runtime: host.runtime,
           secrets: {
             get: (key) => Effect.runPromise(host.secrets.get(key)),
             set: (key, value) => Effect.runPromise(host.secrets.set(key, value)),

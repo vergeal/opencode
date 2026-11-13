@@ -139,6 +139,15 @@ function venvPython(directory: string) {
   return process.platform === "win32" ? path.join(directory, "Scripts", "python.exe") : path.join(directory, "bin", "python")
 }
 
+/**
+ * The prepared interpreter for a plugin, or undefined when there is none to hand out. The caller only needs a path it
+ * can spawn, so an environment that is missing or still being prepared answers undefined rather than a broken path.
+ */
+export function python(input: { readonly home: string; readonly id: string }): string | undefined {
+  const file = venvPython(directory(input))
+  return existsSync(file) ? file : undefined
+}
+
 /** The version a constraint names, without its operator. Only a lower bound is checked, as `requires.opencode` does. */
 function minimum(constraint: string | undefined) {
   if (!constraint) return undefined

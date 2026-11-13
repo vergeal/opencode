@@ -31,6 +31,7 @@ export function host(overrides: Overrides = {}): Plugin.Context {
       }),
     options: {},
     paths: overrides.paths ?? { data: "/tmp/plugin/data", cache: "/tmp/plugin/cache", log: "/tmp/plugin/log" },
+    runtime: overrides.runtime ?? { python: undefined },
     secrets:
       overrides.secrets ??
       ({

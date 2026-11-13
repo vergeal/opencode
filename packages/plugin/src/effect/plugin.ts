@@ -63,6 +63,14 @@ export interface Context {
     readonly cache: string
     readonly log: string
   }
+  /**
+   * The interpreter environment the host prepared from the manifest's `runtime`. Present only for a plugin that
+   * declared one; `python` is undefined until the environment is ready.
+   */
+  readonly runtime: {
+    /** Absolute path to this plugin's prepared Python, or undefined when it declared no runtime or it is not ready. */
+    readonly python: string | undefined
+  }
   /** Values encrypted with a machine-local key. Plain text is never written. */
   readonly secrets: {
     get(key: string): Effect.Effect<string | undefined>
