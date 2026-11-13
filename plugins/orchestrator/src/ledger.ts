@@ -114,6 +114,24 @@ export function block(task: Task, at: string): Task {
   return { ...task, status: "阻塞", updatedAt: at }
 }
 
+/**
+ * One row per task and kind: refreshing a recurring anomaly updates its text but keeps `since`, so `status` reports when
+ * the problem started rather than when it was last noticed. `detail` is capped at the width `status` returns.
+ */
+export function upsertAnomaly(file: MutableFile, taskID: string, kind: Kind, detail: string, since: string) {
+  const text = detail.slice(0, 200)
+  const existing = file.anomalies.find((item) => item.taskID === taskID && item.kind === kind)
+  if (existing) {
+    existing.detail = text
+    return
+  }
+  file.anomalies.push({ taskID, kind, detail: text, since })
+}
+
+export function clearAnomalies(file: MutableFile, taskID: string) {
+  file.anomalies = file.anomalies.filter((item) => item.taskID !== taskID)
+}
+
 export interface ResultRead {
   readonly present: boolean
   readonly value?: unknown
