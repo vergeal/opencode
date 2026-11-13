@@ -6,5 +6,5 @@
     "noEmit": true,
     "noUncheckedIndexedAccess": false
   },
-  "include": ["index.ts", "script"]
+  "include": ["server", "script"]
 }

@@ -4,6 +4,7 @@
   "version": "2.2.5",
   "description": "Figma MCP integration and official Figma skills for OpenCode",
   "type": "module",
+  "main": "./server/main.ts",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -14,11 +15,12 @@
     "access": "public"
   },
   "exports": {
-    ".": "./index.ts",
-    "./server": "./index.ts"
+    ".": "./server/main.ts",
+    "./server": "./server/main.ts"
   },
   "files": [
-    "index.ts",
+    "ocplugin.json",
+    "server",
     "skills",
     "skills-source.json"
   ],

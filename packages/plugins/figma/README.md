@@ -12,7 +12,7 @@ opencode plugin add 'git+https://github.com/anomalyco/opencode.git#path:packages
 
 The URL selects the Figma directory and uses the repository's default branch, so no explicit branch name is needed. Installation is Git-only.
 
-The plugin exports `index.ts` directly. There is no build step or installation hook.
+The plugin exports `server/main.ts` directly, and `ocplugin.json` declares it as the `server` entry. There is no build step or installation hook.
 
 For local development, add the directory to `plugins` in the project's `opencode.jsonc`:
 

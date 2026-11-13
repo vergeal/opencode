@@ -2,7 +2,7 @@ import { Plugin, Skill } from "@opencode/plugin"
 import { readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import matter from "gray-matter"
-import source from "./skills-source.json" with { type: "json" }
+import source from "../skills-source.json" with { type: "json" }
 
 export default Plugin.define({
   id: "opencode.figma",
@@ -15,7 +15,7 @@ export default Plugin.define({
       })
     })
 
-    const directory = new URL("./skills/", import.meta.url)
+    const directory = new URL("../skills/", import.meta.url)
     const skills = await Promise.all(
       source.skills.map(async (name) => {
         const file = new URL(`${name}/SKILL.md`, directory)

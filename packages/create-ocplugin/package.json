@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@opencode/create-ocplugin",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Scaffold an OpenCode plugin inside the opencode repository",
+  "license": "MIT",
+  "bin": {
+    "create-ocplugin": "./src/cli.ts"
+  },
+  "exports": {
+    "./generate": "./src/generate.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "bun check --no-script"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@tsconfig/bun": "catalog:",
+    "@types/bun": "catalog:",
+    "@typescript/native": "catalog:"
+  }
+}
