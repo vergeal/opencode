@@ -651,6 +651,12 @@ html[data-replica-window="translucent"] [data-slot="replica-sidebar-slot"] {
     background: var(--color-sidebar);
   }
 
+  /* The light-theme wash above carries a :not() on the scheme, which outranks the plain rule above. Repeat the
+     selector so an opaque window keeps the sidebar's step instead of the 10% wash over the solid tint. */
+  html[data-replica-window="translucent"]:not([data-color-scheme="dark"]) [data-slot="replica-sidebar"] {
+    background: var(--color-sidebar);
+  }
+
   html[data-replica-window="translucent"] [data-slot="destination-bar"] {
     background: var(--color-rail);
   }
