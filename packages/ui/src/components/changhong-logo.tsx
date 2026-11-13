@@ -60,11 +60,12 @@ const LETTERS = [
     index: 2,
     parts: [
       {
+        // The counter must stay in the same path as the outline: as a second `<path>` it fills solid and closes the
+        // hole. Both subpaths keep their original winding, so the default nonzero rule punches the counter out.
         x: -40.746,
         y: 1.411,
-        d: "m -0.002,2.021 h 1.109 l 2.055,-7.384 -1.918,-0.01 -0.275,1.235 -0.958,-0.003 -0.965,-0.003 -0.288,-1.24 -1.858,-0.009 1.954,7.412 z",
+        d: "m 0,0 -0.633,-2.78 h 0.644 l 0.63,10e-1 -0.641,2.794 z m -0.002,2.021 h 1.109 l 2.055,-7.384 -1.918,-0.01 -0.275,1.235 -0.958,-0.003 -0.965,-0.003 -0.288,-1.24 -1.858,-0.009 1.954,7.412 z",
       },
-      { x: -5.622, y: -3.841, d: "m -35.124,5.252 -0.633,-2.78 h 0.644 l 0.63,10e-4 -0.641,2.794 z" },
     ],
   },
   // n
