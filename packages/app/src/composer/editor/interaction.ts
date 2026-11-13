@@ -252,6 +252,8 @@ export function createComposerEditor(input: {
 
       return order.indexOf(a.category) - order.indexOf(b.category)
     },
+    // A typed query shows files only when no skill, agent, session or reference matched it.
+    fallbackGroups: ["recent", "file"],
   })
 
   const commandList = useFilteredList<ComposerSuggestion>({

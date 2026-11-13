@@ -124,6 +124,34 @@ test("a failed load settles with no rows and keeps the list usable", () => {
   expect(settle(run(failed, { type: "items.reload" })).rows).toEqual(items)
 })
 
+test("a fallback group appears only when the query matched nothing else", () => {
+  type Row = { id: string; category: string; label: string }
+
+  const rows: Row[] = [
+    { id: "skill:plan", category: "skill", label: "@plan" },
+    { id: "file:src/plan.ts", category: "file", label: "src/plan.ts" },
+  ]
+  const config = {
+    key: (row: Row) => row.id,
+    filterKeys: ["label"],
+    groupBy: (row: Row) => row.category,
+    skipFilter: (row: Row) => row.category === "file",
+    fallbackGroups: ["file"],
+  }
+  const settled = (items: Row[], filter?: string) => {
+    const pending = transitionList(createListState<Row>(filter), { type: "items.reload" }, config).state
+
+    return transitionList(pending, { type: "load.resolved", attempt: 1, items }, config).state
+  }
+
+  expect(settled(rows, "plan").rows.map((row) => row.id)).toEqual(["skill:plan"])
+  expect(settled(rows.filter((row) => row.category === "file"), "plan").rows.map((row) => row.id)).toEqual([
+    "file:src/plan.ts",
+  ])
+  // Nothing is searched for yet, so the list still opens with its files.
+  expect(settled(rows).rows.map((row) => row.id)).toEqual(["skill:plan", "file:src/plan.ts"])
+})
+
 test("the pointer takes the highlight without scrolling and any key gives it back", () => {
   const start = loaded()
   expect(run(start, { type: "pointer.move", key: "Beta", moved: false }).state).toBe(start)

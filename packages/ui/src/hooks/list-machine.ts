@@ -9,6 +9,11 @@ export type ListConfig<T> = {
   readonly groupBy?: (item: T) => string
   readonly sortBy?: (a: T, b: T) => number
   readonly sortGroupsBy?: (a: ListGroup<T>, b: ListGroup<T>) => number
+  /**
+   * Groups that appear only when the query matched nothing else, so a broad set of rows cannot bury the exact answer.
+   * An empty query keeps them: nothing has been searched for yet, and they are how the list opens.
+   */
+  readonly fallbackGroups?: readonly string[]
 }
 
 /** The one copy of the query. A `controlled` list shows the parent's `filter` prop and only reports edits. */
@@ -272,8 +277,14 @@ function step(keys: string[], index: number, direction: 1 | -1) {
 
 function filterItems<T>(items: T[], query: string, config: ListConfig<T>) {
   const needle = query.toLowerCase()
+  const groups = groupItems(needle ? search(items, needle, config) : items, config)
+  const fallback = config.fallbackGroups
 
-  return groupItems(needle ? search(items, needle, config) : items, config)
+  if (!needle || !fallback?.length) return groups
+
+  const matched = groups.filter((group) => !fallback.includes(group.category))
+
+  return matched.length ? matched : groups
 }
 
 function search<T>(all: T[], needle: string, config: ListConfig<T>) {

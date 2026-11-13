@@ -12,6 +12,8 @@ export interface FilteredListProps<T> {
   sortBy?: (a: T, b: T) => number
   sortGroupsBy?: (a: ListGroup<T>, b: ListGroup<T>) => number
   skipFilter?: (item: T) => boolean
+  /** Groups that appear only when the query matched nothing else. See `ListConfig.fallbackGroups`. */
+  fallbackGroups?: readonly string[]
   onSelect?: (value: T | undefined, index: number) => void
   /** Makes the query parent-owned: the list shows this value and reports edits through `onFilter`. */
   filter?: string
