@@ -32,6 +32,7 @@ import { sessionTreeIDs } from "@/session/requests/session-request-tree"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 import { createSessionInbox, type InboxEntry, type InboxStatus } from "@/shell/titlebar/inbox-model"
+import { deliveryFrom, playDeliveryFlight } from "./envelope-flight"
 import { InboxNav } from "./sidebar-inbox"
 import { ExploreNav } from "./sidebar-explore"
 import { KnowledgeNav } from "./sidebar-knowledge"
@@ -334,6 +335,8 @@ function SessionRow(props: {
         ref={sortable.ref}
         data-slot="replica-row"
         data-ui="sidebar-row"
+        data-session-server={props.entry().server}
+        data-session-id={props.entry().session.id}
         data-state={props.active() ? "pressed" : undefined}
         data-renaming={renaming() ? "" : undefined}
         role="button"
@@ -447,6 +450,30 @@ function ConversationNav() {
       .entries()
       .filter((entry) => entry.status === "approval" || entry.status === "input" || entry.status === "failed").length
 
+  // A cross-session delivery sends a letter from the sender's row to the recipient's. Only `deliver` stamps the
+  // envelope into the payload, so a person's own prompt never triggers it.
+  createEffect(() => {
+    for (const conn of global.servers.list()) {
+      const server = ServerConnection.key(conn)
+      const ctx = global.serverCtx(server)
+
+      if (!ctx) continue
+
+      onCleanup(
+        ctx.data.on("session.inbox.enqueued", (event) => {
+          if (event.data.item.type !== "user") return
+          const from = deliveryFrom(event.data.item.payload.metadata)
+
+          if (!from) return
+          // The recipient row arrives with this event, so measure the rows after the list has rendered.
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => playDeliveryFlight(server, from, event.data.sessionID)),
+          )
+        }),
+      )
+    }
+  })
+
   const [order, setOrder] = persisted(Persist.global("replica.sidebar.sessions"), SidebarSessionOrder, { recent: [] })
 
   const pinned = createMemo(() => {
@@ -460,7 +487,8 @@ function ConversationNav() {
   })
 
   // A dragged order wins for the sessions it lists. A session that arrives afterwards joins the top in creation
-  // order, so sending a message never reorders the list under the pointer.
+  // order, so sending a message never reorders the list under the pointer. The open session keeps its place even
+  // past the cut: otherwise switching to an older conversation hides the row the user is looking at.
   const recent = createMemo(() => {
     const pinnedIDs = new Set(pins.ids())
     const list = inbox.entries().filter((entry) => !pinnedIDs.has(entry.session.id))
@@ -473,8 +501,21 @@ function ConversationNav() {
           b.session.time.created - a.session.time.created ||
           (a.session.id < b.session.id ? -1 : a.session.id > b.session.id ? 1 : 0),
       )
+    const ordered = [...fresh, ...order.recent.flatMap((id) => byID.get(id) ?? [])]
+    const head = ordered.slice(0, 12)
+    const route = layout.route()
+    const currentID = route.type === "session" ? route.sessionId : undefined
 
-    return [...fresh, ...order.recent.flatMap((id) => byID.get(id) ?? [])].slice(0, 12)
+    if (currentID && !head.some((entry) => entry.session.id === currentID)) {
+      const current = byID.get(currentID)
+
+      if (current) {
+        if (head.length < 12) head.push(current)
+        else head[head.length - 1] = current
+      }
+    }
+
+    return head
   })
 
   const currentTab = createMemo(() => {
