@@ -165,6 +165,22 @@ export const windowRecovery = Effect.gen(function* () {
       sampler.stopAndFlush()
     })
     win.webContents.on("console-message", (event) => {
+      // GUI plugins write through `console`; the prefix is what marks a message as the host's to persist.
+      if (event.message.includes("[plugin]")) {
+        runFork(
+          scoped(
+            "plugin",
+            Effect.logInfo("console", {
+              window: name,
+              level: event.level,
+              message: event.message,
+              line: event.lineNumber,
+              sourceId: event.sourceId,
+            }),
+          ),
+        )
+        return
+      }
       if (event.message.toLowerCase().includes("terminal") || event.sourceId.toLowerCase().includes("terminal")) {
         runFork(
           scoped(
