@@ -1,0 +1,23 @@
+/* The command digest rises out of its trigger, so expanding reads as a reveal instead of a snap. The height transition
+   is quicker than the fade on purpose: the rows are already sliding in while the group finishes opening. */
+[data-component="commands-group"] [data-slot="commands-group-content"][data-open] [data-slot="commands-group-list"] {
+  animation: commands-group-reveal 180ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes commands-group-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="commands-group"] [data-slot="commands-group-content"][data-open] [data-slot="commands-group-list"] {
+    animation: none;
+  }
+}

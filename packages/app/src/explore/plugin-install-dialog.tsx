@@ -5,7 +5,7 @@ import { useDialog } from "@opencode/ui/context/dialog"
 import { Dialog, DialogBody, DialogFooter, DialogHeader, DialogTitleGroup } from "@opencode/ui/dialog"
 import { Progress } from "@opencode/ui/progress"
 import { TextInput } from "@opencode/ui/text-input"
-import { Show } from "solid-js"
+import { For, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useServerSDK } from "@/runtime/server/client"
@@ -28,6 +28,8 @@ export function PluginInstallDialog(props: {
   id?: string
   /** The catalog entry a bundle install renders. */
   entry?: CatalogPlugin
+  /** Every version the local discover directory has for this entry, newest first. */
+  versions?: readonly { version: string; file: string }[]
   onInstalled?: () => void
 }) {
   const language = useLanguage()
@@ -36,7 +38,7 @@ export function PluginInstallDialog(props: {
   const [state, setState] = createStore({ package: "", busy: false, error: "" })
 
   if (props.bundle && props.entry)
-    return <BundleInstallDialog entry={props.entry} onInstalled={props.onInstalled} />
+    return <BundleInstallDialog entry={props.entry} versions={props.versions} onInstalled={props.onInstalled} />
 
   const target = () => (props.package ?? state.package).trim()
 
@@ -100,9 +102,7 @@ export function PluginInstallDialog(props: {
               <Show
                 when={!props.integrated}
                 fallback={
-                  <span class="explore-install-target-package">
-                    {language.t("explore.plugins.install.integrated")}
-                  </span>
+                  <span class="explore-install-target-package">{language.t("explore.plugins.install.integrated")}</span>
                 }
               >
                 <span class="explore-install-target-package" dir="ltr">
@@ -139,17 +139,28 @@ export function PluginInstallDialog(props: {
 }
 
 /** One button: the server finds the bundle, verifies it and unpacks it. Nothing for the user to configure. */
-function BundleInstallDialog(props: { entry: CatalogPlugin; onInstalled?: () => void }) {
+function BundleInstallDialog(props: {
+  entry: CatalogPlugin
+  versions?: readonly { version: string; file: string }[]
+  onInstalled?: () => void
+}) {
   const language = useLanguage()
   const dialog = useDialog()
   const server = useServerSDK()
-  const [state, setState] = createStore({ busy: false, error: "" })
+  const [state, setState] = createStore({
+    version: props.entry.version ?? props.versions?.[0]?.version ?? "",
+    busy: false,
+    error: "",
+  })
 
   const submit = async () => {
     if (state.busy) return
     setState({ busy: true, error: "" })
     try {
-      await server.api.experimental.plugin.bundle({ id: props.entry.id })
+      await server.api.experimental.plugin.bundle({
+        id: props.entry.id,
+        ...(state.version ? { version: state.version } : {}),
+      })
       dialog.close()
       props.onInstalled?.()
       showToast({
@@ -159,7 +170,10 @@ function BundleInstallDialog(props: { entry: CatalogPlugin; onInstalled?: () => 
     } catch (error) {
       // Keep the user-facing copy short; the detail belongs in the console for a bug report.
       console.error("plugin install failed", error)
-      setState({ busy: false, error: language.t(unsupported(error) ? "explore.plugins.unsupported" : "explore.plugins.bundle.failed") })
+      setState({
+        busy: false,
+        error: language.t(unsupported(error) ? "explore.plugins.unsupported" : "explore.plugins.bundle.failed"),
+      })
     }
   }
 
@@ -191,11 +205,28 @@ function BundleInstallDialog(props: { entry: CatalogPlugin; onInstalled?: () => 
         <p class="explore-install-text">{props.entry.description}</p>
 
         <dl class="explore-install-facts">
-          <Show when={props.entry.version}>
+          <Show when={state.version}>
             {(version) => (
               <div>
                 <dt>{language.t("explore.plugins.facts.version")}</dt>
-                <dd>{version()}</dd>
+                <dd>
+                  <Show when={props.versions && props.versions.length > 1} fallback={<span>v{version()}</span>}>
+                    <span class="explore-version-options">
+                      <For each={props.versions}>
+                        {(item) => (
+                          <button
+                            type="button"
+                            class="explore-version-option"
+                            data-selected={item.version === state.version ? "" : undefined}
+                            onClick={() => setState("version", item.version)}
+                          >
+                            v{item.version}
+                          </button>
+                        )}
+                      </For>
+                    </span>
+                  </Show>
+                </dd>
               </div>
             )}
           </Show>

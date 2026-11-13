@@ -121,6 +121,7 @@ frontmatter 使用 YAML（经 `gray-matter` 解析，兼容未加引号的值里
 | ------------ | -------------------------------------------------------------------- |
 | 项目配置目录 | `<project>/.opencode/plugin/`、`<project>/.opencode/plugins/`        |
 | 全局配置目录 | `~/.config/opencode/plugin/`、`~/.config/opencode/plugins/`          |
+| 已安装组合包 | `~/.opencode/ocplugins/<id>/`（每个子目录是一个插件）                |
 | 配置字段     | `opencode.json(c)` 的 `plugins: (string \| { package, options? })[]` |
 
 - `plugin/` 与 `plugins/` 两个目录名都会被扫描，二者等价。
@@ -196,15 +197,15 @@ frontmatter 使用 YAML（经 `gray-matter` 解析，兼容未加引号的值里
 
 #### 能力类型
 
-| 能力       | 注册方式                            | 说明                                     |
-| ---------- | ----------------------------------- | ---------------------------------------- |
-| 工具       | `ctx.tool.transform`                | 模型可调用的动作，例如 `webwright.click`。  |
-| 命令       | `ctx.command.transform`             | 斜杠命令。                               |
-| MCP 服务器 | `ctx.mcp.transform` / `ctx.mcp.add` | 外部进程（含 Python server）或远程服务。 |
-| 技能       | `ctx.skill.transform`               | 教模型何时、如何使用这些工具的说明。     |
-| RPC        | `ctx.rpc.register`                  | 插件对外暴露的接口。                     |
-| GUI        | 包的 `./gui-experimental` 入口      | 桌面端窗口内运行的界面部分。             |
-| TUI        | 包的 `./tui` 入口                   | 终端界面部分。                           |
+| 能力       | 注册方式                            | 说明                                       |
+| ---------- | ----------------------------------- | ------------------------------------------ |
+| 工具       | `ctx.tool.transform`                | 模型可调用的动作，例如 `webwright.click`。 |
+| 命令       | `ctx.command.transform`             | 斜杠命令。                                 |
+| MCP 服务器 | `ctx.mcp.transform` / `ctx.mcp.add` | 外部进程（含 Python server）或远程服务。   |
+| 技能       | `ctx.skill.transform`               | 教模型何时、如何使用这些工具的说明。       |
+| RPC        | `ctx.rpc.register`                  | 插件对外暴露的接口。                       |
+| GUI        | 包的 `./gui-experimental` 入口      | 桌面端窗口内运行的界面部分。               |
+| TUI        | 包的 `./tui` 入口                   | 终端界面部分。                             |
 
 运行形态（`Plugin.Features`：`server` / `tui` / `rpc` / `gui`）回答的是「这个包怎么跑」，不是「这个包有什么」。能力清单回答后者，两者不要混用。
 
@@ -265,7 +266,7 @@ export default Plugin.define({
 4. 插件加载，执行入口里的 `tool.transform` / `skill.transform` / `mcp.transform`；
 5. `plugin.updated` 与 `skill.updated` 推送，探索页刷新。
 
-`.ocplugin` 是例外：它不写 `plugins`，而是解包到 `plugins/<id>/` 由目录自动发现生效，见 3.7。
+`.ocplugin` 是例外：它不写 `plugins`，而是解包到 `~/.opencode/ocplugins/<id>/`，由目录自动发现生效，见 3.7。
 
 技能注册必须绑定在插件的 activation scope 上（`ctx.skill.transform` 天然如此），插件卸载或重载时自动移除。插件加载失败时不得留下任何能力注册。
 
@@ -308,14 +309,14 @@ export default Plugin.define({
 
 ### 3.2 容器格式
 
-| 项       | 规定                                                                    |
-| -------- | ----------------------------------------------------------------------- |
-| 容器     | tar                                                                     |
-| 压缩     | gzip                                                                    |
-| 扩展名   | `.ocplugin`                                                             |
-| 打包/解包 | `Bun.Archive`（运行时原生，零额外依赖）                                  |
-| 路径字符 | UTF-8，统一用 `/` 分隔，不得以 `/` 开头                                  |
-| 禁止项   | 绝对路径、`..`、符号链接、设备与管道文件、`node_modules/`、安装脚本字段 |
+| 项        | 规定                                                                    |
+| --------- | ----------------------------------------------------------------------- |
+| 容器      | tar                                                                     |
+| 压缩      | gzip                                                                    |
+| 扩展名    | `.ocplugin`                                                             |
+| 打包/解包 | `Bun.Archive`（运行时原生，零额外依赖）                                 |
+| 路径字符  | UTF-8，统一用 `/` 分隔，不得以 `/` 开头                                 |
+| 禁止项    | 绝对路径、`..`、符号链接、设备与管道文件、`node_modules/`、安装脚本字段 |
 
 选择 tar+gzip 的理由：解包端不需要外部二进制或 WASM，macOS/Windows 默认都能用系统工具检查包内容；7z 压缩率略高但要求随包携带 7z 或引入 wasm，且解包安全策略会脱离宿主控制。确实需要更小体积时改用 brotli（Node 内置），仍不引入新依赖。
 
@@ -356,32 +357,32 @@ README.md                # 可选
     "description": "让 AI 直接操作浏览器……",
     "category": "automation",
     "icon": "<svg viewBox=\"0 0 24 24\">…</svg>",
-    "tools": ["webwright.*"]
+    "tools": ["webwright.*"],
   },
   "skills": [
     {
       "id": "webwright",
       "name": "Webwright",
       "description": "用 webwright.* 工具操作专用浏览器……",
-      "path": "skills/webwright/SKILL.md"
-    }
+      "path": "skills/webwright/SKILL.md",
+    },
   ],
-  "assets": ["assets/playwright-core"]
+  "assets": ["assets/playwright-core"],
 }
 ```
 
-| 字段               | 必填 | 说明                                                                                         |
-| ------------------ | ---- | -------------------------------------------------------------------------------------------- |
-| `apiVersion`       | 是   | 组合包规范版本。未知版本拒绝安装，提示升级 OpenCode。                                        |
-| `id`               | 是   | 插件 id，必须与入口 `Plugin.define({ id })` 完全一致。点分命名，作为安装目录名与 `-id` 键。   |
-| `version`          | 是   | semver。同 id 安装新版本即覆盖升级。                                                         |
-| `requires.opencode` | 否  | semver range；不满足时拒绝安装并给出所需版本。                                               |
-| `entry`            | 是   | 入口相对路径，至少一个；文件必须存在且位于包内。                                             |
-| `externals`        | 否   | 由宿主提供的模块，不得打进包内，见 3.5。                                                     |
-| `display`          | 否   | 展示元数据，字段与 `Plugin.Display` 相同（`name`、`description`、`category`、`icon`、`skills`、`tools`）。 |
-| `skills`           | 否   | 包内技能清单，`path` 必须指向包内 `SKILL.md`。                                                |
-| `assets`           | 否   | 随包资源目录，仅供插件自身读取。                                                             |
-| `files`            | 否   | `[{ "path": "...", "sha256": "..." }]` 完整性清单，不含 `ocplugin.json` 自身。               |
+| 字段                | 必填 | 说明                                                                                                       |
+| ------------------- | ---- | ---------------------------------------------------------------------------------------------------------- |
+| `apiVersion`        | 是   | 组合包规范版本。未知版本拒绝安装，提示升级 OpenCode。                                                      |
+| `id`                | 是   | 插件 id，必须与入口 `Plugin.define({ id })` 完全一致。点分命名，作为安装目录名与 `-id` 键。                |
+| `version`           | 是   | semver。同 id 安装新版本即覆盖升级。                                                                       |
+| `requires.opencode` | 否   | semver range；不满足时拒绝安装并给出所需版本。                                                             |
+| `entry`             | 是   | 入口相对路径，至少一个；文件必须存在且位于包内。                                                           |
+| `externals`         | 否   | 由宿主提供的模块，不得打进包内，见 3.5。                                                                   |
+| `display`           | 否   | 展示元数据，字段与 `Plugin.Display` 相同（`name`、`description`、`category`、`icon`、`skills`、`tools`）。 |
+| `skills`            | 否   | 包内技能清单，`path` 必须指向包内 `SKILL.md`。                                                             |
+| `assets`            | 否   | 随包资源目录，仅供插件自身读取。                                                                           |
+| `files`             | 否   | `[{ "path": "...", "sha256": "..." }]` 完整性清单，不含 `ocplugin.json` 自身。                             |
 
 规则：
 
@@ -418,26 +419,40 @@ README.md                # 可选
 建议在包内提供两个脚本：
 
 1. `build`：`bun build <入口> --target=bun --format=esm --outfile dist/server/index.js`，`--external` 取 `ocplugin.json` 的 `externals` 与 `node:*`；原样拷贝 `skills/`、`assets/`、`README.md`、`package.json`、`ocplugin.json` 到 `dist/`。
-2. `pack`：读取 `dist/`，按 3.2 生成可重复的 tar+gzip 到 `dist/plugins/<id>-<version>.ocplugin`；如声明 `files`，先算 sha256 再写入。
+2. `pack`：读取 `dist/`，按 3.2 生成可重复的 tar+gzip 到本机发现目录的 `~/.ocplugins-local/<id>/<version>/<id>-<version>.ocplugin`，并在同一目录写一份 `manifest.json`（`ocplugin.json` 原样副本，不含 `files`）供探索页读取展示信息；如声明 `files`，先算 sha256 再写入。发布构建可用 `OCPLUGIN_OUT` 直接指定输出目录。
 
 产物即分发单元，不再走 npm 发布，也不进 `packages/*/dist/npm`。
 
+`~/.ocplugins-local` 是**插件本地探索发现目录**，目录结构模拟一个插件仓库：
+
+```
+~/.ocplugins-local/
+  <id>/
+    <version>/
+      <id>-<version>.ocplugin   # 插件包
+      manifest.json             # 展示信息，不随包分发
+```
+
+- 探索页按 `id` 聚合、按版本从新到旧列出；同一个插件的多个版本并存，安装时可选择版本。
+- 安装器优先在这里按 `id` + 版本取包，找不到时才回退到桌面、下载目录、当前工作目录。
+- 安装后的插件解包到 `~/.opencode/ocplugins/<id>/`；该目录是插件自动发现根，放入或删除目录即生效，不需要重启。
+
 ### 3.7 安装与卸载（宿主契约）
 
-安装位置：配置目录下的 `plugins/`（全局即 `~/.config/opencode/plugins/<id>/`）。该目录已在自动发现范围内，因此：
+安装位置：`~/.opencode/ocplugins/<id>/`。该目录已在自动发现范围内（与配置目录下的 `plugins/` 并列），因此：
 
 - **安装 = 解包到插件目录**，不写 `plugins` 配置。
 - **卸载 = 删除目录**；临时禁用可在配置里写 `-opencode.webwright`（见 2.1 顺序规则）。
 
 安装步骤（原子、可回滚）：
 
-1. 读取归档，校验 `apiVersion`、`id`、`version`、`requires.opencode`、`entry` 是否存在且位于包内。
+1. 在 `~/.ocplugins-local/<id>/<version>/` 取请求版本的 `.ocplugin`；未指定版本时取最新，找不到时回退到桌面、下载目录与当前目录。读取归档，校验 `apiVersion`、`id`、`version`、`requires.opencode`、`entry` 是否存在且位于包内。
 2. 拒绝路径穿越、绝对路径、符号链接、超大文件；校验 `files` 中的 sha256（若声明）。
 3. 解包到同级的临时目录 `.<id>.tmp-<random>`。
 4. 按 3.5 生成 `externals` shim。
 5. 用 `Host.resolve` 确认至少解析出一个入口；失败则删除临时目录并报错。
 6. 原子替换目标目录（先 `rename` 旧目录到备份，再 `rename` 新目录到位，最后删除备份）。
-7. 触发插件来源重扫（目录已存在即可被 `ConfigPluginSource` 发现），随后 `plugin.updated` / `skill.updated` 推送。
+7. 触发插件来源重扫（安装根目录已被 `ConfigPluginSource` 监听），随后 `plugin.updated` / `skill.updated` 推送。
 
 失败时不得留下半成品目录，也不得改动已有版本的可用状态。
 

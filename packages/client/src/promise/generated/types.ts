@@ -433,6 +433,12 @@ export type PluginInfo = {
   display?: PluginDisplay
 }
 
+export type PluginLocalEntry = {
+  id: string
+  display?: PluginDisplay
+  versions: Array<{ version: string; file: string }>
+}
+
 export type SessionForkBoundary =
   | { type: "before"; messageID: SessionMessageID }
   | { type: "through"; messageID: SessionMessageID }
@@ -3367,9 +3373,16 @@ export type PluginUpdateInput = {
 
 export type PluginUpdateOutput = void
 
+export type ExperimentalPluginLocalInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+
+export type ExperimentalPluginLocalOutput = { location: LocationPublicRef; data: Array<PluginLocalEntry> }
+
 export type ExperimentalPluginBundleInput = {
   readonly location?: { readonly directory?: string | undefined } | undefined
   readonly id: string
+  readonly version?: string | undefined
 }
 
 export type ExperimentalPluginBundleOutput = {
@@ -4979,6 +4992,12 @@ export type ExperimentalServerKnowledgeAssignOutput = void
 export type ExperimentalServerKnowledgeUnassignInput = { readonly projectID: string; readonly libraryID: string }
 
 export type ExperimentalServerKnowledgeUnassignOutput = void
+
+/** @deprecated Use `ExperimentalPluginLocalInput`. Removed in the next minor. */
+export type PluginLocalInput = ExperimentalPluginLocalInput
+
+/** @deprecated Use `ExperimentalPluginLocalOutput`. Removed in the next minor. */
+export type PluginLocalOutput = ExperimentalPluginLocalOutput
 
 /** @deprecated Use `ExperimentalPluginBundleInput`. Removed in the next minor. */
 export type PluginBundleInput = ExperimentalPluginBundleInput

@@ -73,9 +73,24 @@ export const PluginGroup = HttpApiGroup.make("server.plugin")
       ),
   )
   .add(
+    HttpApiEndpoint.get("plugin.local", "/api/experimental/plugin/local", {
+      query: LocationQuery,
+      success: Location.response(Schema.Array(Plugin.LocalEntry)),
+    })
+      .annotateMerge(locationQueryOpenApi)
+      .annotateMerge(
+        OpenApi.annotations({
+          identifier: "experimental.plugin.local",
+          summary: "List local plugin bundles",
+          description:
+            "Experimental: may change without compatibility guarantees. List every plugin id and version found in the local discover directory, with the display data from each id's newest bundle.",
+        }),
+      ),
+  )
+  .add(
     HttpApiEndpoint.post("plugin.bundle", "/api/experimental/plugin/bundle", {
       query: LocationQuery,
-      payload: Schema.Struct({ id: Plugin.ID }),
+      payload: Schema.Struct({ id: Plugin.ID, version: Schema.String.pipe(Schema.optional) }),
       success: Location.response(Schema.Struct({ id: Plugin.ID, version: Schema.String, path: Schema.String })),
       error: InvalidRequestError,
     })

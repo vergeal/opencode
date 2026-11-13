@@ -18,6 +18,8 @@ import type {
   PluginCheckOutput,
   PluginUpdateInput,
   PluginUpdateOutput,
+  ExperimentalPluginLocalInput,
+  ExperimentalPluginLocalOutput,
   ExperimentalPluginBundleInput,
   ExperimentalPluginBundleOutput,
   ExperimentalPluginUninstallInput,
@@ -618,13 +620,25 @@ export function make(options: ClientOptions) {
     },
     experimental: {
       plugin: {
+        local: (input?: ExperimentalPluginLocalInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalPluginLocalOutput>(
+            {
+              method: "GET",
+              path: `/api/experimental/plugin/local`,
+              query: { location: input?.["location"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
         bundle: (input: ExperimentalPluginBundleInput, requestOptions?: RequestOptions) =>
           request<ExperimentalPluginBundleOutput>(
             {
               method: "POST",
               path: `/api/experimental/plugin/bundle`,
               query: { location: input["location"] },
-              body: { id: input["id"] },
+              body: { id: input["id"], version: input["version"] },
               successStatus: 200,
               declaredStatuses: [400, 401, 404],
               empty: false,
@@ -2820,6 +2834,8 @@ export function make(options: ClientOptions) {
     ...client,
     plugin: {
       ...client.plugin,
+      /** @deprecated Use `client.experimental.plugin.local`. Removed in the next minor. */
+      local: client.experimental.plugin.local,
       /** @deprecated Use `client.experimental.plugin.bundle`. Removed in the next minor. */
       bundle: client.experimental.plugin.bundle,
       /** @deprecated Use `client.experimental.plugin.uninstall`. Removed in the next minor. */

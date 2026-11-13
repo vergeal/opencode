@@ -24,6 +24,8 @@ import type {
   PluginCheckOutput,
   PluginUpdateInput,
   PluginUpdateOutput,
+  ExperimentalPluginLocalInput,
+  ExperimentalPluginLocalOutput,
   ExperimentalPluginBundleInput,
   ExperimentalPluginBundleOutput,
   ExperimentalPluginUninstallInput,
@@ -444,11 +446,17 @@ const adaptGroupPlugin = (raw: RawClient["server.plugin"]) => ({
   update: EndpointPluginUpdate(raw),
 })
 
+const EndpointExperimentalPluginLocal = (raw: RawClient["server.plugin"]) => (input?: ExperimentalPluginLocalInput) =>
+  preserveEffect<ExperimentalPluginLocalOutput>()(
+    raw["plugin.local"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError)),
+  )
+
 const EndpointExperimentalPluginBundle = (raw: RawClient["server.plugin"]) => (input: ExperimentalPluginBundleInput) =>
   preserveEffect<ExperimentalPluginBundleOutput>()(
-    raw["plugin.bundle"]({ query: { location: input["location"] }, payload: { id: input["id"] } }).pipe(
-      Effect.mapError(mapClientError),
-    ),
+    raw["plugin.bundle"]({
+      query: { location: input["location"] },
+      payload: { id: input["id"], version: input["version"] },
+    }).pipe(Effect.mapError(mapClientError)),
   )
 
 const EndpointExperimentalPluginUninstall =
@@ -460,6 +468,7 @@ const EndpointExperimentalPluginUninstall =
     )
 
 const adaptGroupExperimentalPlugin = (raw: RawClient["server.plugin"]) => ({
+  local: EndpointExperimentalPluginLocal(raw),
   bundle: EndpointExperimentalPluginBundle(raw),
   uninstall: EndpointExperimentalPluginUninstall(raw),
 })
@@ -2112,6 +2121,8 @@ const adaptClient = (raw: RawClient) => {
     ...client,
     plugin: {
       ...client.plugin,
+      /** @deprecated Use `client.experimental.plugin.local`. Removed in the next minor. */
+      local: client.experimental.plugin.local,
       /** @deprecated Use `client.experimental.plugin.bundle`. Removed in the next minor. */
       bundle: client.experimental.plugin.bundle,
       /** @deprecated Use `client.experimental.plugin.uninstall`. Removed in the next minor. */

@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 import { createHash } from "node:crypto"
 import { mkdir, readdir, readFile, rm, stat } from "node:fs/promises"
-import { join, posix } from "node:path"
+import { homedir } from "node:os"
+import { join, posix, resolve } from "node:path"
 
 // `.ocplugin` is a gzipped tar with sorted paths and a zero mtime, so the same build produces the same file and
 // sha256. Bun.Archive stamps entry mtimes from the moment it writes, which breaks that guarantee on the write path;
@@ -9,11 +10,15 @@ import { join, posix } from "node:path"
 const root = join(import.meta.dir, "..")
 const dist = join(root, "dist")
 const manifest = await Bun.file(join(root, "ocplugin.json")).json()
-const out = join(dist, "plugins")
+// Packs land in the local discover directory, under the plugin id and version, so the app can list them without
+// opening the archive and the installer finds the chosen version. `OCPLUGIN_OUT` keeps release builds elsewhere.
+const out = process.env.OCPLUGIN_OUT
+  ? resolve(process.env.OCPLUGIN_OUT)
+  : join(homedir(), ".ocplugins-local", manifest.id, manifest.version)
 
 await mkdir(out, { recursive: true })
 
-// Packing writes into dist/plugins, so it must never read its own previous output back into the archive.
+// A pack made before the output moved to `~/.ocplugins` left its archive inside `dist/plugins`; never read it back.
 const paths = (await walk(dist))
   .filter((path) => path !== "ocplugin.json" && !path.startsWith("plugins/"))
   .sort(compare)
@@ -37,6 +42,8 @@ const tar = concat([
 const archive = join(out, `${manifest.id}-${manifest.version}.ocplugin`)
 await rm(archive, { force: true })
 await Bun.write(archive, Bun.gzipSync(tar, { level: 9 }))
+// The sidecar describes the same bundle without its archive, so the catalog can read display data cheaply.
+await Bun.write(join(out, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n")
 
 console.log(`packed ${archive} (${entries.length} entries, ${(tar.byteLength / 1024 / 1024).toFixed(1)} MiB of tar)`)
 
@@ -109,7 +116,8 @@ function split(path: string) {
   for (let index = parts.length - 1; index > 0; index--) {
     const prefix = parts.slice(0, index).join("/")
     const name = parts.slice(index).join("/")
-    if (encoder.encode(prefix).byteLength <= 155 && encoder.encode(name).byteLength <= 100) return [name, prefix] as const
+    if (encoder.encode(prefix).byteLength <= 155 && encoder.encode(name).byteLength <= 100)
+      return [name, prefix] as const
   }
   throw new Error(`.ocplugin path is too long for tar: ${path}`)
 }

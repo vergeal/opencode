@@ -1,5 +1,6 @@
-import { createEffect, createMemo, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
+import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type Accessor } from "solid-js"
 import { makeEventListener } from "@solid-primitives/event-listener"
+import { Key } from "@solid-primitives/keyed"
 import { useNavigate } from "@solidjs/router"
 import { ActivityRing } from "@opencode/ui/activity-ring"
 import { Button } from "@opencode/ui/button"
@@ -11,11 +12,13 @@ import { Tooltip } from "@opencode/ui/tooltip"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
+import { usePlatform } from "@/runtime/platform/platform"
+import { useSettingsSurface } from "@/settings/surface"
 import { useCommand } from "@/shell/commands/command"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { usePinnedSessions } from "@/session/pins"
 import { sessionLabel } from "@/session/title"
-import { SessionMenuCopyID } from "@/session/menu-items"
+import { SessionMenuCopyID, useCopySessionID } from "@/session/menu-items"
 import { sessionTreeIDs } from "@/session/requests/session-request-tree"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
@@ -108,8 +111,8 @@ export function ReplicaSidebar() {
  */
 /** One session row: click opens it, double-click on the title renames it in place, right-click shows its actions. */
 function SessionRow(props: {
-  entry: InboxEntry
-  active: boolean
+  entry: Accessor<InboxEntry>
+  active: Accessor<boolean>
   onOpen: (entry: InboxEntry) => void
   onDelete: (entry: InboxEntry) => void
 }) {
@@ -117,13 +120,29 @@ function SessionRow(props: {
 
   const pins = usePinnedSessions()
 
+  const platform = usePlatform()
+
+  const copySessionID = useCopySessionID()
+
+  const settings = useSettingsSurface()
+
+  const nativeMenu = () => !!platform.showContextMenu
+
   const [renaming, setRenaming] = createSignal(false)
   let label!: HTMLSpanElement
 
-  const project = () => props.entry.ctx.projects.forSession(props.entry.session)
+  const project = () => props.entry().ctx.projects.forSession(props.entry().session)
+
+  const openProjectSettings = () => {
+    const current = project()
+
+    if (!current) return
+
+    settings.openProject({ server: props.entry().server, project: current.worktree })
+  }
 
   createEffect(() => {
-    const value = sessionLabel(props.entry.session)
+    const value = sessionLabel(props.entry().session)
 
     if (!label || renaming()) return
     label.textContent = value
@@ -131,7 +150,7 @@ function SessionRow(props: {
 
   const startRename = () => {
     if (renaming()) return
-    label.textContent = sessionLabel(props.entry.session)
+    label.textContent = sessionLabel(props.entry().session)
     setRenaming(true)
 
     requestAnimationFrame(() => {
@@ -153,24 +172,97 @@ function SessionRow(props: {
   const commit = async (save: boolean) => {
     if (!renaming()) return
 
-    const original = sessionLabel(props.entry.session)
+    const entry = props.entry()
+    const original = sessionLabel(entry.session)
     const next = (label.textContent ?? "").trim()
     setRenaming(false)
     label.textContent = original
 
     if (!save || !next || next === original) return
-    const ctx = props.entry.ctx
-    const id = props.entry.session.id
+    const ctx = entry.ctx
+    const id = entry.session.id
 
     await ctx.sdk.api.session
       .update({ sessionID: id, title: next })
       .then(() => {
-        ctx.data.session.remember({ ...(ctx.data.session.get(id) ?? props.entry.session), title: next })
+        ctx.data.session.remember({ ...(ctx.data.session.get(id) ?? entry.session), title: next })
         // A rename advances time.updated server-side, so re-read the canonical record.
         ctx.data.session.invalidate(id)
         void ctx.data.session.sync(id).catch(() => undefined)
       })
       .catch(() => undefined)
+  }
+
+  // Desktop draws the platform menu; only the web build needs the in-app one.
+  const showNativeMenu = async (position: { x: number; y: number }) => {
+    const show = platform.showContextMenu
+
+    if (!show) return
+
+    const session = props.entry().session
+
+    const pinned = pins.isPinned(session.id)
+
+    const chosen = await show(
+      [
+        { id: "rename", label: language.t("common.rename"), accelerator: "Alt+CmdOrCtrl+R", icon: "rename" },
+        {
+          id: "pin",
+          label: pinned ? language.t("common.unpin") : language.t("common.pin"),
+          accelerator: "Alt+CmdOrCtrl+P",
+          icon: pinned ? "unpin" : "pin",
+        },
+        // No unread state for a row yet; the entry stays as the placeholder the native menu shape expects.
+        {
+          id: "markUnread",
+          label: language.t("common.markUnread"),
+          accelerator: "Shift+CmdOrCtrl+U",
+          icon: "markUnread",
+          enabled: false,
+        },
+        {
+          id: "project",
+          label: language.t("common.project"),
+          icon: "project",
+          submenu: [{ id: "projectSettings", label: `${language.t("project.settings.menu")}…` }],
+        },
+        { type: "separator" },
+        // Placeholder until a row can resume a run without opening the session.
+        {
+          id: "continue",
+          label: language.t("common.continue"),
+          icon: "continue",
+          submenu: [{ id: "continueRun", label: language.t("common.continue"), enabled: false }],
+        },
+        { type: "separator" },
+        {
+          id: "copy",
+          label: language.t("common.copy"),
+          icon: "copy",
+          submenu: [{ id: "copyID", label: language.t("command.session.copyID") }],
+        },
+        // Placeholder until a session can open in a second window.
+        { id: "openInNewWindow", label: language.t("common.openInNewWindow"), icon: "newWindow", enabled: false },
+        { type: "separator" },
+        // Placeholder until the session archive API is available from the client.
+        {
+          id: "archive",
+          label: language.t("common.archive"),
+          accelerator: "Shift+CmdOrCtrl+A",
+          icon: "archive",
+          enabled: false,
+        },
+        { type: "separator" },
+        { id: "delete", label: `${language.t("common.delete")}…`, icon: "delete" },
+      ],
+      position,
+    )
+
+    if (chosen === "pin") pins.toggle(session.id)
+    else if (chosen === "rename") startRename()
+    else if (chosen === "copyID") void copySessionID(session.id)
+    else if (chosen === "projectSettings") openProjectSettings()
+    else if (chosen === "delete") props.onDelete(props.entry())
   }
 
   createEffect(() => {
@@ -184,6 +276,9 @@ function SessionRow(props: {
 
         if (!(target instanceof Node)) return
         if (label.contains(target)) return
+        // A pointer that lands before the editor took focus belongs to whatever is still closing, not to
+        // an outside click on the editor.
+        if (document.activeElement !== label) return
         void commit(true)
       },
       { capture: true },
@@ -198,19 +293,24 @@ function SessionRow(props: {
         as="div"
         data-slot="replica-row"
         data-ui="sidebar-row"
-        data-state={props.active ? "pressed" : undefined}
+        data-state={props.active() ? "pressed" : undefined}
         data-renaming={renaming() ? "" : undefined}
         role="button"
         tabindex={renaming() ? undefined : 0}
         class={`${ROW} outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]`}
         onClick={() => {
           if (renaming()) return
-          props.onOpen(props.entry)
+          props.onOpen(props.entry())
+        }}
+        onContextMenu={(event) => {
+          if (!nativeMenu()) return
+          event.preventDefault()
+          void showNativeMenu({ x: event.clientX, y: event.clientY })
         }}
         onKeyDown={(event: KeyboardEvent) => {
           if (renaming() || event.key !== "Enter") return
           event.preventDefault()
-          props.onOpen(props.entry)
+          props.onOpen(props.entry())
         }}
       >
         <Show
@@ -242,7 +342,12 @@ function SessionRow(props: {
             event.preventDefault()
             void commit(false)
           }}
-          onBlur={() => void commit(true)}
+          onBlur={() => {
+            // Losing the window (a native menu closing, another app taking focus) is not the user leaving
+            // the editor; keep it open so the rename survives.
+            if (!document.hasFocus()) return
+            void commit(true)
+          }}
           onPointerDown={(event) => {
             if (renaming()) event.stopPropagation()
           }}
@@ -252,7 +357,7 @@ function SessionRow(props: {
             event.stopPropagation()
           }}
         />
-        <StatusMark status={props.entry.status} />
+        <StatusMark status={props.entry().status} />
       </Menu.Context.Trigger>
       <Menu.Context.Portal>
         <Menu.Context.Content
@@ -262,20 +367,20 @@ function SessionRow(props: {
         >
           <Menu.Group>
             <Menu.GroupLabel>{language.t("menu.group.organize")}</Menu.GroupLabel>
-            <Menu.Item onSelect={() => pins.toggle(props.entry.session.id)}>
-              {pins.isPinned(props.entry.session.id) ? language.t("common.unpin") : language.t("common.pin")}
+            <Menu.Item onSelect={() => pins.toggle(props.entry().session.id)}>
+              {pins.isPinned(props.entry().session.id) ? language.t("common.unpin") : language.t("common.pin")}
             </Menu.Item>
             <Menu.Item onSelect={startRename}>{language.t("common.rename")}</Menu.Item>
           </Menu.Group>
           <Menu.Separator />
           <Menu.Group>
             <Menu.GroupLabel>{language.t("menu.group.copyExport")}</Menu.GroupLabel>
-            <SessionMenuCopyID sessionID={props.entry.session.id} />
+            <SessionMenuCopyID sessionID={props.entry().session.id} />
           </Menu.Group>
           <Menu.Separator />
           <Menu.Group>
             <Menu.GroupLabel>{language.t("menu.group.danger")}</Menu.GroupLabel>
-            <Menu.Item data-variant="critical" onSelect={() => props.onDelete(props.entry)}>
+            <Menu.Item data-variant="critical" onSelect={() => props.onDelete(props.entry())}>
               {language.t("common.delete")}…
             </Menu.Item>
           </Menu.Group>
@@ -429,9 +534,16 @@ function ConversationNav() {
           <section class="mb-2 flex flex-col">
             <h2 class={SECTION}>{language.t("replica.section.pinned")}</h2>
             <div class={LIST}>
-              <For each={pinned()}>
-                {(entry) => <SessionRow entry={entry} active={active(entry)} onOpen={open} onDelete={confirmDelete} />}
-              </For>
+              <Key each={pinned()} by={(entry) => entry.key}>
+                {(entry) => (
+                  <SessionRow
+                    entry={entry}
+                    active={() => active(entry())}
+                    onOpen={open}
+                    onDelete={confirmDelete}
+                  />
+                )}
+              </Key>
             </div>
           </section>
         )}
@@ -440,9 +552,16 @@ function ConversationNav() {
           <section class="flex flex-col">
             <h2 class={SECTION}>{language.t("replica.section.recent")}</h2>
             <div class={LIST}>
-              <For each={recent()}>
-                {(entry) => <SessionRow entry={entry} active={active(entry)} onOpen={open} onDelete={confirmDelete} />}
-              </For>
+              <Key each={recent()} by={(entry) => entry.key}>
+                {(entry) => (
+                  <SessionRow
+                    entry={entry}
+                    active={() => active(entry())}
+                    onOpen={open}
+                    onDelete={confirmDelete}
+                  />
+                )}
+              </Key>
             </div>
           </section>
         </Show>

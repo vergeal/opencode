@@ -78,6 +78,23 @@ export const Info = Schema.Struct({
   display: Display.pipe(optional),
 }).annotate({ identifier: "Plugin.Info" })
 
+/**
+ * One plugin id found in the local discover directory, with every bundle version that is available to install. The
+ * display data comes from the newest bundle's manifest, so an uninstalled plugin reads exactly like an installed one.
+ */
+export interface LocalEntry extends Schema.Schema.Type<typeof LocalEntry> {}
+export const LocalEntry = Schema.Struct({
+  id: Schema.String,
+  display: Display.pipe(optional),
+  versions: Schema.Array(
+    Schema.Struct({
+      version: Schema.String,
+      /** The `.ocplugin` file name inside the version's directory. */
+      file: Schema.String,
+    }),
+  ),
+}).annotate({ identifier: "Plugin.LocalEntry" })
+
 const Updated = ephemeral({
   type: "plugin.updated",
   schema: {},

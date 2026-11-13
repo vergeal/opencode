@@ -260,10 +260,7 @@ export function createSessionTimelineRowRenderer(input: {
     return result
   }
 
-  const renderCommands = (
-    group: Extract<PartGroup, { type: "commands" }>,
-    onSizeChange?: () => void,
-  ) => {
+  const renderCommands = (group: Extract<PartGroup, { type: "commands" }>, onSizeChange?: () => void) => {
     const items = createMemo(() => {
       const contents = indexGroupContents(group.refs)
 
@@ -324,8 +321,9 @@ export function createSessionTimelineRowRenderer(input: {
         </button>
         <div
           data-slot="commands-group-content"
+          data-open={open() ? "" : undefined}
           aria-hidden={!open()}
-          class="grid transition-[grid-template-rows] duration-[350ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none"
+          class="grid transition-[grid-template-rows] duration-[160ms] ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none"
           classList={{ "[grid-template-rows:1fr]": open(), "[grid-template-rows:0fr]": !open() }}
         >
           <div class="min-h-0 overflow-hidden">

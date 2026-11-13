@@ -4,6 +4,7 @@ import { Directory, Document, type Entry } from "@opencode/schema/config"
 import { ConfigPlugin } from "@opencode/schema/config/plugin"
 import { FSUtil } from "@opencode/util/fs-util"
 import { Host } from "@opencode/plugin/host"
+import { Path } from "@opencode/util/global"
 import { makeLocationNode } from "@opencode/util/effect/app-node"
 import { Context, Effect, Layer, Option, PubSub, Scope, Stream } from "effect"
 import path from "path"
@@ -12,6 +13,7 @@ import { Config } from "../../config.js"
 import { Watcher } from "../../filesystem/watcher.js"
 import { Location } from "../../location.js"
 import { PluginSourceDirectory } from "../../plugin/source-directory.js"
+import { installRoot as installedRoot } from "../../plugin/local.js"
 import { ConfigEntryObserver } from "./entry-observer.js"
 
 export type Operation =
@@ -42,6 +44,17 @@ export const layer = Layer.effect(
     const location = yield* Location.Service
     const configuredChanges = yield* PubSub.unbounded<void>()
     const watched = new Set<string>()
+    // Installed bundles live outside the config tree, so the config change feed cannot see an install or uninstall.
+    // Watching the root keeps the same "drop a directory, no restart" behavior the config `plugins/` folder has.
+    const installed = installedRoot(Path.home)
+
+    yield* fs.makeDirectory(installed, { recursive: true }).pipe(Effect.orElseSucceed(() => undefined))
+    const installedUpdates = yield* watcher.subscribe({ path: installed, type: "directory" })
+    yield* installedUpdates.pipe(
+      Stream.runForEach(() => PubSub.publish(configuredChanges, undefined)),
+      Effect.catchCause((cause) => Effect.logError("installed plugin watch failed", { path: installed, cause })),
+      Effect.forkScoped({ startImmediately: true }),
+    )
 
     // Configured local plugins can live outside config roots, where the
     // config change feed cannot see them; watch those targets directly.
@@ -57,6 +70,8 @@ export const layer = Layer.effect(
         if (watched.has(operation.target)) continue
         // The config change feed already covers {plugin,plugins} directories.
         if (ConfigEntryObserver.isDirectorySource(entries, operation.target, PluginSourceDirectory.names)) continue
+        // The install root is watched as a whole, so its children do not each need their own watch.
+        if (path.dirname(operation.target) === installed) continue
         watched.add(operation.target)
         const updates = yield* watcher.subscribe({
           path: operation.target,
@@ -75,7 +90,7 @@ export const layer = Layer.effect(
     return Service.of({
       operations: Effect.fn("ConfigPluginSource.operations")(function* () {
         const entries = yield* config.entries()
-        const operations = yield* scan(fs, location, entries)
+        const operations = yield* scan(fs, location, entries, installed)
         yield* watchConfiguredSources(entries, operations)
         return operations
       }),
@@ -120,6 +135,7 @@ const scan = Effect.fn("ConfigPluginSource.scan")(function* (
   fs: FSUtil.Interface,
   location: Location.Interface,
   entries: readonly Entry[],
+  installed: string,
 ) {
   const discovered = yield* Effect.forEach(
     entries.filter((entry): entry is Directory => entry.type === "directory"),
@@ -128,6 +144,16 @@ const scan = Effect.fn("ConfigPluginSource.scan")(function* (
         Effect.map((targets) => targets.map((target): Operation => ({ type: "add", target, options: {} }))),
       ),
   ).pipe(Effect.map((items) => items.flat()))
+  // Installed bundles are directories directly under the install root, not `plugin`/`plugins` children, so they are
+  // listed here instead of going through PluginSourceDirectory.discover.
+  const unpacked = yield* fs.readDirectoryEntries(installed).pipe(
+    Effect.orElseSucceed(() => []),
+    Effect.map((items) =>
+      items
+        .filter((entry) => entry.type === "Directory")
+        .map((entry): Operation => ({ type: "add", target: path.join(installed, entry.name), options: {} })),
+    ),
+  )
   const configured = entries
     .filter((entry): entry is Document => entry.type === "document")
     .flatMap((entry) =>
@@ -153,7 +179,7 @@ const scan = Effect.fn("ConfigPluginSource.scan")(function* (
     }),
   ).pipe(Effect.map((operations) => operations.flatMap(Option.toArray)))
   // Explicit config is applied last so it can remove auto-discovered packages.
-  return yield* Effect.forEach([...discovered, ...resolved], (operation) =>
+  return yield* Effect.forEach([...discovered, ...unpacked, ...resolved], (operation) =>
     Effect.gen(function* () {
       if (operation.type === "remove" || !path.isAbsolute(operation.target)) return [operation]
       if (!(yield* fs.existsSafe(operation.target))) return [operation]

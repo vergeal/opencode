@@ -1,4 +1,6 @@
 import { createEffect, createMemo, onCleanup, Show } from "solid-js"
+import { createStore } from "solid-js/store"
+import { makeEventListener } from "@solid-primitives/event-listener"
 import { lastAssistantWithUsage } from "@opencode/client/solid"
 import { createCNY, flashCostBreakdown } from "@opencode/gui-plugins/context/cost"
 import { Icon } from "@opencode/ui/icon"
@@ -44,7 +46,7 @@ export function ReplicaTitleBar(props: {
   let bar!: HTMLElement
 
   // The traffic lights are native and stay 14pt while the renderer scales, so their fixed position drifts
-  // below the bar’s centre as soon as the interface zoom is not 1. Keep their centre on the bar’s centre the
+  // below the bar's centre as soon as the interface zoom is not 1. Keep their centre on the bar's centre the
   // way the full titlebar does: row centre in window points, minus half a button.
   createEffect(() => {
     if (!mac()) return
@@ -63,7 +65,7 @@ export function ReplicaTitleBar(props: {
     onCleanup(() => cancelAnimationFrame(frame))
   })
 
-  // Hand the buttons back at the window’s default position; whatever bar mounts next owns them again.
+  // Hand the buttons back at the window's default position; whatever bar mounts next owns them again.
   onCleanup(() => {
     if (!mac()) return
     void platform.setTrafficLightsPosition?.({ x: 14, y: 14 })
@@ -107,9 +109,7 @@ export function ReplicaTitleBar(props: {
     }
   }
 
-  const cny = createMemo(() => createCNY(language.locale()))
-
-  // The ring, the token count and the spend are one control: clicking it opens the built-in context panel next
+  const cny = createMemo(() => createCNY(language.locale()))  // The ring, the token count and the spend are one control: clicking it opens the built-in context panel next
   // to the conversation, the same panel the plugin's own indicator opens.
   const openContext = () => {
     const route = layout.route()
@@ -130,6 +130,90 @@ export function ReplicaTitleBar(props: {
     const tab = findSessionTab(tabs.store, route.server, route.sessionId)
     if (tab) tabs.setRegion(tab, "side", true)
   }
+
+  // The conversation title is edited in place, the way session rows and tab titles do it: double-click opens
+  // the editor, Enter or an outside click saves, Escape restores.
+  let titleElement!: HTMLSpanElement
+
+  const [titleState, setTitleState] = createStore({ editing: false })
+
+  createEffect(() => {
+    if (!titleElement || titleState.editing) return
+
+    titleElement.textContent = conversation()?.title ?? ""
+  })
+
+  const beginRename = (event: MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    if (titleState.editing) return
+    const current = conversation()
+
+    if (!titleElement || !current) return
+    titleElement.textContent = current.title ?? ""
+    setTitleState("editing", true)
+
+    requestAnimationFrame(() => {
+      titleElement.focus()
+      const range = document.createRange()
+      range.selectNodeContents(titleElement)
+      const selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(range)
+    })
+  }
+
+  const commitRename = async (save: boolean) => {
+    if (!titleState.editing) return
+
+    const original = conversation()?.title ?? ""
+    const next = (titleElement.textContent ?? "").trim()
+    setTitleState("editing", false)
+    titleElement.textContent = original
+
+    if (!save || !next || next === original) return
+
+    const route = layout.route()
+
+    if (route.type !== "session") return
+    const ctx = global.serverCtx(route.server)
+    const session = ctx?.data.session.get(route.sessionId)
+
+    if (!ctx || !session) return
+
+    await ctx.sdk.api.session
+      .update({ sessionID: session.id, title: next })
+      .then(() => {
+        ctx.data.session.remember({ ...session, title: next })
+        // A rename advances time.updated server-side, so re-read the canonical record.
+        ctx.data.session.invalidate(session.id)
+        void ctx.data.session.sync(session.id).catch(() => undefined)
+      })
+      .catch(() => undefined)
+  }
+
+  createEffect(() => {
+    if (!titleState.editing) return
+
+    const cleanup = makeEventListener(
+      document,
+      "pointerdown",
+      (event) => {
+        const target = event.target
+
+        if (!(target instanceof Node)) return
+        if (titleElement.contains(target)) return
+        // A pointer that lands before the editor took focus belongs to whatever is still closing, not to
+        // an outside click on the editor.
+        if (document.activeElement !== titleElement) return
+        void commitRename(true)
+      },
+      { capture: true },
+    )
+
+    onCleanup(cleanup)
+  })
 
   // Shown beside the ring the way the reference reads: 15万 in Chinese, 150K in English.
   const compact = createMemo(
@@ -239,11 +323,34 @@ export function ReplicaTitleBar(props: {
             )}
           </Show>
           <span
-            class="min-w-0 max-w-[55%] shrink truncate text-[14px] leading-[17px] font-medium text-[var(--color-text-main)]"
+            ref={titleElement}
+            class="min-w-0 max-w-[55%] shrink text-[14px] leading-[17px] font-medium text-[var(--color-text-main)] outline-none"
+            classList={{ truncate: !titleState.editing, "cursor-text select-text": titleState.editing }}
+            contenteditable={titleState.editing ? "plaintext-only" : undefined}
             data-ui="titlebar-title"
-          >
-            {conversation()?.title ?? ""}
-          </span>
+            dir="auto"
+            onDblClick={beginRename}
+            onKeyDown={(event) => {
+              if (!titleState.editing) return
+              event.stopPropagation()
+
+              if (event.key === "Enter") {
+                event.preventDefault()
+                void commitRename(true)
+
+                return
+              }
+
+              if (event.key !== "Escape") return
+              event.preventDefault()
+              void commitRename(false)
+            }}
+            onBlur={() => {
+              // Losing the window is not the user leaving the editor; keep it open so the rename survives.
+              if (!document.hasFocus()) return
+              void commitRename(true)
+            }}
+          />
         </span>
 
         <Show when={usage()}>

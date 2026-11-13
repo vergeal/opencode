@@ -764,6 +764,7 @@ function InstallSkillDialog(props: {
   const [state, setState] = createStore({
     name: props.initial?.name ?? "",
     description: props.initial?.description ?? "",
+    instructions: props.initial?.instructions ?? "",
     busy: false,
     error: "",
   })
@@ -788,9 +789,7 @@ function InstallSkillDialog(props: {
     try {
       await serverSdk.api.experimental.file.write({
         path: target(),
-        payload: new TextEncoder().encode(
-          composeSkill({ name, description, instructions: props.initial?.instructions ?? "" }),
-        ),
+        payload: new TextEncoder().encode(composeSkill({ name, description, instructions: state.instructions })),
         location: { directory: props.directory },
       })
       dialog.close()
@@ -801,7 +800,7 @@ function InstallSkillDialog(props: {
   }
 
   return (
-    <Dialog fit containerClass="explore-install-dialog">
+    <Dialog size="x-large" containerClass="explore-skill-dialog">
       <DialogHeader hideClose>
         <DialogTitleGroup
           title={language.t("explore.skills.install.title")}
@@ -809,41 +808,64 @@ function InstallSkillDialog(props: {
         />
       </DialogHeader>
 
-      <DialogBody class="explore-install-body">
-        <label class="explore-field">
-          <span class="explore-field-label">{language.t("explore.skills.install.name")}</span>
-          <TextInput
-            autofocus
-            appearance="large"
-            value={state.name}
-            placeholder={language.t("explore.skills.install.name.placeholder")}
-            aria-label={language.t("explore.skills.install.name")}
-            autocomplete="off"
-            spellcheck={false}
-            onInput={(event) => setState("name", event.currentTarget.value)}
-          />
-        </label>
+      <DialogBody class="explore-skill-body">
+        <div class="explore-skill-scroll">
+          <div data-component="document-surface" class="explore-skill-paper">
+            <div class="explore-skill-page">
+              <TextInput
+                autofocus
+                surface="invisible"
+                class="explore-skill-name"
+                value={state.name}
+                placeholder={language.t("explore.skills.install.name.placeholder")}
+                aria-label={language.t("explore.skills.install.name")}
+                autocomplete="off"
+                spellcheck={false}
+                onInput={(event) => setState("name", event.currentTarget.value)}
+              />
 
-        <label class="explore-field">
-          <span class="explore-field-label">{language.t("explore.skills.install.summary")}</span>
-          <Textarea
-            rows={3}
-            autoResize
-            value={state.description}
-            placeholder={language.t("explore.skills.install.summary.placeholder")}
-            aria-label={language.t("explore.skills.install.summary")}
-            onInput={(event) => setState("description", event.currentTarget.value)}
-          />
-          <span class="explore-field-hint">{language.t("explore.skills.install.hint")}</span>
-        </label>
+              <Textarea
+                class="explore-skill-summary"
+                rows={1}
+                autoResize
+                autoResizeMax={96}
+                value={state.description}
+                placeholder={language.t("explore.skills.install.summary.placeholder")}
+                aria-label={language.t("explore.skills.install.summary")}
+                onInput={(event) => setState("description", event.currentTarget.value)}
+              />
 
-        <Show when={state.error}>
-          {(message) => (
-            <p class="explore-form-error" role="alert">
-              {message()}
+              <div class="explore-skill-divider" role="presentation" />
+
+              <Textarea
+                class="explore-skill-markdown"
+                rows={16}
+                autoResize
+                autoResizeMax={760}
+                value={state.instructions}
+                placeholder={language.t("explore.skills.install.body.placeholder")}
+                aria-label={language.t("explore.skills.install.body")}
+                spellcheck={false}
+                onInput={(event) => setState("instructions", event.currentTarget.value)}
+              />
+            </div>
+          </div>
+
+          <div class="explore-skill-foot">
+            <p class="explore-skill-hint">{language.t("explore.skills.install.hint")}</p>
+            <p class="explore-skill-path" dir="ltr" title={target()}>
+              {target()}
             </p>
-          )}
-        </Show>
+          </div>
+
+          <Show when={state.error}>
+            {(message) => (
+              <p class="explore-form-error" role="alert">
+                {message()}
+              </p>
+            )}
+          </Show>
+        </div>
       </DialogBody>
 
       <DialogFooter>

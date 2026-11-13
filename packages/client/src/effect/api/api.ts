@@ -129,6 +129,9 @@ export interface PluginApi<E = never> {
   readonly check: PluginCheckOperation<E>
   readonly update: PluginUpdateOperation<E>
 
+  /** @deprecated Use `client.experimental.plugin.local`. Removed in the next minor. */
+  readonly local: ExperimentalPluginLocalOperation<E>
+
   /** @deprecated Use `client.experimental.plugin.bundle`. Removed in the next minor. */
   readonly bundle: ExperimentalPluginBundleOperation<E>
 
@@ -136,9 +139,21 @@ export interface PluginApi<E = never> {
   readonly uninstall: ExperimentalPluginUninstallOperation<E>
 }
 
+export type ExperimentalPluginLocalInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+export type ExperimentalPluginLocalOutput = {
+  readonly location: Location.PublicRef
+  readonly data: ReadonlyArray<Plugin.LocalEntry>
+}
+export type ExperimentalPluginLocalOperation<E = never> = (
+  input?: ExperimentalPluginLocalInput,
+) => Effect.Effect<ExperimentalPluginLocalOutput, E>
+
 export type ExperimentalPluginBundleInput = {
   readonly location?: { readonly directory?: string | undefined } | undefined
   readonly id: Plugin.ID
+  readonly version?: string | undefined
 }
 export type ExperimentalPluginBundleOutput = {
   readonly location: Location.PublicRef
@@ -161,6 +176,7 @@ export type ExperimentalPluginUninstallOperation<E = never> = (
 ) => Effect.Effect<ExperimentalPluginUninstallOutput, E>
 
 export interface ExperimentalPluginApi<E = never> {
+  readonly local: ExperimentalPluginLocalOperation<E>
   readonly bundle: ExperimentalPluginBundleOperation<E>
   readonly uninstall: ExperimentalPluginUninstallOperation<E>
 }
@@ -2948,6 +2964,15 @@ export interface ExperimentalServerKnowledgeApi<E = never> {
   readonly assign: ExperimentalServerKnowledgeAssignOperation<E>
   readonly unassign: ExperimentalServerKnowledgeUnassignOperation<E>
 }
+
+/** @deprecated Use `ExperimentalPluginLocalInput`. Removed in the next minor. */
+export type PluginLocalInput = ExperimentalPluginLocalInput
+
+/** @deprecated Use `ExperimentalPluginLocalOutput`. Removed in the next minor. */
+export type PluginLocalOutput = ExperimentalPluginLocalOutput
+
+/** @deprecated Use `ExperimentalPluginLocalOperation`. Removed in the next minor. */
+export type PluginLocalOperation<E = never> = ExperimentalPluginLocalOperation<E>
 
 /** @deprecated Use `ExperimentalPluginBundleInput`. Removed in the next minor. */
 export type PluginBundleInput = ExperimentalPluginBundleInput

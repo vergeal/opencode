@@ -18,7 +18,7 @@ import { PageHeader } from "@/shell/page"
 import { useLayout } from "@/shell/state/layout"
 import "@/settings/settings.css"
 import "./explore.css"
-import { loadCatalog, PLUGIN_CATEGORIES, type CatalogPlugin, type PluginCategory } from "./catalog"
+import { loadLocalCatalog, PLUGIN_CATEGORIES, type CatalogPlugin, type PluginCategory } from "./catalog"
 import { PluginInstallDialog } from "./plugin-install-dialog"
 import { PluginIcon } from "./plugin-icon"
 import { ExploreStatus } from "./status"
@@ -57,8 +57,9 @@ export function ExplorePlugins() {
   const layout = useLayout()
   const dialog = useDialog()
   const installed = useExploreInstalled()
+  const server = useServerSDK()
 
-  const [catalog] = createResource(loadCatalog)
+  const [catalog, { refetch: refetchCatalog }] = createResource(() => loadLocalCatalog(server))
 
   // Reading the resource before its first value would suspend the whole pane, so the list stays empty until it lands.
   const catalogPlugins = () => {
@@ -92,6 +93,7 @@ export function ExplorePlugins() {
         bundle={entry.bundle}
         id={entry.id}
         entry={entry}
+        versions={entry.versions}
         onInstalled={() => void installed.refetchPlugins()}
       />
     ))
@@ -112,7 +114,10 @@ export function ExplorePlugins() {
       onInstall={install}
       onInstallCatalog={installFromCatalog}
       onUninstall={uninstall}
-      onRefresh={() => void installed.refetchPlugins()}
+      onRefresh={() => {
+        void refetchCatalog()
+        void installed.refetchPlugins()
+      }}
     />
   )
 }
@@ -277,11 +282,7 @@ export function ExplorePluginsView(props: {
 }
 
 /** One catalog plugin: the whole row opens its page. The page owns the install action, so the list only shows what exists. */
-function PluginCard(props: {
-  name: string
-  description: string
-  onOpen?: () => void
-}) {
+function PluginCard(props: { name: string; description: string; onOpen?: () => void }) {
   return (
     <div class="explore-catalog-card">
       <button type="button" class="explore-catalog-card-main" onClick={() => props.onOpen?.()}>
@@ -314,7 +315,12 @@ function DetailCrumbs(props: { current: string; onBack: () => void }) {
 }
 
 /** A catalog entry's full page: who publishes it, what it does, and the install that adds it to the project. */
-function CatalogPluginDetail(props: { entry: CatalogPlugin; installed?: boolean; onBack: () => void; onInstall: () => void }) {
+function CatalogPluginDetail(props: {
+  entry: CatalogPlugin
+  installed?: boolean
+  onBack: () => void
+  onInstall: () => void
+}) {
   const language = useLanguage()
 
   const details = () => props.entry.details ?? props.entry.description
@@ -334,13 +340,23 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; installed?: boolean;
                 <bdi dir="ltr">{props.entry.name}</bdi>
               </h1>
               <p class="explore-catalog-hero-meta">
-                {language.t("explore.plugins.by", { author: props.entry.author })} · {props.entry.description}
+                <Show when={props.entry.author}>
+                  {(author) => <>{language.t("explore.plugins.by", { author: author() })} · </>}
+                </Show>
+                {props.entry.description}
               </p>
             </div>
             <Show
               when={!props.installed}
               fallback={
-                <span class="explore-catalog-hero-installed">{language.t("explore.plugins.installed")}</span>
+                <div class="explore-catalog-hero-actions">
+                  <span class="explore-catalog-hero-installed">{language.t("explore.plugins.installed")}</span>
+                  <Show when={props.entry.versions && props.entry.versions.length > 1}>
+                    <Button variant="neutral" size="small" onClick={props.onInstall}>
+                      {language.t("explore.plugins.switchVersion")}
+                    </Button>
+                  </Show>
+                </div>
               }
             >
               <Button variant="contrast" size="small" icon="plus" onClick={props.onInstall}>
@@ -401,31 +417,59 @@ function CatalogPluginDetail(props: { entry: CatalogPlugin; installed?: boolean;
           </Show>
 
           <dl class="explore-catalog-facts">
+            <Show when={props.entry.versions?.length ? props.entry.versions : undefined}>
+              {(versions) => (
+                <div>
+                  <dt>{language.t("explore.plugins.facts.version")}</dt>
+                  <dd>
+                    <span dir="ltr">v{versions()[0]!.version}</span>
+                    <Show when={versions().length > 1}>
+                      <span class="explore-catalog-version-count">
+                        {" · "}
+                        {language.t("explore.plugins.discover.version.count", { count: versions().length })}
+                      </span>
+                    </Show>
+                  </dd>
+                </div>
+              )}
+            </Show>
             <div>
               <dt>
                 {language.t(
-                  props.entry.integrated ? "explore.plugins.discover.integration" : "explore.plugins.discover.package",
+                  props.entry.integrated
+                    ? "explore.plugins.discover.integration"
+                    : props.entry.bundle
+                      ? "explore.plugins.discover.local"
+                      : "explore.plugins.discover.package",
                 )}
               </dt>
               <dd>
                 {props.entry.integrated ? (
                   language.t("explore.plugins.install.integrated")
                 ) : (
-                  <code dir="ltr">{props.entry.package}</code>
+                  <code dir="ltr">
+                    {props.entry.bundle ? `~/.ocplugins-local/${props.entry.id}` : props.entry.package}
+                  </code>
                 )}
               </dd>
             </div>
-            <div>
-              <dt>{language.t("explore.plugins.discover.repository")}</dt>
-              <dd>
-                <ExternalLink href={props.entry.repository}>{props.entry.repository}</ExternalLink>
-              </dd>
-            </div>
+            <Show when={props.entry.repository}>
+              <div>
+                <dt>{language.t("explore.plugins.discover.repository")}</dt>
+                <dd>
+                  <ExternalLink href={props.entry.repository}>{props.entry.repository}</ExternalLink>
+                </dd>
+              </div>
+            </Show>
           </dl>
 
           <p class="explore-note">
             {language.t(
-              props.entry.integrated ? "explore.plugins.install.integrated.note" : "explore.plugins.install.manual",
+              props.entry.integrated
+                ? "explore.plugins.install.integrated.note"
+                : props.entry.bundle
+                  ? "explore.plugins.install.bundle.note"
+                  : "explore.plugins.install.manual",
             )}
           </p>
         </div>
@@ -561,7 +605,12 @@ function PluginDetail(props: { plugin: PluginInfo; onBack: () => void; onUninsta
 
           <Show when={props.plugin.source.type !== "builtin"}>
             <div class="explore-catalog-detail-actions">
-              <Button size="small" variant="ghost-danger" icon="trash" onClick={() => props.onUninstall?.(props.plugin)}>
+              <Button
+                size="small"
+                variant="ghost-danger"
+                icon="trash"
+                onClick={() => props.onUninstall?.(props.plugin)}
+              >
                 {language.t("explore.plugins.uninstall")}
               </Button>
             </div>
@@ -590,7 +639,10 @@ function UninstallPluginDialog(props: { plugin: PluginInfo; onUninstalled?: () =
       showToast({ variant: "success", title: language.t("explore.plugins.uninstall.success", { name: name() }) })
     } catch (error) {
       console.error("plugin uninstall failed", error)
-      setState({ busy: false, error: language.t(unsupportedRoute(error) ? "explore.plugins.unsupported" : "explore.plugins.uninstall.failed") })
+      setState({
+        busy: false,
+        error: language.t(unsupportedRoute(error) ? "explore.plugins.unsupported" : "explore.plugins.uninstall.failed"),
+      })
     }
   }
 

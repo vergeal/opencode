@@ -1,5 +1,6 @@
 import { Plugin } from "@opencode/core/plugin"
 import { PluginBundle } from "@opencode/core/plugin/bundle"
+import { PluginLocal } from "@opencode/core/plugin/local"
 import { PluginUpdate } from "@opencode/core/plugin/update"
 import { Global } from "@opencode/util/global"
 import { InvalidRequestError, PluginNotFoundError, ServiceUnavailableError } from "@opencode/protocol/errors"
@@ -66,6 +67,13 @@ export const PluginHandler = HttpApiBuilder.group(Api, "server.plugin", (handler
         )
       }),
     )
+    .handle("plugin.local", () =>
+      Effect.gen(function* () {
+        const global = yield* Global.Service
+        const entries = yield* Effect.promise(() => PluginLocal.list({ home: global.home }))
+        return yield* response(Effect.succeed(entries))
+      }),
+    )
     .handle("plugin.bundle", (ctx) =>
       Effect.gen(function* () {
         const global = yield* Global.Service
@@ -73,6 +81,7 @@ export const PluginHandler = HttpApiBuilder.group(Api, "server.plugin", (handler
           try: () =>
             PluginBundle.install({
               id: ctx.payload.id,
+              version: ctx.payload.version,
               config: global.config,
               cwd: process.cwd(),
               home: global.home,
@@ -93,7 +102,7 @@ export const PluginHandler = HttpApiBuilder.group(Api, "server.plugin", (handler
       Effect.gen(function* () {
         const global = yield* Global.Service
         const removed = yield* Effect.tryPromise({
-          try: () => PluginBundle.uninstall({ id: ctx.payload.id, config: global.config }),
+          try: () => PluginBundle.uninstall({ id: ctx.payload.id, home: global.home, config: global.config }),
           catch: (error) =>
             new InvalidRequestError({
               message: error instanceof Error ? error.message : String(error),

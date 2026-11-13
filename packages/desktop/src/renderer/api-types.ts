@@ -18,6 +18,12 @@ export type ContextMenuItem = {
   label?: string
   type?: "normal" | "separator"
   enabled?: boolean
+  /** Electron accelerator shown at the trailing edge of the row, e.g. "Alt+CmdOrCtrl+R". */
+  accelerator?: string
+  /** Key into the desktop menu glyph table, e.g. "pencil" for Rename. */
+  icon?: string
+  /** Nested rows; the entry shows a submenu instead of acting as a click target. */
+  submenu?: ContextMenuItem[]
 }
 
 /** One file the main process found while scanning a knowledge library directory. */

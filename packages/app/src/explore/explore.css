@@ -1,4 +1,5 @@
 /* Explore: one page for the plugins and skills a server makes available. */
+@import "@opencode/ui/document-surface.css";
 
 .explore-content {
   width: 100%;
@@ -420,6 +421,19 @@
   font-size: 12px;
   line-height: var(--line-height-compact);
   white-space: nowrap;
+}
+
+/* The installed label and the version switch sit together at the end of the hero. */
+.explore-catalog-hero-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-self: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.explore-catalog-version-count {
+  color: var(--v2-text-text-muted);
 }
 
 /* A plugin's own page: crumbs back to the catalog, then the entry's introduction and contents. */
@@ -971,4 +985,177 @@
   display: flex;
   justify-content: flex-start;
   margin-top: 20px;
+}
+
+/* New skill: the form is one sheet of paper, so the body reads like a document instead of a stack of fields. */
+[data-component="dialog-v2"][data-size="x-large"] [data-slot="dialog-container"].explore-skill-dialog {
+  width: min(calc(100vw - 32px), 840px);
+  height: min(calc(100vh - 64px), 780px);
+}
+
+.explore-skill-body {
+  min-height: 0;
+}
+
+.explore-skill-scroll {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  padding: 0 16px 16px;
+  overflow-y: auto;
+}
+
+.explore-skill-paper {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  padding: 56px clamp(28px, 9%, 72px) 48px;
+}
+
+.explore-skill-page {
+  display: flex;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* The name is the report title, so it drops the field chrome and takes the page's heading size. */
+.explore-skill-page [data-component="text-input-v2"].explore-skill-name {
+  width: 100%;
+  height: auto;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+}
+
+/* The title has no field surface at all, so even the invisible field's hover wash would read as a box. */
+@media (hover: hover) {
+  [data-component="text-input-v2"][data-surface="invisible"].explore-skill-name:where(:hover) {
+    background: transparent;
+  }
+}
+
+[data-component="text-input-v2"].explore-skill-name [data-slot="text-input-v2-input"] {
+  height: 40px;
+  padding: 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 40px;
+  letter-spacing: -0.02em;
+}
+
+/* The summary is the report's standfirst: muted, one or two lines, no field surface. */
+.explore-skill-page [data-component="textarea-v2"].explore-skill-summary {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+[data-component="textarea-v2"].explore-skill-summary [data-slot="textarea-v2-textarea"] {
+  min-height: 0;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--v2-text-text-muted);
+  resize: none;
+}
+
+.explore-skill-divider {
+  height: 1px;
+  margin-block: 6px 4px;
+  background: var(--v2-border-border-muted);
+}
+
+/* The body is the page itself: plain Markdown on the sheet, no field border or raised input surface. */
+.explore-skill-page [data-component="textarea-v2"].explore-skill-markdown {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+[data-component="textarea-v2"].explore-skill-markdown [data-slot="textarea-v2-textarea"] {
+  min-height: 360px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  letter-spacing: normal;
+  resize: none;
+}
+
+[data-component="textarea-v2"].explore-skill-markdown [data-slot="textarea-v2-textarea"]::placeholder {
+  white-space: pre-wrap;
+}
+
+.explore-skill-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 4px 0;
+}
+
+.explore-skill-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-faint);
+}
+
+.explore-skill-path {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  line-height: var(--line-height-compact);
+  color: var(--v2-text-text-faint);
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+
+/* Version pills in the install card: one tap picks which local bundle the host unpacks. */
+.explore-version-options {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.explore-version-option {
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--v2-background-bg-layer-02);
+  color: var(--v2-text-text-muted);
+  font-size: 12px;
+  line-height: var(--line-height-compact);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.explore-version-option:hover {
+  background: var(--v2-overlay-simple-overlay-hover);
+  color: var(--v2-text-text-base);
+}
+
+.explore-version-option[data-selected] {
+  background: var(--v2-overlay-simple-overlay-pressed);
+  color: var(--v2-text-text-base);
+}
+
+.explore-version-option:focus-visible {
+  outline: 2px solid var(--v2-border-border-focus);
+  outline-offset: 1px;
 }
