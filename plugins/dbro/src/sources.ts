@@ -29,8 +29,15 @@ export interface Settings {
  * Source entries come from two places: `opencode.json` options (static, committed with the project) and the plugin's
  * user-level `configuration` (runtime, string[] only). Later entries win by name, so the runtime config can correct a
  * project default without duplicating it.
+ *
+ * `runtimePython` is the interpreter the host prepared from the manifest's `runtime`. It wins over both configurations
+ * because the drivers the host installed live in that environment, not in the interpreter the user names.
  */
-export function settings(options: Readonly<Record<string, unknown>>, config: Readonly<Record<string, unknown>>): Settings {
+export function settings(
+  options: Readonly<Record<string, unknown>>,
+  config: Readonly<Record<string, unknown>>,
+  runtimePython?: string,
+): Settings {
   const parsed = [parseEntries(options.sources), parseEntries(config.sources)]
   const sources = parsed.flatMap((entry) => entry.sources)
   const errors = parsed.flatMap((entry) => entry.errors)
@@ -39,7 +46,7 @@ export function settings(options: Readonly<Record<string, unknown>>, config: Rea
   return {
     sources: merged,
     defaultSource: text(config.defaultSource) ?? text(options.defaultSource),
-    python: text(config.python) ?? text(options.python) ?? "python3",
+    python: runtimePython ?? text(config.python) ?? text(options.python) ?? "python3",
     timeout: number(config.timeout) ?? number(options.timeout) ?? 30,
     maxRows: integer(config.maxRows) ?? integer(options.maxRows) ?? 200,
     toolDirectory: text(config.toolDirectory) ?? text(options.toolDirectory),

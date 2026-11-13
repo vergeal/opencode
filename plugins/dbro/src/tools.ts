@@ -13,6 +13,8 @@ export interface Runtime {
   readonly options: Readonly<Record<string, unknown>>
   readonly config: { get(): Promise<Record<string, unknown>> }
   readonly secrets: { get(key: string): Promise<string | undefined> }
+  /** The interpreter the host prepared from the manifest's `runtime`, when the plugin declared one. */
+  readonly runtime?: { readonly python: string | undefined }
 }
 
 const sql = Schema.String.check(Schema.isMaxLength(100_000)).annotate({
@@ -228,7 +230,7 @@ export function register(editor: ToolEditor, ctx: Runtime) {
 }
 
 async function settingsFor(ctx: Runtime) {
-  return Sources.settings(ctx.options, await ctx.config.get())
+  return Sources.settings(ctx.options, await ctx.config.get(), ctx.runtime?.python)
 }
 
 /** PostgreSQL treats the connection database and the schema separately; 达梦 and MySQL reuse the database name. */

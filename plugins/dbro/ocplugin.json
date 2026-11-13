@@ -8,6 +8,10 @@
   "entry": {
     "server": "server/main"
   },
+  "runtime": {
+    "python": ">=3.10",
+    "dependencies": ["pymysql>=1.0", "psycopg2-binary>=2.9"]
+  },
   "externals": ["effect", "@opencode/plugin", "@opencode/schema"],
   "display": {
     "name": "DBRO",
