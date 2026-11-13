@@ -99,6 +99,8 @@
   --color-titlebar: rgb(8 8 8 / 62%);
   --color-rail: rgb(8 8 8 / 62%);
   --color-sidebar: rgb(21 21 21 / 62%);
+  /* The column reads washed out at 62% over a bright desktop, so the shell paints it almost solid. */
+  --color-navigation: rgb(21 21 21 / 90%);
   --color-main: rgb(15 15 15);
   --color-composer: var(--v2-background-bg-layer-01);
   --replica-composer-fill: var(--v2-background-bg-layer-01);
@@ -142,6 +144,21 @@ html[data-replica-window="translucent"] [data-slot="destination-bar"] {
 /* The conversation keeps an opaque surface; only the chrome acts as glass. */
 html[data-replica-window="translucent"] [data-slot="replica-workbench"] {
   background: transparent;
+}
+
+/* Dark mode needs a deeper navigation surface. The shell carries it, the title bar keeps its own lighter tint, and
+   the frame stays clear: splitting the tint across those two layers keeps the workbench's rounded cutout on the
+   navigation surface instead of on a darker frame. */
+html[data-replica-window="translucent"][data-color-scheme="dark"] [data-replica] {
+  background: transparent;
+}
+
+html[data-replica-window="translucent"][data-color-scheme="dark"] [data-slot="replica-titlebar"] {
+  background: var(--color-titlebar);
+}
+
+html[data-replica-window="translucent"][data-color-scheme="dark"] [data-slot="replica-shell"] {
+  background: var(--color-navigation);
 }
 
 /* A hairline of light along the top edge reads as the glass catching the room. */
