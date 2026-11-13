@@ -659,6 +659,11 @@ export function fromPromise(plugin: Plugin) {
             move: adaptApiMethod(SessionEndpoints["session.move"], host.session.move),
             wait: adaptApiMethod(SessionEndpoints["session.wait"], host.session.wait),
             context: adaptApiMethod(SessionEndpoints["session.context"], host.session.context),
+            inbox: {
+              list: adaptApiMethod(SessionEndpoints["session.inbox.list"], host.session.inbox.list),
+              cancel: adaptApiMethod(SessionEndpoints["session.inbox.cancel"], host.session.inbox.cancel),
+              update: adaptApiMethod(SessionEndpoints["session.inbox.update"], host.session.inbox.update),
+            },
             instructions: {
               entry: {
                 list: adaptApiMethod(

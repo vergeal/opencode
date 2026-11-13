@@ -16,6 +16,7 @@ import { FSUtil } from "@opencode/util/fs-util"
 import { Global } from "@opencode/util/global"
 import { Form } from "@opencode/core/form"
 import { Generate } from "@opencode/core/generate"
+import { Git } from "@opencode/core/git"
 import { InstructionDiscovery } from "@opencode/core/instruction-discovery"
 import { Integration } from "@opencode/core/integration"
 import { Job } from "@opencode/core/job"
@@ -103,6 +104,7 @@ export const makePluginTestLayer = (permission = permissionLayer, generate = gen
       Bus.node,
       Form.node,
       Generate.node,
+      Git.node,
       LayerNodePlatform.httpClient,
       Plugin.node,
       Agent.node,

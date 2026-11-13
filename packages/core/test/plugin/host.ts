@@ -219,6 +219,11 @@ export function host(overrides: Overrides = {}): Plugin.Context {
       interrupt: overrides.session?.interrupt ?? (() => Effect.die("unused session.interrupt")),
       wait: overrides.session?.wait ?? (() => Effect.die("unused session.wait")),
       context: overrides.session?.context ?? (() => Effect.die("unused session.context")),
+      inbox: overrides.session?.inbox ?? {
+        list: () => Effect.die("unused session.inbox.list"),
+        cancel: () => Effect.die("unused session.inbox.cancel"),
+        update: () => Effect.die("unused session.inbox.update"),
+      },
       instructions: overrides.session?.instructions ?? {
         entry: {
           list: () => Effect.die("unused session.instructions.entry.list"),

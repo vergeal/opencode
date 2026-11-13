@@ -87,6 +87,9 @@ import { ReadToolFileSystem } from "../tool/read-filesystem.js"
 import { ReadTool } from "../tool/plugin/read.js"
 import { ArtifactTools } from "../tool/plugin/artifact.js"
 import { DeliverTool } from "../tool/plugin/deliver.js"
+import { RedirectTool } from "../tool/plugin/redirect.js"
+import { SessionsTool } from "../tool/plugin/sessions.js"
+import { UndoTool } from "../tool/plugin/undo.js"
 import { SessionCreateTool } from "../tool/plugin/session-create.js"
 import { KnowledgeTools } from "../tool/plugin/knowledge.js"
 import { ScheduleTools } from "../tool/plugin/schedule.js"
@@ -96,6 +99,7 @@ import { SubagentTool } from "../tool/plugin/subagent.js"
 import { TodoTool } from "../tool/plugin/todo.js"
 import { Tool } from "../tool.js"
 import { ToolOutput } from "../tool-output.js"
+import { Git } from "../git.js"
 import { WebFetchTool } from "../tool/plugin/webfetch.js"
 import { WebSearchTool } from "../tool/plugin/websearch.js"
 import { WellKnown } from "../wellknown.js"
@@ -143,6 +147,7 @@ const services = [
   FileSystem.Service,
   FSUtil.Service,
   Global.Service,
+  Git.Service,
   HttpClient.HttpClient,
   Image.Service,
   InstructionDiscovery.Service,
@@ -203,6 +208,7 @@ export const requirements = LayerNode.group([
   FileSystem.node,
   FSUtil.node,
   Global.node,
+  Git.node,
   httpClient,
   httpFetch,
   Image.node,
@@ -274,6 +280,9 @@ const pre = [
   ReadTool.Plugin,
   ArtifactTools.Plugin,
   DeliverTool.Plugin,
+  SessionsTool.Plugin,
+  RedirectTool.Plugin,
+  UndoTool.Plugin,
   SessionCreateTool.Plugin,
   KnowledgeTools.Plugin,
   ScheduleTools.Plugin,

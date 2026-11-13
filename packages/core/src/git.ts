@@ -131,6 +131,19 @@ export interface Interface {
     readonly defaultRemoteBranch: (repository: Repository, remote?: string) => Effect.Effect<string | undefined>
     /** Empty when HEAD is unborn. */
     readonly rootCommits: (repository: Repository) => Effect.Effect<readonly string[], CommandError>
+    /**
+     * Commits HEAD has that `base` does not and the reverse, from local refs only: nothing is fetched.
+     * Undefined when `base` does not resolve in this repository.
+     */
+    readonly divergence: (
+      repository: Repository,
+      base: string,
+    ) => Effect.Effect<{ ahead: number; behind: number } | undefined>
+  }
+  /** Read-only worktree state: it never refreshes or writes the index. */
+  readonly status: {
+    /** Whether tracked files changed or untracked files exist. */
+    readonly dirty: (repository: Repository) => Effect.Effect<boolean>
   }
   readonly sync: {
     readonly fetchRemotes: (repository: Repository, input?: { prune?: boolean }) => Effect.Effect<void, OperationError>
@@ -313,6 +326,19 @@ const layer = Layer.effect(
       const result = yield* run(repository.worktree, proc, ["symbolic-ref", "--quiet", "--short", "HEAD"])
       if (result.exitCode !== 0) return undefined
       return result.text.trim() || undefined
+    })
+
+    const divergence = Effect.fn("Git.history.divergence")(function* (repository: Repository, base: string) {
+      const result = yield* run(repository.worktree, proc, ["rev-list", "--left-right", "--count", `${base}...HEAD`])
+      if (result.exitCode !== 0) return undefined
+      return parseDivergence(result.text)
+    })
+
+    const dirty = Effect.fn("Git.status.dirty")(function* (repository: Repository) {
+      const result = yield* run(repository.worktree, proc, ["status", "--porcelain"])
+      // A failed status must not claim the worktree is clean, but it also has no changes to report.
+      if (result.exitCode !== 0) return false
+      return parseStatusPorcelain(result.text)
     })
 
     const remoteHead = Effect.fn("Git.history.defaultRemoteBranch")(function* (
@@ -1455,7 +1481,8 @@ const layer = Layer.effect(
     return Service.of({
       repo: { discover, fingerprint, clone, create },
       remote: { get: remote },
-      history: { head, branch, defaultRemoteBranch: remoteHead, rootCommits: roots },
+      history: { head, branch, defaultRemoteBranch: remoteHead, rootCommits: roots, divergence },
+      status: { dirty },
       sync: { fetchRemotes: fetch, fetchBranch, checkoutRemoteBranch: checkout, resetHard: reset },
       worktree: { create: worktreeCreate, remove: worktreeRemove, list: worktreeList },
       index: { refresh, ignored },
@@ -1472,6 +1499,21 @@ const layer = Layer.effect(
 )
 
 export const node = makeGlobalNode({ service: Service, layer: layer, deps: [FSUtil.node, AppProcess.node] })
+
+/**
+ * `git rev-list --left-right --count <base>...HEAD` prints the commits only each side has,
+ * base first. Exported so the parsing is testable without a repository.
+ */
+export function parseDivergence(output: string) {
+  const [behind, ahead] = output.trim().split(/\s+/)
+
+  return { ahead: Number(ahead) || 0, behind: Number(behind) || 0 }
+}
+
+/** Any porcelain line, including an untracked one, means the worktree differs from HEAD. */
+export function parseStatusPorcelain(output: string) {
+  return output.trim().length > 0
+}
 
 interface Result {
   readonly exitCode: number

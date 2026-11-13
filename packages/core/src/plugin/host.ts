@@ -648,6 +648,13 @@ export const make = Effect.fn("PluginHost.make")(function* (
           .pipe(Effect.map((interrupted) => ({ interrupted }))),
       wait: (input) => sessions.wait(input.sessionID),
       context: (input) => sessions.context(input.sessionID),
+      inbox: {
+        list: (input) => sessions.inbox(input.sessionID),
+        cancel: (input) => sessions.cancelInbox(input),
+        // An inbox item changes delivery only between the two modes, so steer and queue are the whole update.
+        update: (input) =>
+          input.delivery === "steer" ? sessions.steerInbox(input) : sessions.queueInbox(input),
+      },
       instructions: {
         entry: {
           list: Effect.fn(function* (input) {
