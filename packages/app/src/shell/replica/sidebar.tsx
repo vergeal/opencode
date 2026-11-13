@@ -13,12 +13,12 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
 import { usePlatform } from "@/runtime/platform/platform"
-import { useSettingsSurface } from "@/settings/surface"
 import { useCommand } from "@/shell/commands/command"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { usePinnedSessions } from "@/session/pins"
 import { sessionLabel } from "@/session/title"
 import { SessionMenuCopyID, useCopySessionID } from "@/session/menu-items"
+import { SessionSettingsDialog } from "@/session/settings-dialog"
 import { sessionTreeIDs } from "@/session/requests/session-request-tree"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
@@ -124,7 +124,9 @@ function SessionRow(props: {
 
   const copySessionID = useCopySessionID()
 
-  const settings = useSettingsSurface()
+  const dialog = useDialog()
+
+  const tabs = useTabs()
 
   const nativeMenu = () => !!platform.showContextMenu
 
@@ -132,14 +134,6 @@ function SessionRow(props: {
   let label!: HTMLSpanElement
 
   const project = () => props.entry().ctx.projects.forSession(props.entry().session)
-
-  const openProjectSettings = () => {
-    const current = project()
-
-    if (!current) return
-
-    settings.openProject({ server: props.entry().server, project: current.worktree })
-  }
 
   createEffect(() => {
     const value = sessionLabel(props.entry().session)
@@ -199,7 +193,9 @@ function SessionRow(props: {
 
     if (!show) return
 
-    const session = props.entry().session
+    const entry = props.entry()
+
+    const session = entry.session
 
     const pinned = pins.isPinned(session.id)
 
@@ -220,20 +216,10 @@ function SessionRow(props: {
           icon: "markUnread",
           enabled: false,
         },
-        {
-          id: "project",
-          label: language.t("common.project"),
-          icon: "project",
-          submenu: [{ id: "projectSettings", label: `${language.t("project.settings.menu")}…` }],
-        },
+        { id: "sessionSettings", label: language.t("session.settings.menu"), icon: "settings" },
         { type: "separator" },
-        // Placeholder until a row can resume a run without opening the session.
-        {
-          id: "continue",
-          label: language.t("common.continue"),
-          icon: "continue",
-          submenu: [{ id: "continueRun", label: language.t("common.continue"), enabled: false }],
-        },
+        // A branch is a new draft on a fresh worktree of the same directory, so the conversation continues there.
+        { id: "createBranch", label: language.t("common.createBranch"), icon: "branch" },
         { type: "separator" },
         {
           id: "copy",
@@ -261,7 +247,10 @@ function SessionRow(props: {
     if (chosen === "pin") pins.toggle(session.id)
     else if (chosen === "rename") startRename()
     else if (chosen === "copyID") void copySessionID(session.id)
-    else if (chosen === "projectSettings") openProjectSettings()
+    else if (chosen === "sessionSettings")
+      dialog.show(() => <SessionSettingsDialog server={entry.server} session={entry.session} />)
+    else if (chosen === "createBranch")
+      void tabs.newDraft({ server: entry.server, directory: entry.session.location.directory, worktree: "create" })
     else if (chosen === "delete") props.onDelete(props.entry())
   }
 

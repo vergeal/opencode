@@ -3,6 +3,9 @@
   display: block;
   flex-shrink: 0;
   color: var(--v2-icon-icon-muted, #808080);
+  /* Same compositor hand-off as the spinner ring: an animated transform on an SVG child stays on the main
+     thread without this, and each frame then recosts the stylesheet. */
+  will-change: transform;
   animation: loader-v2-spin var(--_duration) linear infinite;
   transform-origin: center;
 }
@@ -28,5 +31,6 @@
 :root[data-motion="reduce"] {
   [data-component="loader-v2"] {
     animation: none;
+    will-change: auto;
   }
 }
