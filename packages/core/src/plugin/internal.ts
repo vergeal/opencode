@@ -87,6 +87,7 @@ import { ReadToolFileSystem } from "../tool/read-filesystem.js"
 import { ReadTool } from "../tool/plugin/read.js"
 import { ArtifactTools } from "../tool/plugin/artifact.js"
 import { DeliverTool } from "../tool/plugin/deliver.js"
+import { ForkTool } from "../tool/plugin/fork.js"
 import { RedirectTool } from "../tool/plugin/redirect.js"
 import { SessionsTool } from "../tool/plugin/sessions.js"
 import { UndoTool } from "../tool/plugin/undo.js"
@@ -283,6 +284,7 @@ const pre = [
   SessionsTool.Plugin,
   RedirectTool.Plugin,
   UndoTool.Plugin,
+  ForkTool.Plugin,
   SessionCreateTool.Plugin,
   KnowledgeTools.Plugin,
   ScheduleTools.Plugin,

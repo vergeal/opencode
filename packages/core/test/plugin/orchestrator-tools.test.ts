@@ -2,7 +2,9 @@ import { describe, expect, it as plain } from "bun:test"
 import { Project } from "@opencode/core/project"
 import { AbsolutePath } from "@opencode/core/schema"
 import { Session } from "@opencode/core/session"
+import { ForkEmptyError, MessageNotFoundError, NotFoundError } from "@opencode/core/session/error"
 import { parseDivergence, parseStatusPorcelain } from "@opencode/core/git"
+import { ForkTool } from "@opencode/core/tool/plugin/fork"
 import { RedirectTool } from "@opencode/core/tool/plugin/redirect"
 import { SessionsTool, sessionStatus } from "@opencode/core/tool/plugin/sessions"
 import { UndoTool, planUndo, run as runUndo } from "@opencode/core/tool/plugin/undo"
@@ -132,6 +134,127 @@ describe("undo planning", () => {
       expect(result.cancelled).toEqual([])
       expect(result.failed).toEqual([{ id: "msg_mine", reason: "inbox conflict" }])
     }))
+})
+
+describe("fork", () => {
+  const forkedInfo = (boundary: { type: "before" | "through"; messageID: SessionMessage.ID }) =>
+    Session.Info.make({
+      id: sessionID("f"),
+      projectID: Project.ID.global,
+      title: "copy",
+      cost: Money.USD.zero,
+      tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+      time: { created: DateTime.makeUnsafe(1), updated: DateTime.makeUnsafe(1) },
+      location: { directory: AbsolutePath.make("/workspace") },
+      fork: { sessionID: MINE, boundary },
+    })
+
+  effectIt.live("forks the current session and copies through the newest message by default", () =>
+    Effect.gen(function* () {
+      const registry = yield* Tool.Service
+      const calls: Array<{ sessionID: string; before?: string }> = []
+      // Any delivery or interruption here would break the copy-only guarantee.
+      const forbidden = () => Effect.die("fork must not run the session")
+      yield* registerToolPlugin(ForkTool.Plugin, {
+        session: {
+          get: (input) => Effect.succeed(info(input.sessionID)),
+          fork: (input) => {
+            calls.push(input)
+
+            return Effect.succeed(forkedInfo({ type: "through", messageID: SessionMessage.ID.make("msg_newest") }))
+          },
+          prompt: forbidden,
+          interrupt: forbidden,
+          inbox: { list: forbidden, cancel: forbidden, update: forbidden },
+        },
+      })
+
+      const result = yield* executeTool(registry, call("fork", {}))
+      const output = completed<{ id: string; boundary: { type: string; messageID: string } }>(result)
+
+      expect(calls).toEqual([{ sessionID: MINE }])
+      expect(output.id).toBe(sessionID("f"))
+      expect(output.boundary).toEqual({ type: "through", messageID: "msg_newest" })
+    }),
+  )
+
+  effectIt.live("forks another session before the given message", () =>
+    Effect.gen(function* () {
+      const registry = yield* Tool.Service
+      const calls: Array<{ sessionID: string; before?: string }> = []
+      yield* registerToolPlugin(ForkTool.Plugin, {
+        session: {
+          get: (input) => Effect.succeed(info(input.sessionID)),
+          fork: (input) => {
+            calls.push(input)
+
+            return Effect.succeed(forkedInfo({ type: "before", messageID: SessionMessage.ID.make("msg_cut") }))
+          },
+        },
+      })
+
+      yield* executeTool(registry, call("fork", { to: TARGET, before: "msg_cut" }))
+
+      expect(calls).toEqual([{ sessionID: TARGET, before: "msg_cut" }])
+    }),
+  )
+
+  effectIt.live("reports an empty source session on its own", () =>
+    Effect.gen(function* () {
+      const registry = yield* Tool.Service
+      yield* registerToolPlugin(ForkTool.Plugin, {
+        session: {
+          get: (input) => Effect.succeed(info(input.sessionID)),
+          fork: (input) => Effect.fail(new ForkEmptyError({ sessionID: input.sessionID })),
+        },
+      })
+
+      const result = yield* executeTool(registry, call("fork", { to: TARGET }))
+
+      expect(result.status).toBe("error")
+      expect(JSON.stringify(result.error)).toContain("no messages yet")
+    }),
+  )
+
+  effectIt.live("reports a message that is not in the session on its own", () =>
+    Effect.gen(function* () {
+      const registry = yield* Tool.Service
+      yield* registerToolPlugin(ForkTool.Plugin, {
+        session: {
+          get: (input) => Effect.succeed(info(input.sessionID)),
+          fork: () =>
+            Effect.fail(
+              new MessageNotFoundError({
+                sessionID: TARGET,
+                messageID: SessionMessage.ID.make("msg_absent"),
+              }),
+            ),
+        },
+      })
+
+      const result = yield* executeTool(registry, call("fork", { to: TARGET, before: "msg_absent" }))
+
+      expect(result.status).toBe("error")
+      expect(JSON.stringify(result.error)).toContain("is not in")
+    }),
+  )
+
+  effectIt.live("reports a missing session on its own", () =>
+    Effect.gen(function* () {
+      const registry = yield* Tool.Service
+      yield* registerToolPlugin(ForkTool.Plugin, {
+        session: {
+          get: (input) => Effect.succeed(info(input.sessionID)),
+          fork: (input) => Effect.fail(new NotFoundError({ sessionID: input.sessionID })),
+        },
+      })
+
+      const result = yield* executeTool(registry, call("fork", { to: TARGET }))
+
+      expect(result.status).toBe("error")
+      expect(JSON.stringify(result.error)).toContain("Session not found")
+    }),
+  )
 })
 
 describe("built-in orchestrator tools", () => {

@@ -625,6 +625,7 @@ export const make = Effect.fn("PluginHost.make")(function* (
             : { parentID: input.parentID }),
         }),
       get: (input) => sessions.get(input.sessionID),
+      fork: sessions.fork,
       remove: (input) => sessions.remove(input.sessionID),
       switchAgent: sessions.switchAgent,
       switchModel: sessions.switchModel,
