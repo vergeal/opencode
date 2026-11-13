@@ -44,12 +44,9 @@ function whiteGlyph(image: Electron.NativeImage) {
     bitmap[i + 1] = 255
     bitmap[i + 2] = 255
   }
+  // `width`/`height` are the logical size; the buffer already carries the scale factor's pixels.
   const { width, height } = image.getSize()
-  return nativeImage.createFromBitmap(bitmap, {
-    width: width * scaleFactor,
-    height: height * scaleFactor,
-    scaleFactor,
-  })
+  return nativeImage.createFromBitmap(bitmap, { width, height, scaleFactor })
 }
 
 export const menuHandlers = MenuRpcs.toLayer(
