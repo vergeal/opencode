@@ -586,3 +586,100 @@ html[data-replica-window="translucent"] [data-slot="replica-sidebar-slot"] {
     display: none;
   }
 }
+
+/* Accessibility fallbacks. Chromium 156, which Electron 45 ships, evaluates all three media features, so the
+   surfaces can drop their translucency from CSS alone and need no signal from the main process.
+   Support was confirmed with matchMedia, not CSS.supports: CSS.supports("(prefers-reduced-transparency: reduce)")
+   returns false here even though the feature works, so do not turn this into a supports() guard. */
+
+/* The chrome reads as glass only because its tints are translucent over vibrancy. Reduced transparency turns the
+   window opaque while keeping the same three surface levels. */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-replica-window="translucent"] [data-replica] {
+    --color-titlebar: rgb(246 246 246);
+    --color-rail: rgb(246 246 246);
+    --color-sidebar: rgb(252 252 252);
+  }
+
+  html[data-replica-window="translucent"][data-color-scheme="dark"] [data-replica] {
+    --color-titlebar: rgb(21 21 21);
+    --color-rail: rgb(21 21 21);
+    --color-sidebar: rgb(21 21 21);
+    --color-navigation: rgb(21 21 21);
+    /* Dark mode clears the frame so the shell can carry the navigation surface; an opaque window paints it. */
+    background: var(--color-rail);
+  }
+
+  /* The page root gave up its fill so vibrancy could show through. Give it back: otherwise the desktop still
+     tints the window through the material behind a solid page. */
+  html[data-replica-window="translucent"]:has([data-replica]),
+  html[data-replica-window="translucent"] #root:has([data-replica]) {
+    background-color: rgb(246 246 246) !important;
+  }
+
+  html[data-replica-window="translucent"][data-color-scheme="dark"]:has([data-replica]),
+  html[data-replica-window="translucent"][data-color-scheme="dark"] #root:has([data-replica]) {
+    background-color: rgb(21 21 21) !important;
+  }
+
+  /* Translucent mode clears these elements so the frame tint shows through once. With solid tints each paints its
+     own surface again, and the sidebar keeps the step above the rail it has in an opaque window. */
+  html[data-replica-window="translucent"] [data-slot="replica-titlebar"] {
+    background: var(--color-titlebar);
+  }
+
+  html[data-replica-window="translucent"] [data-slot="replica-rail"] {
+    background: var(--color-rail);
+  }
+
+  html[data-replica-window="translucent"] [data-slot="replica-sidebar"] {
+    background: var(--color-sidebar);
+  }
+
+  html[data-replica-window="translucent"] [data-slot="destination-bar"] {
+    background: var(--color-rail);
+  }
+}
+
+/* The workbench border and the sidebar hairline sit on the chrome tint, where a 6% grey almost disappears. Step
+   the divider up so the panel edge stays visible. */
+@media (prefers-contrast: more) {
+  [data-replica] {
+    --color-divider: #c9c9c9;
+  }
+
+  [data-color-scheme="dark"] [data-replica] {
+    --color-divider: rgb(255 255 255 / 30%);
+  }
+}
+
+/* Forced colors replaces the palette with system colours, which cannot express a translucent tint or an inset
+   light line. Hand the surfaces back as Canvas and drop the highlight. The declarations are important because the
+   dark-theme highlight rules are more specific than a plain element selector. */
+@media (forced-colors: active) {
+  [data-replica],
+  [data-slot="replica-titlebar"],
+  [data-slot="replica-rail"],
+  [data-slot="replica-sidebar"],
+  [data-slot="replica-shell"],
+  [data-slot="replica-workbench"],
+  [data-slot="replica-sidebar-slot"],
+  [data-slot="destination-bar"] {
+    background: Canvas !important;
+    box-shadow: none !important;
+  }
+
+  html[data-replica-window="translucent"]:has([data-replica]),
+  html[data-replica-window="translucent"] #root:has([data-replica]) {
+    background-color: Canvas !important;
+  }
+
+  [data-replica] {
+    color: CanvasText;
+  }
+
+  [data-slot="replica-workbench"],
+  [data-slot="replica-sidebar-slot"] {
+    border-color: CanvasText !important;
+  }
+}
