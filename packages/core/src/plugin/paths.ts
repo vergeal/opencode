@@ -14,21 +14,16 @@ export type Paths = {
 }
 
 /**
- * Whether `D:\` exists and accepts writes. A yes is asked again on every call, so a drive that is lost is noticed by
- * the next `make` and the environment falls back to the home directory without a restart.
- *
- * A no is remembered for the life of the process. Re-asking a missing drive would repeat the same syscall on every
- * list, uninstall, and activation, and a drive plugged in later is picked up on the next start. One consequence is
- * worth stating: once a call sees the drive missing, the rest of this process treats it as missing.
+ * Whether `D:\` exists and accepts writes. Each call probes again: a drive that disappears falls back to the home
+ * directory on the next `make`, and one that comes back is used again, both without a restart. Callers are plugin
+ * activation, uninstall, host creation, config reads and environment preparation, so one `accessSync` is cheap and a
+ * cached answer would only go stale.
  */
-let absent: boolean | undefined
 function driveAvailable() {
-  if (absent) return false
   try {
     accessSync("D:\\", constants.W_OK)
     return true
   } catch {
-    absent = true
     return false
   }
 }
