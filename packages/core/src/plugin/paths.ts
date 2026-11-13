@@ -16,6 +16,10 @@ export type Paths = {
 /**
  * Whether `D:\` exists and accepts writes. Probing costs a syscall, and every list, uninstall, and configuration pass
  * asks for paths, so the answer is kept for the life of the process.
+ *
+ * A removable or network drive that disappears and returns prepares the environment twice: the missing drive falls
+ * back to the home directory, and the returning one may already hold a stale environment. That cost is accepted; a
+ * lock or a health check here would hide a real storage problem instead of reporting it.
  */
 let probed: boolean | undefined
 function driveAvailable() {

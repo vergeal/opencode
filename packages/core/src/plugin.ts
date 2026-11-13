@@ -100,6 +100,9 @@ const layer = Layer.effect(
         )
         return
       }
+      // A drive change leaves its rebuildable half behind. Only after the new environment is ready: a failed attempt
+      // keeps the previous one usable, and `data` and the log never moved.
+      if (status.status === "ready") yield* Effect.promise(() => PluginRuntime.discard({ home: global.home, id }))
       runtimes.set(id, status)
       // A prepared environment changes what the browser shows without restarting the plugin, so announce it like any
       // other inventory change.

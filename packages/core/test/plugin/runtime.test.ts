@@ -131,6 +131,47 @@ function zipWith(name: string, content: Uint8Array) {
   return total
 }
 
+describe("PluginRuntime.discard", () => {
+  it("removes the previous cache and runtime but keeps data and the log", async () => {
+    await using root = await home()
+    const dirs = {
+      cache: path.join(root.path, "plugin-cache"),
+      runtime: path.join(root.path, "plugin-runtime"),
+      data: path.join(root.path, "plugin-data"),
+      log: path.join(root.path, "logs", "plugin", "acme.data.log"),
+    }
+    await mkdir(dirs.cache, { recursive: true })
+    await mkdir(dirs.runtime, { recursive: true })
+    await mkdir(dirs.data, { recursive: true })
+    await mkdir(path.dirname(dirs.log), { recursive: true })
+    await writeFile(dirs.log, "line\n")
+
+    await PluginRuntime.discardPaths({ cache: dirs.cache, runtime: dirs.runtime })
+
+    expect(existsSync(dirs.cache)).toBe(false)
+    expect(existsSync(dirs.runtime)).toBe(false)
+    // The configuration and the log never move with the drive, so they must survive.
+    expect(existsSync(dirs.data)).toBe(true)
+    expect(existsSync(dirs.log)).toBe(true)
+  })
+
+  it("does nothing off Windows", async () => {
+    await using root = await home()
+    const cache = path.join(root.path, "plugin-cache")
+    await mkdir(cache, { recursive: true })
+    await PluginRuntime.discard({ home: root.path, id: "acme.data", platform: "darwin" })
+    expect(existsSync(cache)).toBe(true)
+  })
+
+  it("does nothing when the environment never left the home drive", async () => {
+    await using root = await home()
+    const cache = path.join(root.path, "plugin-cache")
+    await mkdir(cache, { recursive: true })
+    await PluginRuntime.discard({ home: root.path, id: "acme.data", platform: "win32", drive: false })
+    expect(existsSync(cache)).toBe(true)
+  })
+})
+
 describe("PluginRuntime.requirementHash", () => {
   it("ignores order and surrounding space, and changes with the requirement", () => {
     expect(PluginRuntime.requirementHash({ dependencies: ["psycopg2-binary>=2.9", " pymysql>=1.0 "] })).toBe(

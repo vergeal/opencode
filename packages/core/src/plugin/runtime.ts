@@ -199,6 +199,31 @@ type UvSeam = {
 }
 
 /**
+ * Removes the interpreter environment and cache a previous drive left behind. Only the rebuildable half moves, so
+ * `data` and the log are never touched.
+ */
+export async function discard(input: {
+  readonly home: string
+  readonly id: string
+  /** Test seam. Defaults to `process.platform`. */
+  readonly platform?: NodeJS.Platform
+  /** Test seam. Defaults to probing `D:\`. */
+  readonly drive?: boolean
+}) {
+  const previous = PluginPaths.legacy(input)
+  if (!previous) return
+  await discardPaths(previous)
+}
+
+/** Removes the two rebuildable directories a drive change left behind. */
+export async function discardPaths(previous: { readonly cache: string; readonly runtime: string }) {
+  await Promise.all([
+    rm(previous.cache, { recursive: true, force: true }),
+    rm(previous.runtime, { recursive: true, force: true }),
+  ])
+}
+
+/**
  * The `uv` to prepare with. A copy the user already has always wins: an explicit path, then `PATH`, then a release the
  * host downloads once. The last step is what lets a machine with neither `uv` nor a matching `python3` still prepare a
  * runtime, and it answers the reason instead of throwing so the caller can fall back to the system interpreter.
