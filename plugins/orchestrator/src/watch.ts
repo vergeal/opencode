@@ -14,6 +14,11 @@ export interface Ports {
   readonly now: () => string
   /** How long an executor gets to write its result file after its execution ends. */
   readonly graceMs: number
+  /**
+   * How long to wait after `succeeded` before reading the result file. The executor writes the file before finishing,
+   * so this only absorbs event-ordering slack; it is not the missing-result grace period.
+   */
+  readonly succeededDelayMs: number
   /** A task running longer than this is flagged. The task keeps running: the PM decides what to do. */
   readonly timeoutMs: number
   readonly collect: (taskID: string) => Promise<Collect.Outcome>
@@ -64,7 +69,7 @@ export async function handle(ports: Ports, event: Event): Promise<void> {
 
 async function settle(ports: Ports, sessionID: string) {
   const sleep = ports.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)))
-  await sleep(ports.graceMs)
+  await sleep(ports.succeededDelayMs)
   const task = await findBySession(ports.store, sessionID)
   if (!task) return
   if ((await ports.collect(task.id)).status !== "missing") return

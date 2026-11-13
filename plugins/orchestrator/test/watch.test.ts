@@ -32,6 +32,7 @@ async function setup(options: { alive?: boolean } = {}) {
   const store = Ledger.createStore(root)
   const clock = { at: start }
   const calls: string[] = []
+  const slept: number[] = []
   const collect: Collect.Ports = {
     store,
     git: fakeGit(),
@@ -44,6 +45,7 @@ async function setup(options: { alive?: boolean } = {}) {
     sessions: { alive: async () => options.alive ?? true },
     now: () => clock.at,
     graceMs: 60_000,
+    succeededDelayMs: 2_000,
     timeoutMs: 7_200_000,
     collect: async (id) => {
       calls.push(`collect:${id}`)
@@ -57,11 +59,12 @@ async function setup(options: { alive?: boolean } = {}) {
       calls.push(`failed:${id}:${kind}`)
       return Collect.markExecutionFailed(collect, id, detail, kind)
     },
-    sleep: async () => {
+    sleep: async (ms) => {
+      slept.push(ms)
       await Promise.resolve()
     },
   }
-  return { root, worktree, store, clock, calls, ports, cleanup: () => rm(root, { recursive: true, force: true }) }
+  return { root, worktree, store, clock, calls, slept, ports, cleanup: () => rm(root, { recursive: true, force: true }) }
 }
 
 function task(id: string, overrides: Partial<Ledger.MutableTask> = {}): Ledger.MutableTask {
@@ -95,12 +98,13 @@ function result(taskID: string) {
 }
 
 describe("事件", () => {
-  test("succeeded 等宽限期后收取结果并核对", async () => {
-    const { store, ports, worktree, calls, cleanup } = await setup()
+  test("succeeded 只等短延迟就收取结果并核对", async () => {
+    const { store, ports, worktree, calls, slept, cleanup } = await setup()
     try {
       await seed(store, [task("t1", { worktree })])
       await Bun.write(store.resultPath("p1", "t1"), JSON.stringify(result("t1")))
       await Watch.handle(ports, { type: "session.execution.succeeded", sessionID: "ses_t1" })
+      expect(slept).toEqual([2_000])
       expect(calls).toEqual(["collect:t1"])
       expect((await store.read()).tasks.t1?.status).toBe("已核")
     } finally {
@@ -108,7 +112,7 @@ describe("事件", () => {
     }
   })
 
-  test("succeeded 后结果文件仍未出现：宽限到期才记结果缺失", async () => {
+  test("succeeded 后结果文件仍未出现：延迟到期才记结果缺失", async () => {
     const { store, ports, worktree, calls, cleanup } = await setup()
     try {
       await seed(store, [task("t1", { worktree })])

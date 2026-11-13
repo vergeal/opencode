@@ -92,6 +92,7 @@ export default Plugin.define({
       store,
       now,
       graceMs: idleGraceMs,
+      succeededDelayMs: number(config.succeededDelayMs, 2_000),
       timeoutMs,
       sessions: {
         alive: async (sessionID) => {
