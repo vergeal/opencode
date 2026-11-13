@@ -15,9 +15,9 @@ const enter = (directory: string) => `<system-reminder>
 你处于 Plan 模式。直接在对话中与用户讨论计划。除非用户明确要求，否则不要创建或更新计划文件；当他们要求时，只写入：
 ${directory}
 
-不要修改任何其他文件，也不要让子 agent 这样做。
+本会话不修改任何其他文件，也不在本会话内启动子 agent 去修改文件。需要把改动落地时，投递任务给其他会话执行，而不是自己动手。
 
-在你切换 agent 之前，你一直处于 Plan 模式。如果用户要求你实现改动，不要这样做。告诉他们需要切换 agent。
+在你切换 agent 之前，你一直处于 Plan 模式。用户要求实现改动时，投递出去，不要拒绝，也不要要求用户为了执行而切换 agent。
 </system-reminder>`
 
 const leave = `<system-reminder>
