@@ -59,7 +59,12 @@ export type PluginDisplay = {
   tools?: Array<string>
 }
 
-export type PluginRuntime = { status: "ready" | "preparing" | "failed"; error?: string; ref?: string }
+export type PluginRuntime = {
+  status: "ready" | "preparing" | "failed"
+  phase?: "runtime" | "dependencies"
+  error?: string
+  ref?: string
+}
 
 export type PluginGuiBundle = { code: string; revision: string; options: { [x: string]: JsonValue } }
 

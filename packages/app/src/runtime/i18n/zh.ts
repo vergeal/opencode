@@ -748,6 +748,8 @@ export const dict = {
   "explore.plugins.state.failedHint": "插件加载失败，打开可以查看原因",
   "explore.plugins.runtime.ready": "已就绪",
   "explore.plugins.runtime.preparing": "正在准备",
+  "explore.plugins.runtime.phase.runtime": "正在准备运行时",
+  "explore.plugins.runtime.phase.dependencies": "正在安装依赖",
   "explore.plugins.runtime.failed": "准备失败",
   "explore.plugins.runtime.failedHint": "无法准备这个插件的运行环境。",
   "explore.plugins.runtime.retry": "重新准备",

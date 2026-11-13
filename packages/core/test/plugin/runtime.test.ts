@@ -220,6 +220,56 @@ describe("PluginRuntime.prepare", () => {
     expect(await prepare(input)).toEqual({ status: "ready" })
     expect(await detect(input)).toBe("ready")
   }, 120_000)
+
+  it("reports only the runtime step when there is nothing to install", async () => {
+    await using root = await home()
+    const phases: string[] = []
+    const result = await prepare({
+      home: root.path,
+      id: "acme.data",
+      runtime: { python: ">=3.9" },
+      onPhase: (phase) => phases.push(phase),
+    })
+    expect(phases).toEqual(["runtime"])
+    expect(result).toEqual({ status: "ready" })
+    expect("phase" in result).toBe(false)
+  }, 120_000)
+
+  it("reports dependencies after the runtime when the manifest declares them", async () => {
+    await using root = await home()
+    const requirement = await wheel(root.path)
+    const phases: string[] = []
+    const result = await prepare({
+      home: root.path,
+      id: "acme.data",
+      runtime: { python: ">=3.9", dependencies: [requirement] },
+      onPhase: (phase) => phases.push(phase),
+    })
+    expect(phases).toEqual(["runtime", "dependencies"])
+    expect(result).toEqual({ status: "ready" })
+    expect("phase" in result).toBe(false)
+  }, 180_000)
+
+  it("reports no step when it cannot even start", async () => {
+    await using root = await home()
+    const phases: string[] = []
+    const result = await prepare({
+      home: root.path,
+      id: "acme.future",
+      runtime: { python: ">=99.0" },
+      onPhase: (phase) => phases.push(phase),
+      // No uv and no download, so the constraint is rejected before any venv work begins.
+      uv: {
+        which: async () => false,
+        download: async () => {
+          throw new Error("offline")
+        },
+      },
+    })
+    expect(phases).toEqual([])
+    expect(result.status).toBe("failed")
+    expect("phase" in result).toBe(false)
+  }, 120_000)
 })
 
 describe("PluginRuntime.prepare uv resolution", () => {

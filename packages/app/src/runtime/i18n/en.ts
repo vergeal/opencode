@@ -1046,6 +1046,8 @@ export const dict = {
   "explore.plugins.state.failedHint": "This plugin failed to load. Open it to see why",
   "explore.plugins.runtime.ready": "Ready",
   "explore.plugins.runtime.preparing": "Preparing",
+  "explore.plugins.runtime.phase.runtime": "Preparing runtime",
+  "explore.plugins.runtime.phase.dependencies": "Installing dependencies",
   "explore.plugins.runtime.failed": "Preparation failed",
   "explore.plugins.runtime.failedHint": "This plugin's runtime environment could not be prepared.",
   "explore.plugins.runtime.retry": "Prepare again",

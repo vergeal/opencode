@@ -68,7 +68,25 @@ const layer = Layer.effect(
       if (!plugin.runtime || preparingRuntime.has(plugin.id)) return
       const id = plugin.id
       preparingRuntime.add(id)
-      const status = yield* PluginRuntime.prepare({ home: global.home, id, runtime: plugin.runtime }).pipe(
+      const status = yield* PluginRuntime.prepare({
+        home: global.home,
+        id,
+        runtime: plugin.runtime,
+        // A phase change reaches the list immediately, rather than only when the whole preparation finishes.
+        onPhase: (phase) => {
+          if (!active.has(id) || closed) return
+          runtimes.set(id, { status: "preparing", phase })
+          Effect.runFork(
+            lock.withPermit(
+              Effect.gen(function* () {
+                if (closed) return
+                inventory = snapshot()
+                yield* publish(inventory)
+              }),
+            ),
+          )
+        },
+      }).pipe(
         Effect.catchCause((cause) =>
           Effect.succeed({ status: "failed" as const, error: Cause.pretty(cause), ref: `err_${id}` }),
         ),

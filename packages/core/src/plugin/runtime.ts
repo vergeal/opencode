@@ -89,6 +89,8 @@ export const prepare = (input: {
   readonly home: string
   readonly id: string
   readonly runtime: PluginManifest.Runtime
+  /** Reports each step as it starts, so a list can show progress instead of one long "preparing". */
+  readonly onPhase?: (phase: "runtime" | "dependencies") => void
   /**
    * Test seam: what this machine appears to have and where a release asset comes from, so a test can exercise every
    * branch without touching `PATH` or the network. Production callers omit it.
@@ -107,6 +109,8 @@ export const prepare = (input: {
         `Plugin ${input.id} needs Python ${target ?? "any"}; this machine has ${fallback?.version ?? "no python3"}, and uv could not be used: ${"error" in resolved ? resolved.error : "not found"}. Install a matching Python or let the host download uv, then retry.`,
       )
 
+    // Fetching uv, creating the venv, and downloading Python are one step the user waits on.
+    input.onPhase?.("runtime")
     const venv = directory(input)
     await rm(venv, { recursive: true, force: true })
     await mkdir(path.dirname(venv), { recursive: true })
@@ -133,6 +137,7 @@ export const prepare = (input: {
 
     const dependencies = (input.runtime.dependencies ?? []).map((item) => item.trim()).filter(Boolean)
     if (dependencies.length > 0) {
+      input.onPhase?.("dependencies")
       const installed = uv
         ? await exec(uv, ["pip", "install", "--python", python, ...dependencies], uvEnvironment())
         : await exec(python, ["-m", "pip", "install", ...dependencies], { PIP_INDEX_URL: pypiIndex() })

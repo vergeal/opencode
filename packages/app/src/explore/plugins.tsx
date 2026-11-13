@@ -48,6 +48,12 @@ const runtimeLabels = {
   failed: "explore.plugins.runtime.failed",
 } as const
 
+/** What a preparing environment is doing right now. A ready or failed one has no step to name. */
+const phaseLabels = {
+  runtime: "explore.plugins.runtime.phase.runtime",
+  dependencies: "explore.plugins.runtime.phase.dependencies",
+} as const
+
 const sourceDetail = (plugin: PluginInfo) => {
   if (plugin.source.type === "package") return plugin.source.target
 
@@ -563,7 +569,14 @@ function PluginDetail(props: {
               {(runtime) => (
                 <div>
                   <dt>{language.t("explore.plugins.detail.runtime")}</dt>
-                  <dd>{language.t(runtimeLabels[runtime().status])}</dd>
+                  <dd>
+                    <Show
+                      when={runtime().status === "preparing" && runtime().phase}
+                      fallback={language.t(runtimeLabels[runtime().status])}
+                    >
+                      {(phase) => language.t(phaseLabels[phase()])}
+                    </Show>
+                  </dd>
                 </div>
               )}
             </Show>

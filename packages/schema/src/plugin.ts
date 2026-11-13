@@ -94,6 +94,8 @@ export const Display = Schema.Struct({
 export interface Runtime extends Schema.Schema.Type<typeof Runtime> {}
 export const Runtime = Schema.Struct({
   status: Schema.Literals(["ready", "preparing", "failed"]),
+  /** Which step preparation is on. Present only with `preparing`; a ready or failed environment has no step to report. */
+  phase: optional(Schema.Literals(["runtime", "dependencies"])),
   /** Why preparing failed. Present only with `failed`. */
   error: optional(Schema.String),
   /** A reference to the server log entry for the failure. Present only with `failed`. */
