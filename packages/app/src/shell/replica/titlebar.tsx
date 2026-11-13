@@ -1,4 +1,4 @@
-import { createMemo, Show } from "solid-js"
+import { createEffect, createMemo, onCleanup, Show } from "solid-js"
 import { lastAssistantWithUsage } from "@opencode/client/solid"
 import { createCNY, flashCostBreakdown } from "@opencode/gui-plugins/context/cost"
 import { Icon } from "@opencode/ui/icon"
@@ -40,6 +40,34 @@ export function ReplicaTitleBar(props: {
   const command = useCommand()
   const history = createTitlebarHistory()
   const mac = () => platform.platform === "desktop" && platform.os === "macos"
+
+  let bar!: HTMLElement
+
+  // The traffic lights are native and stay 14pt while the renderer scales, so their fixed position drifts
+  // below the bar’s centre as soon as the interface zoom is not 1. Keep their centre on the bar’s centre the
+  // way the full titlebar does: row centre in window points, minus half a button.
+  createEffect(() => {
+    if (!mac()) return
+
+    const scale = platform.webviewZoom?.() ?? 1
+
+    const frame = requestAnimationFrame(() => {
+      const bounds = bar.getBoundingClientRect()
+
+      void platform.setTrafficLightsPosition?.({
+        x: 14,
+        y: Math.round((bounds.top + bounds.height / 2) * scale - 7),
+      })
+    })
+
+    onCleanup(() => cancelAnimationFrame(frame))
+  })
+
+  // Hand the buttons back at the window’s default position; whatever bar mounts next owns them again.
+  onCleanup(() => {
+    if (!mac()) return
+    void platform.setTrafficLightsPosition?.({ x: 14, y: 14 })
+  })
 
   const back = history.back
   const forward = history.forward
@@ -148,7 +176,7 @@ export function ReplicaTitleBar(props: {
   }
 
   return (
-    <header data-slot="replica-titlebar" data-ui="window-titlebar">
+    <header ref={bar} data-slot="replica-titlebar" data-ui="window-titlebar">
       <div
         data-slot="replica-titlebar-left"
         data-ui="titlebar-left"
