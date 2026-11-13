@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig.json",
+  "extends": "@tsconfig/bun/tsconfig.json",
+  "compilerOptions": {
+    "types": ["bun"],
+    "noUnusedLocals": true,
+    "rootDir": ".",
+    "outDir": "dist",
+    "declaration": true,
+    "lib": ["ESNext"],
+    "noUncheckedIndexedAccess": false,
+    "resolveJsonModule": true
+  },
+  "include": ["src", "server"]
+}

@@ -1,0 +1,46 @@
+{
+  "apiVersion": 1,
+  "id": "opencode.dbro",
+  "version": "0.1.0",
+  "requires": {
+    "opencode": "^2.2.5"
+  },
+  "entry": {
+    "server": "server/main"
+  },
+  "externals": ["effect", "@opencode/plugin", "@opencode/schema"],
+  "display": {
+    "name": "DBRO",
+    "description": "只读查询达梦 8、MySQL 和 PostgreSQL：统一入口、方言适配的表清单与表结构，没有写开关。",
+    "category": "data",
+    "tools": ["dbro.*"],
+    "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><ellipse cx=\"12\" cy=\"5.5\" rx=\"7.5\" ry=\"3\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M4.5 5.5v13c0 1.66 3.36 3 7.5 3s7.5-1.34 7.5-3v-13\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M4.5 12c0 1.66 3.36 3 7.5 3s7.5-1.34 7.5-3\" stroke=\"currentColor\" stroke-width=\"1.5\"/></svg>",
+    "skills": [
+      {
+        "id": "dbro",
+        "name": "DBRO",
+        "description": "用 `dbro.*` 工具只读查询达梦 8、MySQL 和 PostgreSQL。第一次查库前先加载本技能，按数据源或方言选择入口。"
+      }
+    ]
+  },
+  "skills": [
+    {
+      "id": "dbro",
+      "name": "DBRO",
+      "description": "用 `dbro.*` 工具只读查询达梦 8、MySQL 和 PostgreSQL。第一次查库前先加载本技能，按数据源或方言选择入口。",
+      "path": "skills/dbro/SKILL.md"
+    }
+  ],
+  "assets": ["assets/dbro"],
+  "configuration": {
+    "title": "DBRO 设置",
+    "properties": {
+      "python": { "type": "string", "default": "python3" },
+      "sources": { "type": "array", "items": { "type": "string" }, "default": [] },
+      "defaultSource": { "type": "string", "default": "" },
+      "toolDirectory": { "type": "string", "default": "" },
+      "timeout": { "type": "number", "default": 30 },
+      "maxRows": { "type": "number", "default": 200 }
+    }
+  }
+}
