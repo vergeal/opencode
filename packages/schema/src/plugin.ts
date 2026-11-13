@@ -3,6 +3,7 @@ export * as Plugin from "./plugin.js"
 import { Schema } from "effect"
 import { ephemeral, inventory } from "./event.js"
 import { optional } from "./schema.js"
+import { PluginManifest } from "./plugin-manifest.js"
 
 export const ID = Schema.String.pipe(Schema.brand("Plugin.ID"), Schema.annotate({ identifier: "Plugin.ID" }))
 export type ID = typeof ID.Type
@@ -41,9 +42,26 @@ export const GuiBundle = Schema.Struct({
   options: Schema.Record(Schema.String, Schema.Json),
 }).annotate({ identifier: "Plugin.GuiBundle" })
 
+/**
+ * Why a plugin is not running, in a form a client can translate. `error` carries the technical detail; this carries
+ * the one fact the UI needs, so the app does not display English written by the server.
+ */
+export type Reason = typeof Reason.Type
+export const Reason = Schema.Union([
+  Schema.Struct({ kind: Schema.Literal("transform-failed"), state: Schema.String }),
+  Schema.Struct({ kind: Schema.Literal("activation-timeout"), seconds: Schema.Number }),
+  Schema.Struct({ kind: Schema.Literal("load-timeout"), seconds: Schema.Number }),
+  Schema.Struct({ kind: Schema.Literal("load-failed") }),
+]).annotate({ identifier: "Plugin.Reason" })
+
 export const State = Schema.Union([
   Schema.Struct({ status: Schema.Literal("active") }),
-  Schema.Struct({ status: Schema.Literal("failed"), error: Schema.String, ref: Schema.String.pipe(optional) }),
+  Schema.Struct({
+    status: Schema.Literal("failed"),
+    error: Schema.String,
+    ref: Schema.String.pipe(optional),
+    reason: Reason.pipe(optional),
+  }),
 ]).annotate({ identifier: "Plugin.State" })
 export type State = typeof State.Type
 
@@ -69,6 +87,19 @@ export const Display = Schema.Struct({
   tools: Schema.Array(Schema.String).pipe(optional),
 }).annotate({ identifier: "Plugin.Display" })
 
+/**
+ * A plugin's isolated runtime environment, prepared by the host from its manifest's `runtime`. Absent for a plugin
+ * that declares none, which is every plugin that does not use an interpreter.
+ */
+export interface Runtime extends Schema.Schema.Type<typeof Runtime> {}
+export const Runtime = Schema.Struct({
+  status: Schema.Literals(["ready", "preparing", "failed"]),
+  /** Why preparing failed. Present only with `failed`. */
+  error: optional(Schema.String),
+  /** A reference to the server log entry for the failure. Present only with `failed`. */
+  ref: optional(Schema.String),
+}).annotate({ identifier: "Plugin.Runtime" })
+
 export interface Info extends Schema.Schema.Type<typeof Info> {}
 export const Info = Schema.Struct({
   id: ID.pipe(optional),
@@ -76,6 +107,7 @@ export const Info = Schema.Struct({
   features: Features,
   state: State,
   display: Display.pipe(optional),
+  runtime: Runtime.pipe(optional),
 }).annotate({ identifier: "Plugin.Info" })
 
 /**
@@ -86,6 +118,8 @@ export interface LocalEntry extends Schema.Schema.Type<typeof LocalEntry> {}
 export const LocalEntry = Schema.Struct({
   id: Schema.String,
   display: Display.pipe(optional),
+  /** The interpreter requirement the newest bundle declares, so a card can say what installing it prepares. */
+  runtime: PluginManifest.Runtime.pipe(optional),
   versions: Schema.Array(
     Schema.Struct({
       version: Schema.String,
@@ -100,3 +134,29 @@ const Updated = ephemeral({
   schema: {},
 })
 export const Event = { Updated, Definitions: inventory(Updated) }
+
+/** What a plugin controls about one message it published into the app's inbox. */
+export const InboxStatus = Schema.Literals(["pending", "done", "failed"])
+export type InboxStatus = typeof InboxStatus.Type
+
+/**
+ * One message a plugin published into the app's inbox, as the app reads it. `plugin` is the publisher, so the app can
+ * hand the message to that plugin's `InboxContent` renderer. `status` is the plugin's own judgement; `seen` is the
+ * user's.
+ */
+export interface InboxRecord extends Schema.Schema.Type<typeof InboxRecord> {}
+export const InboxRecord = Schema.Struct({
+  id: Schema.String,
+  plugin: ID,
+  /** The publisher's id for the message; unique within the plugin. */
+  externalID: Schema.String,
+  title: Schema.String,
+  summary: Schema.String,
+  status: InboxStatus,
+  createdAt: Schema.Finite,
+  expiresAt: Schema.Finite.pipe(optional),
+  payload: Schema.Unknown.pipe(optional),
+  seen: Schema.Boolean,
+  updatedAt: Schema.Finite,
+}).annotate({ identifier: "Plugin.InboxRecord" })
+

@@ -45,7 +45,11 @@ export type PluginSource =
 
 export type PluginFeatures = { server?: true; tui?: true; rpc?: true; gui?: true }
 
-export type PluginState = { status: "active" } | { status: "failed"; error: string; ref?: string }
+export type PluginReason =
+  | { kind: "transform-failed"; state: string }
+  | { kind: "activation-timeout"; seconds: number | "Infinity" | "-Infinity" | "NaN" }
+  | { kind: "load-timeout"; seconds: number | "Infinity" | "-Infinity" | "NaN" }
+  | { kind: "load-failed" }
 
 export type PluginDisplay = {
   name: string
@@ -55,7 +59,11 @@ export type PluginDisplay = {
   tools?: Array<string>
 }
 
+export type PluginRuntime = { status: "ready" | "preparing" | "failed"; error?: string; ref?: string }
+
 export type PluginGuiBundle = { code: string; revision: string; options: { [x: string]: JsonValue } }
+
+export type PluginManifestRuntime = { python?: string | null; dependencies?: Array<string> | null }
 
 export type SessionID = string
 
@@ -425,17 +433,28 @@ export type ConfigModelVariantSettings = { compaction?: ProviderCompaction; enco
 
 export type PermissionRule = { action: string; resource: string; effect: PermissionEffect }
 
-export type PluginInfo = {
-  id?: PluginID
-  source: PluginSource
-  features: PluginFeatures
-  state: PluginState
-  display?: PluginDisplay
+export type PluginInboxRecord = {
+  id: string
+  plugin: PluginID
+  externalID: string
+  title: string
+  summary: string
+  status: "pending" | "done" | "failed"
+  createdAt: number
+  expiresAt?: number
+  payload: JsonValue
+  seen: boolean
+  updatedAt: number
 }
+
+export type PluginState =
+  | { status: "active" }
+  | { status: "failed"; error: string; ref?: string; reason?: PluginReason }
 
 export type PluginLocalEntry = {
   id: string
   display?: PluginDisplay
+  runtime?: PluginManifestRuntime
   versions: Array<{ version: string; file: string }>
 }
 
@@ -1127,6 +1146,15 @@ export type ModelVariant = {
 }
 
 export type PermissionRuleset = Array<PermissionRule>
+
+export type PluginInfo = {
+  id?: PluginID
+  source: PluginSource
+  features: PluginFeatures
+  state: PluginState
+  display?: PluginDisplay
+  runtime?: PluginRuntime
+}
 
 export type UsageLimitsBudget = {
   id: string
@@ -3400,6 +3428,40 @@ export type ExperimentalPluginUninstallOutput = {
   data: { id: PluginID; removed: boolean }
 }
 
+export type ExperimentalPluginReloadInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+}
+
+export type ExperimentalPluginReloadOutput = { location: LocationPublicRef; data: { id: PluginID } }
+
+export type ExperimentalPluginRuntimeRetryInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+}
+
+export type ExperimentalPluginRuntimeRetryOutput = { location: LocationPublicRef; data: { id: PluginID } }
+
+export type ExperimentalPluginInboxListInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+
+export type ExperimentalPluginInboxListOutput = { location: LocationPublicRef; data: Array<PluginInboxRecord> }
+
+export type ExperimentalPluginInboxMarkInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+}
+
+export type ExperimentalPluginInboxMarkOutput = void
+
+export type ExperimentalPluginInboxDeleteInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+}
+
+export type ExperimentalPluginInboxDeleteOutput = void
+
 export type SessionListInput = {
   readonly limit?: number | undefined
   readonly order?: "asc" | "desc" | undefined
@@ -5010,6 +5072,36 @@ export type PluginUninstallInput = ExperimentalPluginUninstallInput
 
 /** @deprecated Use `ExperimentalPluginUninstallOutput`. Removed in the next minor. */
 export type PluginUninstallOutput = ExperimentalPluginUninstallOutput
+
+/** @deprecated Use `ExperimentalPluginReloadInput`. Removed in the next minor. */
+export type PluginReloadInput = ExperimentalPluginReloadInput
+
+/** @deprecated Use `ExperimentalPluginReloadOutput`. Removed in the next minor. */
+export type PluginReloadOutput = ExperimentalPluginReloadOutput
+
+/** @deprecated Use `ExperimentalPluginRuntimeRetryInput`. Removed in the next minor. */
+export type PluginRuntimeRetryInput = ExperimentalPluginRuntimeRetryInput
+
+/** @deprecated Use `ExperimentalPluginRuntimeRetryOutput`. Removed in the next minor. */
+export type PluginRuntimeRetryOutput = ExperimentalPluginRuntimeRetryOutput
+
+/** @deprecated Use `ExperimentalPluginInboxListInput`. Removed in the next minor. */
+export type PluginInboxListInput = ExperimentalPluginInboxListInput
+
+/** @deprecated Use `ExperimentalPluginInboxListOutput`. Removed in the next minor. */
+export type PluginInboxListOutput = ExperimentalPluginInboxListOutput
+
+/** @deprecated Use `ExperimentalPluginInboxMarkInput`. Removed in the next minor. */
+export type PluginInboxMarkInput = ExperimentalPluginInboxMarkInput
+
+/** @deprecated Use `ExperimentalPluginInboxMarkOutput`. Removed in the next minor. */
+export type PluginInboxMarkOutput = ExperimentalPluginInboxMarkOutput
+
+/** @deprecated Use `ExperimentalPluginInboxDeleteInput`. Removed in the next minor. */
+export type PluginInboxDeleteInput = ExperimentalPluginInboxDeleteInput
+
+/** @deprecated Use `ExperimentalPluginInboxDeleteOutput`. Removed in the next minor. */
+export type PluginInboxDeleteOutput = ExperimentalPluginInboxDeleteOutput
 
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput

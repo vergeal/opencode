@@ -137,6 +137,27 @@ export interface PluginApi<E = never> {
 
   /** @deprecated Use `client.experimental.plugin.uninstall`. Removed in the next minor. */
   readonly uninstall: ExperimentalPluginUninstallOperation<E>
+
+  /** @deprecated Use `client.experimental.plugin.reload`. Removed in the next minor. */
+  readonly reload: ExperimentalPluginReloadOperation<E>
+
+  /** @deprecated Use `client.experimental.plugin.runtime`. Removed in the next minor. */
+  readonly runtime: {
+    /** @deprecated Use `client.experimental.plugin.runtime.retry`. Removed in the next minor. */
+    readonly retry: ExperimentalPluginRuntimeRetryOperation<E>
+  }
+
+  /** @deprecated Use `client.experimental.plugin.inbox`. Removed in the next minor. */
+  readonly inbox: {
+    /** @deprecated Use `client.experimental.plugin.inbox.list`. Removed in the next minor. */
+    readonly list: ExperimentalPluginInboxListOperation<E>
+
+    /** @deprecated Use `client.experimental.plugin.inbox.mark`. Removed in the next minor. */
+    readonly mark: ExperimentalPluginInboxMarkOperation<E>
+
+    /** @deprecated Use `client.experimental.plugin.inbox.delete`. Removed in the next minor. */
+    readonly delete: ExperimentalPluginInboxDeleteOperation<E>
+  }
 }
 
 export type ExperimentalPluginLocalInput = {
@@ -175,10 +196,70 @@ export type ExperimentalPluginUninstallOperation<E = never> = (
   input: ExperimentalPluginUninstallInput,
 ) => Effect.Effect<ExperimentalPluginUninstallOutput, E>
 
+export type ExperimentalPluginReloadInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: Plugin.ID
+}
+export type ExperimentalPluginReloadOutput = {
+  readonly location: Location.PublicRef
+  readonly data: { readonly id: Plugin.ID }
+}
+export type ExperimentalPluginReloadOperation<E = never> = (
+  input: ExperimentalPluginReloadInput,
+) => Effect.Effect<ExperimentalPluginReloadOutput, E>
+
+export type ExperimentalPluginRuntimeRetryInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: Plugin.ID
+}
+export type ExperimentalPluginRuntimeRetryOutput = {
+  readonly location: Location.PublicRef
+  readonly data: { readonly id: Plugin.ID }
+}
+export type ExperimentalPluginRuntimeRetryOperation<E = never> = (
+  input: ExperimentalPluginRuntimeRetryInput,
+) => Effect.Effect<ExperimentalPluginRuntimeRetryOutput, E>
+
+export type ExperimentalPluginInboxListInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+export type ExperimentalPluginInboxListOutput = {
+  readonly location: Location.PublicRef
+  readonly data: ReadonlyArray<Plugin.InboxRecord>
+}
+export type ExperimentalPluginInboxListOperation<E = never> = (
+  input?: ExperimentalPluginInboxListInput,
+) => Effect.Effect<ExperimentalPluginInboxListOutput, E>
+
+export type ExperimentalPluginInboxMarkInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+}
+export type ExperimentalPluginInboxMarkOutput = void
+export type ExperimentalPluginInboxMarkOperation<E = never> = (
+  input: ExperimentalPluginInboxMarkInput,
+) => Effect.Effect<ExperimentalPluginInboxMarkOutput, E>
+
+export type ExperimentalPluginInboxDeleteInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+}
+export type ExperimentalPluginInboxDeleteOutput = void
+export type ExperimentalPluginInboxDeleteOperation<E = never> = (
+  input: ExperimentalPluginInboxDeleteInput,
+) => Effect.Effect<ExperimentalPluginInboxDeleteOutput, E>
+
 export interface ExperimentalPluginApi<E = never> {
   readonly local: ExperimentalPluginLocalOperation<E>
   readonly bundle: ExperimentalPluginBundleOperation<E>
   readonly uninstall: ExperimentalPluginUninstallOperation<E>
+  readonly reload: ExperimentalPluginReloadOperation<E>
+  readonly runtime: { readonly retry: ExperimentalPluginRuntimeRetryOperation<E> }
+  readonly inbox: {
+    readonly list: ExperimentalPluginInboxListOperation<E>
+    readonly mark: ExperimentalPluginInboxMarkOperation<E>
+    readonly delete: ExperimentalPluginInboxDeleteOperation<E>
+  }
 }
 
 export type SessionListInput = {
@@ -2991,6 +3072,51 @@ export type PluginUninstallOutput = ExperimentalPluginUninstallOutput
 
 /** @deprecated Use `ExperimentalPluginUninstallOperation`. Removed in the next minor. */
 export type PluginUninstallOperation<E = never> = ExperimentalPluginUninstallOperation<E>
+
+/** @deprecated Use `ExperimentalPluginReloadInput`. Removed in the next minor. */
+export type PluginReloadInput = ExperimentalPluginReloadInput
+
+/** @deprecated Use `ExperimentalPluginReloadOutput`. Removed in the next minor. */
+export type PluginReloadOutput = ExperimentalPluginReloadOutput
+
+/** @deprecated Use `ExperimentalPluginReloadOperation`. Removed in the next minor. */
+export type PluginReloadOperation<E = never> = ExperimentalPluginReloadOperation<E>
+
+/** @deprecated Use `ExperimentalPluginRuntimeRetryInput`. Removed in the next minor. */
+export type PluginRuntimeRetryInput = ExperimentalPluginRuntimeRetryInput
+
+/** @deprecated Use `ExperimentalPluginRuntimeRetryOutput`. Removed in the next minor. */
+export type PluginRuntimeRetryOutput = ExperimentalPluginRuntimeRetryOutput
+
+/** @deprecated Use `ExperimentalPluginRuntimeRetryOperation`. Removed in the next minor. */
+export type PluginRuntimeRetryOperation<E = never> = ExperimentalPluginRuntimeRetryOperation<E>
+
+/** @deprecated Use `ExperimentalPluginInboxListInput`. Removed in the next minor. */
+export type PluginInboxListInput = ExperimentalPluginInboxListInput
+
+/** @deprecated Use `ExperimentalPluginInboxListOutput`. Removed in the next minor. */
+export type PluginInboxListOutput = ExperimentalPluginInboxListOutput
+
+/** @deprecated Use `ExperimentalPluginInboxListOperation`. Removed in the next minor. */
+export type PluginInboxListOperation<E = never> = ExperimentalPluginInboxListOperation<E>
+
+/** @deprecated Use `ExperimentalPluginInboxMarkInput`. Removed in the next minor. */
+export type PluginInboxMarkInput = ExperimentalPluginInboxMarkInput
+
+/** @deprecated Use `ExperimentalPluginInboxMarkOutput`. Removed in the next minor. */
+export type PluginInboxMarkOutput = ExperimentalPluginInboxMarkOutput
+
+/** @deprecated Use `ExperimentalPluginInboxMarkOperation`. Removed in the next minor. */
+export type PluginInboxMarkOperation<E = never> = ExperimentalPluginInboxMarkOperation<E>
+
+/** @deprecated Use `ExperimentalPluginInboxDeleteInput`. Removed in the next minor. */
+export type PluginInboxDeleteInput = ExperimentalPluginInboxDeleteInput
+
+/** @deprecated Use `ExperimentalPluginInboxDeleteOutput`. Removed in the next minor. */
+export type PluginInboxDeleteOutput = ExperimentalPluginInboxDeleteOutput
+
+/** @deprecated Use `ExperimentalPluginInboxDeleteOperation`. Removed in the next minor. */
+export type PluginInboxDeleteOperation<E = never> = ExperimentalPluginInboxDeleteOperation<E>
 
 /** @deprecated Use `ExperimentalSessionStatsInput`. Removed in the next minor. */
 export type SessionStatsInput = ExperimentalSessionStatsInput

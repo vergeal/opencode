@@ -30,6 +30,16 @@ import type {
   ExperimentalPluginBundleOutput,
   ExperimentalPluginUninstallInput,
   ExperimentalPluginUninstallOutput,
+  ExperimentalPluginReloadInput,
+  ExperimentalPluginReloadOutput,
+  ExperimentalPluginRuntimeRetryInput,
+  ExperimentalPluginRuntimeRetryOutput,
+  ExperimentalPluginInboxListInput,
+  ExperimentalPluginInboxListOutput,
+  ExperimentalPluginInboxMarkInput,
+  ExperimentalPluginInboxMarkOutput,
+  ExperimentalPluginInboxDeleteInput,
+  ExperimentalPluginInboxDeleteOutput,
   SessionListInput,
   SessionListOutput,
   SessionCreateInput,
@@ -467,10 +477,54 @@ const EndpointExperimentalPluginUninstall =
       ),
     )
 
+const EndpointExperimentalPluginReload = (raw: RawClient["server.plugin"]) => (input: ExperimentalPluginReloadInput) =>
+  preserveEffect<ExperimentalPluginReloadOutput>()(
+    raw["plugin.reload"]({ query: { location: input["location"] }, payload: { id: input["id"] } }).pipe(
+      Effect.mapError(mapClientError),
+    ),
+  )
+
+const EndpointExperimentalPluginRuntimeRetry =
+  (raw: RawClient["server.plugin"]) => (input: ExperimentalPluginRuntimeRetryInput) =>
+    preserveEffect<ExperimentalPluginRuntimeRetryOutput>()(
+      raw["plugin.runtimeRetry"]({ query: { location: input["location"] }, payload: { id: input["id"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointExperimentalPluginInboxList =
+  (raw: RawClient["server.plugin"]) => (input?: ExperimentalPluginInboxListInput) =>
+    preserveEffect<ExperimentalPluginInboxListOutput>()(
+      raw["plugin.inbox.list"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointExperimentalPluginInboxMark =
+  (raw: RawClient["server.plugin"]) => (input: ExperimentalPluginInboxMarkInput) =>
+    preserveEffect<ExperimentalPluginInboxMarkOutput>()(
+      raw["plugin.inbox.mark"]({ query: { location: input["location"] }, payload: { id: input["id"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointExperimentalPluginInboxDelete =
+  (raw: RawClient["server.plugin"]) => (input: ExperimentalPluginInboxDeleteInput) =>
+    preserveEffect<ExperimentalPluginInboxDeleteOutput>()(
+      raw["plugin.inbox.delete"]({ query: { location: input["location"] }, payload: { id: input["id"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
 const adaptGroupExperimentalPlugin = (raw: RawClient["server.plugin"]) => ({
   local: EndpointExperimentalPluginLocal(raw),
   bundle: EndpointExperimentalPluginBundle(raw),
   uninstall: EndpointExperimentalPluginUninstall(raw),
+  reload: EndpointExperimentalPluginReload(raw),
+  runtime: { retry: EndpointExperimentalPluginRuntimeRetry(raw) },
+  inbox: {
+    list: EndpointExperimentalPluginInboxList(raw),
+    mark: EndpointExperimentalPluginInboxMark(raw),
+    delete: EndpointExperimentalPluginInboxDelete(raw),
+  },
 })
 
 const EndpointSessionList = (raw: RawClient["server.session"]) => (input?: SessionListInput) =>
@@ -2127,6 +2181,22 @@ const adaptClient = (raw: RawClient) => {
       bundle: client.experimental.plugin.bundle,
       /** @deprecated Use `client.experimental.plugin.uninstall`. Removed in the next minor. */
       uninstall: client.experimental.plugin.uninstall,
+      /** @deprecated Use `client.experimental.plugin.reload`. Removed in the next minor. */
+      reload: client.experimental.plugin.reload,
+      /** @deprecated Use `client.experimental.plugin.runtime`. Removed in the next minor. */
+      runtime: {
+        /** @deprecated Use `client.experimental.plugin.runtime.retry`. Removed in the next minor. */
+        retry: client.experimental.plugin.runtime.retry,
+      },
+      /** @deprecated Use `client.experimental.plugin.inbox`. Removed in the next minor. */
+      inbox: {
+        /** @deprecated Use `client.experimental.plugin.inbox.list`. Removed in the next minor. */
+        list: client.experimental.plugin.inbox.list,
+        /** @deprecated Use `client.experimental.plugin.inbox.mark`. Removed in the next minor. */
+        mark: client.experimental.plugin.inbox.mark,
+        /** @deprecated Use `client.experimental.plugin.inbox.delete`. Removed in the next minor. */
+        delete: client.experimental.plugin.inbox.delete,
+      },
     },
     session: {
       ...client.session,

@@ -24,6 +24,16 @@ import type {
   ExperimentalPluginBundleOutput,
   ExperimentalPluginUninstallInput,
   ExperimentalPluginUninstallOutput,
+  ExperimentalPluginReloadInput,
+  ExperimentalPluginReloadOutput,
+  ExperimentalPluginRuntimeRetryInput,
+  ExperimentalPluginRuntimeRetryOutput,
+  ExperimentalPluginInboxListInput,
+  ExperimentalPluginInboxListOutput,
+  ExperimentalPluginInboxMarkInput,
+  ExperimentalPluginInboxMarkOutput,
+  ExperimentalPluginInboxDeleteInput,
+  ExperimentalPluginInboxDeleteOutput,
   SessionListInput,
   SessionListOutput,
   SessionCreateInput,
@@ -658,6 +668,74 @@ export function make(options: ClientOptions) {
             },
             requestOptions,
           ),
+        reload: (input: ExperimentalPluginReloadInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalPluginReloadOutput>(
+            {
+              method: "POST",
+              path: `/api/experimental/plugin/reload`,
+              query: { location: input["location"] },
+              body: { id: input["id"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        runtime: {
+          retry: (input: ExperimentalPluginRuntimeRetryInput, requestOptions?: RequestOptions) =>
+            request<ExperimentalPluginRuntimeRetryOutput>(
+              {
+                method: "POST",
+                path: `/api/experimental/plugin/runtime/retry`,
+                query: { location: input["location"] },
+                body: { id: input["id"] },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 404],
+                empty: false,
+              },
+              requestOptions,
+            ),
+        },
+        inbox: {
+          list: (input?: ExperimentalPluginInboxListInput, requestOptions?: RequestOptions) =>
+            request<ExperimentalPluginInboxListOutput>(
+              {
+                method: "GET",
+                path: `/api/experimental/plugin/inbox`,
+                query: { location: input?.["location"] },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 404],
+                empty: false,
+              },
+              requestOptions,
+            ),
+          mark: (input: ExperimentalPluginInboxMarkInput, requestOptions?: RequestOptions) =>
+            request<ExperimentalPluginInboxMarkOutput>(
+              {
+                method: "POST",
+                path: `/api/experimental/plugin/inbox/mark`,
+                query: { location: input["location"] },
+                body: { id: input["id"] },
+                successStatus: 204,
+                declaredStatuses: [400, 401, 404],
+                empty: true,
+              },
+              requestOptions,
+            ),
+          delete: (input: ExperimentalPluginInboxDeleteInput, requestOptions?: RequestOptions) =>
+            request<ExperimentalPluginInboxDeleteOutput>(
+              {
+                method: "POST",
+                path: `/api/experimental/plugin/inbox/delete`,
+                query: { location: input["location"] },
+                body: { id: input["id"] },
+                successStatus: 204,
+                declaredStatuses: [400, 401, 404],
+                empty: true,
+              },
+              requestOptions,
+            ),
+        },
       },
       session: {
         stats: (input?: ExperimentalSessionStatsInput, requestOptions?: RequestOptions) =>
@@ -2840,6 +2918,22 @@ export function make(options: ClientOptions) {
       bundle: client.experimental.plugin.bundle,
       /** @deprecated Use `client.experimental.plugin.uninstall`. Removed in the next minor. */
       uninstall: client.experimental.plugin.uninstall,
+      /** @deprecated Use `client.experimental.plugin.reload`. Removed in the next minor. */
+      reload: client.experimental.plugin.reload,
+      /** @deprecated Use `client.experimental.plugin.runtime`. Removed in the next minor. */
+      runtime: {
+        /** @deprecated Use `client.experimental.plugin.runtime.retry`. Removed in the next minor. */
+        retry: client.experimental.plugin.runtime.retry,
+      },
+      /** @deprecated Use `client.experimental.plugin.inbox`. Removed in the next minor. */
+      inbox: {
+        /** @deprecated Use `client.experimental.plugin.inbox.list`. Removed in the next minor. */
+        list: client.experimental.plugin.inbox.list,
+        /** @deprecated Use `client.experimental.plugin.inbox.mark`. Removed in the next minor. */
+        mark: client.experimental.plugin.inbox.mark,
+        /** @deprecated Use `client.experimental.plugin.inbox.delete`. Removed in the next minor. */
+        delete: client.experimental.plugin.inbox.delete,
+      },
     },
     session: {
       ...client.session,
