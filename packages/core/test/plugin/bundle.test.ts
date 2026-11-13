@@ -137,7 +137,7 @@ it.effect("installs the webwright manifest as it ships", () =>
     const temp = yield* tmpdirScoped()
     const manifest = JSON.parse(
       yield* Effect.promise(() =>
-        readFile(path.resolve(import.meta.dir, "../../../plugins/webwright/ocplugin.json"), "utf8"),
+        readFile(path.resolve(import.meta.dir, "../../../../plugins/webwright/ocplugin.json"), "utf8"),
       ),
     ) as { id: string; version: string; entry: { server: string }; skills?: { path: string }[] }
     // The manifest may still point at a file with its extension, so add one only when it has none.
