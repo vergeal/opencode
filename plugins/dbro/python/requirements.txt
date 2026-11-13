@@ -1,0 +1,3 @@
+pymysql>=1.0
+psycopg2-binary>=2.9
+# dmPython 由达梦安装目录 $DM_HOME/drivers/python 提供，或 pip install dmPython

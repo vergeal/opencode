@@ -1,5 +1,4 @@
 import { cp, mkdir, rm, writeFile } from "node:fs/promises"
-import { homedir } from "node:os"
 import { join } from "node:path"
 
 const root = join(import.meta.dir, "..")
@@ -24,16 +23,16 @@ if (!build.success) {
   process.exit(1)
 }
 
-// The Python gate and the three executors are the source of truth in ~/agents/tools; the bundle vendors them so an
-// installed plugin never depends on that checkout. `DBRO_TOOLS` points the build at another tools directory.
-const toolsRoot = process.env.DBRO_TOOLS ?? join(homedir(), "agents", "tools")
+// The Python gate and the three executors are vendored in `python/`, mirroring the layout they were developed in, so
+// a clone builds without an external tools checkout.
+const toolsRoot = join(root, "python")
 const assets = join(dist, "assets", "dbro")
 const gate = join(toolsRoot, "dbro", "dbro.py")
 if (!(await Bun.file(gate).exists()))
-  throw new Error(`找不到 ${gate}。把 DBRO_TOOLS 指向包含 dbro/ 和三个执行器的 tools 目录。`)
+  throw new Error(`找不到 ${gate}。Python 脚本应当由仓库内的 python/ 目录提供。`)
 
-// dbro.py resolves the executors from its parent directory in ~/agents/tools. The bundle flattens all four files into
-// assets/dbro, so prefer the script's own directory and keep the old layout as the fallback.
+// dbro.py resolves the executors from its parent directory in the source layout. The bundle flattens all four files
+// into assets/dbro, so prefer the script's own directory and keep the old layout as the fallback.
 const marker = "TOOLS = Path(__file__).resolve().parent.parent"
 const source = await Bun.file(gate).text()
 if (!source.includes(marker)) throw new Error(`${gate} 的 TOOLS 定位方式变了，更新 script/build.ts 里的补丁。`)
@@ -56,14 +55,9 @@ for (const name of ["dm8_exec.py", "mysql_exec.py", "pgsql_exec.py"]) {
   await cp(file, join(assets, name))
 }
 
-// Drivers are platform-specific wheels and cannot live inside the bundle; list them so the installed plugin can tell a
-// user exactly what to install when `dbro.doctor` reports a missing import.
-await writeFile(
-  join(assets, "requirements.txt"),
-  ["pymysql>=1.0", "psycopg2-binary>=2.9", "# dmPython 由达梦安装目录 $DM_HOME/drivers/python 提供，或 pip install dmPython", ""].join(
-    "\n",
-  ),
-)
+// Drivers are platform-specific wheels and cannot live inside the bundle; the list ships with the bundle so the
+// installed plugin can tell a user exactly what to install when `dbro.doctor` reports a missing import.
+await cp(join(toolsRoot, "requirements.txt"), join(assets, "requirements.txt"))
 
 for (const item of ["skills", "ocplugin.json", "README.md"]) {
   await cp(join(root, item), join(dist, item), { recursive: true }).catch(() => undefined)
