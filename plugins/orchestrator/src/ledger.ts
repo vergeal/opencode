@@ -14,6 +14,19 @@ export const KINDS = ["验收失败", "超时", "范围越界", "结果缺失", 
 export const Kind = Schema.Literals(KINDS)
 export type Kind = typeof Kind.Type
 
+export const DECISIONS = ["retry", "merged", "unblock", "abandon", "accept"] as const
+export const Decision = Schema.Literals(DECISIONS)
+export type Decision = typeof Decision.Type
+
+/** Which states each `resolve` decision accepts. Anything else is refused with the current state in the message. */
+export const DECISION_FROM: Readonly<Record<Decision, readonly Status[]>> = {
+  retry: ["失败"],
+  merged: ["已核"],
+  unblock: ["阻塞"],
+  abandon: ["失败", "已回传"],
+  accept: ["失败"],
+}
+
 export const Anomaly = Schema.Struct({
   taskID: Schema.String,
   kind: Kind,
