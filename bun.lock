@@ -572,52 +572,6 @@
         "typescript": "catalog:",
       },
     },
-    "packages/plugins/dbro": {
-      "name": "@opencode/plugin-dbro",
-      "version": "0.1.0",
-      "dependencies": {
-        "@opencode/plugin": "workspace:*",
-        "@opencode/schema": "workspace:*",
-        "effect": "catalog:",
-      },
-      "devDependencies": {
-        "@tsconfig/bun": "catalog:",
-        "@types/bun": "catalog:",
-        "@typescript/native": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/plugins/figma": {
-      "name": "@opencode/plugin-figma",
-      "version": "2.2.5",
-      "dependencies": {
-        "gray-matter": "4.0.3",
-      },
-      "devDependencies": {
-        "@tsconfig/bun": "1.0.9",
-        "@types/bun": "1.4.3",
-        "@typescript/native": "npm:typescript@7.1.0-beta",
-      },
-      "peerDependencies": {
-        "@opencode/plugin": "^2.0.27 || ^0.0.0-dev",
-      },
-    },
-    "packages/plugins/webwright": {
-      "name": "@opencode/plugin-webwright",
-      "version": "2.2.5",
-      "dependencies": {
-        "@opencode/plugin": "workspace:*",
-        "@opencode/schema": "workspace:*",
-        "effect": "catalog:",
-      },
-      "devDependencies": {
-        "@tsconfig/bun": "catalog:",
-        "@types/bun": "catalog:",
-        "@typescript/native": "catalog:",
-        "playwright-core": "1.60.0",
-        "typescript": "catalog:",
-      },
-    },
     "packages/posts": {
       "name": "@opencode/posts",
       "dependencies": {
@@ -995,6 +949,52 @@
       "devDependencies": {
         "@astrojs/check": "0.9.11",
         "@types/node": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "plugins/dbro": {
+      "name": "@opencode/plugin-dbro",
+      "version": "0.1.0",
+      "dependencies": {
+        "@opencode/plugin": "workspace:*",
+        "@opencode/schema": "workspace:*",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "@tsconfig/bun": "catalog:",
+        "@types/bun": "catalog:",
+        "@typescript/native": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
+    "plugins/figma": {
+      "name": "@opencode/plugin-figma",
+      "version": "2.2.5",
+      "dependencies": {
+        "gray-matter": "4.0.3",
+      },
+      "devDependencies": {
+        "@tsconfig/bun": "1.0.9",
+        "@types/bun": "1.4.3",
+        "@typescript/native": "npm:typescript@7.1.0-beta",
+      },
+      "peerDependencies": {
+        "@opencode/plugin": "^2.0.27 || ^0.0.0-dev",
+      },
+    },
+    "plugins/webwright": {
+      "name": "@opencode/plugin-webwright",
+      "version": "2.2.5",
+      "dependencies": {
+        "@opencode/plugin": "workspace:*",
+        "@opencode/schema": "workspace:*",
+        "effect": "catalog:",
+      },
+      "devDependencies": {
+        "@tsconfig/bun": "catalog:",
+        "@types/bun": "catalog:",
+        "@typescript/native": "catalog:",
+        "playwright-core": "1.60.0",
         "typescript": "catalog:",
       },
     },
@@ -1996,11 +1996,11 @@
 
     "@opencode/plugin-browser": ["@opencode/plugin-browser@workspace:packages/plugin-browser"],
 
-    "@opencode/plugin-dbro": ["@opencode/plugin-dbro@workspace:packages/plugins/dbro"],
+    "@opencode/plugin-dbro": ["@opencode/plugin-dbro@workspace:plugins/dbro"],
 
-    "@opencode/plugin-figma": ["@opencode/plugin-figma@workspace:packages/plugins/figma"],
+    "@opencode/plugin-figma": ["@opencode/plugin-figma@workspace:plugins/figma"],
 
-    "@opencode/plugin-webwright": ["@opencode/plugin-webwright@workspace:packages/plugins/webwright"],
+    "@opencode/plugin-webwright": ["@opencode/plugin-webwright@workspace:plugins/webwright"],
 
     "@opencode/posts": ["@opencode/posts@workspace:packages/posts"],
 

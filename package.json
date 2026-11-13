@@ -38,7 +38,7 @@
   "workspaces": {
     "packages": [
       "packages/*",
-      "packages/plugins/*",
+      "plugins/*",
       "services/*",
       "packages/console/*",
       "packages/stats/*"
