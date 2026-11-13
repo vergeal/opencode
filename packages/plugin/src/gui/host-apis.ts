@@ -1508,7 +1508,14 @@ export interface Toasts {
    * @param options - The toast's title and the first step it reports.
    * @returns The handle that moves and closes it.
    */
-  progress(options: { readonly title: string; readonly current: number; readonly total: number }): ToastProgress
+  progress(options: {
+    /** The toast's title. */
+    readonly title: string
+    /** The step reached. */
+    readonly current: number
+    /** The step count. */
+    readonly total: number
+  }): ToastProgress
 }
 
 /** A loading toast that reports deterministic progress. */
@@ -1596,7 +1603,14 @@ export interface Commands {
    *
    * @returns The commands; empty before the app interface mounts.
    */
-  list(): readonly { readonly id: string; readonly title: string; readonly enabled: boolean }[]
+  list(): readonly {
+    /** The command's id, as `run` accepts it. */
+    readonly id: string
+    /** The command's label in the palette. */
+    readonly title: string
+    /** False while the command cannot run; `run` returns false for it. */
+    readonly enabled: boolean
+  }[]
 }
 
 /** One tab of the shell's tab strip. */

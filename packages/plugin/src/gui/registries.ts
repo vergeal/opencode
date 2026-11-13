@@ -1043,20 +1043,30 @@ export interface InboxContent {
  * reads.
  */
 export interface InboxRecord {
+  /** The host-assigned message id; the publisher's own id is `externalID`. */
   readonly id: string
   /** The publishing plugin. */
   readonly plugin: string
   /** The publisher's own id for the message; unique within the plugin. */
   readonly externalID: string
+  /** The headline shown in the list and the detail page. */
   readonly title: string
+  /** A one-line body shown under the title. */
   readonly summary: string
   /** The publisher's judgement; the user never changes it. */
   readonly status: "pending" | "done" | "failed"
+  /** When it was published, in milliseconds. */
   readonly createdAt: number
+  /**
+   * A hint for when the host may stop showing it, in milliseconds. The plugin must not assume the message stays
+   * available: `list()` is the only source of truth.
+   */
   readonly expiresAt?: number
+  /** The publisher's own payload; the host does not interpret it. */
   readonly payload?: unknown
   /** The user opened the message. */
   readonly seen: boolean
+  /** When the read state last changed, in milliseconds. */
   readonly updatedAt: number
 }
 
