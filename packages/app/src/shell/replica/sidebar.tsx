@@ -13,6 +13,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useGlobal } from "@/runtime/server/runtime"
 import { usePlatform } from "@/runtime/platform/platform"
+import { useSettingsSurface } from "@/settings/surface"
 import { useCommand } from "@/shell/commands/command"
 import { ProjectIcon } from "@/shell/layout/project-icon"
 import { usePinnedSessions } from "@/session/pins"
@@ -124,6 +125,8 @@ function SessionRow(props: {
 
   const copySessionID = useCopySessionID()
 
+  const settings = useSettingsSurface()
+
   const dialog = useDialog()
 
   const tabs = useTabs()
@@ -134,6 +137,14 @@ function SessionRow(props: {
   let label!: HTMLSpanElement
 
   const project = () => props.entry().ctx.projects.forSession(props.entry().session)
+
+  const openProjectSettings = () => {
+    const current = project()
+
+    if (!current) return
+
+    settings.openProject({ server: props.entry().server, project: current.worktree })
+  }
 
   createEffect(() => {
     const value = sessionLabel(props.entry().session)
@@ -217,6 +228,7 @@ function SessionRow(props: {
           enabled: false,
         },
         { id: "sessionSettings", label: language.t("session.settings.menu"), icon: "settings" },
+        { id: "projectSettings", label: language.t("project.settings.menu"), icon: "project" },
         { type: "separator" },
         // A branch is a new draft on a fresh worktree of the same directory, so the conversation continues there.
         { id: "createBranch", label: language.t("common.createBranch"), icon: "branch" },
@@ -249,6 +261,7 @@ function SessionRow(props: {
     else if (chosen === "copyID") void copySessionID(session.id)
     else if (chosen === "sessionSettings")
       dialog.show(() => <SessionSettingsDialog server={entry.server} session={entry.session} />)
+    else if (chosen === "projectSettings") openProjectSettings()
     else if (chosen === "createBranch")
       void tabs.newDraft({ server: entry.server, directory: entry.session.location.directory, worktree: "create" })
     else if (chosen === "delete") props.onDelete(props.entry())
@@ -525,12 +538,7 @@ function ConversationNav() {
             <div class={LIST}>
               <Key each={pinned()} by={(entry) => entry.key}>
                 {(entry) => (
-                  <SessionRow
-                    entry={entry}
-                    active={() => active(entry())}
-                    onOpen={open}
-                    onDelete={confirmDelete}
-                  />
+                  <SessionRow entry={entry} active={() => active(entry())} onOpen={open} onDelete={confirmDelete} />
                 )}
               </Key>
             </div>
@@ -543,12 +551,7 @@ function ConversationNav() {
             <div class={LIST}>
               <Key each={recent()} by={(entry) => entry.key}>
                 {(entry) => (
-                  <SessionRow
-                    entry={entry}
-                    active={() => active(entry())}
-                    onOpen={open}
-                    onDelete={confirmDelete}
-                  />
+                  <SessionRow entry={entry} active={() => active(entry())} onOpen={open} onDelete={confirmDelete} />
                 )}
               </Key>
             </div>
