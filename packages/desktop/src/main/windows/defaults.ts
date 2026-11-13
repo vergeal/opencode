@@ -61,9 +61,11 @@ export function platformFrame(mode: "light" | "dark", zoom: number) {
   if (process.platform === "darwin") {
     frame.titleBarStyle = "hidden"
     frame.trafficLightPosition = { x: 14, y: 14 }
-    // The replica shell draws its own translucent window frame, so the desktop shows through it.
-    frame.vibrancy = "under-window"
-    frame.visualEffectState = "active"
+    // The replica shell draws its own translucent window frame, so the desktop shows through it. The sidebar
+    // material desaturates the wallpaper instead of letting its colours bleed into the chrome, and the effect
+    // follows focus so a background window recedes the way a native one does.
+    frame.vibrancy = "sidebar"
+    frame.visualEffectState = "followWindow"
   }
 
   if (process.platform === "win32") {
