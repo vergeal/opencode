@@ -28,6 +28,26 @@ describe("任务书", () => {
     expect(text).toContain("`ses_pm`")
   })
 
+  test("完成时先提交再写结果，且明确不要 push", () => {
+    const text = Brief.render(input)
+    expect(text).toContain("1. 把所有改动提交到 task/t1，**不要 push**")
+    expect(text).toContain('git add -A && git commit -m "task t1: 给 dbro 加超时"')
+    expect(text).toContain("2. 写文件 `/data/results/p1/t1.json`")
+    expect(text).toContain("不要 push")
+    expect(text).not.toContain("推主干")
+  })
+
+  test("changed 的示例命令带真实 base，不留占位符", () => {
+    const text = Brief.render(input)
+    expect(text).toContain('"changed": ["<git diff --name-only lts/ocdev...HEAD 的结果，逐行>"]')
+    expect(text).not.toContain("<base>")
+  })
+
+  test("提交信息里的引号与展开字符被转义", () => {
+    const text = Brief.render({ ...input, title: '修 "bug" 与 $HOME `x`' })
+    expect(text).toContain('git commit -m "task t1: 修 \\"bug\\" 与 \\$HOME \\`x\\`"')
+  })
+
   test("没有验收命令时明确说只核对范围", () => {
     const text = Brief.render({ ...input, verify: [] })
     expect(text).toContain("本任务没有验收命令")
