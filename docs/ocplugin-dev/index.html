@@ -686,12 +686,74 @@ expected: "server/main"                             # 应该改成的路径</cod
       </ol>
       <ul>
         <li>
-          优先 <code>uv venv --python &lt;最低版本&gt;</code>；<code>uv</code> 不可用时回退系统 <code>python3</code>
-          （<code>-m venv</code>），并先校验版本。
+          解释器优先用 <code>uv</code>：<code>uv venv --python &lt;最低版本&gt;</code>。机器上没有 <code>uv</code>
+          时，宿主会自己下载一份（见下节）；连下载都不可用才回退系统 <code>python3</code>（<code>-m venv</code>），并先校验版本。
         </li>
         <li>依赖安装：有 <code>uv</code> 用 <code>uv pip install</code>，否则用 <code>python -m pip install</code>。</li>
-        <li>两者都不满足 → <code>failed</code>，错误信息包含所需版本与实际版本。<b>失败不会自动重试。</b></li>
+        <li>
+          两者都不满足 → <code>failed</code>，错误信息包含所需版本、实际版本与 uv 不可用的原因。
+          <b>失败不会自动重试。</b>
+        </li>
       </ul>
+
+      <h4 id="s2-1-uv">uv 与镜像（国内优先）</h4>
+
+      <p>
+        用户不需要先装 <code>uv</code>：机器上没有时，宿主会下载一份可执行的 <code>uv</code>，
+        并且默认全部走国内镜像，不让首次准备卡在访问 GitHub 上。
+      </p>
+
+      <p><b>找 uv 的顺序</b></p>
+      <ol>
+        <li><code>OPENCODE_UV_PATH</code> 指定的路径，能跑就用。</li>
+        <li><code>PATH</code> 里的 <code>uv</code>。</li>
+        <li>已经下载过、能跑的 <code>~/.opencode/bin/uv</code>。</li>
+        <li>都没有才下载。</li>
+      </ol>
+
+      <p><b>下载源（三级回退，国内优先）</b></p>
+      <ol>
+        <li>中科大 GitHub release 镜像：<code>https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/&lt;version&gt;/&lt;asset&gt;</code></li>
+        <li>代理：<code>https://gh-proxy.com/https://github.com/astral-sh/uv/releases/download/&lt;version&gt;/&lt;asset&gt;</code></li>
+        <li>官方 GitHub：<code>https://github.com/astral-sh/uv/releases/download/&lt;version&gt;/&lt;asset&gt;</code></li>
+      </ol>
+      <p>
+        每一级失败<b>静默进下一级</b>；三级都失败才回退系统 <code>python3</code>，
+        错误信息按源列出各自的原因（带主机名）。
+      </p>
+
+      <p><b>版本与平台</b></p>
+      <table>
+        <tr><th>项</th><th>规则</th></tr>
+        <tr><td>版本</td><td>固定 <code>0.13.8</code>，不跟 <code>latest</code>——一个代码版本对应一份工具链，环境可复现。用 <code>OPENCODE_UV_VERSION</code> 覆盖。</td></tr>
+        <tr><td>平台</td><td><code>darwin-arm64</code>、<code>darwin-x64</code>、<code>linux-arm64</code>、<code>linux-x64</code>、<code>win32-x64</code>。其余组合 uv 没有可用构建，直接回退系统 <code>python3</code>。</td></tr>
+        <tr><td>包格式</td><td>macOS / Linux 是 <code>.tar.gz</code>；Windows 是 <code>.zip</code>。</td></tr>
+        <tr><td>解压</td><td><code>Bun.Archive</code> 只读 tar，所以 Windows 的 zip 由宿主自己读中央目录、用 <code>inflateRawSync</code> 取出 <code>uv.exe</code>。</td></tr>
+        <tr><td>校验和</td><td>源提供 <code>&lt;asset&gt;.sha256</code> 就校验，不匹配算本级失败；不提供就跳过。宿主不维护硬编码的 sha256 表。</td></tr>
+        <tr><td>幂等与并发</td><td><code>~/.opencode/bin/uv</code> 能跑就不重复下载；先解压到临时目录，再 <code>rename</code> 原子落盘，两个插件同时准备也只下载一次。</td></tr>
+        <tr><td>下载后自检</td><td>落盘后会实际执行一次 <code>uv --version</code>，跑不起来算本级失败，不会留下一个不能 spawn 的路径。</td></tr>
+      </table>
+
+      <p><b>注入的环境变量</b></p>
+      <table>
+        <tr><th>用途</th><th>变量</th></tr>
+        <tr><td><code>uv venv</code> 取 CPython 的来源</td><td><code>UV_PYTHON_INSTALL_MIRROR</code></td></tr>
+        <tr><td>uv 的包索引</td><td><code>UV_DEFAULT_INDEX</code> 与 <code>UV_INDEX_URL</code>（同值，兼容旧版 uv）</td></tr>
+        <tr><td>系统 <code>pip</code> 的包索引</td><td><code>PIP_INDEX_URL</code></td></tr>
+      </table>
+      <p>默认全部指向中科大，可用这些变量覆盖：</p>
+      <table>
+        <tr><th>变量</th><th>作用</th></tr>
+        <tr><td><code>OPENCODE_UV_PATH</code></td><td>强制使用指定的 uv 可执行文件。</td></tr>
+        <tr><td><code>OPENCODE_UV_VERSION</code></td><td>换下载的 uv 版本。</td></tr>
+        <tr><td><code>OPENCODE_UV_MIRROR</code></td><td>换 uv 下载镜像；设成空字符串则跳过镜像，只用代理与官方。</td></tr>
+        <tr><td><code>OPENCODE_PYTHON_INSTALL_MIRROR</code></td><td>换 CPython 的下载镜像。</td></tr>
+        <tr><td><code>OPENCODE_PYPI_INDEX</code></td><td>换包索引；空字符串表示回官方 PyPI。</td></tr>
+      </table>
+      <div class="note">
+        下载并执行 <code>uv</code> 与「安装插件声明的依赖」是同一层信任：用户装了一个声明 <code>runtime</code> 的插件，
+        就等于同意宿主在需要时取一次解释器工具链。仍然不写系统 site-packages。
+      </div>
 
       <h4>状态与通知</h4>
       <table>
@@ -713,7 +775,7 @@ expected: "server/main"                             # 应该改成的路径</cod
       </ul>
 
       <h4>失败后重新准备</h4>
-      <p>准备失败不会自动重试。修好环境（装 <code>uv</code> 或合适版本的 Python）后调端点，或点界面上的「重新准备」：</p>
+      <p>准备失败不会自动重试。修好环境（装 <code>uv</code>、装合适版本的 Python，或让宿主能访问镜像）后调端点，或点界面上的「重新准备」：</p>
       <table>
         <tr><th>方法 / 路径</th><th>请求</th><th>响应</th></tr>
         <tr>
@@ -3033,6 +3095,7 @@ ctx.add(InboxContent, {
         <tr><td><code>~/.opencode/plugin-data/&lt;id&gt;/</code></td><td>插件数据目录（<code>ctx.paths.data</code>），卸载后保留；<code>config.json</code> 也在这里。</td></tr>
         <tr><td><code>~/.opencode/plugin-cache/&lt;id&gt;/</code></td><td>插件缓存目录（<code>ctx.paths.cache</code>），卸载时整个删除。</td></tr>
         <tr><td><code>~/.opencode/plugin-runtime/&lt;id&gt;/</code></td><td>Python 运行时环境（<a href="#s2-1">2.1</a>），id 里的 <code>/</code> 换成 <code>+</code>；卸载时删除，可按清单重建。</td></tr>
+        <tr><td><code>~/.opencode/bin/uv</code></td><td>宿主按需下载的 <code>uv</code>（<a href="#s2-1-uv">2.1 uv 与镜像</a>），所有插件共用；不随插件卸载删除。</td></tr>
         <tr><td><code>~/.opencode/logs/plugin/&lt;id&gt;.log</code></td><td>插件日志（<code>ctx.paths.log</code>），卸载后保留。</td></tr>
         <tr><td><code>~/.opencode/secrets.key</code></td><td>加密凭据的主密钥，首次使用生成，权限 <code>0600</code>。</td></tr>
         <tr><td><code>~/.opencode/secrets/&lt;id&gt;.json</code></td><td>加密后的凭据密文，权限 <code>0600</code>。</td></tr>
