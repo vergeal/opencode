@@ -672,10 +672,67 @@ expected: "server/main"                             # 应该改成的路径</cod
       <h4>环境位置</h4>
       <table>
         <tr><th>项</th><th>说明</th></tr>
-        <tr><td>目录</td><td><code>~/.opencode/plugin-runtime/&lt;id&gt;/</code>，id 里的 <code>/</code> 换成 <code>+</code>。</td></tr>
+        <tr><td>目录（macOS / Linux）</td><td><code>~/.opencode/plugin-runtime/&lt;id&gt;/</code>，id 里的 <code>/</code> 换成 <code>+</code>。</td></tr>
+        <tr>
+          <td>目录（Windows）</td>
+          <td>
+            <code>D:\.opencode\plugin-runtime\&lt;id&gt;\</code>；<code>D:\</code> 不存在或不可写时回落
+            <code>%USERPROFILE%\.opencode\plugin-runtime\&lt;id&gt;\</code>。判定细节见<a href="#s2-1-dirs">目录位置</a>。
+          </td>
+        </tr>
         <tr><td>卸载时</td><td>整个目录删除。它是可重建的，与 <code>plugin-cache</code> 同一类。</td></tr>
         <tr><td>标记文件</td><td>环境目录里的 <code>runtime.json</code> 记录约束与依赖的 hash、解释器版本和准备时间。</td></tr>
       </table>
+
+      <h4 id="s2-1-dirs">目录位置（Windows 默认放 D 盘）</h4>
+      <p>
+        宿主给每个插件四个目录，<b>只有可重建的两项会挪到别的盘</b>：运行环境与缓存。
+        数据与日志始终留在用户主目录，所以掉盘最多损失一次重新准备，不会丢配置和日志。
+      </p>
+      <table>
+        <tr><th>目录</th><th>macOS / Linux</th><th>Windows</th></tr>
+        <tr>
+          <td>运行环境</td>
+          <td><code>~/.opencode/plugin-runtime/&lt;id&gt;/</code></td>
+          <td><code>D:\.opencode\plugin-runtime\&lt;id&gt;\</code>，否则 <code>%USERPROFILE%\.opencode\plugin-runtime\&lt;id&gt;\</code></td>
+        </tr>
+        <tr>
+          <td>缓存</td>
+          <td><code>~/.opencode/plugin-cache/&lt;id&gt;/</code></td>
+          <td><code>D:\.opencode\plugin-cache\&lt;id&gt;\</code>，否则 <code>%USERPROFILE%\.opencode\plugin-cache\&lt;id&gt;\</code></td>
+        </tr>
+        <tr>
+          <td>数据（<code>config.json</code>）</td>
+          <td><code>~/.opencode/plugin-data/&lt;id&gt;/</code></td>
+          <td><code>%USERPROFILE%\.opencode\plugin-data\&lt;id&gt;\</code></td>
+        </tr>
+        <tr>
+          <td>日志</td>
+          <td><code>~/.opencode/logs/plugin/&lt;id&gt;.log</code></td>
+          <td><code>%USERPROFILE%\.opencode\logs\plugin\&lt;id&gt;.log</code></td>
+        </tr>
+      </table>
+      <p>
+        判定条件是 <b><code>D:\</code> 存在且可写</b>（<code>accessSync("D:\\", W_OK)</code>）：只读盘、光驱不会被采用。
+        非 Windows 平台不看这个条件，四个目录都在 <code>~/.opencode</code> 下，行为与之前完全相同。
+        <code>~/.opencode/ocplugins</code>、<code>~/.ocplugins-local</code>、<code>secrets/</code>、<code>secrets.key</code>
+        的位置也没有变化。
+      </p>
+      <p><b>换盘之后</b></p>
+      <ul>
+        <li>新环境 <code>ready</code> 之后，旧根下的 <code>plugin-cache</code> 与 <code>plugin-runtime</code> 会被删除。</li>
+        <li><code>plugin-data</code> 与 <code>logs/plugin</code> 不动——它们本来就不随盘移动。</li>
+        <li>准备失败时<b>旧环境保留</b>，不清理，避免把还能用的环境删掉。</li>
+      </ul>
+      <p>
+        探测结果在进程内只取一次（列表、卸载、配置扫描都会问路径，不能每次都发 syscall），
+        所以换盘或插拔盘之后要重启 OpenCode 才会重新判定。
+      </p>
+      <div class="note">
+        <b>已知代价：</b>外接盘或网络盘掉线时，本次进程仍按启动时的判定继续用 <code>D:\</code>，准备可能因此失败；
+        重启后判定为不可用，回落到 C 盘重新准备一次。盘接回来再启动，又会在 <code>D:\</code> 上准备一次，每次几十秒。
+        这是有意的取舍——这里不加锁、不做健康检查，否则真实的存储问题会被掩盖而不是报出来，所以不要把它当成 bug。
+      </div>
 
       <h4>检测与准备</h4>
       <p>每次加载都会检测三项，任一项不过就重新准备：</p>
@@ -758,13 +815,20 @@ expected: "server/main"                             # 应该改成的路径</cod
       <h4>状态与通知</h4>
       <table>
         <tr><th><code>Plugin.Info.runtime</code></th><th>含义</th></tr>
-        <tr><td><code>{ status: "preparing" }</code></td><td>正在准备。</td></tr>
+        <tr><td><code>{ status: "preparing" }</code></td><td>正在准备。<b>第一次阶段上报前可能还没有 <code>phase</code></b>。</td></tr>
+        <tr><td><code>{ status: "preparing", phase: "runtime" }</code></td><td>正在准备运行时：取 <code>uv</code>、建虚拟环境、下载 Python。</td></tr>
+        <tr><td><code>{ status: "preparing", phase: "dependencies" }</code></td><td>正在安装依赖：<code>uv pip install</code> 或 <code>pip install</code>。</td></tr>
         <tr><td><code>{ status: "ready" }</code></td><td>可用。</td></tr>
         <tr><td><code>{ status: "failed", error, ref }</code></td><td>失败；<code>error</code> 是原因，<code>ref</code> 对应服务端的一条日志。</td></tr>
       </table>
       <p>
+        <code>phase</code> 是可选的 <code>"runtime" | "dependencies"</code>，<b>只在 <code>preparing</code> 时存在</b>：
+        <code>ready</code> 与 <code>failed</code> 没有可报的阶段，不带这个字段。没有依赖要装时不会出现
+        <code>dependencies</code> 阶段，准备完直接跳到 <code>ready</code>。
+      </p>
+      <p>
         未声明 <code>runtime</code> 的插件<b>没有这个字段</b>。状态变化通过 <code>Plugin.Event.Updated</code> 通知客户端，
-        与插件列表的其他变化走同一条推送。
+        与插件列表的其他变化走同一条推送；<code>phase</code> 变化也会立即推一次，不用等整个准备结束。
       </p>
 
       <h4>异步，不阻塞安装</h4>
@@ -791,7 +855,11 @@ expected: "server/main"                             # 应该改成的路径</cod
 
       <h4>界面表现</h4>
       <ul>
-        <li>插件详情页有「运行环境」一项：正在准备 / 已就绪 / 准备失败。</li>
+        <li>
+          插件详情页有「运行环境」一项：正在准备 / 已就绪 / 准备失败。
+          正在准备时还会显示<b>当前阶段</b>——「正在准备运行时」（<i>Preparing runtime</i>）或
+          「正在安装依赖」（<i>Installing dependencies</i>）。<code>ready</code> 与 <code>failed</code> 不显示阶段。
+        </li>
         <li>失败时显示错误（复用插件失败的样式）与「重新准备」按钮。</li>
         <li>安装成功且插件声明了 <code>runtime</code> 时，追加一条 toast「正在为 … 准备运行环境」，不阻塞安装对话框。</li>
         <li>未声明 <code>runtime</code> 的插件不显示这一项。</li>
@@ -1700,9 +1768,17 @@ Content-Type: application/json
       <table>
         <tr><th>字段</th><th>路径</th><th>卸载后</th></tr>
         <tr><td><code>data</code></td><td><code>~/.opencode/plugin-data/&lt;id&gt;</code></td><td>保留</td></tr>
-        <tr><td><code>cache</code></td><td><code>~/.opencode/plugin-cache/&lt;id&gt;</code></td><td>整个删除</td></tr>
+        <tr>
+          <td><code>cache</code></td>
+          <td><code>~/.opencode/plugin-cache/&lt;id&gt;</code>；Windows 上默认是 <code>D:\.opencode\plugin-cache\&lt;id&gt;</code></td>
+          <td>整个删除</td>
+        </tr>
         <tr><td><code>log</code></td><td><code>~/.opencode/logs/plugin/&lt;id&gt;.log</code></td><td>保留</td></tr>
       </table>
+      <p>
+        <b>Windows 上 <code>cache</code> 可能不在主目录</b>（见 <a href="#s2-1-dirs">2.1 目录位置</a>），
+        所以永远用 <code>ctx.paths.cache</code>，不要自己拼 <code>~/.opencode/plugin-cache</code> 去猜位置。
+      </p>
       <p>
         <code>cache</code> 里的东西必须可以随时重建。<code>data</code> 与 <code>log</code> 归插件所有，
         需要清理就在 <code>onUninstall</code> 里自己做。桌面窗口的 <code>ctx</code> <b>不提供</b>
@@ -3093,8 +3169,8 @@ ctx.add(InboxContent, {
         <tr><th>路径</th><th>作用</th></tr>
         <tr><td><code>~/.opencode/ocplugins/&lt;id&gt;/</code></td><td>已安装插件；自动扫描、监听，放入即加载。</td></tr>
         <tr><td><code>~/.opencode/plugin-data/&lt;id&gt;/</code></td><td>插件数据目录（<code>ctx.paths.data</code>），卸载后保留；<code>config.json</code> 也在这里。</td></tr>
-        <tr><td><code>~/.opencode/plugin-cache/&lt;id&gt;/</code></td><td>插件缓存目录（<code>ctx.paths.cache</code>），卸载时整个删除。</td></tr>
-        <tr><td><code>~/.opencode/plugin-runtime/&lt;id&gt;/</code></td><td>Python 运行时环境（<a href="#s2-1">2.1</a>），id 里的 <code>/</code> 换成 <code>+</code>；卸载时删除，可按清单重建。</td></tr>
+        <tr><td><code>~/.opencode/plugin-cache/&lt;id&gt;/</code></td><td>插件缓存目录（<code>ctx.paths.cache</code>），卸载时整个删除。Windows 上默认在 <code>D:\.opencode\plugin-cache\&lt;id&gt;\</code>，见 <a href="#s2-1-dirs">2.1</a>。</td></tr>
+        <tr><td><code>~/.opencode/plugin-runtime/&lt;id&gt;/</code></td><td>Python 运行时环境（<a href="#s2-1">2.1</a>），id 里的 <code>/</code> 换成 <code>+</code>；卸载时删除，可按清单重建。Windows 上默认在 <code>D:\.opencode\plugin-runtime\&lt;id&gt;\</code>。</td></tr>
         <tr><td><code>~/.opencode/bin/uv</code></td><td>宿主按需下载的 <code>uv</code>（<a href="#s2-1-uv">2.1 uv 与镜像</a>），所有插件共用；不随插件卸载删除。</td></tr>
         <tr><td><code>~/.opencode/logs/plugin/&lt;id&gt;.log</code></td><td>插件日志（<code>ctx.paths.log</code>），卸载后保留。</td></tr>
         <tr><td><code>~/.opencode/secrets.key</code></td><td>加密凭据的主密钥，首次使用生成，权限 <code>0600</code>。</td></tr>
