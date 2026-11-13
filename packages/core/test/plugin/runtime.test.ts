@@ -291,7 +291,33 @@ describe("PluginRuntime.prepare", () => {
     expect("phase" in result).toBe(false)
   }, 180_000)
 
-  it("reports no step when it cannot even start", async () => {
+  it("announces the runtime step before it looks for uv or downloads one", async () => {
+    await using root = await home()
+    const order: string[] = []
+    const result = await prepare({
+      home: root.path,
+      id: "acme.future",
+      runtime: { python: ">=99.0" },
+      onPhase: (phase) => order.push(phase),
+      uv: {
+        which: async () => {
+          order.push("which")
+          return false
+        },
+        download: async () => {
+          order.push("download")
+          throw new Error("offline")
+        },
+      },
+    })
+    // The first thing preparation does is say what it is doing; probing and downloading come after it.
+    expect(order[0]).toBe("runtime")
+    expect(order.indexOf("runtime")).toBeLessThan(order.indexOf("which"))
+    expect(order.indexOf("runtime")).toBeLessThan(order.indexOf("download"))
+    expect(result.status).toBe("failed")
+  }, 120_000)
+
+  it("reports the runtime step it failed on when it cannot start at all", async () => {
     await using root = await home()
     const phases: string[] = []
     const result = await prepare({
@@ -307,7 +333,8 @@ describe("PluginRuntime.prepare", () => {
         },
       },
     })
-    expect(phases).toEqual([])
+    // The step is reported even though nothing could be prepared, so the list is never silent while it waits.
+    expect(phases).toEqual(["runtime"])
     expect(result.status).toBe("failed")
     expect("phase" in result).toBe(false)
   }, 120_000)

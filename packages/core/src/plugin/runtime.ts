@@ -98,6 +98,9 @@ export const prepare = (input: {
   readonly uv?: UvSeam
 }): Effect.Effect<Plugin.Runtime> =>
   Effect.promise(async () => {
+    // Announced before anything else: acquiring uv can download a release and fall back through two mirrors, which is
+    // the longest quiet stretch of a first install. A failure that follows still reported the step it was on.
+    input.onPhase?.("runtime")
     const target = input.runtime.python
     const resolved = await findUv(input)
     const uv = "command" in resolved ? resolved.command : undefined
@@ -109,8 +112,6 @@ export const prepare = (input: {
         `Plugin ${input.id} needs Python ${target ?? "any"}; this machine has ${fallback?.version ?? "no python3"}, and uv could not be used: ${"error" in resolved ? resolved.error : "not found"}. Install a matching Python or let the host download uv, then retry.`,
       )
 
-    // Fetching uv, creating the venv, and downloading Python are one step the user waits on.
-    input.onPhase?.("runtime")
     const venv = directory(input)
     await rm(venv, { recursive: true, force: true })
     await mkdir(path.dirname(venv), { recursive: true })
