@@ -994,6 +994,7 @@
         "@tsconfig/bun": "catalog:",
         "@types/bun": "catalog:",
         "@typescript/native": "catalog:",
+        "solid-js": "catalog:",
         "typescript": "catalog:",
       },
     },
