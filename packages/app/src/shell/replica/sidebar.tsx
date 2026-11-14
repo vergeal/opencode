@@ -23,7 +23,6 @@ import { Persist, persisted } from "@/runtime/persistence/storage"
 import { arrayMove } from "@/runtime/array-move"
 import { useSettingsSurface } from "@/settings/surface"
 import { useCommand } from "@/shell/commands/command"
-import { ProjectIcon } from "@/shell/layout/project-icon"
 import { usePinnedSessions } from "@/session/pins"
 import { sessionLabel } from "@/session/title"
 import { SessionMenuCopyID, useCopySessionID } from "@/session/menu-items"
@@ -386,12 +385,7 @@ function SessionRow(props: {
           props.onOpen(props.entry())
         }}
       >
-        <Show
-          when={project()}
-          fallback={<Icon name="folder" class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />}
-        >
-          {(project) => <ProjectIcon project={project()} class="size-4 shrink-0" />}
-        </Show>
+        <Icon name="bubble-5" class="size-4 shrink-0 text-[var(--color-icon-secondary)]" />
         <span
           ref={label}
           data-slot="replica-row-title"
