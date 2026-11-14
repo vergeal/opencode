@@ -6,7 +6,8 @@
     "opencode": "^2.2.5"
   },
   "entry": {
-    "server": "server/main"
+    "server": "server/main",
+    "gui": "gui/main"
   },
   "externals": ["effect", "@opencode/plugin", "@opencode/schema"],
   "display": {
