@@ -22930,6 +22930,10 @@
             "type": "string",
             "enum": ["ready", "preparing", "failed"]
           },
+          "phase": {
+            "type": "string",
+            "enum": ["runtime", "dependencies"]
+          },
           "error": {
             "type": "string"
           },
