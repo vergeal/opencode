@@ -491,8 +491,10 @@ html[data-replica-window="translucent"] [data-slot="replica-sidebar-slot"] {
 }
 
 /* A route panel would otherwise paint the theme's base layer (#161616) over the work area, so the answer
-   read one step lighter than the surface around it. The dark shell keeps one flat fill here. */
-[data-color-scheme="dark"] [data-slot="replica-main"] [data-slot="session-panel"] {
+   read one step lighter than the surface around it. The dark shell keeps one flat fill here, and the draft
+   page's own panel takes the same fill so arriving at a new chat does not shift the shade. */
+[data-color-scheme="dark"] [data-slot="replica-main"] [data-slot="session-panel"],
+[data-color-scheme="dark"] [data-slot="replica-main"] [data-component="new-session"] {
   background: var(--color-main);
 }
 
