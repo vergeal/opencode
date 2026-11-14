@@ -31,6 +31,11 @@ export function configureApplication() {
   // Chromium animates each mouse-wheel notch on Linux; native Linux apps scroll by the full delta immediately.
   if (process.platform === "linux") app.commandLine.appendSwitch("disable-smooth-scrolling")
 
+  // macOS hands a dual-GPU Mac the integrated GPU by default, which cannot composite a Retina-sized window
+  // inside a frame budget and pins the UI to 30fps. The discrete GPU keeps the frame budget. Single-GPU Macs
+  // ignore the switch.
+  if (process.platform === "darwin") app.commandLine.appendSwitch("force-high-performance-gpu")
+
   const build = { packaged: app.isPackaged, channel: CHANNEL }
   const debugPort = remoteDebuggingPort(build, process.env.OPENCODE_DESKTOP_REMOTE_DEBUGGING_PORT)
 
