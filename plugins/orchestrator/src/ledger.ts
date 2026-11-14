@@ -3,7 +3,8 @@ export * as Ledger from "./ledger.js"
 import { optional } from "@opencode/schema/schema"
 import { Option, Schema } from "effect"
 import type { Types } from "effect"
-import { mkdir, rename, rm, writeFile } from "node:fs/promises"
+import { randomUUID } from "node:crypto"
+import { mkdir, open, readFile, rename, rm, stat, unlink, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 
 export const STATUSES = ["待派", "进行中", "已回传", "已核", "已合入", "失败", "阻塞"] as const
@@ -149,36 +150,36 @@ export interface Store {
   clearResult(planID: string, taskID: string): Promise<void>
 }
 
+const LOCK_TIMEOUT_MS = 10_000
+const STALE_LOCK_MS = 30_000
+const LOCK_RETRY_MS = 10
+
 /**
  * The ledger is the only authority, so it is written whole on every change: a temp file, then a rename. `update` runs
- * changes one at a time because tool calls and event handlers both mutate it.
+ * changes one at a time because tool calls and event handlers both mutate it. Each plugin instance owns its own store
+ * but they all share the same data directory, so the in-process queue is not enough: the whole read-modify-write runs
+ * under a lock file so two instances cannot interleave and overwrite each other.
  */
 export function createStore(directory: string): Store {
   const ledgerPath = join(directory, "ledger.json")
-  let cache: File | undefined
+  const lockPath = join(directory, "ledger.json.lock")
   let tail: Promise<unknown> = Promise.resolve()
-  let counter = 0
 
   const planPath = (planID: string) => join(directory, "plans", `${planID}.json`)
   const resultPath = (planID: string, taskID: string) => join(directory, "results", planID, `${taskID}.json`)
 
   const load = async (): Promise<File> => {
-    if (cache) return cache
     const file = Bun.file(ledgerPath)
-    if (!(await file.exists())) {
-      cache = { version: 1, plans: {}, tasks: {}, anomalies: [] }
-      return cache
-    }
+    if (!(await file.exists())) return { version: 1, plans: {}, tasks: {}, anomalies: [] }
     const decoded = Schema.decodeUnknownOption(Schema.fromJsonString(File))(await file.text())
     if (Option.isNone(decoded))
       throw new Error(`台账 ${ledgerPath} 不是合法 JSON 或结构不匹配。修好或移走它，插件不会重建以免覆盖。`)
-    cache = decoded.value
-    return cache
+    return decoded.value
   }
 
   const writeAtomic = async (path: string, text: string) => {
     await mkdir(dirname(path), { recursive: true })
-    const temp = `${path}.${process.pid}.${counter++}.tmp`
+    const temp = `${path}.${process.pid}.${randomUUID()}.tmp`
     await writeFile(temp, text)
     await rename(temp, path)
   }
@@ -187,11 +188,16 @@ export function createStore(directory: string): Store {
 
   const update = async <T>(change: (file: MutableFile) => T | Promise<T>): Promise<T> => {
     const run = async () => {
-      const draft = structuredClone(await load()) as MutableFile
-      const value = await change(draft)
-      await write(draft)
-      cache = draft
-      return value
+      // The lock spans the callback: reading after acquiring it is what makes the read-modify-write atomic.
+      const release = await acquireLock(lockPath)
+      try {
+        const draft = structuredClone(await load()) as MutableFile
+        const value = await change(draft)
+        await write(draft)
+        return value
+      } finally {
+        await release()
+      }
     }
     // Errors propagate to the caller, but the queue itself must stay usable for the next change.
     const result = tail.then(run, run)
@@ -212,7 +218,13 @@ export function createStore(directory: string): Store {
       return decoded.value
     },
     writePlan: async (planID, input) => {
-      await writeAtomic(planPath(planID), `${JSON.stringify(input, null, 2)}\n`)
+      // Same lock as the ledger so a plan save cannot be merged into a different snapshot of it.
+      const release = await acquireLock(lockPath)
+      try {
+        await writeAtomic(planPath(planID), `${JSON.stringify(input, null, 2)}\n`)
+      } finally {
+        await release()
+      }
     },
     readResult: async (planID, taskID) => {
       const path = resultPath(planID, taskID)
@@ -226,4 +238,69 @@ export function createStore(directory: string): Store {
       await rm(resultPath(planID, taskID), { force: true })
     },
   }
+}
+
+/** Creates `path` exclusively; a second holder sees `EEXIST` and retries until {@link LOCK_TIMEOUT_MS}. */
+async function acquireLock(path: string): Promise<() => Promise<void>> {
+  await mkdir(dirname(path), { recursive: true })
+  const owner = JSON.stringify({ pid: process.pid, at: new Date().toISOString() })
+  const deadline = Date.now() + LOCK_TIMEOUT_MS
+  let reclaimed = false
+  for (;;) {
+    const handle = await open(path, "wx").catch((error: unknown) => {
+      if (isBusy(error)) return undefined
+      throw error
+    })
+    if (handle) {
+      try {
+        await handle.writeFile(owner)
+      } catch (error) {
+        await handle.close()
+        await rm(path, { force: true })
+        throw error
+      }
+      await handle.close()
+      return () => releaseLock(path, owner)
+    }
+    if (!reclaimed && (await reclaimStaleLock(path))) {
+      reclaimed = true
+      continue
+    }
+    if (Date.now() >= deadline)
+      throw new Error(
+        `台账锁 ${path} 等待超过 ${LOCK_TIMEOUT_MS / 1000} 秒仍未获得。另一个实例可能卡住：确认没有写入方在跑之后删掉该锁文件再重试。`,
+      )
+    await Bun.sleep(LOCK_RETRY_MS)
+  }
+}
+
+function isBusy(error: unknown) {
+  return error instanceof Error && "code" in error && error.code === "EEXIST"
+}
+
+/** Drops a lock older than {@link STALE_LOCK_MS}, but only while the file still matches what was inspected. */
+async function reclaimStaleLock(path: string) {
+  const text = await readFile(path, "utf8").catch(() => undefined)
+  if (text === undefined) return false
+  if ((await lockAge(path, text)) <= STALE_LOCK_MS) return false
+  // Re-read before unlinking: a holder that replaced the lock in between must not lose it.
+  if ((await readFile(path, "utf8").catch(() => undefined)) !== text) return false
+  await unlink(path).catch(() => undefined)
+  return true
+}
+
+async function lockAge(path: string, text: string) {
+  const decoded = Schema.decodeUnknownOption(Schema.fromJsonString(Schema.Struct({ at: Schema.String })))(text)
+  if (Option.isSome(decoded)) {
+    const at = Date.parse(decoded.value.at)
+    if (!Number.isNaN(at)) return Date.now() - at
+  }
+  const info = await stat(path).catch(() => undefined)
+  return info ? Date.now() - info.mtimeMs : 0
+}
+
+/** Only removes the lock while it still carries this holder's token, so a reclaim elsewhere is not undone. */
+async function releaseLock(path: string, owner: string) {
+  if ((await readFile(path, "utf8").catch(() => undefined)) !== owner) return
+  await unlink(path).catch(() => undefined)
 }
