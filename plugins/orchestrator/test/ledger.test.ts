@@ -117,6 +117,75 @@ describe("台账存储", () => {
     }
   })
 
+  test("数据目录不存在时 update 会创建它", async () => {
+    const parent = await mkdtemp(join(tmpdir(), "orchestrator-ledger-"))
+    try {
+      const directory = join(parent, "nested", "data")
+      const store = Ledger.createStore(directory)
+      await store.update((file) => {
+        file.tasks.t1 = task("t1")
+      })
+      expect((await Ledger.createStore(directory).read()).tasks.t1?.title).toBe("任务 t1")
+    } finally {
+      await rm(parent, { recursive: true, force: true })
+    }
+  })
+
+  test("两个实例并发 update，20 个 key 全部落盘", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "orchestrator-ledger-"))
+    try {
+      const a = Ledger.createStore(directory)
+      const b = Ledger.createStore(directory)
+      const writes = (store: Ledger.Store, prefix: string) =>
+        Array.from({ length: 10 }, (_, index) =>
+          store.update((file) => {
+            file.tasks[`${prefix}${index}`] = task(`${prefix}${index}`)
+          }),
+        )
+      await Promise.all([...writes(a, "a"), ...writes(b, "b")])
+      const keys = [...Array.from({ length: 10 }, (_, index) => `a${index}`), ...Array.from({ length: 10 }, (_, index) => `b${index}`)]
+      expect(Object.keys((await Ledger.createStore(directory).read()).tasks).sort()).toEqual(keys.sort())
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test("旧快照 update 不抹掉另一个实例的写入", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "orchestrator-ledger-"))
+    try {
+      const a = Ledger.createStore(directory)
+      const b = Ledger.createStore(directory)
+      expect((await a.read()).tasks.t2).toBeUndefined()
+      await b.update((file) => {
+        file.tasks.t2 = task("t2")
+      })
+      await a.update((file) => {
+        file.tasks.t1 = task("t1")
+      })
+      const reloaded = await Ledger.createStore(directory).read()
+      expect(reloaded.tasks.t2?.title).toBe("任务 t2")
+      expect(reloaded.tasks.t1?.title).toBe("任务 t1")
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test("陈旧锁被回收后仍能写入", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "orchestrator-ledger-"))
+    try {
+      const lockPath = join(directory, "ledger.json.lock")
+      await writeFile(lockPath, JSON.stringify({ pid: 999999, at: new Date(Date.now() - 40_000).toISOString() }))
+      const store = Ledger.createStore(directory)
+      await store.update((file) => {
+        file.tasks.t1 = task("t1")
+      })
+      expect((await store.read()).tasks.t1?.title).toBe("任务 t1")
+      expect(await Bun.file(lockPath).exists()).toBe(false)
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
   test("损坏的台账直接报错，不重建覆盖", async () => {
     const directory = await mkdtemp(join(tmpdir(), "orchestrator-ledger-"))
     try {
