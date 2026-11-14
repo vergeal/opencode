@@ -2,6 +2,7 @@ import { Knowledge } from "@opencode/schema/knowledge"
 import { Project } from "@opencode/schema/project"
 import { Schema } from "effect"
 import { HttpApiEndpoint, HttpApiGroup, HttpApiSchema, OpenApi } from "effect/http-api"
+import { InvalidRequestError } from "../errors.js"
 
 const root = "/api/experimental/knowledge"
 const EXPERIMENTAL = "Experimental: may change without compatibility guarantees."
@@ -79,6 +80,7 @@ export const KnowledgeGroup = HttpApiGroup.make("server.knowledge")
     HttpApiEndpoint.put("knowledge.assign", `${root}/assigned/:projectID/:libraryID`, {
       params: assignedParams,
       success: HttpApiSchema.NoContent,
+      error: [InvalidRequestError],
     })
       .annotateMerge(
       annotations(
@@ -92,6 +94,7 @@ export const KnowledgeGroup = HttpApiGroup.make("server.knowledge")
     HttpApiEndpoint.delete("knowledge.unassign", `${root}/assigned/:projectID/:libraryID`, {
       params: assignedParams,
       success: HttpApiSchema.NoContent,
+      error: [InvalidRequestError],
     })
       .annotateMerge(
       annotations(

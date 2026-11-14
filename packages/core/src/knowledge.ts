@@ -1,7 +1,9 @@
 export * as Knowledge from "./knowledge.js"
 
 import { and, eq, inArray } from "drizzle-orm"
-import { Context, DateTime, Effect, Layer, Option, Schema } from "effect"
+import { Cause, Context, DateTime, Effect, Layer, Option, Schema } from "effect"
+import { isSqlError } from "effect/sql/SqlError"
+import type { EffectDrizzleQueryError } from "drizzle-orm/effect-core/errors"
 import { Node, makeGlobalNode } from "@opencode/util/effect/app-node"
 import type { LayerNode } from "@opencode/util/effect/layer-node"
 import { Knowledge as KnowledgeSchema } from "@opencode/schema/knowledge"
@@ -32,13 +34,28 @@ const DEFAULT_LIMIT = 6
 
 const MAX_CANDIDATES = 2_000
 
+/** A Project cannot search a library the server has no copy of. */
+export class LibraryNotFoundError extends Schema.TaggedError<LibraryNotFoundError>()(
+  "Knowledge.LibraryNotFoundError",
+  {
+    libraryID: Schema.String,
+    message: Schema.String,
+  },
+) {}
+
 export interface Interface {
   readonly list: () => Effect.Effect<ReadonlyArray<KnowledgeSchema.Info>>
   /** Stores the desktop copy of a library and rebuilds its deterministic index. */
   readonly sync: (libraryID: string, input: KnowledgeSchema.SyncInput) => Effect.Effect<KnowledgeSchema.Info>
   readonly remove: (libraryID: string) => Effect.Effect<void>
-  readonly assign: (input: { projectID: Project.ID; libraryID: string }) => Effect.Effect<void>
-  readonly unassign: (input: { projectID: Project.ID; libraryID: string }) => Effect.Effect<void>
+  readonly assign: (input: {
+    projectID: Project.ID
+    libraryID: string
+  }) => Effect.Effect<void, LibraryNotFoundError>
+  readonly unassign: (input: {
+    projectID: Project.ID
+    libraryID: string
+  }) => Effect.Effect<void, LibraryNotFoundError>
   readonly assigned: (projectID: Project.ID) => Effect.Effect<ReadonlyArray<KnowledgeSchema.Info>>
   /** Chunks from the libraries assigned to one Project, best match first. */
   readonly search: (input: {
@@ -156,6 +173,9 @@ const layer = Layer.effect(
           }),
         ),
       )
+
+    const missing = (libraryID: string) =>
+      Effect.fail(new LibraryNotFoundError({ libraryID, message: `Knowledge library not found: ${libraryID}` }))
 
     /** A free text model first; a paid default only when nothing free is enabled. */
     const summaryModel = Effect.fn("Knowledge.summaryModel")(function* (project: Project.Info) {
@@ -398,7 +418,21 @@ const layer = Layer.effect(
           .values({ project_id: input.projectID, library_id: input.libraryID, time_created: Date.now() })
           .onConflictDoNothing()
           .run()
-          .pipe(Effect.orDie)
+          .pipe(
+            // project_knowledge references the Project and the library; a library the desktop app never synced is the
+            // caller's mistake, while a missing Project is a server-side inconsistency.
+            Effect.catchIf(isForeignKeyViolation, () =>
+              lookup(input.libraryID).pipe(
+                Effect.flatMap(
+                  Option.match({
+                    onNone: () => missing(input.libraryID),
+                    onSome: () => Effect.die(new Error(`Project ${input.projectID} is missing`)),
+                  }),
+                ),
+              ),
+            ),
+            Effect.catchTag("EffectDrizzleQueryError", (error) => Effect.die(error)),
+          )
 
         // A library synced before anyone assigned it has chunks but no summary; assignment adds that context.
         const row = yield* lookup(input.libraryID)
@@ -406,6 +440,8 @@ const layer = Layer.effect(
           yield* index(input.libraryID).pipe(Effect.forkIn(scope), Effect.asVoid)
       }),
       unassign: Effect.fn("Knowledge.unassign")(function* (input) {
+        const row = yield* lookup(input.libraryID)
+        if (Option.isNone(row)) return yield* missing(input.libraryID)
         yield* db
           .delete(ProjectKnowledgeTable)
           .where(
@@ -496,3 +532,10 @@ export const node: LayerNode.Provider<Service, never, typeof Node.tags.values.gl
   layer,
   deps: [Database.node, Project.node, Session.node, LocationServiceMap.node],
 })
+
+// A missing library only reaches us as SQLite's foreign key failure, which also covers a missing Project.
+const isForeignKeyViolation = (error: EffectDrizzleQueryError) => {
+  const cause = Cause.isCause(error.cause) ? Cause.squash(error.cause) : error.cause
+  if (!isSqlError(cause) || cause.reason._tag !== "ConstraintError") return false
+  return cause.reason.cause instanceof Error && cause.reason.cause.message.includes("FOREIGN KEY")
+}
