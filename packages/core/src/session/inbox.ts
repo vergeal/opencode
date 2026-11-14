@@ -249,14 +249,16 @@ export const make = Effect.fn("SessionInbox.make")(function* () {
     )
   })
 
-  const cancel = Effect.fn("SessionInbox.cancel")((input: PendingRef) =>
-    publishMutation(
-      input,
-      bus.publish(SessionEvent.InboxCancelled, {
-        sessionID: input.sessionID,
-        inboxID: input.id,
-      }),
-    ),
+  const cancel = Effect.fn("SessionInbox.cancel")(
+    (input: PendingRef & { readonly by?: SessionSchema.ID }) =>
+      publishMutation(
+        input,
+        bus.publish(SessionEvent.InboxCancelled, {
+          sessionID: input.sessionID,
+          inboxID: input.id,
+          by: input.by,
+        }),
+      ),
   )
 
   const steer = Effect.fn("SessionInbox.steer")((input: PendingRef) =>

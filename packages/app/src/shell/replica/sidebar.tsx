@@ -32,12 +32,14 @@ import { sessionTreeIDs } from "@/session/requests/session-request-tree"
 import { useTabs } from "@/shell/tabs/tabs"
 import { useLayout } from "@/shell/state/layout"
 import { createSessionInbox, type InboxEntry, type InboxStatus } from "@/shell/titlebar/inbox-model"
-import { deliveryFrom, playDeliveryFlight } from "./envelope-flight"
+import { deliveryFrom, playDeliveryFlight, playUndoDrop } from "./envelope-flight"
 import { InboxNav } from "./sidebar-inbox"
 import { ExploreNav } from "./sidebar-explore"
 import { KnowledgeNav } from "./sidebar-knowledge"
 import { ScheduledNav } from "./sidebar-scheduled"
 import { HEADER, LIST, PRIMARY, ROW, SECTION } from "./sidebar-tokens"
+import { createdFrom, creatorName, playBranchGrowth } from "./session-branch"
+import { replicaRow } from "./overlay"
 
 const DOT: Record<Exclude<InboxStatus, "ready" | "working">, string> = {
   approval: "bg-[var(--v2-state-fg-warning)]",
@@ -58,6 +60,13 @@ const STATUS_LABEL = {
 const PINNED_GROUP = "replica-sidebar-pinned"
 
 const RECENT_GROUP = "replica-sidebar-recent"
+
+/**
+ * Sessions opened in this window. `time.viewed` cannot answer "has this been opened": the server records a view only
+ * once the session has a completed execution newer than the last viewed one, so a freshly created session stays
+ * unviewed after it is opened. Clearing on reload is harmless because the creation chip only plays on the event.
+ */
+const openedSessions = new Set<string>()
 
 /** The order a drag leaves the recent list in; pinned order lives in the pin list itself. */
 const SidebarSessionOrder = Persistence.struct({
@@ -176,6 +185,25 @@ function SessionRow(props: {
   let label!: HTMLSpanElement
 
   const project = () => props.entry().ctx.projects.forSession(props.entry().session)
+
+  const creator = () => createdFrom(props.entry().session.metadata)
+
+  // Keeping the origin on the row itself leaves it readable after the chip has faded, even across reloads.
+  const createdByTitle = () => {
+    const by = creator()
+
+    if (!by) return undefined
+
+    const name = creatorName(props.entry().ctx.data.session.get(by)?.title, by)
+
+    if (!name) return undefined
+
+    return language.t("replica.session.createdBy", { title: name })
+  }
+
+  createEffect(() => {
+    if (props.active()) openedSessions.add(props.entry().session.id)
+  })
 
   const openProjectSettings = () => {
     const current = project()
@@ -339,6 +367,7 @@ function SessionRow(props: {
         data-session-id={props.entry().session.id}
         data-state={props.active() ? "pressed" : undefined}
         data-renaming={renaming() ? "" : undefined}
+        title={createdByTitle()}
         role="button"
         tabindex={renaming() ? undefined : 0}
         class={`${ROW} outline-none focus-visible:[box-shadow:inset_0_0_0_1px_var(--color-icon-secondary)]`}
@@ -468,6 +497,79 @@ function ConversationNav() {
           // The recipient row arrives with this event, so measure the rows after the list has rendered.
           requestAnimationFrame(() =>
             requestAnimationFrame(() => playDeliveryFlight(server, from, event.data.sessionID)),
+          )
+        }),
+      )
+
+      // A created session grows out of the row that made it. The event arrives before the new row renders, so the
+      // two frames below let the list settle and give the branch somewhere to land.
+      onCleanup(
+        ctx.data.on("session.created", (event) => {
+          const by = createdFrom(event.data.metadata)
+
+          // A session the person made themselves has no creator to name, so it simply appears.
+          if (!by) return
+
+          const target = event.data.sessionID
+
+          // A row that is already open carries its own activity; a creation cue would read as stale news.
+          if (openedSessions.has(target)) return
+
+          // The list paints the new row from a later refresh than this event, so it can take seconds to
+          // arrive. Poll for it: drawing into a row that does not exist yet paints nothing at all.
+          const started = performance.now()
+          const draw = () => {
+            if (replicaRow(server, target)) {
+              playBranchGrowth(server, by, target)
+
+              return
+            }
+
+            if (performance.now() - started > 10000) return
+
+            setTimeout(draw, 50)
+          }
+
+          draw()
+        }),
+      )
+    }
+  })
+
+  // A withdrawal has no flight. The target row stamps itself and names the sender at its trailing edge. One undo
+  // can cancel several items; the count aggregates them so the stamp plays once.
+  const voidBatches = new Map<string, { count: number; timer: ReturnType<typeof setTimeout> }>()
+
+  createEffect(() => {
+    onCleanup(() => {
+      for (const batch of voidBatches.values()) clearTimeout(batch.timer)
+      voidBatches.clear()
+    })
+
+    for (const conn of global.servers.list()) {
+      const server = ServerConnection.key(conn)
+      const ctx = global.serverCtx(server)
+
+      if (!ctx) continue
+
+      onCleanup(
+        ctx.data.on("session.inbox.cancelled", (event) => {
+          const by = event.data.by
+
+          // A local removal in the target is not a cross-session withdrawal, so nothing is stamped.
+          if (!by) return
+
+          const target = event.data.sessionID
+          const key = `${server}|${target}|${by}`
+          const batch = voidBatches.get(key)
+          const count = (batch?.count ?? 0) + 1
+
+          if (batch) clearTimeout(batch.timer)
+          const timer = setTimeout(() => voidBatches.delete(key), 1500)
+          voidBatches.set(key, { count, timer })
+
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => playUndoDrop(server, target, by, count)),
           )
         }),
       )

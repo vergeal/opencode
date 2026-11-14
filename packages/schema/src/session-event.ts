@@ -244,7 +244,11 @@ export type InboxEnqueued = typeof InboxEnqueued.Type
 export const InboxCancelled = Event.durable({
   type: "session.inbox.cancelled",
   ...options,
-  schema: InboxRef,
+  schema: {
+    ...InboxRef,
+    /** The session that asked for the cancellation; absent when the target removed it locally. */
+    by: SessionID.pipe(optional),
+  },
 })
 export type InboxCancelled = typeof InboxCancelled.Type
 

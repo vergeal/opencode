@@ -543,10 +543,12 @@ export const SessionHandler = HttpApiBuilder.group(Api, "server.session", (handl
       .handle(
         "session.inbox.cancel",
         Effect.fn(function* (ctx) {
-          yield* session.cancelInbox({ sessionID: ctx.params.sessionID, inboxID: ctx.params.inboxID }).pipe(
-            Effect.catchTag("Session.NotFoundError", missingSession),
-            Effect.catchTag("Session.InboxConflictError", () => Effect.void),
-          )
+          yield* session
+            .cancelInbox({ sessionID: ctx.params.sessionID, inboxID: ctx.params.inboxID, by: ctx.query.by })
+            .pipe(
+              Effect.catchTag("Session.NotFoundError", missingSession),
+              Effect.catchTag("Session.InboxConflictError", () => Effect.void),
+            )
           return HttpApiSchema.NoContent.make()
         }),
       )

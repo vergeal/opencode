@@ -1801,6 +1801,7 @@ export function make(options: ClientOptions) {
             {
               method: "DELETE",
               path: `/api/session/${encodeURIComponent(input.sessionID)}/inbox/${encodeURIComponent(input.inboxID)}`,
+              query: { by: input["by"] },
               successStatus: 204,
               declaredStatuses: [400, 401, 404],
               empty: true,

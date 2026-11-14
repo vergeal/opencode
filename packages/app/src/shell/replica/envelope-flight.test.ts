@@ -10,6 +10,15 @@ test("reads the sending session from a delivery envelope", () => {
   ).toBe("ses_sender")
 })
 
+test("reads the sending session from a redirect envelope", () => {
+  expect(
+    deliveryFrom({
+      delivery: { kind: "session.redirect", from: { sessionID: "ses_sender" }, to: "ses_target" },
+      displayText: "",
+    }),
+  ).toBe("ses_sender")
+})
+
 test("ignores metadata that is not a cross-session delivery", () => {
   expect(deliveryFrom(undefined)).toBeUndefined()
   expect(deliveryFrom({})).toBeUndefined()

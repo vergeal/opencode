@@ -1200,6 +1200,7 @@ export const dict = {
   "replica.section.projects": "项目",
   "replica.pin": "置顶",
   "replica.unpin": "取消置顶",
+  "replica.session.createdBy": "由 {{title}} 创建",
   "replica.project.empty": "还没有会话",
   "replica.titlebar.view": "视图选项",
   "replica.titlebar.back": "后退",

@@ -116,7 +116,12 @@ export {
   SkillNotFoundError,
   SyntheticConflictError,
 }
-type InboxItemRef = { readonly sessionID: SessionSchema.ID; readonly inboxID: SessionMessage.ID }
+type InboxItemRef = {
+  readonly sessionID: SessionSchema.ID
+  readonly inboxID: SessionMessage.ID
+  /** The session that requested the cancellation; absent when the target removed the item locally. */
+  readonly by?: SessionSchema.ID
+}
 
 export { DestinationNotFoundError, DestinationNotDirectoryError, DestinationUnavailableError }
 export { TurnRangeError }
@@ -466,7 +471,7 @@ const layer = Layer.effect(
         if (!(yield* mediaBlob(session))) return yield* result.inbox(sessionID)
         return yield* SessionInbox.listWithRefs(db, sessionID)
       }),
-      cancelInbox: (input) => sessions.forSession(input.sessionID).cancelInbox(input.inboxID),
+      cancelInbox: (input) => sessions.forSession(input.sessionID).cancelInbox(input.inboxID, input.by),
       steerInbox: (input) => sessions.forSession(input.sessionID).steerInbox(input.inboxID),
       queueInbox: (input) => sessions.forSession(input.sessionID).queueInbox(input.inboxID),
       log: (input) =>

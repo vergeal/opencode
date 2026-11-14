@@ -402,6 +402,7 @@ export const dict = {
   "sidebar.help": "說明",
   "sidebar.project.recentSessions": "最近工作階段",
   "sidebar.project.clearNotifications": "清除通知",
+  "replica.session.createdBy": "由 {{title}} 建立",
 
   "settings.section.server": "伺服器",
   "settings.tab.shortcuts": "快速鍵",

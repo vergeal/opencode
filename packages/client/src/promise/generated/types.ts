@@ -1373,7 +1373,7 @@ export type SessionInboxCancelled = {
   type: "session.inbox.cancelled"
   durable: { aggregateID: string; seq: EventSeq; version: 1 }
   location?: LocationRef
-  data: { sessionID: SessionID; inboxID: SessionMessageID }
+  data: { sessionID: SessionID; inboxID: SessionMessageID; by?: SessionID }
 }
 
 export type SessionInboxDeliveryChanged = {
@@ -3666,7 +3666,11 @@ export type SessionInboxListInput = { readonly sessionID: string }
 
 export type SessionInboxListOutput = { data: Array<SessionInboxInfo> }["data"]
 
-export type SessionInboxCancelInput = { readonly sessionID: string; readonly inboxID: string }
+export type SessionInboxCancelInput = {
+  readonly sessionID: string
+  readonly inboxID: string
+  readonly by?: string | undefined
+}
 
 export type SessionInboxCancelOutput = void
 

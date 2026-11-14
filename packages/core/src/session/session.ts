@@ -142,7 +142,8 @@ export const make = Effect.fn("Session.make")(function* () {
     return yield* admission.list(sessionID)
   })
   const cancelInbox = Effect.fn("Session.cancelInbox")(
-    (sessionID: SessionSchema.ID, inboxID: SessionMessage.ID) => mutatePending(sessionID, inboxID, admission.cancel),
+    (sessionID: SessionSchema.ID, inboxID: SessionMessage.ID, by?: SessionSchema.ID) =>
+      mutatePending(sessionID, inboxID, (input) => admission.cancel({ ...input, by })),
     Effect.uninterruptible,
   )
   const steerInbox = Effect.fn("Session.steerInbox")(function* (

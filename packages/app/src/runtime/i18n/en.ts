@@ -1614,6 +1614,7 @@ export const dict = {
   "replica.section.projects": "Projects",
   "replica.pin": "Pin",
   "replica.unpin": "Unpin",
+  "replica.session.createdBy": "Created by {{title}}",
   "replica.project.empty": "No conversations yet",
   "replica.titlebar.view": "View options",
   "replica.titlebar.back": "Back",

@@ -149,7 +149,7 @@ export const Plugin = {
                 pending,
                 from: from.id,
                 ids: input.ids,
-                cancel: (inboxID) => ctx.session.inbox.cancel({ sessionID: target.id, inboxID }),
+                cancel: (inboxID) => ctx.session.inbox.cancel({ sessionID: target.id, inboxID, by: from.id }),
               })
 
               return {

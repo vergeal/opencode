@@ -4213,6 +4213,14 @@
               "$ref": "#/components/schemas/Session.Message.ID"
             },
             "required": true
+          },
+          {
+            "name": "by",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/Session.ID"
+            },
+            "required": false
           }
         ],
         "security": [],
@@ -4251,7 +4259,7 @@
             }
           }
         },
-        "description": "Cancel an inbox item that has not yet been delivered. Unavailable items are a no-op.",
+        "description": "Cancel an inbox item that has not yet been delivered. Unavailable items are a no-op. Pass `by` with the session that requested the cancellation so the target can attribute it.",
         "summary": "Cancel inbox input"
       },
       "patch": {
@@ -29595,6 +29603,9 @@
               },
               "inboxID": {
                 "$ref": "#/components/schemas/Session.Message.ID"
+              },
+              "by": {
+                "$ref": "#/components/schemas/Session.ID"
               }
             },
             "required": ["sessionID", "inboxID"],
