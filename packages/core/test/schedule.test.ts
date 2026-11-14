@@ -48,6 +48,7 @@ import { imagePassthrough } from "./lib/image"
 
 const enabledDirectory = "/enabled"
 const disabledDirectory = "/disabled"
+const defaultDirectory = "/default"
 const toggleDirectory = "/toggle"
 const missingDirectory = "/missing"
 
@@ -88,8 +89,15 @@ const disabledEntries = [
     }),
   }),
 ]
+const defaultEntries = [
+  new Document({
+    type: "document",
+    info: new Info({ timezone: "UTC" }),
+  }),
+]
 const enabled = Config.testLayer(enabledEntries)
 const disabled = Config.testLayer(disabledEntries)
+const unconfigured = Config.testLayer(defaultEntries)
 /** A location whose flag the test turns on, counting every config read. */
 const toggle = { on: false, reads: 0 }
 const readToggle = () => {
@@ -123,6 +131,7 @@ const testEnvironment = Layer.effect(
     const memory = Environment.makeMemoryDriver()
     const files = Environment.makeFiles(memory)
     yield* files.mkdir(enabledDirectory).pipe(Effect.orDie)
+    yield* files.mkdir(defaultDirectory).pipe(Effect.orDie)
     yield* files.mkdir(toggleDirectory).pipe(Effect.orDie)
     const spawner = ChildProcessSpawner.make((command) =>
       Effect.gen(function* () {
@@ -234,7 +243,9 @@ const locations = makeGlobalNode({
               ? enabled
               : ref.directory === toggleDirectory
                 ? toggled
-                : disabled,
+                : ref.directory === defaultDirectory
+                  ? unconfigured
+                  : disabled,
             configureAgent.pipe(
               Layer.provideMerge(
                 LayerNode.compile(
@@ -556,9 +567,30 @@ describe("Schedule", () => {
     }),
   )
 
+  it.effect("enables schedules when experimental is not configured", () =>
+    Effect.gen(function* () {
+      const schedules = yield* setup(defaultDirectory)
+      expect(yield* schedules.enabled(sessionID)).toBe(true)
+      const schedule = yield* schedules.create({
+        sessionID,
+        when: { type: "in", in: "1 minute" },
+        action: { type: "prompt", prompt: "poll" },
+      })
+      expect(schedule.status).toBe("active")
+    }),
+  )
+
+  it.effect("enables schedules when experimental.schedules is true", () =>
+    Effect.gen(function* () {
+      const schedules = yield* setup(enabledDirectory)
+      expect(yield* schedules.enabled(sessionID)).toBe(true)
+    }),
+  )
+
   it.effect("does nothing when experimental.schedules is off", () =>
     Effect.gen(function* () {
       const schedules = yield* setup(disabledDirectory)
+      expect(yield* schedules.enabled(sessionID)).toBe(false)
       expect(
         yield* Effect.flip(
           schedules.create({
