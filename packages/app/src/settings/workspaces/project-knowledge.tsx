@@ -9,6 +9,7 @@ import { useServerSDK } from "@/runtime/server/client"
 import { showToast } from "@/shell/notifications/toast"
 import { SettingsRow } from "@/settings/row"
 import { useKnowledgeLibraries, type KnowledgeLibrary } from "@/knowledge/store"
+import { linkKnowledgeLibrary } from "@/knowledge/link"
 import { syncKnowledgeLibrary } from "@/knowledge/sync"
 
 /**
@@ -75,25 +76,16 @@ export const ProjectKnowledge: Component<{ projectID: string }> = (props) => {
 
   const toggle = useMutation(() => ({
     mutationFn: async (input: { library: KnowledgeLibrary; enabled: boolean }) => {
-      const api = sdk.api
-
       if (!input.enabled) {
-        await api.experimental["server.knowledge"].unassign({ projectID: props.projectID, libraryID: input.library.id })
+        await sdk.api.experimental["server.knowledge"].unassign({
+          projectID: props.projectID,
+          libraryID: input.library.id,
+        })
 
         return
       }
 
-      await api.experimental["server.knowledge"].assign({ projectID: props.projectID, libraryID: input.library.id })
-
-      try {
-        await syncKnowledgeLibrary({ api, platform, library: input.library })
-      } catch (error) {
-        // A library without its text is not worth searching, so a failed first copy leaves nothing linked.
-        await api.experimental["server.knowledge"]
-          .unassign({ projectID: props.projectID, libraryID: input.library.id })
-          .catch(() => undefined)
-        throw error
-      }
+      await linkKnowledgeLibrary({ api: sdk.api, platform, library: input.library, projectID: props.projectID })
     },
     onSuccess: () => void queried.refetch(),
     onError: failed(language.t("project.settings.knowledge.linkFailed")),
