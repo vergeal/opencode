@@ -8,4 +8,5 @@ These packages are not bundled with OpenCode or loaded automatically. Do not add
 | ---------------------------- | ------------------------- | ------------ |
 | [Webwright](webwright/README.md) | `plugins/webwright` | `.ocplugin` |
 | [DBRO](dbro/README.md)       | `plugins/dbro`   | `.ocplugin` |
+| [Orchestrator](orchestrator/README.md) | `plugins/orchestrator` | `.ocplugin` |
 | [Figma](figma/README.md)     | `plugins/figma`  | Git package  |

@@ -1,0 +1,43 @@
+{
+  "apiVersion": 1,
+  "id": "opencode.orchestrator",
+  "version": "0.1.0",
+  "requires": {
+    "opencode": "^2.2.5"
+  },
+  "entry": {
+    "server": "server/main"
+  },
+  "externals": ["effect", "@opencode/plugin", "@opencode/schema"],
+  "display": {
+    "name": "Orchestrator",
+    "description": "把任务图变成自动推进的状态机：记台账、按依赖派发、收回结构化结果、跑机械核对，不做任何判断。",
+    "category": "automation",
+    "tools": ["orchestrator.*"],
+    "icon": "<svg viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"5.5\" cy=\"6\" r=\"2.5\" stroke=\"currentColor\" stroke-width=\"1.5\"/><circle cx=\"18.5\" cy=\"6\" r=\"2.5\" stroke=\"currentColor\" stroke-width=\"1.5\"/><circle cx=\"12\" cy=\"18\" r=\"2.5\" stroke=\"currentColor\" stroke-width=\"1.5\"/><path d=\"M8 6h8M6.8 8.2 10.4 15.6M17.2 8.2 13.6 15.6\" stroke=\"currentColor\" stroke-width=\"1.5\"/></svg>",
+    "skills": [
+      {
+        "id": "orchestrator",
+        "name": "Orchestrator",
+        "description": "用 `orchestrator.*` 工具驱动批次任务：plan 提交任务图、approve 放行、status 看异常、resolve 裁决。第一次编排前先加载本技能。"
+      }
+    ]
+  },
+  "skills": [
+    {
+      "id": "orchestrator",
+      "name": "Orchestrator",
+      "description": "用 `orchestrator.*` 工具驱动批次任务：plan 提交任务图、approve 放行、status 看异常、resolve 裁决。第一次编排前先加载本技能。",
+      "path": "skills/orchestrator/SKILL.md"
+    }
+  ],
+  "configuration": {
+    "title": "Orchestrator 设置",
+    "properties": {
+      "idleGraceMs": { "type": "number", "default": 60000 },
+      "timeoutMs": { "type": "number", "default": 7200000 },
+      "verifyTimeoutMs": { "type": "number", "default": 600000 },
+      "notifySessionID": { "type": "string", "default": "" }
+    }
+  }
+}
