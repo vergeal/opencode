@@ -2,11 +2,12 @@ import { describe, expect, it as plain } from "bun:test"
 import { Project } from "@opencode/core/project"
 import { AbsolutePath } from "@opencode/core/schema"
 import { Session } from "@opencode/core/session"
+import { SessionSchema } from "@opencode/core/session/schema"
 import { ForkEmptyError, MessageNotFoundError, NotFoundError } from "@opencode/core/session/error"
 import { parseDivergence, parseStatusPorcelain } from "@opencode/core/git"
 import { ForkTool } from "@opencode/core/tool/plugin/fork"
 import { RedirectTool } from "@opencode/core/tool/plugin/redirect"
-import { SessionsTool, sessionStatus } from "@opencode/core/tool/plugin/sessions"
+import { SessionsTool } from "@opencode/core/tool/plugin/sessions"
 import { UndoTool, planUndo, run as runUndo } from "@opencode/core/tool/plugin/undo"
 import { Tool } from "@opencode/core/tool"
 import { Money } from "@opencode/schema/money"
@@ -91,14 +92,23 @@ describe("worktree status parsing", () => {
 })
 
 describe("session time", () => {
-  plain("is running only while busy exists", () => {
+  const time = (busy?: number, idle?: number) => ({
+    created: DateTime.makeUnsafe(0),
+    updated: DateTime.makeUnsafe(0),
+    ...(busy === undefined ? {} : { busy: DateTime.makeUnsafe(busy) }),
+    ...(idle === undefined ? {} : { idle: DateTime.makeUnsafe(idle) }),
+  })
+
+  plain("is running only while the last start is newer than the last end", () => {
     // Neither timestamp: the session has never run.
-    expect(sessionStatus({})).toBe("idle")
+    expect(SessionSchema.sessionStatus(time())).toBe("idle")
     // Only idle: a completed run.
-    expect(sessionStatus({ idle: 5 })).toBe("idle")
-    // Busy newer than idle, and busy with no idle at all: both are live.
-    expect(sessionStatus({ idle: 4, busy: 9 })).toBe("running")
-    expect(sessionStatus({ busy: 9 })).toBe("running")
+    expect(SessionSchema.sessionStatus(time(undefined, 5))).toBe("idle")
+    // Only busy: a live run that has not ended yet.
+    expect(SessionSchema.sessionStatus(time(9))).toBe("running")
+    // A start after the last end is live; a start the end already covers is over.
+    expect(SessionSchema.sessionStatus(time(9, 4))).toBe("running")
+    expect(SessionSchema.sessionStatus(time(4, 9))).toBe("idle")
   })
 })
 
