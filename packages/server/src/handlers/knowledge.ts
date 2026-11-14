@@ -1,6 +1,12 @@
 import { Knowledge } from "@opencode/core/knowledge"
+import { InvalidRequestError } from "@opencode/protocol/errors"
 import { HttpApiBuilder } from "effect/http-api"
+import { Effect } from "effect"
 import { Api } from "../api"
+
+// A Project can only search a library the server has a copy of; the desktop app's stale assignment is a bad request.
+const missingLibrary = (error: Knowledge.LibraryNotFoundError) =>
+  Effect.fail(new InvalidRequestError({ message: error.message, kind: "knowledge" }))
 
 export const KnowledgeHandler = HttpApiBuilder.group(Api, "server.knowledge", (handlers) =>
   handlers
@@ -16,12 +22,16 @@ export const KnowledgeHandler = HttpApiBuilder.group(Api, "server.knowledge", (h
     )
     .handle("knowledge.assign", (ctx) =>
       Knowledge.Service.use((knowledge) =>
-        knowledge.assign({ projectID: ctx.params.projectID, libraryID: ctx.params.libraryID }),
+        knowledge
+          .assign({ projectID: ctx.params.projectID, libraryID: ctx.params.libraryID })
+          .pipe(Effect.catchTag("Knowledge.LibraryNotFoundError", missingLibrary)),
       ),
     )
     .handle("knowledge.unassign", (ctx) =>
       Knowledge.Service.use((knowledge) =>
-        knowledge.unassign({ projectID: ctx.params.projectID, libraryID: ctx.params.libraryID }),
+        knowledge
+          .unassign({ projectID: ctx.params.projectID, libraryID: ctx.params.libraryID })
+          .pipe(Effect.catchTag("Knowledge.LibraryNotFoundError", missingLibrary)),
       ),
     ),
 )
