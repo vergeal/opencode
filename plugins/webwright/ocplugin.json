@@ -1,7 +1,7 @@
 {
   "apiVersion": 1,
-  "id": "opencode.webwright",
-  "version": "2.2.5",
+  "id": "changhong.webwright",
+  "version": "2.2.6",
   "requires": {
     "opencode": "^2.2.5"
   },

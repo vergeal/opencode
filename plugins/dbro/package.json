@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@opencode/plugin-dbro",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Read-only database queries for 达梦 8, MySQL and PostgreSQL through one dialect-aware tool namespace",
   "type": "module",
   "license": "MIT",

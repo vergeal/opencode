@@ -1,4 +1,4 @@
-# `opencode.orchestrator` 实现决策
+# `changhong.orchestrator` 实现决策
 
 对应 `orchestrator-plugin-spec.md` v2。这里只写 spec 没写死、实现时必须定的东西；行为以 spec 为准。
 

@@ -5,7 +5,7 @@ import matter from "gray-matter"
 import source from "../skills-source.json" with { type: "json" }
 
 export default Plugin.define({
-  id: "opencode.figma",
+  id: "changhong.figma",
   async setup(ctx) {
     await ctx.mcp.transform((editor) => {
       if (editor.get("figma")) return

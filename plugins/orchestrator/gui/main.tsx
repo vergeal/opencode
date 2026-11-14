@@ -11,7 +11,7 @@ import { Ledger } from "../src/ledger.js"
 import { Board } from "./ipc.js"
 
 /** The server's ledger (`ctx.paths.data`), read here because the board is a window over the same file. */
-const LedgerPath = join(homedir(), ".opencode", "plugin-data", "opencode.orchestrator", "ledger.json")
+const LedgerPath = join(homedir(), ".opencode", "plugin-data", "changhong.orchestrator", "ledger.json")
 
 /** What a missing or unreadable ledger reads as. Nothing is written back, so the file stays the server's. */
 const Empty: Ledger.File = { version: 1, plans: {}, tasks: {}, anomalies: [] }
@@ -101,7 +101,8 @@ const main: Plugin.MainSetup = (ctx) => {
 }
 
 interface BoardViewProps {
-  readonly state: () => Contract.BoardState | undefined
+  /** The board Ipc client. Passed as an object, not a bare accessor: solid-js/h wraps zero-arg function props into getters. */
+  readonly board: { state: () => Contract.BoardState | undefined }
   readonly openSession: (sessionID: string) => void
 }
 
@@ -113,8 +114,8 @@ function BoardView(props: BoardViewProps) {
   const [selected, setSelected] = createSignal<string | null>(null)
   const [expanded, setExpanded] = createSignal<readonly string[]>([])
 
-  const plans = createMemo(() => props.state()?.plans ?? [])
-  const current = createMemo(() => props.state()?.current ?? null)
+  const plans = createMemo(() => props.board.state()?.plans ?? [])
+  const current = createMemo(() => props.board.state()?.current ?? null)
   // The newest batch is the one the projection carries tasks for; an older selection keeps its header only.
   const active = createMemo(() => {
     const chosen = selected()
@@ -330,7 +331,7 @@ const setup: Plugin.Setup = (ctx) => {
     list: () => tabs,
     render: (input) => (
       <BoardView
-        state={state}
+        board={board}
         openSession={(sessionID) => ctx.tabs.open({ server: input.session.server.id, id: sessionID }, { focus: true })}
       />
     ),

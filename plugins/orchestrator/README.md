@@ -1,4 +1,4 @@
-# opencode.orchestrator
+# changhong.orchestrator
 
 把一批任务变成一台自动推进的状态机：记台账、按依赖派发、收回结构化结果、跑机械核对。插件**不做判断**——拆任务、裁决冲突、失败归因、合入都留给 PM（agent）。
 
@@ -43,5 +43,5 @@ cd plugins/orchestrator
 bun test
 bun run typecheck
 bun run build   # dist/
-bun run pack    # ~/.ocplugins-local/opencode.orchestrator/<version>/
+bun run pack    # ~/.ocplugins-local/changhong.orchestrator/<version>/
 ```

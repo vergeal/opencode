@@ -10,7 +10,7 @@ import { Contract } from "../src/contract.js"
  * with `setSession` first.
  */
 export const Board = Ipc.define({
-  id: "opencode.orchestrator.board",
+  id: "changhong.orchestrator.board",
   state: Contract.BoardState,
   methods: {
     setSession: { input: Schema.String },

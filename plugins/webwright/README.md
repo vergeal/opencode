@@ -5,9 +5,9 @@ Playwright browser instead of an extension, so nothing has to be installed into 
 `browser` plugin keeps its own `browser.*` namespace for the desktop browser; this package never claims it.
 
 The bundle ships as one file:
-`~/.ocplugins-local/opencode.webwright/<version>/opencode.webwright-<version>.ocplugin`. It contains the server entry,
+`~/.ocplugins-local/changhong.webwright/<version>/changhong.webwright-<version>.ocplugin`. It contains the server entry,
 the `webwright` skill, and the Playwright driver under `assets/playwright-core`. Installing unpacks it into
-`~/.opencode/ocplugins/opencode.webwright/`; removing that directory uninstalls it.
+`~/.opencode/ocplugins/changhong.webwright/`; removing that directory uninstalls it.
 
 ## Browser selection
 
@@ -53,7 +53,7 @@ The source of truth for inputs, descriptions and outputs is `Browser.Operations`
 
 ```sh
 bun run build   # dist/server/main.js + assets/playwright-core + skills/
-bun run pack    # ~/.ocplugins-local/opencode.webwright/<version>/
+bun run pack    # ~/.ocplugins-local/changhong.webwright/<version>/
 ```
 
 `build` bundles only the plugin's own code. `effect` and `@opencode/*` stay external so the plugin shares the host's
@@ -66,5 +66,5 @@ writes a `manifest.json` there so the catalog never opens the archive. Set `OCPL
 ## Disable
 
 ```jsonc
-{ "plugins": ["-opencode.webwright"] }
+{ "plugins": ["-changhong.webwright"] }
 ```

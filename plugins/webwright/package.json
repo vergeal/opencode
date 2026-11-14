@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@opencode/plugin-webwright",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "Playwright-driven browser tools: open pages, click, fill forms and scrape content in a dedicated profile",
   "type": "module",
   "license": "MIT",

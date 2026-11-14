@@ -1,6 +1,6 @@
 {
   "apiVersion": 1,
-  "id": "opencode.figma",
+  "id": "changhong.figma",
   "version": "2.2.5",
   "requires": {
     "opencode": "^2.2.5"
