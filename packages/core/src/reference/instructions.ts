@@ -65,9 +65,12 @@ const layer = Layer.effect(
           .toSorted((a, b) => a.name.localeCompare(b.name))
         return Instructions.make<ReadonlyArray<typeof Summary.Type>>({
           key: Instructions.Key.make("core/reference-guidance"),
-          // L4: which reference directories are attached is replaceable availability state,
-          // restated whenever the reference list changes — §1's 变更状态声明.
-          layer: "L4",
+          // No turn layer: the attached reference directories are a catalog that changes when one is added,
+          // not supply recomputed per turn. Declaring L4 re-sent all 534 characters on every step — 1536
+          // times in one Session — because a declared turn layer is restated each request instead of
+          // settling through the ledger. Frozen into the baseline, a change becomes an L4 notice carrying
+          // only the diff.
+
           codec: Schema.toCodecJson(Schema.Array(Summary)),
           read: Effect.succeed(available.length === 0 ? Instructions.removed : available),
           render: {

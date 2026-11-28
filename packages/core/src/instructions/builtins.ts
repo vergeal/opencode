@@ -78,9 +78,11 @@ const layer = Layer.effect(
             }),
             Instructions.make({
               key: Instructions.Key.make("core/environment"),
-              // L5: environment facts (directory, platform) vary per location. That is the fast-changing
-              // material §1 assigns to L5, not something the frozen baseline owns.
-              layer: "L5",
+              // No turn layer. The directory, platform and scratch path do not change while a Session runs, so
+              // declaring L5 re-sent 422 characters on every one of 1536 steps. Frozen into the baseline, it
+              // reaches the request once; a location change becomes an L4 notice through the ledger, which is
+              // what `changed` below is for.
+
               codec: Schema.toCodecJson(Schema.String),
               read: Effect.sync(() =>
                 [
