@@ -17,8 +17,20 @@ export const toolIdentity = {
 export const toolDefinitions = (registry: Tool.Interface, permissions?: Permission.Ruleset) =>
   registry.snapshot(permissions).pipe(Effect.map((toolSet) => toolSet.definitions))
 
+/**
+ * Every Code Mode tool with the line the model would receive from `search`. The catalog itself no longer
+ * inlines signatures, so these tests read them from the inventory — the same source `search` answers from.
+ */
 export const codeModeListings = (catalog: CodeModeCatalog.Inventory) =>
-  CodeModeCatalog.summarize(catalog, { budget: Infinity }).namespaces.flatMap((namespace) => namespace.entries)
+  catalog.tools.flatMap((entry) =>
+    entry.type === "namespace"
+      ? entry.tools.flatMap((tool) =>
+          tool.type === "namespace"
+            ? []
+            : [{ path: `${entry.name}.${tool.name}`, line: `  - ${tool.signature}` }],
+        )
+      : [{ path: entry.name, line: `  - ${entry.signature}` }],
+  )
 
 export function waitForTool(registry: Tool.Interface, name: string, remaining = 1000): Effect.Effect<void, Error> {
   return Effect.gen(function* () {

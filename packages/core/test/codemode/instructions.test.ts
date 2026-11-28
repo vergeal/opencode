@@ -32,8 +32,10 @@ describe("CodeModeInstructions", () => {
       )
 
       const added = yield* readUpdate(CodeModeInstructions.make({ tools: [echo] }), initialized)
-      expect(added.text).toContain("New tools are available in addition to those previously listed:")
-      expect(added.text).toContain(echo.signature)
+      expect(added.text).toContain("New tool namespaces are available")
+      expect(added.text).toContain("- notes (1 tool)")
+      // The signature is the model's to fetch: the catalog names what exists.
+      expect(added.text).not.toContain(echo.signature)
 
       expect(yield* readUpdate(CodeModeInstructions.make({ tools: [] }), { values: added.values })).toMatchObject({
         text:
@@ -43,27 +45,28 @@ describe("CodeModeInstructions", () => {
     }),
   )
 
-  it.effect("renders the initial catalog, semantic deltas, and removal", () =>
+  it.effect("renders namespaces and semantic deltas without inlining signatures", () =>
     Effect.gen(function* () {
       const initialized = yield* readInitial(CodeModeInstructions.make({ tools: [echo] }))
-      expect(initialized.text).toContain(
-        "The tools listed below cannot be called directly: they only work as JavaScript inside the `execute` tool.",
-      )
-      expect(initialized.text).toContain("The catalog is complete.")
-      expect(initialized.text).toContain("is a native tool. Call it directly in the response")
+      expect(initialized.text).toContain("The catalog lists what exists, not how to call it.")
+      expect(initialized.text).toContain("is native: call it directly in the response")
       expect(initialized.text).toContain("## Code Mode tools (call only inside `execute`)")
-      expect(initialized.text).toContain(`  - ${echo.signature} // Echo text`)
+      expect(initialized.text).toContain("- notes (1 tool)")
+      expect(initialized.text).not.toContain(echo.signature)
+      expect(initialized.text).not.toContain("Echo text")
 
+      // A second namespace appearing is announced by its own line, not by every tool inside it.
       const added = yield* readUpdate(CodeModeInstructions.make({ tools: [echo, lookup] }), initialized)
       expect(added.text).toContain("The Code Mode tool catalog has changed.")
-      expect(added.text).toContain("New tools are available in addition to those previously listed:")
-      expect(added.text).toContain(`  - ${lookup.signature} // Look up an order`)
+      expect(added.text).toContain("New tool namespaces are available")
+      expect(added.text).toContain("- orders (1 tool)")
+      expect(added.text).not.toContain(lookup.signature)
       expect(added.text).not.toContain("## Code Mode tools (call only inside `execute`)")
 
       const removed = yield* readUpdate(CodeModeInstructions.make({ tools: [echo] }), { values: added.values })
       expect(removed.text).toBe(
         "The Code Mode tool catalog has changed.\n\n" +
-          "The following tools are no longer available and must not be called: tools.orders.lookup.",
+          "These tool namespaces are no longer available and must not be used: `orders`.",
       )
 
       expect(yield* readUpdate(CodeModeInstructions.make(), initialized)).toMatchObject({

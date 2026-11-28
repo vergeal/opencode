@@ -1,135 +1,81 @@
 export * as CodeModeInstructions from "./instructions.js"
 
-import { searchSignature, toolExpression } from "@aicraft/codemode"
+import { searchSignature } from "@aicraft/codemode"
 import { Effect, Schema } from "effect"
 import { Instructions } from "../instructions/index.js"
 import { CodeModeCatalog } from "./catalog.js"
 
-// prettier-ignore
-const prompt = (hasMoreTools: boolean) => `# Code Mode
-
-The tools listed below${hasMoreTools ? ", and \`search\`," : ""} cannot be called directly: they only work as JavaScript inside the \`execute\` tool. Every other tool you have is a normal tool call: call it directly, never inside \`execute\`.
-
-${hasMoreTools ? `The catalog is partial. Before calling a tool that is not listed below, find it with the global \`search(...)\` function. Do not guess tool names. The \`path\` in every result is the full call expression: write it as code, for example \`await tools.ns.tool_name({ ... })\`. Do not treat it as a key, for example \`tools[path]\`.
-
-- ${searchSignature}` : "The catalog is complete. Do not guess tool names."}
-
-Any other tool you can call, such as \`shell\`, \`grep\`, \`glob\` or \`read\`, is a native tool. Call it directly in the response; it cannot be reached as \`tools.<name>\` inside \`execute\`.
-
-## Code Mode tools (call only inside \`execute\`)
-
-## Available tools`
+const PROMPT = [
+  "# Code Mode",
+  "",
+  "The tools below — and `search` and `execute` themselves — are Code Mode tools: they run only as JavaScript " +
+    "inside `execute`, never as a direct tool call. Every other tool you have, such as `shell`, `grep`, `glob` " +
+    "or `read`, is native: call it directly in the response.",
+  "",
+  "The catalog lists what exists, not how to call it. Before calling a Code Mode tool, find its signature with " +
+    "the global `search(...)` function. Do not guess tool names. The `path` in every result is the full call " +
+    "expression: write it as code, for example `await tools.ns.tool_name({ ... })`. Do not treat it as a key, " +
+    "for example `tools[path]`.",
+  "",
+  `- ${searchSignature}`,
+  "",
+  "## Code Mode tools (call only inside `execute`)",
+].join("\n")
 
 export function render(catalog: CodeModeCatalog.Summary) {
   if (catalog.total === 0)
     return "No Code Mode tools are currently available. Later Code Mode catalog updates may add or remove tools. Do not call `execute` unless there is at least one available Code Mode tool."
 
-  const tools = catalog.namespaces.flatMap((namespace) => {
-    return [CodeModeCatalog.namespaceLine(namespace), ...namespace.entries.map((entry) => entry.line)]
-  })
-
-  return `${prompt(catalog.shown < catalog.total)}
-
-${tools.join("\n")}`
+  return [PROMPT, ...catalog.namespaces.map((namespace) => CodeModeCatalog.namespaceLine(namespace))].join("\n")
 }
 
+/**
+ * The notice for a changed catalog. Only namespaces are compared, because only namespaces are listed: a tool
+ * arriving inside an existing namespace does not change the text, so it is not announced — the model finds it
+ * with `search` when it goes looking. That is what keeps this notice short and, more importantly, keeps a new
+ * namespace from rewriting the entries of every other one.
+ */
 export function update(previous: CodeModeCatalog.Summary, current: CodeModeCatalog.Summary) {
   const replacement = `The Code Mode tool catalog has changed. This catalog supersedes the previous Code Mode tool catalog.
 
 ${render(current)}`
   if (current.total === 0) return replacement
-  const previousComplete = previous.shown === previous.total
-  const currentComplete = current.shown === current.total
-  if (previousComplete !== currentComplete) return replacement
 
-  const descriptions = Instructions.diffByKey(
-    previous.namespaces.filter((namespace) => namespace.description !== undefined),
-    current.namespaces.filter((namespace) => namespace.description !== undefined),
+  const changes = Instructions.diffByKey(
+    previous.namespaces,
+    current.namespaces,
     (namespace) => namespace.name,
-    (before, after) => before.description !== after.description,
+    (before, after) => before.count !== after.count,
   )
-  if (descriptions.added.length > 0 || descriptions.removed.length > 0 || descriptions.changed.length > 0)
+  if (changes.added.length === 0 && changes.removed.length === 0 && changes.changed.length === 0)
     return replacement
 
-  const diff = Instructions.diffByKey(
-    previous.namespaces.flatMap((namespace) => namespace.entries),
-    current.namespaces.flatMap((namespace) => namespace.entries),
-    (entry) => entry.path,
-    (before, after) => before.line !== after.line,
-  )
-  const entriesChanged = diff.added.length > 0 || diff.removed.length > 0 || diff.changed.length > 0
-
-  if (!currentComplete) {
-    const namespaces = Instructions.diffByKey(
-      previous.namespaces,
-      current.namespaces,
-      (namespace) => namespace.name,
-      (before, after) => before.count !== after.count,
-    )
-    // A namespace that appeared brings its entries with it, so `entriesChanged` is always true here. That
-    // is not a reason to restate the whole catalog: an install that adds one namespace changed one
-    // namespace, and the notice should name that one. Only a change with no namespace-level story — an
-    // entry that appeared inside a namespace the previous listing already covered, with that namespace's
-    // count unchanged — needs the full text, because the delta could not name where it came from.
-    const namespaced =
-      namespaces.added.length > 0 || namespaces.removed.length > 0 || namespaces.changed.length > 0
-    if (!namespaced) return replacement
-
-    const parts = ["The Code Mode tool catalog has changed."]
-    if (namespaces.added.length > 0) {
-      parts.push(
-        `These tool namespaces were added: ${namespaces.added
-          .map((namespace) => `\`${namespace.name}\` (${namespace.count} tools)`)
-          .join(", ")}.`,
-      )
-    }
-    if (namespaces.changed.length > 0) {
-      parts.push(
-        `These namespaces have changed; search them again before relying on previous results: ${namespaces.changed
-          .map((change) => `\`${change.current.name}\` now has ${change.current.count} tools`)
-          .join(", ")}.`,
-      )
-    }
-    if (namespaces.removed.length > 0) {
-      parts.push(
-        `These tool namespaces are no longer available and must not be used: ${namespaces.removed
-          .map((namespace) => `\`${namespace.name}\``)
-          .join(", ")}.`,
-      )
-    }
-    const delta = parts.join("\n\n")
-    if (delta.length < replacement.length) return delta
-    return replacement
-  }
-
-  if (!entriesChanged) return replacement
   const parts = ["The Code Mode tool catalog has changed."]
-  if (diff.added.length > 0) {
+  if (changes.added.length > 0) {
     parts.push(
       [
-        "New tools are available in addition to those previously listed:",
-        ...diff.added.map((entry) => entry.line),
+        "New tool namespaces are available; search them before calling anything inside them:",
+        ...changes.added.map((namespace) => CodeModeCatalog.namespaceLine(namespace)),
       ].join("\n"),
     )
   }
-  if (diff.changed.length > 0) {
+  if (changes.changed.length > 0) {
     parts.push(
-      [
-        "Changed tool listings supersede the previously listed ones:",
-        ...diff.changed.map((change) => change.current.line),
-      ].join("\n"),
-    )
-  }
-  if (diff.removed.length > 0) {
-    parts.push(
-      `The following tools are no longer available and must not be called: ${diff.removed
-        .map((entry) => toolExpression(entry.path))
+      `These namespaces changed size; search them again before relying on previous results: ${changes.changed
+        .map((change) => `\`${change.current.name}\` now has ${change.current.count} tools`)
         .join(", ")}.`,
     )
   }
+  if (changes.removed.length > 0) {
+    parts.push(
+      `These tool namespaces are no longer available and must not be used: ${changes.removed
+        .map((namespace) => `\`${namespace.name}\``)
+        .join(", ")}.`,
+    )
+  }
+
   const delta = parts.join("\n\n")
-  if (delta.length < replacement.length) return delta
-  return replacement
+  return delta.length < replacement.length ? delta : replacement
 }
 
 const key = Instructions.Key.make("core/codemode")
