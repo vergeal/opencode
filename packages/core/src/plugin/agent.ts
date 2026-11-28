@@ -137,10 +137,9 @@ export const Plugin = define({
         item.mode = "primary"
         item.hidden = true
         item.system = PROMPT_KNOWLEDGE
-        item.permissions.push(
-          { action: "*", resource: "*", effect: "deny" },
-          { action: "knowledge_search", resource: "*", effect: "allow" },
-        )
+        // The agent summarises a library during indexing; it does not retrieve. The retrieval tool was
+        // removed, so the allow that existed only for it is gone too.
+        item.permissions.push({ action: "*", resource: "*", effect: "deny" })
       })
     })
   }),

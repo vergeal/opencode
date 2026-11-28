@@ -76,7 +76,6 @@ import { Snapshot } from "../snapshot.js"
 import { Skill } from "../skill.js"
 import { SkillDiscovery } from "../skill/discovery.js"
 import { Watcher } from "../filesystem/watcher.js"
-import { PatchTool } from "../tool/plugin/patch.js"
 import { EditTool } from "../tool/plugin/edit.js"
 import { GlobTool } from "../tool/plugin/glob.js"
 import { GrepTool } from "../tool/plugin/grep.js"
@@ -95,7 +94,6 @@ import { TranscriptTool } from "../tool/plugin/transcript.js"
 import { QueueTool } from "../tool/plugin/queue.js"
 import { RecallTool } from "../tool/plugin/recall.js"
 import { SessionCreateTool } from "../tool/plugin/session-create.js"
-import { KnowledgeTools } from "../tool/plugin/knowledge.js"
 import { ScheduleTools } from "../tool/plugin/schedule.js"
 import { ShellTool } from "../tool/plugin/shell.js"
 import { SkillTool } from "../tool/plugin/skill.js"
@@ -270,7 +268,6 @@ const pre = [
   ModelsDevPlugin,
   ...ProviderPlugins,
   ...WebSearchPlugins,
-  PatchTool.Plugin,
   VerbosityPlugin.Plugin,
   EditTool.Plugin,
   GlobTool.Plugin,
@@ -289,7 +286,6 @@ const pre = [
   RecallTool.Plugin,
   ForkTool.Plugin,
   SessionCreateTool.Plugin,
-  KnowledgeTools.Plugin,
   ScheduleTools.Plugin,
   ShellTool.Plugin,
   SkillTool.Plugin,

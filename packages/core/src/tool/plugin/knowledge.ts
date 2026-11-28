@@ -32,7 +32,7 @@ export const Plugin = {
           "Search the knowledge libraries assigned to this Project and return the best matching passages with their document paths. Use it to ground an answer in project knowledge.",
         input: Input,
         output: Output,
-        options: { namespace: "opencode", codemode: false },
+        options: { namespace: "aicraft", codemode: false },
         execute: (input, context) =>
           Effect.gen(function* () {
             if (context.agent !== "knowledge")

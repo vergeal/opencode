@@ -124,7 +124,7 @@ const request = (agent: Agent.ID, messages: Array<Message>): SessionContext => (
 
 type ToolErrorEvent = Extract<ToolHooks["execute.after"], { readonly status: "error" }>
 
-const toolError = (tool: "edit" | "write" | "patch", error: Tool.Error): ToolErrorEvent => ({
+const toolError = (tool: "edit" | "write", error: Tool.Error): ToolErrorEvent => ({
   tool,
   input: {},
   sessionID,
@@ -270,7 +270,7 @@ describe("plan plugin mutations", () => {
   it.effect("rewrites blocked mutation failures with the Plan directory", () =>
     Effect.gen(function* () {
       const { toolHook } = yield* run()
-      for (const tool of ["edit", "write", "patch"] as const) {
+      for (const tool of ["edit", "write"] as const) {
         const event = toolError(
           tool,
           new ToolFailure({

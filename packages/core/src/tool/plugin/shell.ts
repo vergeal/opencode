@@ -200,7 +200,7 @@ export const Plugin = {
                   Effect.gen(function* () {
                     invocation.env.AGENT = "1"
                     invocation.env.AICRAFT = "1"
-                    invocation.env.AI_AGENT ||= "opencode"
+                    invocation.env.AI_AGENT ||= "aicraft"
                     invocation.env.AICRAFT_SESSION_ID = context.sessionID
                     finalTimeout = yield* prepare(invocation, context)
                   }),
