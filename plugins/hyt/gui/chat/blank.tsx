@@ -91,9 +91,12 @@ export function Blank(props: {
                   <button class="ghost" type="button" onClick={() => props.onLogin()}>
                     {text(props.ctx, "hyt.chat.rail.login")}
                   </button>
-                  <button class="ghost" type="button" onClick={() => props.onSettings()}>
-                    {text(props.ctx, "hyt.chat.action.settings")}
-                  </button>
+                  {/* 文件被占用的错误态只能稍后重试，打开设置解决不了问题，不给这个出口。 */}
+                  <Show when={props.phase !== "error"}>
+                    <button class="ghost" type="button" onClick={() => props.onSettings()}>
+                      {text(props.ctx, "hyt.chat.action.settings")}
+                    </button>
+                  </Show>
                   <Show when={props.onLogout !== undefined}>
                     <button class="ghost" type="button" onClick={() => props.onLogout?.()}>
                       {text(props.ctx, "hyt.chat.rail.logout")}
@@ -108,9 +111,11 @@ export function Blank(props: {
               <button class="ghost" type="button" onClick={() => props.onRetry()}>
                 {text(props.ctx, "hyt.chat.action.detect")}
               </button>
-              <button class="ghost" type="button" onClick={() => props.onSettings()}>
-                {text(props.ctx, "hyt.chat.action.settings")}
-              </button>
+              <Show when={props.phase !== "error"}>
+                <button class="ghost" type="button" onClick={() => props.onSettings()}>
+                  {text(props.ctx, "hyt.chat.action.settings")}
+                </button>
+              </Show>
             </Show>
           </div>
 
