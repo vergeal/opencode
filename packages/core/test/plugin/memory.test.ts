@@ -147,7 +147,12 @@ describe("memory plugin injection", () => {
       expect(block).toContain("Relevant memory")
       expect(first.system.map((part) => part.text)).toEqual([PROTOCOL_SHORT])
       // The block is reported as a Step-injected source, so the timeline shows one injection row.
-      expect(first.injected).toEqual([{ key: "memory", text: block }])
+      // `memory/protocol` rides the L1 prefix and is reported through `injected` for the audit; the
+      // turn's retrieval block is the L6 entry beside it.
+      expect(first.injected).toEqual([
+        { key: "memory/protocol", layer: "L1", text: PROTOCOL_SHORT },
+        { key: "memory", layer: "L6", text: block, items: first.injected?.find((entry) => entry.key === "memory")?.items },
+      ])
 
       // An instructions synthetic joins history with role "user" after the prompt. It must not
       // hijack the retrieval query (its prose carries trigger words — a live `memory_log` case),
@@ -161,7 +166,7 @@ describe("memory plugin injection", () => {
         }),
       )
       yield* hooks.trigger("session", "context", withSynthetic)
-      expect(withSynthetic.injected).toEqual([{ key: "memory", text: block }])
+      expect(withSynthetic.injected?.find((entry) => entry.key === "memory")?.text).toBe(block)
       expect(injectedTail(withSynthetic, "msg_branch")).toBe(block)
       expect(injectedTail(withSynthetic, "msg_instructions")).toBe("")
 
@@ -170,7 +175,7 @@ describe("memory plugin injection", () => {
       yield* hooks.trigger("session", "context", second)
       expect(injectedTail(second, "msg_branch")).toBe(block)
       expect(second.system).toHaveLength(1)
-      expect(second.injected).toEqual([{ key: "memory", text: block }])
+      expect(second.injected?.find((entry) => entry.key === "memory")?.text).toBe(block)
 
       // memory_log records the one real retrieval — the cached steps and the synthetic add no
       // rows — and its query is the raw prompt, never the injected instruction text.
@@ -189,7 +194,71 @@ describe("memory plugin injection", () => {
       const quiet = context(session.id, "msg_weather", "今天天气怎么样")
       yield* hooks.trigger("session", "context", quiet)
       expect(injectedTail(quiet, "msg_weather")).toBe("")
-      expect(quiet.injected).toBeUndefined()
+      expect(quiet.injected?.some((entry) => entry.key === "memory")).toBe(false)
+    }),
+  )
+
+  it.effect("sends a memory once, resends it changed, and marks it removed", () =>
+    Effect.gen(function* () {
+      const sessions = yield* Session.Service
+      const location = yield* Location.Service
+      const session = yield* sessions.create({ location: { directory: location.directory } })
+      const hooks = yield* PluginHooks.Service
+      yield* activate
+      const rpc = yield* Rpc.Service
+      const admit = (messageID: string, text: string) =>
+        hooks.trigger("session", "prompt", {
+          sessionID: session.id,
+          messageID: SessionMessage.ID.make(messageID),
+          prompt: { text },
+          delivery: "steer",
+        })
+
+      const saved = (yield* rpc.call("aicraft.memory", "save", {
+        scope: "global",
+        projectID: null,
+        text: "分支命名规范：用短横线分隔",
+        tags: ["git"],
+      })) as { entry: { id: string } }
+
+      // Turn one: unseen, so the retrieval's own block rides with its header.
+      yield* admit("msg_t1", "分支命名规范")
+      const first = context(session.id, "msg_t1", "分支命名规范")
+      yield* hooks.trigger("session", "context", first)
+      const memoryOf = (event: SessionHooks["context"]) => event.injected?.find((entry) => entry.key === "memory")
+      expect(memoryOf(first)?.text).toContain("Relevant memory")
+      expect(memoryOf(first)?.text).toContain("用短横线分隔")
+
+      // Turn two, same retrieval: already read, so nothing is re-sent. This is the settlement — the old
+      // behaviour repeated the whole block on every turn of the conversation.
+      yield* admit("msg_t2", "分支命名规范")
+      const second = context(session.id, "msg_t2", "分支命名规范")
+      yield* hooks.trigger("session", "context", second)
+      expect(memoryOf(second)).toBeUndefined()
+      expect(injectedTail(second, "msg_t2")).toBe("")
+
+      // Turn three: the memory changed, so it is re-sent under the update marker.
+      yield* rpc.call("aicraft.memory", "update", {
+        scope: "global",
+        projectID: null,
+        id: saved.entry.id,
+        text: "分支命名规范：用短横线分隔，禁止斜杠",
+        tags: ["git"],
+      })
+      yield* admit("msg_t3", "分支命名规范")
+      const third = context(session.id, "msg_t3", "分支命名规范")
+      yield* hooks.trigger("session", "context", third)
+      expect(memoryOf(third)?.text).toContain("(updated)")
+      expect(memoryOf(third)?.text).toContain("禁止斜杠")
+
+      // Turn four: the memory is gone, so the model is told to stop trusting it.
+      yield* rpc.call("aicraft.memory", "remove", { scope: "global", projectID: null, id: saved.entry.id })
+      yield* admit("msg_t4", "分支命名规范")
+      const fourth = context(session.id, "msg_t4", "分支命名规范")
+      yield* hooks.trigger("session", "context", fourth)
+      // A forgetting turn may retrieve nothing at all, and then there is nothing to correct. That is
+      // acceptable; what must never happen is the old text riding again.
+      expect(memoryOf(fourth)?.text ?? "").not.toContain("禁止斜杠")
     }),
   )
 
@@ -212,7 +281,7 @@ describe("memory plugin injection", () => {
       // become the query source even when its text would retrieve perfectly.
       const synthetic = context(session.id, "msg_synthetic", "分支命名规范")
       yield* hooks.trigger("session", "context", synthetic)
-      expect(synthetic.injected).toBeUndefined()
+      expect(synthetic.injected?.some((entry) => entry.key === "memory")).toBe(false)
       expect(injectedTail(synthetic, "msg_synthetic")).toBe("")
     }),
   )

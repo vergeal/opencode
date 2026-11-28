@@ -280,7 +280,26 @@ export const Plugin = define({
     // system section, so an injection never invalidates the cached history prefix. One lookup
     // per turn: the step loop re-fires this hook with the same last message, and a byte-stable
     // block keeps the provider cache warm across steps. Failures only skip the block.
-    const turns = new Map<string, { key: string; block: string; items: ReadonlyArray<{ name: string; text: string }> }>()
+    const turns = new Map<
+      string,
+      {
+        key: string
+        block: string
+        items: ReadonlyArray<{ name: string; text: string }>
+        /** What this turn actually sends after settlement; cached so every step of the turn sends the same. */
+        settled?: { text: string; items: ReadonlyArray<{ name: string; text: string }> }
+      }
+    >()
+    /**
+     * What this Session has already been told, per memory id: the text it was shown. Retrieval runs again
+     * each turn, so the same memory came back on every one of them — measured, one `mem_*` rode ten
+     * consecutive steps. A memory whose text is unchanged is not re-sent; a memory that changed is, under a
+     * marker that says so; an id that no longer resolves gets a removal line so the model stops trusting it.
+     *
+     * Keyed by session: two sessions share the store but not their conversation, and neither should inherit
+     * the other's "already told" set.
+     */
+    const told = new Map<string, Map<string, string>>()
     // The retrieval query is what the user typed, never what the harness injected: instruction
     // synthetics, skill bodies and shell results all arrive with role "user" in the context
     // event, so "last user message" let file prose pose as intent — an AGENTS.md containing a
@@ -295,7 +314,15 @@ export const Plugin = define({
         promptTexts.set(String(event.messageID), event.prompt.text)
       }),
     )
-    const protocol = SystemPart.make(PROTOCOL_SHORT)
+    /**
+ * Heading for the settled memory block. The first turn of a session sends the retrieval's own block —
+ * header, list and all — because the model has seen none of it. Later turns send only what changed, and
+ * this header says that, so a short list is not read as "memory was nearly empty this turn".
+ */
+const MEMORY_SETTLED_HEADER =
+  "## Memory changes since you last saw them\nOnly what is new, changed, or gone. Anything not listed is unchanged from what you were shown earlier."
+
+const protocol = SystemPart.make(PROTOCOL_SHORT)
     // L6 supplier declaration (DESIGN §1 记忆层): the settings char cap converted to its
     // UTF-8 byte envelope once, at activation — validateRegistration runs here.
     const memoryL6 = SessionTurnSuppliers.memoryChannel(service.settings.maxInjectedChars)
@@ -325,9 +352,11 @@ export const Plugin = define({
         const cached = turns.get(sessionKey)
         let block: string
         let items: ReadonlyArray<{ readonly name: string; readonly text: string }> = []
+        let settledCached: { text: string; items: ReadonlyArray<{ name: string; text: string }> } | undefined
         if (cached !== undefined && cached.key === key) {
           block = cached.block
           items = cached.items
+          settledCached = cached.settled
         } else {
           const turn = yield* Effect.promise(() => memory.onTurn({ query, scopes: scopesFor(project) }))
           block = turn.injectBlock
@@ -339,6 +368,53 @@ export const Plugin = define({
           turns.set(sessionKey, { key, block, items })
         }
         if (block === "") return
+        // Settlement. The retrieval re-runs every turn; what the model has already read should not ride
+        // again. Only unseen ids, ids whose text changed, and ids that vanished since they were shown are
+        // worth a line — everything else was the same bytes in the same conversation.
+        //
+        // Settled once per turn and cached: the step loop re-fires this hook for the same prompt, and a
+        // second settlement would find nothing new and drop the block from later steps of one turn, which
+        // both loses the text and breaks the byte-stability the provider cache depends on.
+        let settled = settledCached
+        if (settled === undefined) {
+          const seen = told.get(sessionKey) ?? new Map<string, string>()
+          const fresh: string[] = []
+          const updated: string[] = []
+          const removed: string[] = []
+          const next = new Map(seen)
+          for (const entry of items) {
+            const before = seen.get(entry.name)
+            if (before === undefined) fresh.push(entry.name)
+            else if (before !== entry.text) updated.push(entry.name)
+            next.set(entry.name, entry.text)
+          }
+          for (const id of seen.keys()) if (!items.some((entry) => entry.name === id)) removed.push(id)
+          for (const id of removed) next.delete(id)
+          if (fresh.length === 0 && updated.length === 0 && removed.length === 0) {
+            // Nothing new this turn: record the empty outcome so later steps stay empty too.
+            turns.set(sessionKey, { key, block, items, settled: { text: "", items: [] } })
+            return
+          }
+          if (told.size > 200) told.clear()
+          told.set(sessionKey, next)
+          const sent = items.filter((entry) => fresh.includes(entry.name) || updated.includes(entry.name))
+          // The first block of a conversation is the retrieval's own: nothing has been shown yet, so the
+          // model needs the header and the whole list, not a diff against silence.
+          const text =
+            seen.size === 0
+              ? block
+              : [
+                  MEMORY_SETTLED_HEADER,
+                  ...fresh.flatMap((id) => [items.find((entry) => entry.name === id)!.text]),
+                  ...updated.flatMap((id) => [`(updated) ${items.find((entry) => entry.name === id)!.text}`]),
+                  ...removed.map((id) => `${id} has been removed and is no longer available. Do not rely on it.`),
+                ]
+                  .map((line, index) => (index === 0 && line === MEMORY_SETTLED_HEADER ? line : `- ${line}`))
+                  .join("\n")
+          settled = { text, items: sent }
+          turns.set(sessionKey, { key, block, items, settled })
+        }
+        if (settled.text === "") return
         // P3 L6 budget gate (DESIGN §5): the block is the supplier's one entry for this turn.
         // `applyBudget` degrades over-budget by dropping it whole with an audit record, never a
         // refusal (budget.ts). The subsystem already packed it within `maxInjectedChars`, and
@@ -346,24 +422,27 @@ export const Plugin = define({
         // block always fits; a cut here means the supplier overshot its own cap, and the block
         // is withheld from the request while the retrieval still logs. The Step-injected report
         // mirrors the kept decision so the timeline shows the block only when it actually rode.
-        const budgeted = Budget.applyBudget([{ id: memoryL6.id, layer: "L6", text: block, source: "memory" }], memoryL6.budget)
+        const budgeted = Budget.applyBudget(
+          [{ id: memoryL6.id, layer: "L6", text: settled.text, source: "memory" }],
+          memoryL6.budget,
+        )
         if (budgeted.truncated) return
         // Report the block as a Step-injected source: the same bytes ride every step of the turn,
         // so the transcript shows one injection row per turn without touching the cached prefix.
-        // `items` carries each retrieved memory's own id, so the panel can name the exact records
-        // behind the block instead of showing only that some memory was retrieved.
+        // `items` names only the records this block actually carried, so the panel matches what the
+        // model read rather than the wider retrieval result.
         event.injected = [
           ...(event.injected ?? []),
           {
             key: "memory",
             layer: "L6",
-            text: block,
-            items,
+            text: settled.text,
+            items: settled.items,
           },
         ]
         event.messages = event.messages.map((message) =>
           message === last && message.role === "user"
-            ? new UserMessage({ ...message, content: [...message.content, { type: "text", text: block }] })
+            ? new UserMessage({ ...message, content: [...message.content, { type: "text", text: settled.text }] })
             : message,
         )
       }).pipe(
