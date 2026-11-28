@@ -88,5 +88,15 @@ export function createSessionResolution<T>(
     }),
   )
 
-  return state
+  return {
+    state,
+    // The panel's Retry: the machine re-reads a session it had judged not-found with a new attempt, so a
+    // verdict from a read that raced the session's creation is not a dead end.
+    retry: () => {
+      const current = untrack(state)
+
+      if (current.status === "idle") return
+      dispatch({ type: "retry", target: current.target })
+    },
+  }
 }

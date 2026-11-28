@@ -31,6 +31,8 @@ export type SessionResolutionEvent<T, Scope> =
     }
   | { readonly type: "cache.changed"; readonly target: SessionTarget<Scope>; readonly session: T | undefined }
   | { readonly type: "connected"; readonly target: SessionTarget<Scope>; readonly refresh: boolean }
+  // The panel's retry: re-read a session the route had judged not-found.
+  | { readonly type: "retry"; readonly target: SessionTarget<Scope> }
   | {
       readonly type: "sync.settled"
       readonly target: SessionTarget<Scope>
@@ -82,6 +84,8 @@ export function transitionSessionResolution<T, Scope>(
   if (event.type === "cache.changed") return cacheChanged(state, event.session)
 
   if (event.type === "connected") return reconnected(state, event.refresh)
+
+  if (event.type === "retry") return retried(state)
 
   // Only the sync started for the current attempt answers a target that is still resolving: once the
   // cache holds the session it is authoritative, and a deleted session is evicted from it.
@@ -163,6 +167,16 @@ function cacheChanged<T, Scope>(
 // any other target retries from scratch.
 function reconnected<T, Scope>(state: Targeted<T, Scope>, refresh: boolean): SessionResolutionTransition<T, Scope> {
   if (state.status === "ready") return changed(state, syncs(state.target, state.attempt, refresh))
+  const attempt = state.attempt + 1
+
+  return changed({ status: "resolving", target: state.target, attempt }, syncs(state.target, attempt, true))
+}
+
+// A not-found verdict can come from a read that raced the session's creation, and the data layer evicts
+// the cached session when such a 404 arrives, which would otherwise leave the panel a dead end. Only the
+// not-found panel offers a retry; every other state already has its own way to recover.
+function retried<T, Scope>(state: Targeted<T, Scope>): SessionResolutionTransition<T, Scope> {
+  if (state.status !== "not-found") return unchanged(state)
   const attempt = state.attempt + 1
 
   return changed({ status: "resolving", target: state.target, attempt }, syncs(state.target, attempt, true))

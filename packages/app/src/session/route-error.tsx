@@ -35,7 +35,7 @@ export function SessionErrorFallback(props: { error: unknown; sessionID?: string
   )
 }
 
-export function SessionNotFoundPanel(props: { sessionID: string; serverKey: ServerConnection.Key }) {
+export function SessionNotFoundPanel(props: { sessionID: string; serverKey: ServerConnection.Key; onRetry?: () => void }) {
   const language = useLanguage()
   const server = useServers()
   const tabs = useTabs()
@@ -59,14 +59,21 @@ export function SessionNotFoundPanel(props: { sessionID: string; serverKey: Serv
             {props.sessionID}
           </code>
         </div>
-        <Button
-          variant="neutral"
-          size="normal"
-          icon="xmark-small"
-          onClick={() => tabs.removeSessionTab({ server: props.serverKey, sessionId: props.sessionID })}
-        >
-          {language.t("session.error.notFound.closeTab")}
-        </Button>
+        <div class="flex items-center gap-2">
+          <Show when={props.onRetry}>
+            <Button variant="neutral" size="normal" icon="refresh" onClick={() => props.onRetry?.()}>
+              {language.t("common.retry")}
+            </Button>
+          </Show>
+          <Button
+            variant="neutral"
+            size="normal"
+            icon="xmark-small"
+            onClick={() => tabs.removeSessionTab({ server: props.serverKey, sessionId: props.sessionID })}
+          >
+            {language.t("session.error.notFound.closeTab")}
+          </Button>
+        </div>
       </div>
     </div>
   )

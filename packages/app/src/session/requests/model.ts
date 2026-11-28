@@ -22,10 +22,13 @@ export function createSessionRequestModel() {
   const autoApprove = useServer().ctx.autoApprove
   const language = useLanguage()
   const settings = useSettings()
+  // Reads wait for creation. A 404 on these side reads is read by the data layer as deletion and evicts the
+  // whole cached session, so a session the store has not projected yet — a promoted draft whose create is
+  // still in flight, or a cached detached view whose route moved on — must not be asked for permissions.
   createEffect(() => {
     const id = params.id
 
-    if (!id || serverSDK.connection.status() !== "connected") return
+    if (!id || !data.session.get(id) || serverSDK.connection.status() !== "connected") return
     void Promise.all([data.shell.sync({ directory: sdk().directory }), data.session.permission.sync(id)]).catch(
       () => undefined,
     )
@@ -36,7 +39,7 @@ export function createSessionRequestModel() {
   const formSessions = createMemo(
     () =>
       sessionTreeIDs(data.session.list(), params.id).filter(
-        (id) => id === params.id || data.session.status(id) === "running",
+        (id) => data.session.get(id) && (id === params.id || data.session.status(id) === "running"),
       ),
     [],
     { equals: (a, b) => a.join() === b.join() },

@@ -8,7 +8,7 @@ import { base64Encode } from "@aicraft/util/encode"
 import { ServerConnection } from "@/runtime/server/registry"
 import { tabKey, useTabs } from "@/shell/tabs/tabs"
 
-const useSessionKey = () => {
+export const useSessionKey = () => {
   const params = useParams()
   const sdk = useWorkspaceLocation()
   const serverSDK = useServerSDK()

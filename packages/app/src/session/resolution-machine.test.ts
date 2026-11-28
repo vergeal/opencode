@@ -137,6 +137,50 @@ test("a resolved session stays visible through a failed refresh until it leaves 
   })
 })
 
+test("the panel can retry a not-found session with a fresh attempt", () => {
+  const missing = replay([
+    open("ses_a"),
+    { type: "sync.failed", target: target("ses_a"), attempt: 1, error: notFound("ses_a") },
+  ])
+
+  const retried = transitionSessionResolution(missing.state, { type: "retry", target: target("ses_a") })
+  expect(retried.state).toEqual({ status: "resolving", target: target("ses_a"), attempt: 2 })
+  expect(retried.effects.map((effect) => effect.type)).toEqual(["sync.transcript", "sync.metadata"])
+
+  // Results from the raced attempt stay rejected, and the fresh read resolves the session.
+  const stale: Event = { type: "sync.settled", target: target("ses_a"), attempt: 1, session: undefined }
+  expect(transitionSessionResolution(retried.state, stale).state).toBe(retried.state)
+
+  const settled: Event = { type: "sync.settled", target: target("ses_a"), attempt: 2, session: { id: "ses_a" } }
+  expect(sessionRouteView(transitionSessionResolution(retried.state, settled).state, undefined)).toMatchObject({
+    type: "ready",
+  })
+})
+
+test("retry moves only a not-found session that is still the target", () => {
+  const event: Event = { type: "retry", target: target("ses_a") }
+
+  const idle = createSessionResolutionState<Session, string>()
+  expect(transitionSessionResolution(idle, event).state).toBe(idle)
+
+  const ready = replay([open("ses_a", { cached: { id: "ses_a" } })])
+  expect(transitionSessionResolution(ready.state, event).state).toBe(ready.state)
+
+  const resolving = replay([open("ses_a")])
+  expect(transitionSessionResolution(resolving.state, event).state).toBe(resolving.state)
+
+  const failed = replay([open("ses_a"), { type: "sync.failed", target: target("ses_a"), attempt: 1, error: "boom" }])
+  expect(transitionSessionResolution(failed.state, event).state).toBe(failed.state)
+
+  const missing = replay([
+    open("ses_a"),
+    { type: "sync.failed", target: target("ses_a"), attempt: 1, error: notFound("ses_a") },
+  ])
+
+  const stale = transitionSessionResolution(missing.state, { type: "retry", target: target("ses_b") })
+  expect(stale.state).toBe(missing.state)
+})
+
 test("unmounting ignores later results", () => {
   const disposed = replay([open("ses_a"), { type: "disposed" }])
   expect(disposed.state).toEqual({ status: "idle", attempt: 2 })

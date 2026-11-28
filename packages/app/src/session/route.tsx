@@ -1,4 +1,17 @@
-import { ErrorBoundary, createEffect, createMemo, createSignal, Match, on, onCleanup, Show, Switch, type ParentProps } from "solid-js"
+import {
+  ErrorBoundary,
+  createEffect,
+  createMemo,
+  createSignal,
+  Match,
+  on,
+  onCleanup,
+  onMount,
+  Show,
+  Switch,
+  untrack,
+  type ParentProps,
+} from "solid-js"
 import { Title } from "@solidjs/meta"
 import { useParams } from "@solidjs/router"
 import { createStore } from "solid-js/store"
@@ -31,6 +44,8 @@ import { ServerUnavailablePanel } from "./server-unavailable-panel"
 import { SessionErrorFallback, SessionNotFoundPanel } from "./route-error"
 import { sessionRouteView } from "./resolution-machine"
 import { createSessionResolution } from "./session-resolution"
+import { useSessionKey } from "./session-layout"
+import { CachedSessionRouteView, setSelectedSessionKey } from "./route-view-cache"
 import { SessionScreenView } from "./screen"
 import { PreparingComposer } from "./preparing-composer"
 import "./session-pending.css"
@@ -151,7 +166,7 @@ function ResolvedTargetSessionRoute() {
     { children: true, connected: () => server.ctx.sdk.connection.status() === "connected" },
   )
 
-  const view = createMemo(() => sessionRouteView(resolution(), server.health))
+  const view = createMemo(() => sessionRouteView(resolution.state(), server.health))
 
   // Kept once the session leaves `ready`: the session providers can still read it while the route
   // swaps them out, where a narrowed <Match> value would throw a stale read.
@@ -176,17 +191,16 @@ function ResolvedTargetSessionRoute() {
           <ServerUnavailablePanel reason="incompatible" onClose={closeTab} />
         </SessionStatePanel>
       </Match>
-      {/* Not keyed: the session providers stay mounted while tabs switch between resolved sessions. */}
+      {/* Not keyed inside the cached view: the screen and its providers survive tab switches through the
+          route view cache below, which reads each session through retained inputs instead of remounting. */}
       <Match when={view().type === "ready"}>
         <LocationProvider directory={directory()}>
-          <SessionUIProvider directory={directory()} server={server.key}>
-            <TargetSessionPage />
-          </SessionUIProvider>
+          <ReadySessionRouteView directory={directory()} serverKey={server.key} />
         </LocationProvider>
       </Match>
       <Match when={view().type === "not-found"}>
         <SessionStatePanel>
-          <SessionNotFoundPanel sessionID={params.id} serverKey={server.key} />
+          <SessionNotFoundPanel sessionID={params.id} serverKey={server.key} onRetry={resolution.retry} />
         </SessionStatePanel>
       </Match>
       <Match when={failure()} keyed>
@@ -205,6 +219,34 @@ function ResolvedTargetSessionRoute() {
         <PendingSessionState sessionID={params.id} />
       </Match>
     </Switch>
+  )
+}
+
+// The router keys its outlet by path, so this component itself is rebuilt on every session switch. It hands
+// the heavy subtree to the route view cache: the first mount renders it into a detached root, later switches
+// to the same session just move that DOM back in.
+function ReadySessionRouteView(props: { directory: string; serverKey: ServerConnection.Key }) {
+  const { sessionKey } = useSessionKey()
+
+  // Announce the activation from `onMount`, once the cached DOM sits in the document: landing that starts
+  // before insertion reads zero scroll heights from the detached tree, which placed the view wrong and
+  // jumped it after the move. Clearing on cleanup makes a return to the same session re-arm its restore.
+  onMount(() => {
+    const key = untrack(sessionKey)
+
+    setSelectedSessionKey(key)
+    onCleanup(() => setSelectedSessionKey(undefined))
+  })
+
+  return (
+    <CachedSessionRouteView
+      key={sessionKey()}
+      render={() => (
+        <SessionUIProvider directory={props.directory} server={props.serverKey}>
+          <TargetSessionPage />
+        </SessionUIProvider>
+      )}
+    />
   )
 }
 
