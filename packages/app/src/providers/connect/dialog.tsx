@@ -33,7 +33,7 @@ import { useData } from "@/runtime/server/current"
 import { useGlobal } from "@/runtime/server/runtime"
 import { ServerConnection } from "@/runtime/server/registry"
 import { useProviders } from "@/providers/catalog/providers"
-import { offersProvider, visibleProviders } from "@/providers/catalog/order"
+import { isPopularProvider, providerRank } from "@/providers/catalog/order"
 import { useCustomProviders } from "@/providers/catalog/custom"
 import { consoleProviderGroup, consoleProviderName } from "@/providers/catalog/console"
 import { useIntegrations } from "@/providers/catalog/integrations"
@@ -121,10 +121,12 @@ export const DialogConnectProvider: Component<{
   const accounts = () => state.accounts && !!controller.selected() && !state.modelProvider
   // The step views inside `ProviderConnection` own their own controller, so they report the footer's state up here.
   const [form, setForm] = createStore({ active: false, ready: true, busy: false })
+
   const reportForm = (next: { active: boolean; ready: boolean; busy: boolean }) => {
     if (form.active === next.active && form.ready === next.ready && form.busy === next.busy) return
     setForm(next)
   }
+
   let focusHost: HTMLDivElement | undefined
   const holdFocus = () => focusHost?.focus({ preventScroll: true })
 
@@ -299,16 +301,14 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
   const custom = useCustomProviders(() => props.directory)
   const customIDs = createMemo(() => new Set(custom.list().map((item) => item.id)))
 
-  // MCP servers are connected and managed from the MCP dialog, not here. The list holds what this client offers: the
-  // provider allowlist, plus every custom provider the user's own configuration declares, since that is the only way
-  // to reach a model the allowlist cannot carry.
+  // MCP servers are connected and managed from the MCP dialog, not here. Every other integration is listed: the
+  // pinned set stays on top, and the rest of the catalog follows by name rather than being hidden.
   const all = createMemo(() => {
     const query = store.filter.trim().toLowerCase()
 
     return integrations
       .list()
       .filter((row) => row.metadata?.source !== "mcp")
-      .filter((row) => offersProvider(row.id, customIDs()))
       .filter((row) => !query || `${row.id} ${row.name}`.toLowerCase().includes(query))
   })
 
@@ -318,30 +318,41 @@ function ProviderPicker(props: { directory?: string; onSelect: (provider: string
       .toSorted((a, b) => a.name.localeCompare(b.name)),
   )
 
+  const unconnected = createMemo(() => all().filter((row) => row.connections.length === 0))
+
   const popular = createMemo(() =>
-    all()
-      .filter((row) => row.connections.length === 0 && !customIDs().has(row.id))
-      .toSorted((a, b) => visibleProviders.indexOf(a.id) - visibleProviders.indexOf(b.id)),
+    unconnected()
+      .filter((row) => isPopularProvider(row.id) && !customIDs().has(row.id))
+      .toSorted((a, b) => providerRank(a.id) - providerRank(b.id)),
   )
 
-  // A custom provider with no account yet gets its own group rather than `popular`: that group sorts by the allowlist
-  // index, which a custom id does not appear in, so it would land ahead of OpenAI and DeepSeek.
+  // A custom provider with no account yet gets its own group rather than `services`: that group sorts by name against
+  // the whole catalog, which buries the one row the user just added.
   const customs = createMemo(() =>
-    all()
-      .filter((row) => row.connections.length === 0 && customIDs().has(row.id))
+    unconnected()
+      .filter((row) => customIDs().has(row.id))
+      .toSorted((a, b) => a.name.localeCompare(b.name)),
+  )
+
+  const services = createMemo(() =>
+    unconnected()
+      .filter((row) => !isPopularProvider(row.id) && !customIDs().has(row.id))
       .toSorted((a, b) => a.name.localeCompare(b.name)),
   )
 
   const groups = () => [
     { title: language.t("dialog.provider.connected"), items: connected },
     { title: language.t("dialog.provider.group.popular"), items: popular },
+    { title: language.t("dialog.provider.group.services"), items: services },
     { title: language.t("dialog.provider.group.custom"), items: customs },
   ]
 
   // An integration that only reads environment variables has nothing to connect from here.
   const disabled = (row: IntegrationInfo) => connectMethods(row).length === 0 && providerAccounts(row).length === 0
 
-  const rows = createMemo(() => [...connected(), ...popular(), ...customs()].filter((row) => !disabled(row)))
+  const rows = createMemo(() =>
+    [...connected(), ...popular(), ...customs(), ...services()].filter((row) => !disabled(row)),
+  )
 
   let picker: HTMLDivElement | undefined
   let search: HTMLInputElement | undefined

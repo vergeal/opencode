@@ -11,7 +11,7 @@ import { CustomProviderEditor } from "./custom/editor"
 import { DialogDeleteCustomProvider } from "./custom/delete-dialog"
 import { customProvidersFrom, readOnlyProvidersFrom, type CustomProvider } from "./custom/record"
 import { useProviders } from "@/providers/catalog/providers"
-import { visibleProviders } from "@/providers/catalog/order"
+import { isPopularProvider, providerRank } from "@/providers/catalog/order"
 import { consoleProviderGroup } from "@/providers/catalog/console"
 import { useIntegrations } from "@/providers/catalog/integrations"
 import { createEffect, createMemo, createSignal, on, onCleanup, untrack, type Component, For, Match, type JSX, Show, Switch } from "solid-js"
@@ -115,9 +115,11 @@ export const SettingsProviders: Component<{
   // unchanged field keeps it. The copy never reaches the form or the configuration document.
   const existingApiKey = (provider?: CustomProvider) => {
     if (!provider) return
+
     const entry = credentials.data?.find(
       (credential) => credential.integrationID === provider.id && credential.active,
     )
+
     if (entry?.value.type === "key") return entry.value.key
   }
 
@@ -308,8 +310,10 @@ export const SettingsProviders: Component<{
     // integration list arrives the row is still the models.dev Zen provider, so dedupe it as before.
     const account = integrations.list().find((entry) => entry.id === CONSOLE_INTEGRATION)
 
-    const items = providers
-      .popular()
+    const items = integrations
+      .list()
+      .filter((p) => !customIDs().has(p.id) && isPopularProvider(p.id))
+      .map((p) => ({ id: p.id, name: p.name }))
       .filter((p) => {
         if (p.id !== CONSOLE_INTEGRATION || !account) return !connectedIDs.has(p.id)
 
@@ -317,14 +321,27 @@ export const SettingsProviders: Component<{
       })
       .slice()
 
-    items.sort((a, b) => visibleProviders.indexOf(a.id) - visibleProviders.indexOf(b.id))
+    items.sort((a, b) => providerRank(a.id) - providerRank(b.id))
 
     return items
+  })
+
+  // The rest of the catalog, sorted by name. Together with `popular` this is every integration the server reports, so
+  // the page never hides a provider.
+  const services = createMemo(() => {
+    const connectedIDs = new Set(connected().map((p) => p.id))
+
+    return integrations
+      .list()
+      .filter((p) => !customIDs().has(p.id) && !isPopularProvider(p.id) && !connectedIDs.has(p.id))
+      .map((p) => ({ id: p.id, name: p.name }))
+      .toSorted((a, b) => a.name.localeCompare(b.name))
   })
 
   const providerIDs = createMemo(() => [
     ...connected().map((item) => item.id),
     ...popular().map((item) => item.id),
+    ...services().map((item) => item.id),
     ...custom().map((item) => item.id),
   ])
 
@@ -906,6 +923,40 @@ export const SettingsProviders: Component<{
                 )}
               </For>
             </SettingsList>
+          </div>
+        </Show>
+
+        {/* The rest of the catalog: every provider the pinned set leaves out, so nothing the server reports is
+            unreachable from this page. */}
+        <Show when={services().length > 0}>
+          <div class="settings-section">
+            <h3 class="settings-section-title">
+              {language.t("dialog.provider.group.services")}
+              <span class="settings-section-count">{services().length}</span>
+            </h3>
+            <SettingsList variant="catalog">
+              <For each={services()}>
+                {(item) => (
+                  <div class="settings-provider-row settings-provider-row--popular">
+                    <div class="settings-provider-lead">
+                      <ProviderModelIcon provider={item} class="settings-provider-icon shrink-0" />
+                    </div>
+
+                    <div class="settings-provider-copy">
+                      <div class="settings-provider-main">
+                        <span class="settings-provider-name">{item.name}</span>
+                      </div>
+                    </div>
+                    <Button size="normal" variant="neutral" icon="plus" onClick={() => connect(item.id)}>
+                      {language.t("common.connect")}
+                    </Button>
+                  </div>
+                )}
+              </For>
+            </SettingsList>
+            <button type="button" class="settings-providers-view-all" onClick={() => connect()}>
+              {language.t("dialog.provider.viewAll")}
+            </button>
           </div>
         </Show>
           </div>

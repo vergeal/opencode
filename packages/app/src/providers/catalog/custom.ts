@@ -5,9 +5,9 @@ import { useServerSDK } from "@/runtime/server/client"
 /**
  * The providers this server's own configuration declares, i.e. the custom OpenAI-compatible ones the user added.
  *
- * The client ships a two-provider allowlist (`catalog/order.ts`), so a configured custom provider is otherwise
- * invisible to every picker: the connect list filters rows by that allowlist, and the model picker sheets list from
- * it too. Those lists now ask `offersProvider` instead, which adds exactly the ids this hook returns.
+ * A custom provider is an integration the server reports, so it already appears in every picker. This hook is what
+ * tells those lists *which* of the reported integrations is custom: the connect list groups them apart from the rest
+ * of the catalog, and Settings decides whether a row is editable or read-only from it.
  *
  * It reads the same query as the Settings > Providers page, down to the cache key, so the two surfaces share one
  * fetch and one `config.updated` invalidation rather than holding two views of the same document.

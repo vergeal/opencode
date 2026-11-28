@@ -83,19 +83,14 @@ export const ModelsDevPlugin = define({
 
 const prepared = new WeakMap<readonly ModelsDev.Snapshot[], readonly ModelsDev.Snapshot[]>()
 
-/**
- * The only catalog providers this client offers. Everything else in models.dev — Anthropic, Google, the gateways,
- * the local runtimes — is dropped here, before either the integration or the provider catalog is built, so no later
- * layer has to filter a provider list back down. A custom provider from configuration does not pass through this
- * list and stays available.
- */
-const CATALOG_PROVIDERS: ReadonlySet<string> = new Set(["openai", "deepseek"])
-
 function snapshots(data: readonly ModelsDev.Snapshot[]) {
   const cached = prepared.get(data)
   if (cached) return cached
   const result = data
-    .filter((provider) => CATALOG_PROVIDERS.has(provider.info.id))
+    .filter(
+      // These deprecated aliases are replaced by the canonical Azure and Google Vertex providers.
+      (provider) => provider.info.id !== "azure-cognitive-services" && provider.info.id !== "google-vertex-anthropic",
+    )
     .map((provider) => ({
       ...provider,
       models: provider.models.filter(

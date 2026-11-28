@@ -7,8 +7,7 @@ import { ProviderModelIcon } from "@/providers/models/provider-group"
 import { useDialog } from "@aicraft/ui/context/dialog"
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type Component } from "solid-js"
 import { useLocal, type ModelSelection } from "@/providers/models/selection"
-import { offersProvider, visibleProviders } from "@/providers/catalog/order"
-import { useCustomProviders } from "@/providers/catalog/custom"
+import { providerRank } from "@/providers/catalog/order"
 import { useIntegrations } from "@/providers/catalog/integrations"
 import { useSettingsDialog } from "@/settings/command"
 import { decode64 } from "@/runtime/persistence/base64"
@@ -24,9 +23,10 @@ type ModelState = ModelSelection
  * provided by AI Craft" over a list that can never fill it: a free model here requires `provider.id === "opencode"`
  * with a zero input cost (`models.tsx` `isFreeModel`), and this build ships no such tier, so the section was its own
  * heading above nothing. It then listed providers from a grid hardcoded beside it — `opencode`, `opencode-go`,
- * Anthropic, Google, Copilot, but not DeepSeek — under a line promising "70+ more providers". The allowlist in
- * `catalog/order.ts` is the single source for what this client offers, and its test asserts exactly that, so the rows
- * now come from it in its order, and a provider that cannot be a row is reached as a custom provider instead.
+ * Anthropic, Google, Copilot, but not DeepSeek — under a line promising "70+ more providers".
+ *
+ * The rows now come from the server's own integration list, with the pinned order in `catalog/order.ts` deciding which
+ * ones lead; every reported provider is listed, and a custom provider keeps its own add row.
  *
  * Copy follows design 16 §4: name the next step, never a number or a tier the product cannot back.
  */
@@ -36,27 +36,21 @@ export const DialogSelectModelUnpaid: Component<{ model?: ModelState }> = (props
   const dialog = useDialog()
   const directory = () => decode64(local.slug())
   const integrations = useIntegrations(directory)
-  const custom = useCustomProviders(directory)
   const language = useLanguage()
   // Creating a custom provider belongs to Settings, which owns the form, the credential store and the ids already
   // taken; the sheet links there instead of carrying a second copy of that plumbing.
   const openSettings = useSettingsDialog("providers")
 
-  // Built-ins in the allowlist's own order, then every provider the configuration declares as custom, by name.
-  const providers = createMemo(() => {
-    const customIDs = new Set(custom.list().map((item) => item.id))
+  // Pinned providers in their own order, then every remaining provider by name. Nothing is filtered: a provider the
+  // server reports is always reachable from here.
+  const providers = createMemo(() =>
+    integrations.list().toSorted((a, b) => {
+      const byRank = providerRank(a.id) - providerRank(b.id)
 
-    const rank = (id: string) => {
-      const index = visibleProviders.indexOf(id)
-
-      return index < 0 ? Number.MAX_SAFE_INTEGER : index
-    }
-
-    return integrations
-      .list()
-      .filter((provider) => offersProvider(provider.id, customIDs))
-      .toSorted((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name))
-  })
+      // Two unpinned providers share `MAX_SAFE_INTEGER`, so the names decide; two pinned ones use their rank.
+      return byRank === 0 ? a.name.localeCompare(b.name) : byRank
+    }),
+  )
 
   // Design 11 §7 shows nothing at all under 150ms, so a catalog that resolves in one frame never flashes an
   // indicator. `pending` is that first band; `loading` is the reserved box the indicator sits in.

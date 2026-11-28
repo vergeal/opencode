@@ -13,6 +13,7 @@ import { ModelsDev } from "@aicraft/core/models-dev"
 import { ModelsDevPlugin } from "@aicraft/core/plugin/models-dev"
 import { Plugin } from "@aicraft/core/plugin"
 import { PluginHost } from "@aicraft/core/plugin/host"
+import { ProviderPlugins } from "@aicraft/core/plugin/provider"
 import { Provider } from "@aicraft/core/provider"
 import { AbsolutePath } from "@aicraft/core/schema"
 import { withEnv } from "../fixture/env"
@@ -66,7 +67,7 @@ const owner = Effect.gen(function* () {
 // Every nested overlay shape the normalized snapshot can carry, so in-place mutation of any
 // existing nested value is observable on the source object.
 const richSnapshot = (name = "Acme") => {
-  const providerID = Provider.ID.make("openai")
+  const providerID = Provider.ID.make("acme")
   const modelID = Model.ID.make("gpt-5.4")
   const snapshot = [
     {
@@ -325,7 +326,7 @@ describe("ModelsDevPlugin", () => {
       const providers = yield* Provider.Service
       const modelState = yield* Model.Service
       const plugins = yield* Plugin.Service
-      const providerID = Provider.ID.make("openai")
+      const providerID = Provider.ID.make("acme")
       const modelID = Model.ID.make("model")
       const modelsDev = ModelsDev.Service.of({
         get: () =>
@@ -384,7 +385,7 @@ describe("ModelsDevPlugin", () => {
       const integrations = yield* Integration.Service
       const providers = yield* Provider.Service
       const modelState = yield* Model.Service
-      const providerID = Provider.ID.make("openai")
+      const providerID = Provider.ID.make("acme")
       const modelID = Model.ID.make("gpt-5.4")
       const snapshot = [
         {
@@ -461,7 +462,7 @@ describe("ModelsDevPlugin", () => {
       const integrations = yield* Integration.Service
       const providers = yield* Provider.Service
       const modelState = yield* Model.Service
-      const providerID = Provider.ID.make("openai")
+      const providerID = Provider.ID.make("acme")
       const modelID = Model.ID.make("gpt-5.4")
       const models = ModelsDev.Service.of({
         get: () =>
@@ -584,7 +585,7 @@ describe("ModelsDevPlugin", () => {
       expect(fast).toMatchObject({
         id: "gpt-5.4-fast",
         modelID: "gpt-5.4",
-        providerID: "openai",
+        providerID: "acme",
         name: "GPT-5.4 Fast",
         package: "@aicraft/ai/providers/openai-compatible",
         settings: { baseURL: "https://api.acme.test/v1" },
@@ -628,7 +629,7 @@ describe("ModelsDevPlugin", () => {
       const integrations = yield* Integration.Service
       const providers = yield* Provider.Service
       const modelState = yield* Model.Service
-      const providerID = Provider.ID.make("openai")
+      const providerID = Provider.ID.make("acme")
       const activeID = Model.ID.make("current")
       const deprecatedID = Model.ID.make("legacy")
       const videoID = Model.ID.make("video-gen")
@@ -710,7 +711,7 @@ describe("ModelsDevPlugin", () => {
       const integrations = yield* Integration.Service
       const providers = yield* Provider.Service
       const modelState = yield* Model.Service
-      const providerID = Provider.ID.make("openai")
+      const providerID = Provider.ID.make("acme")
       const model = {
         providerID,
         capabilities: { tools: true, input: ["text"], output: ["text"] },
@@ -778,7 +779,7 @@ describe("ModelsDevPlugin", () => {
       )
       expect(yield* integrations.list()).toEqual([
         Integration.Info.make({
-          id: Integration.ID.make("openai"),
+          id: Integration.ID.make("acme"),
           name: "Acme",
           methods: [
             { type: "key" },
@@ -805,7 +806,7 @@ describe("ModelsDevPlugin", () => {
           const integrations = yield* Integration.Service
           const providers = yield* Provider.Service
           const modelState = yield* Model.Service
-          const providerID = Provider.ID.make("openai")
+          const providerID = Provider.ID.make("acme")
           const modelID = Model.ID.make("gpt-5.4")
           yield* ModelsDevPlugin.effect(
             host({
@@ -866,7 +867,7 @@ describe("ModelsDevPlugin", () => {
       const integrations = yield* Integration.Service
       const providers = yield* Provider.Service
       const modelState = yield* Model.Service
-      const providerID = Provider.ID.make("openai")
+      const providerID = Provider.ID.make("acme")
       const modelID = Model.ID.make("gpt-5.4")
       // A JSON body may legitimately contain a "__proto__" key; both copy stages must keep it as an own property.
       const body = JSON.parse('{"__proto__":{"service_tier":"priority"},"keep":true}') as Record<string, unknown>
@@ -917,24 +918,28 @@ describe("ModelsDevPlugin", () => {
     }),
   )
 
-  it.effect("keeps only the supported catalog providers", () =>
+  it.effect("omits legacy provider aliases", () =>
     Effect.gen(function* () {
       const integrations = yield* Integration.Service
       const providers = yield* Provider.Service
       const snapshots = [
-        ["openai", "OpenAI", "OPENAI_API_KEY"],
-        ["deepseek", "DeepSeek", "DEEPSEEK_API_KEY"],
-        ["anthropic", "Anthropic", "ANTHROPIC_API_KEY"],
-        ["google-vertex", "Google Vertex", "GOOGLE_APPLICATION_CREDENTIALS"],
-        ["azure-cognitive-services", "Azure Cognitive Services", "AZURE_COGNITIVE_SERVICES_API_KEY"],
-      ].map(([id, name, environment]) => ({
+        ["azure", "Azure", "AZURE_API_KEY", "@ai-sdk/azure"],
+        ["azure-cognitive-services", "Azure Cognitive Services", "AZURE_COGNITIVE_SERVICES_API_KEY", "@ai-sdk/azure"],
+        ["google-vertex", "Google Vertex", "GOOGLE_APPLICATION_CREDENTIALS", "@ai-sdk/google-vertex"],
+        [
+          "google-vertex-anthropic",
+          "Google Vertex Anthropic",
+          "GOOGLE_APPLICATION_CREDENTIALS",
+          "@ai-sdk/google-vertex/anthropic",
+        ],
+      ].map(([id, name, environment, packageName]) => ({
         info: {
           id: Provider.ID.make(id),
           name,
           activation: "auto",
-          package: "@aicraft/ai/providers/openai-compatible",
+          package: Provider.aisdk(packageName),
         },
-        environment: [environment],
+        environment: id === "azure" ? ["AZURE_RESOURCE_NAME", environment] : [environment],
         models: [],
       })) satisfies readonly ModelsDev.Snapshot[]
 
@@ -953,15 +958,19 @@ describe("ModelsDevPlugin", () => {
         ),
       )
 
-      expect(yield* providers.get(Provider.ID.openai)).toBeDefined()
-      expect(yield* providers.get(Provider.ID.make("deepseek"))).toBeDefined()
-      expect(yield* providers.get(Provider.ID.make("anthropic"))).toBeUndefined()
-      expect(yield* providers.get(Provider.ID.make("google-vertex"))).toBeUndefined()
+      expect(yield* providers.get(Provider.ID.azure)).toBeDefined()
+      expect(yield* providers.get(Provider.ID.make("google-vertex"))).toBeDefined()
       expect(yield* providers.get(Provider.ID.make("azure-cognitive-services"))).toBeUndefined()
-      expect(yield* integrations.get(Integration.ID.make("openai"))).toBeDefined()
-      expect(yield* integrations.get(Integration.ID.make("deepseek"))).toBeDefined()
-      expect(yield* integrations.get(Integration.ID.make("anthropic"))).toBeUndefined()
-      expect(yield* integrations.get(Integration.ID.make("google-vertex"))).toBeUndefined()
+      expect(yield* providers.get(Provider.ID.make("google-vertex-anthropic"))).toBeUndefined()
+      expect(yield* integrations.get(Integration.ID.make("azure"))).toBeDefined()
+      expect(yield* integrations.get(Integration.ID.make("azure"))).toMatchObject({
+        methods: [{ type: "key" }, { type: "env", names: ["AZURE_RESOURCE_NAME", "AZURE_API_KEY"] }],
+      })
+      expect(yield* integrations.get(Integration.ID.make("google-vertex"))).toBeDefined()
+      expect(yield* integrations.get(Integration.ID.make("azure-cognitive-services"))).toBeUndefined()
+      expect(yield* integrations.get(Integration.ID.make("google-vertex-anthropic"))).toBeUndefined()
+      expect(ProviderPlugins.map((plugin) => plugin.id)).not.toContain("opencode.provider.azure.cognitive.services")
+      expect(ProviderPlugins.map((plugin) => plugin.id)).not.toContain("opencode.provider.google.vertex.anthropic")
     }),
   )
 
@@ -983,22 +992,22 @@ describe("ModelsDevPlugin", () => {
               Effect.succeed([
                 {
                   info: {
-                    id: Provider.ID.make("openai"),
-                    name: "OpenAI",
+                    id: Provider.ID.make("cloudflare-workers-ai"),
+                    name: "Cloudflare Workers AI",
                     activation: "auto",
-                    package: "@aicraft/ai/providers/openai",
+                    package: "@aicraft/ai/providers/cloudflare-workers-ai",
                   },
-                  environment: ["OPENAI_API_KEY", "OPENAI_ORG_ID"],
+                  environment: ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_KEY"],
                   models: [],
                 },
                 {
                   info: {
-                    id: Provider.ID.make("deepseek"),
-                    name: "DeepSeek",
+                    id: Provider.ID.make("google-vertex"),
+                    name: "Google Vertex",
                     activation: "auto",
-                    package: "@aicraft/ai/providers/deepseek",
+                    package: "@aicraft/ai/providers/google-vertex",
                   },
-                  environment: ["DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL"],
+                  environment: ["GOOGLE_VERTEX_PROJECT", "GOOGLE_VERTEX_LOCATION", "GOOGLE_APPLICATION_CREDENTIALS"],
                   models: [],
                 },
               ] satisfies readonly ModelsDev.Snapshot[]),
@@ -1007,14 +1016,14 @@ describe("ModelsDevPlugin", () => {
         ),
       )
 
-      expect(yield* integrations.get(Integration.ID.make("deepseek"))).toMatchObject({
+      expect(yield* integrations.get(Integration.ID.make("google-vertex"))).toMatchObject({
         methods: [
           { type: "key" },
-          { type: "env", names: ["DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL"] },
+          { type: "env", names: ["GOOGLE_VERTEX_PROJECT", "GOOGLE_VERTEX_LOCATION", "GOOGLE_APPLICATION_CREDENTIALS"] },
         ],
       })
-      expect(yield* integrations.get(Integration.ID.make("openai"))).toMatchObject({
-        methods: [{ type: "key" }, { type: "env", names: ["OPENAI_API_KEY", "OPENAI_ORG_ID"] }],
+      expect(yield* integrations.get(Integration.ID.make("cloudflare-workers-ai"))).toMatchObject({
+        methods: [{ type: "key" }, { type: "env", names: ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_KEY"] }],
       })
     }),
   )
@@ -1072,6 +1081,284 @@ describe("ModelsDevPlugin", () => {
         body: { reasoning: { mode: "pro" } },
       })
 
+      const budgetModel = yield* modelState.get(Provider.ID.anthropic, Model.ID.make("claude-budget"))
+      expect(budgetModel?.variants).toContainEqual({
+        id: Model.VariantID.make("high"),
+        settings: { thinking: { type: "enabled", budgetTokens: 16000 } },
+      })
+      expect(budgetModel?.variants).toContainEqual({
+        id: Model.VariantID.make("max"),
+        settings: { thinking: { type: "enabled", budgetTokens: 31999 } },
+      })
+
+      const anthropicEffortModel = yield* modelState.get(Provider.ID.anthropic, Model.ID.make("claude-opus-4.7"))
+      expect(anthropicEffortModel?.variants).toEqual([
+        { id: Model.VariantID.make("none"), settings: { thinking: { type: "disabled" } } },
+        {
+          id: Model.VariantID.make("low"),
+          settings: { thinking: { type: "adaptive", display: "summarized" }, effort: "low" },
+        },
+      ])
+
+      const anthropicToggleModel = yield* modelState.get(Provider.ID.anthropic, Model.ID.make("claude-toggle"))
+      expect(anthropicToggleModel?.variants).toEqual([
+        { id: Model.VariantID.make("none"), settings: { thinking: { type: "disabled" } } },
+        {
+          id: Model.VariantID.make("thinking"),
+          settings: { thinking: { type: "adaptive", display: "summarized" } },
+        },
+      ])
+
+      const opus45 = yield* modelState.get(Provider.ID.anthropic, Model.ID.make("claude-opus-4-5"))
+      expect(opus45?.variants).toEqual([
+        {
+          id: Model.VariantID.make("low"),
+          settings: { effort: "low", thinking: { type: "enabled", budgetTokens: 8191 } },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { effort: "high", thinking: { type: "enabled", budgetTokens: 8191 } },
+        },
+      ])
+
+      const grok = yield* modelState.get(Provider.ID.make("xai"), Model.ID.make("grok-4.5"))
+      expect(grok?.variants).toEqual(
+        ["low", "medium", "high"].map((id) => ({
+          id: Model.VariantID.make(id),
+          settings: { reasoningEffort: id, reasoningSummary: "auto", include: ["reasoning.encrypted_content"] },
+        })),
+      )
+
+      const minimax = yield* modelState.get(Provider.ID.make("opencode-go"), Model.ID.make("minimax-m3"))
+      expect(minimax?.variants).toEqual([
+        { id: Model.VariantID.make("none"), settings: { thinking: { type: "disabled" } } },
+        {
+          id: Model.VariantID.make("thinking"),
+          settings: { thinking: { type: "adaptive", display: "summarized" } },
+        },
+      ])
+
+      const toggle = yield* modelState.get(Provider.ID.make("alibaba"), Model.ID.make("toggle-only"))
+      expect(toggle?.variants).toEqual([
+        { id: Model.VariantID.make("none"), settings: { enableThinking: false } },
+        { id: Model.VariantID.make("thinking"), settings: { enableThinking: true } },
+      ])
+
+      const combined = yield* modelState.get(Provider.ID.make("alibaba"), Model.ID.make("toggle-budget"))
+      expect(combined?.variants).toEqual([
+        { id: Model.VariantID.make("none"), settings: { enableThinking: false } },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { enableThinking: true, thinkingBudget: 8000 },
+        },
+        {
+          id: Model.VariantID.make("max"),
+          settings: { enableThinking: true, thinkingBudget: 16000 },
+        },
+      ])
+
+      const gateway = yield* modelState.get(Provider.ID.make("vercel"), Model.ID.make("alibaba/qwen-toggle"))
+      expect(gateway?.variants).toEqual([
+        { id: Model.VariantID.make("none"), settings: { thinking: { type: "disabled" } } },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { thinking: { type: "enabled", budgetTokens: 8000 } },
+        },
+        {
+          id: Model.VariantID.make("max"),
+          settings: { thinking: { type: "enabled", budgetTokens: 16000 } },
+        },
+      ])
+
+      const gatewayNova = yield* modelState.get(Provider.ID.make("vercel"), Model.ID.make("amazon/nova-2-lite"))
+      expect(gatewayNova?.variants).toEqual([
+        {
+          id: Model.VariantID.make("none"),
+          settings: { thinking: { type: "disabled" } },
+        },
+        {
+          id: Model.VariantID.make("low"),
+          settings: { reasoningEffort: "low" },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { reasoningEffort: "high" },
+        },
+      ])
+
+      const gatewayFallback = yield* modelState.get(
+        Provider.ID.make("vercel"),
+        Model.ID.make("deepseek/deepseek-toggle"),
+      )
+      expect(gatewayFallback?.variants).toEqual([
+        {
+          id: Model.VariantID.make("none"),
+          settings: { thinking: { type: "disabled" } },
+        },
+        {
+          id: Model.VariantID.make("low"),
+          settings: { reasoningEffort: "low" },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { reasoningEffort: "high" },
+        },
+      ])
+
+      const openrouter = yield* modelState.get(Provider.ID.make("openrouter"), Model.ID.make("openrouter-toggle"))
+      expect(openrouter?.variants).toEqual([
+        { id: Model.VariantID.make("none"), settings: { reasoning: { enabled: false } } },
+        { id: Model.VariantID.make("thinking"), settings: { reasoning: { enabled: true } } },
+      ])
+
+      const google = yield* modelState.get(Provider.ID.make("google"), Model.ID.make("gemini-2.5-flash"))
+      expect(google?.variants).toEqual([
+        {
+          id: Model.VariantID.make("none"),
+          settings: { thinkingConfig: { includeThoughts: false, thinkingBudget: 0 } },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { thinkingConfig: { includeThoughts: true, thinkingBudget: 8000 } },
+        },
+        {
+          id: Model.VariantID.make("max"),
+          settings: { thinkingConfig: { includeThoughts: true, thinkingBudget: 16000 } },
+        },
+      ])
+
+      const vertex = yield* modelState.get(Provider.ID.make("google-vertex"), Model.ID.make("gemini-2.5-flash-lite"))
+      expect(vertex?.variants).toEqual([
+        {
+          id: Model.VariantID.make("none"),
+          settings: { thinkingConfig: { includeThoughts: false, thinkingBudget: 0 } },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { thinkingConfig: { includeThoughts: true, thinkingBudget: 8000 } },
+        },
+        {
+          id: Model.VariantID.make("max"),
+          settings: { thinkingConfig: { includeThoughts: true, thinkingBudget: 16000 } },
+        },
+      ])
+
+      const bedrock = yield* modelState.get(
+        Provider.ID.make("amazon-bedrock"),
+        Model.ID.make("us.amazon.nova-2-lite-v1:0"),
+      )
+      expect(bedrock?.variants).toEqual([
+        {
+          id: Model.VariantID.make("none"),
+          body: { additionalModelRequestFields: { reasoningConfig: { type: "disabled" } } },
+        },
+        {
+          id: Model.VariantID.make("low"),
+          body: { additionalModelRequestFields: { reasoningConfig: { type: "enabled", maxReasoningEffort: "low" } } },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          body: { additionalModelRequestFields: { reasoningConfig: { type: "enabled", maxReasoningEffort: "high" } } },
+        },
+      ])
+
+      const sapGemini = yield* modelState.get(Provider.ID.make("sap-ai-core"), Model.ID.make("gemini-2.5-flash"))
+      expect(sapGemini?.variants).toEqual([
+        {
+          id: Model.VariantID.make("none"),
+          settings: { modelParams: { thinkingConfig: { includeThoughts: false, thinkingBudget: 0 } } },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { modelParams: { thinkingConfig: { includeThoughts: true, thinkingBudget: 8000 } } },
+        },
+        {
+          id: Model.VariantID.make("max"),
+          settings: { modelParams: { thinkingConfig: { includeThoughts: true, thinkingBudget: 16000 } } },
+        },
+      ])
+
+      const sapNova = yield* modelState.get(Provider.ID.make("sap-ai-core"), Model.ID.make("amazon--nova-lite"))
+      expect(sapNova?.variants).toEqual([
+        {
+          id: Model.VariantID.make("none"),
+          settings: {
+            modelParams: { additionalModelRequestFields: { thinking: { type: "disabled" } } },
+          },
+        },
+        {
+          id: Model.VariantID.make("low"),
+          settings: {
+            modelParams: { additionalModelRequestFields: { output_config: { effort: "low" } } },
+          },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          settings: {
+            modelParams: { additionalModelRequestFields: { output_config: { effort: "high" } } },
+          },
+        },
+      ])
+
+      const sapCohere = yield* modelState.get(
+        Provider.ID.make("sap-ai-core"),
+        Model.ID.make("cohere--command-a-reasoning"),
+      )
+      expect(sapCohere?.variants).toEqual([
+        {
+          id: Model.VariantID.make("none"),
+          settings: { modelParams: { thinking: { type: "disabled" } } },
+        },
+        {
+          id: Model.VariantID.make("low"),
+          settings: { modelParams: { reasoning_effort: "low" } },
+        },
+        {
+          id: Model.VariantID.make("high"),
+          settings: { modelParams: { reasoning_effort: "high" } },
+        },
+      ])
+
+      const sapAnthropicEffort = yield* modelState.get(
+        Provider.ID.make("sap-ai-core"),
+        Model.ID.make("anthropic--claude-4.7-opus"),
+      )
+      expect(sapAnthropicEffort?.variants).toEqual([
+        {
+          id: Model.VariantID.make("low"),
+          settings: {
+            modelParams: {
+              additionalModelRequestFields: {
+                thinking: { type: "adaptive", display: "summarized" },
+                output_config: { effort: "low" },
+              },
+            },
+          },
+        },
+      ])
+
+      const sapAnthropicBudget = yield* modelState.get(
+        Provider.ID.make("sap-ai-core"),
+        Model.ID.make("anthropic--claude-4-sonnet"),
+      )
+      expect(sapAnthropicBudget?.variants).toEqual([
+        {
+          id: Model.VariantID.make("high"),
+          settings: {
+            modelParams: {
+              additionalModelRequestFields: { thinking: { type: "enabled", budget_tokens: 8000 } },
+            },
+          },
+        },
+        {
+          id: Model.VariantID.make("max"),
+          settings: {
+            modelParams: {
+              additionalModelRequestFields: { thinking: { type: "enabled", budget_tokens: 16000 } },
+            },
+          },
+        },
+      ])
     }).pipe(Effect.provide(models(path.join(import.meta.dir, "fixtures", "models-dev-reasoning.json")))),
   )
 })

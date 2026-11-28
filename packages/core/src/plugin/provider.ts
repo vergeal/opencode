@@ -1,15 +1,64 @@
+import { AmazonBedrockPlugin } from "./provider/amazon-bedrock.js"
+import { AzurePlugin } from "./provider/azure.js"
+import { CerebrasPlugin } from "./provider/cerebras.js"
+import { ChatGPTPlugin } from "./provider/chatgpt.js"
+import { ClaudeAgentPlugin } from "./provider/claude-agent/index.js"
+import { CloudflareAIGatewayPlugin } from "./provider/cloudflare-ai-gateway.js"
+import { CloudflareWorkersAIPlugin } from "./provider/cloudflare-workers-ai.js"
+import { DatabricksPlugin } from "./provider/databricks.js"
+import { DigitalOceanPlugin } from "./provider/digitalocean.js"
+import { GithubCopilotPlugin } from "./provider/github-copilot.js"
+import { GitLabPlugin } from "./provider/gitlab.js"
+import { GoogleVertexPlugin } from "./provider/google-vertex.js"
+import { KiloPlugin } from "./provider/kilo.js"
+import { LLMGatewayPlugin } from "./provider/llmgateway.js"
+import { LMStudioPlugin } from "./provider/lmstudio.js"
+import { ModalPlugin } from "./provider/modal.js"
+import { NeonPlugin } from "./provider/neon.js"
+import { NvidiaPlugin } from "./provider/nvidia.js"
+import { OllamaPlugin } from "./provider/ollama.js"
 import { OpenAIPlugin } from "./provider/openai.js"
 import { OpenAIContextCapsPlugin } from "./provider/openai-context-caps.js"
+import { SnowflakeCortexPlugin } from "./provider/snowflake-cortex.js"
+import { AicraftPlugin } from "./provider/opencode.js"
+import { OpenRouterPlugin } from "./provider/openrouter.js"
+import { PoePlugin } from "./provider/poe.js"
+import { PromptCacheKeyPlugin } from "./provider/prompt-cache-key.js"
+import { SapAICorePlugin } from "./provider/sap-ai-core.js"
+import { VLLMPlugin } from "./provider/vllm.js"
+import { XAIPlugin } from "./provider/xai.js"
+import { ZenmuxPlugin } from "./provider/zenmux.js"
 import type { PluginInternal } from "./internal.js"
 
-/**
- * The catalog providers this client supports. Every other provider in the models.dev catalogue is dropped before it
- * reaches the Provider service, so a special-case plugin for one of them would have nothing to act on. OpenAI keeps
- * its plugin because it configures the Responses API and the reasoning effort the catalog does not describe; DeepSeek
- * needs none and runs through the shared OpenAI-compatible path.
- *
- * The other provider plugins are kept in `./provider/` on disk but not registered here. To bring one back, import it,
- * add it to this array, and add its provider ID to `CATALOG_PROVIDERS` in `./models-dev.ts`; both are needed because the
- * catalog filter runs before any plugin sees a provider.
- */
-export const ProviderPlugins: PluginInternal.InternalPlugin[] = [OpenAIPlugin, OpenAIContextCapsPlugin]
+export const ProviderPlugins: PluginInternal.InternalPlugin[] = [
+  AmazonBedrockPlugin,
+  AzurePlugin,
+  CerebrasPlugin,
+  ChatGPTPlugin,
+  CloudflareAIGatewayPlugin,
+  CloudflareWorkersAIPlugin,
+  DatabricksPlugin,
+  DigitalOceanPlugin,
+  GithubCopilotPlugin,
+  GitLabPlugin,
+  GoogleVertexPlugin,
+  KiloPlugin,
+  LLMGatewayPlugin,
+  LMStudioPlugin,
+  ModalPlugin,
+  NeonPlugin,
+  NvidiaPlugin,
+  OllamaPlugin,
+  AicraftPlugin,
+  SnowflakeCortexPlugin,
+  OpenAIPlugin,
+  OpenAIContextCapsPlugin,
+  OpenRouterPlugin,
+  PoePlugin,
+  PromptCacheKeyPlugin,
+  SapAICorePlugin,
+  VLLMPlugin,
+  XAIPlugin,
+  ZenmuxPlugin,
+  ClaudeAgentPlugin,
+]

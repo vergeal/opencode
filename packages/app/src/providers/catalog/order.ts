@@ -1,23 +1,30 @@
-export const popularProviders = ["openai", "deepseek"]
-
 /**
- * Providers the connect pickers and the settings list offer. This client ships only the OpenAI and DeepSeek catalog
- * providers; anything else a user needs is added as a custom provider from configuration. `connected` no longer
- * bypasses the list: a provider that was configured earlier is not offered anymore, and its credentials stay
- * manageable through the custom-provider flow.
+ * Providers pinned to the top of every provider list, in this order. Everything else still appears, sorted by name
+ * after these — this is a ranking, not an allowlist.
+ *
+ * This client ships no allowlist: a curated set hid providers a user had already connected, which left their models
+ * unreachable from every picker. Anything a user needs is either in the server's own catalog or a custom provider
+ * their configuration declares.
  */
-export const visibleProviders = ["openai", "deepseek"]
+export const popularProviders = [
+  "opencode-go",
+  "opencode",
+  "anthropic",
+  "openai",
+  "github-copilot",
+  "google",
+  "openrouter",
+  "vercel",
+]
 
-/** Whether a provider row belongs in the connect list. */
-export function showsProvider(id: string) {
-  return visibleProviders.includes(id)
+/** Whether a provider belongs to the pinned set rather than to the rest of the catalog. */
+export function isPopularProvider(id: string) {
+  return popularProviders.includes(id)
 }
 
-/**
- * Whether a row belongs in a list of providers to connect. `showsProvider` alone is not enough: a custom
- * OpenAI-compatible provider the user declared in their own configuration is the only route to a model this
- * allowlist cannot carry, so hiding it leaves that model unreachable from every picker.
- */
-export function offersProvider(id: string, customIDs: ReadonlySet<string>) {
-  return showsProvider(id) || customIDs.has(id)
+/** Sort rank for a provider: the pinned order first, then everything else at the same rank. */
+export function providerRank(id: string) {
+  const index = popularProviders.indexOf(id)
+
+  return index < 0 ? Number.MAX_SAFE_INTEGER : index
 }
