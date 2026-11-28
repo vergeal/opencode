@@ -380,7 +380,6 @@ const protocol = SystemPart.make(PROTOCOL_SHORT)
           const seen = told.get(sessionKey) ?? new Map<string, string>()
           const fresh: string[] = []
           const updated: string[] = []
-          const removed: string[] = []
           const next = new Map(seen)
           for (const entry of items) {
             const before = seen.get(entry.name)
@@ -388,9 +387,12 @@ const protocol = SystemPart.make(PROTOCOL_SHORT)
             else if (before !== entry.text) updated.push(entry.name)
             next.set(entry.name, entry.text)
           }
-          for (const id of seen.keys()) if (!items.some((entry) => entry.name === id)) removed.push(id)
-          for (const id of removed) next.delete(id)
-          if (fresh.length === 0 && updated.length === 0 && removed.length === 0) {
+          // A memory missing from this retrieval is not a memory that was deleted. Retrieval is a relevance
+          // query, so a turn that does not mention a topic simply does not return its memories — treating
+          // that as removal told the model two live memories were "no longer available" on a turn about
+          // something else. Silence is the correct signal here: the entry stays in the ledger, and a real
+          // deletion reaches the model through `memory_forget`'s own tool result instead.
+          if (fresh.length === 0 && updated.length === 0) {
             // Nothing new this turn: record the empty outcome so later steps stay empty too.
             turns.set(sessionKey, { key, block, items, settled: { text: "", items: [] } })
             return
@@ -407,7 +409,6 @@ const protocol = SystemPart.make(PROTOCOL_SHORT)
                   MEMORY_SETTLED_HEADER,
                   ...fresh.flatMap((id) => [items.find((entry) => entry.name === id)!.text]),
                   ...updated.flatMap((id) => [`(updated) ${items.find((entry) => entry.name === id)!.text}`]),
-                  ...removed.map((id) => `${id} has been removed and is no longer available. Do not rely on it.`),
                 ]
                   .map((line, index) => (index === 0 && line === MEMORY_SETTLED_HEADER ? line : `- ${line}`))
                   .join("\n")

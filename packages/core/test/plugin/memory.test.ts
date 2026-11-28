@@ -198,7 +198,7 @@ describe("memory plugin injection", () => {
     }),
   )
 
-  it.effect("sends a memory once, resends it changed, and marks it removed", () =>
+  it.effect("sends a memory once, resends it changed, and never invents a removal", () =>
     Effect.gen(function* () {
       const sessions = yield* Session.Service
       const location = yield* Location.Service
@@ -251,14 +251,16 @@ describe("memory plugin injection", () => {
       expect(memoryOf(third)?.text).toContain("(updated)")
       expect(memoryOf(third)?.text).toContain("禁止斜杠")
 
-      // Turn four: the memory is gone, so the model is told to stop trusting it.
-      yield* rpc.call("aicraft.memory", "remove", { scope: "global", projectID: null, id: saved.entry.id })
-      yield* admit("msg_t4", "分支命名规范")
-      const fourth = context(session.id, "msg_t4", "分支命名规范")
+      // Turn four: a different topic retrieves different memories, and the ones missing from this result
+      // must NOT be announced as removed. Retrieval is a relevance query — a turn about something else
+      // simply does not return them, and calling that a deletion told the model two live memories were
+      // gone. This assertion is the regression: it failed with "has been removed" against live entries.
+      yield* admit("msg_t4", "今天天气怎么样")
+      const fourth = context(session.id, "msg_t4", "今天天气怎么样")
       yield* hooks.trigger("session", "context", fourth)
-      // A forgetting turn may retrieve nothing at all, and then there is nothing to correct. That is
-      // acceptable; what must never happen is the old text riding again.
-      expect(memoryOf(fourth)?.text ?? "").not.toContain("禁止斜杠")
+      const fourthText = memoryOf(fourth)?.text ?? ""
+      expect(fourthText).not.toContain("has been removed")
+      expect(fourthText).not.toContain("no longer available")
     }),
   )
 
